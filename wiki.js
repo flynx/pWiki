@@ -22,11 +22,8 @@
 // 		}
 // 	}
 var data = {
-	'/': {
-		text: 'base page...'
-	},
-	'dir/page': {
-		text: 'some text...'
+	'TemplatePages/DefaultPage': {
+		text: 'This page is empty.<br><br>WikiHome',
 	},
 }
 
@@ -46,9 +43,14 @@ var normalizePath = path =>
 var Wiki = {
 	__wiki_data: data,
 
+	__home_page__: 'WikiHome',
+	__default_page__: 'DefaultPage',
+	__templates__: 'TemplatePages',
+
+
 	// current location...
 	get location(){
-		return this.__location || '/' },
+		return this.__location || this.__home_page__ },
 	set location(value){
 		this.__location = normalizePath(value) },
 
@@ -89,8 +91,13 @@ var Wiki = {
 
 
 	// page content...
+	//
+	// NOTE: if this page has not text, this will get the DefaultPage...
+	// XXX should this get the DefaultPage or the EmptyPage???
 	get text(){
-		return (this.__wiki_data[this.location] || {}).text || ''
+		return (this.__wiki_data[this.location] || {}).text
+			|| (this.acquire(this.__default_page__) || {}).text
+			|| '' 
 	},
 	set text(value){
 		var l = this.location
@@ -112,21 +119,62 @@ var Wiki = {
 	},
 
 
+	exists: function(path){
+		return normalizePath(path) in this.__wiki_data },
+	// get title from dir and then go up the tree...
+	acquire: function(title){
+		title = title || this.__default_page__
+		var templates = this.__templates__
+		var data = this.__wiki_data
+		var that = this
 
-	// serialization...
-	get json(){
-		return {
-			path: this.path,
-			text: this.text,
+		var path = path2lst(this.dir)
+
+		var _res = function(p){
+			return {
+				dir: normalizePath(p.slice(0, -1)),
+				title: title,
+				text: that.__wiki_data[normalizePath(p)].text
+			}
+		}
+
+		while(true){
+			// get title from path...
+			var p = path.concat([title])
+			if(this.exists(p)){
+				return _res(p)
+			}
+
+			// get title from templates in path...
+			var p = path.concat([templates, title])
+			if(this.exists(p)){
+				return _res(p)
+			}
+
+			if(path.length == 0){
+				return
+			}
+
+			path.pop()
 		}
 	},
-	set json(value){
-		if(value.title){
-			this.title = value.title
-		}
-		if(value.text){
-			this.text = value.text
-		}
+
+
+	// serialization...
+	json: function(path){
+		return path == null ? JSON.parse(JSON.stringify(this.__wiki_data))
+			: path == '.' ? {
+					path: this.location,
+					text: this.text,
+				}
+			: {
+				path: path,
+				text: (this.__wiki_data[path] || {}).text,
+			}
+	},
+	// XXX should we inherit from the default???
+	load: function(json){
+		this.__wiki_data = json
 	},
 }
 
