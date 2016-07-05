@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<style>
+</style>
+
+<script src="ext-lib/jquery.js"></script>
+<script src="wiki.js"></script>
+
+<script>
+
+var clear = () => {
+	delete localStorage['wiki-data']
+	delete localStorage['wiki-location']
+}
+
+var reload = () => {
+	$('.dir').text('/' + Wiki.dir)
+
+	$('.title').text(Wiki.title)
+
+	$('.text').html(activateWikiWords(Wiki.text))
+
+	// XXX save...
+	localStorage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
+	localStorage['wiki-location'] = Wiki.location
+}
+
+var go = (path) => {
+	Wiki.location = path
+	reload()
+}
+
+var clearWikiWords = elem => {
+	// clear existing...
+	elem.find('.WikiWord').each(function(){
+			$(this).replaceWith(this.childNodes)})
+	return elem
+} 
+
+var activateWikiWords = text => 
+	text
+		// set new...
+		.replace(
+			RegExp('('+[
+				'[A-Z][a-z0-9]+[A-Z][a-z0-9][a-zA-Z0-9]*\/\\w+',
+				'[A-Z][a-z0-9]+[A-Z][a-z0-9][a-zA-Z0-9]*',
+				'\\[[^\\]]+\\]',
+				].join('|') +')', 'g'),
+			'<a class="WikiWord" href="#" onclick="go($(this).text().replace(/^\\[|\\]$/g, \'\'))">$1</a>')
+
+
+$(() => {
+	// load stored data...
+	Wiki.__wiki_data = localStorage['wiki-data'] ?
+		JSON.parse(localStorage['wiki-data']) 
+		: data
+	Wiki.location = localStorage['wiki-location'] || Wiki.location
+
+	reload()
+
+	$('.title')
+		.on('keyup', () => { Wiki.title = $('.title').text() })
+
+	// live update text...
+	// XXX is this the right way to go for large documents???
+	$('.text')
+		.on('keyup', () => { 
+			Wiki.text = clearWikiWords($('.text').clone()).html() })
+		// XXX do this live, but on a timeout after user input...
+		// XXX need to place the cursor in the same position...
+		.blur(() => { reload() })
+})
+</script>
+
+<body>
+
+<div class="dir"></div>
+<hr>
+<h1 class="title" contenteditable></h1>
+<div class="text" contenteditable></div>
+
+</body>
+</html>
