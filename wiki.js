@@ -22,6 +22,9 @@
 // 		}
 // 	}
 var data = {
+	'/': {
+		text: 'base page...'
+	},
 	'dir/page': {
 		text: 'some text...'
 	},
