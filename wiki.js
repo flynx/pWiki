@@ -22,7 +22,7 @@
 // 		}
 // 	}
 var data = {
-	'TemplatePages/DefaultPage': {
+	'Templates/DefaultPage': {
 		text: 'This page is empty.<br><br>WikiHome',
 	},
 }
@@ -45,7 +45,7 @@ var Wiki = {
 
 	__home_page__: 'WikiHome',
 	__default_page__: 'DefaultPage',
-	__templates__: 'TemplatePages',
+	__templates__: 'Templates',
 
 
 	// current location...
