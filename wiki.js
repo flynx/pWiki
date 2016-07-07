@@ -22,7 +22,7 @@
 // 		}
 // 	}
 var data = {
-	'Templates/DefaultPage': {
+	'Templates/EmptyPage': {
 		text: 'This page is empty.<br><br>WikiHome',
 	},
 }
@@ -44,7 +44,7 @@ var Wiki = {
 	__wiki_data: data,
 
 	__home_page__: 'WikiHome',
-	__default_page__: 'DefaultPage',
+	__default_page__: 'EmptyPage',
 	__templates__: 'Templates',
 
 	__wiki_link__: RegExp('('+[
@@ -71,10 +71,53 @@ var Wiki = {
 		return this.location },
 	set path(value){
 		var l = this.location
+		// old title...
+		var ot = this.title
 		value = normalizePath(value)
 
-		this.__wiki_data[value] = this.__wiki_data[l] || {}
+		if(this.exists(l)){
+			this.__wiki_data[value] = this.__wiki_data[l]
+		}
 		this.location = value
+
+		// new title...
+		var nt = this.title
+
+		// update all links...
+		this.pages(function(page){
+			page.location != l && page.links.forEach(lnk => {
+				var p = path2lst(lnk)
+				var t = p.pop()
+
+				// 1:1 change
+				(lnk == l
+					// change all links that resolve to current page 
+					// with same basename...
+					|| (t == ot && page.acquire(p, t) == l)
+					// XXX need to take changing paths into acount...
+					|| true)
+						&& console.log(lnk, '->', p +'/'+ nt)
+						/*
+						&& (page.text.match(this.__wiki_link__) || [])
+							// get both types of links...
+							.filter(e => e == l || e == '['+l+']')
+							// unique...
+							.filter((e, i, l) => l.slice(0, i).indexOf(e) == -1)
+							// do the replacing...
+							.forEach(e =>
+								page.text = page.text.replace(
+									// XXX BUG: this will change anything 
+									// 		containing the pattern...
+									RegExp(''
+										// regexp-quote string...
+										+e.replace(/[\[\]\(\)\$\^\{\}\?\|\*\.\+]/g, '\\$1')
+										+ '', 'g'),
+									value))	
+						//*/
+			})
+		})
+
+		// cleaup...
 		delete this.__wiki_data[l]
 	},
 
@@ -111,16 +154,20 @@ var Wiki = {
 		this.__wiki_data[l].text = value
 
 		// cache links...
+		delete this.__wiki_data[l].links
 		this.__wiki_data[l].links = this.links
 	},
 
+	// NOTE: this is set by setting .text
 	get links(){
-		return (this.acquireData() || {}).links 
-			|| this.text.match(this.__wiki_link__)
+		var data = this.acquireData() || {}
+		var links = data.links = data.links
+			|| (this.text.match(this.__wiki_link__) || [])
 				// unwrap explicit links...
 				.map(e => e[0] == '[' ? e.slice(1, -1) : e)
 				// unique...
 				.filter((e, i, l) => l.slice(0, i).indexOf(e) == -1)
+		return links
 	},
 
 	// XXX
@@ -133,7 +180,7 @@ var Wiki = {
 	exists: function(path){
 		return normalizePath(path) in this.__wiki_data },
 	// get title from dir and then go up the tree...
-	acquire: function(title){
+	_acquire: function(title){
 		title = title || this.__default_page__
 		var templates = this.__templates__
 		var data = this.__wiki_data
@@ -142,11 +189,8 @@ var Wiki = {
 		var path = path2lst(this.dir)
 
 		var _res = function(p){
-			return {
-				dir: normalizePath(p.slice(0, -1)),
-				title: title,
-				text: that.__wiki_data[normalizePath(p)].text
-			}
+			p = normalizePath(p)
+			return that.__wiki_data[p] && p
 		}
 
 		while(true){
@@ -169,19 +213,25 @@ var Wiki = {
 			path.pop()
 		}
 	},
-
-	acquireData: function(path, title){
-		path = path || this.path
+	acquire: function(path, title){
+		path = path && normalizePath(path) || this.path
 		title = title || this.title
+		var wiki = this.__wiki_data
 
 		// get the page directly...
-		return this.__wiki_data[path +'/'+ title]
+		return (this.exists(path +'/'+ title) && path +'/'+ title)
 			// acquire the page from path...
-			|| this.acquire(title)
+			|| this._acquire(title)
 			// acquire the default page...
-			|| this.acquire(this.__default_page__)
+			|| this._acquire(this.__default_page__)
 			// nothing found...
 			|| null
+	},
+
+	// shorthand...
+	acquireData: function(path, title){
+		var page = this.acquire(path, title)
+		return page ? this.__wiki_data[page] : null
 	},
 
 
@@ -200,6 +250,20 @@ var Wiki = {
 	// XXX should we inherit from the default???
 	load: function(json){
 		this.__wiki_data = json
+	},
+
+
+	// iteration...
+	// XXX this is not page specific, might need refactoring...
+	pages: function(callback){
+		var that = this
+		Object.keys(this.__wiki_data).forEach(function(location){
+			// XXX not sure if this is the right way to go...
+			var o = Object.create(that)
+			o.location = location
+			callback.call(o, o)
+		})
+		return this
 	},
 }
 

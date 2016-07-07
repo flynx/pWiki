@@ -75,8 +75,12 @@ $(() => {
 
 	reload()
 
+	// XXX make this update on enter...
 	$('.title')
-		.on('keyup', () => { Wiki.title = $('.title').text() })
+		.on('blur', () => { 
+			Wiki.title = $('.title').text() 
+			reload()
+		})
 
 	// live update text...
 	// XXX is this the right way to go for large documents???
@@ -93,8 +97,8 @@ $(() => {
 
 <div class="dir"></div>
 <hr>
-<h1 class="title" contenteditable></h1>
-<div class="text" contenteditable></div>
+<h1 class="title" contenteditable tabindex=0></h1>
+<div class="text" contenteditable tabindex=0></div>
 
 </body>
 </html>
