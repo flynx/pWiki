@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html>
+<head>
+<title>pWiki</title>
+</head>
 <style>
 </style>
 
@@ -23,9 +26,18 @@ var reload = () => {
 	// XXX save...
 	localStorage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
 	localStorage['wiki-location'] = Wiki.location
+
+	$('title').text(Wiki.location)
 }
 
+// XXX add history support...
 var go = (path) => {
+	history.pushState({
+			wikipath: path
+		}, 
+		Wiki.title, 
+		window.location)
+
 	Wiki.location = path
 	reload()
 }
@@ -49,6 +61,12 @@ var activateWikiWords = text =>
 
 
 $(() => {
+	$(window).on('popstate', function(evt){
+		event.state 
+			&& event.state.wikipath 
+			&& go(event.state.wikipath)
+	})
+
 	// load stored data...
 	Wiki.__wiki_data = localStorage['wiki-data'] ?
 		JSON.parse(localStorage['wiki-data']) 
