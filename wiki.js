@@ -47,6 +47,11 @@ var Wiki = {
 	__default_page__: 'DefaultPage',
 	__templates__: 'Templates',
 
+	__wiki_link__: RegExp('('+[
+		'[A-Z][a-z0-9]+[A-Z\/][a-zA-Z0-9\/]*',
+		'\\[[^\\]]+\\]',
+	].join('|') +')', 'g'),
+
 
 	// current location...
 	get location(){
@@ -99,27 +104,24 @@ var Wiki = {
 	// 	- aquire default page (same order as above)
 	//
 	get text(){
-		// get the page directly...
-		return (this.__wiki_data[this.location] || {}).text
-			// acquire the page from path...
-			|| (this.acquire(this.title) || {}).text
-			// acquire the default page...
-			|| (this.acquire(this.__default_page__) || {}).text
-			// nothing found...
-			|| '' 
-	},
+		return (this.acquireData() || {}).text || '' },
 	set text(value){
 		var l = this.location
 		this.__wiki_data[l] = this.__wiki_data[l] || {}
 		this.__wiki_data[l].text = value
+
+		// cache links...
+		this.__wiki_data[l].links = this.links
 	},
 
-	// XXX
 	get links(){
+		return (this.acquireData() || {}).links 
+			|| this.text.match(this.__wiki_link__)
+				// unwrap explicit links...
+				.map(e => e[0] == '[' ? e.slice(1, -1) : e)
+				// unique...
+				.filter((e, i, l) => l.slice(0, i).indexOf(e) == -1)
 	},
-	set links(value){
-	},
-
 
 	// XXX
 	get list(){
@@ -166,6 +168,20 @@ var Wiki = {
 
 			path.pop()
 		}
+	},
+
+	acquireData: function(path, title){
+		path = path || this.path
+		title = title || this.title
+
+		// get the page directly...
+		return this.__wiki_data[path +'/'+ title]
+			// acquire the page from path...
+			|| this.acquire(title)
+			// acquire the default page...
+			|| this.acquire(this.__default_page__)
+			// nothing found...
+			|| null
 	},
 
 
