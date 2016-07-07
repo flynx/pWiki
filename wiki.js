@@ -92,11 +92,20 @@ var Wiki = {
 
 	// page content...
 	//
-	// NOTE: if this page has not text, this will get the DefaultPage...
-	// XXX should this get the DefaultPage or the EmptyPage???
+	// Test acquesition order:
+	// 	- explicit path
+	// 	- .title in path
+	// 	- .title in templates
+	// 	- aquire default page (same order as above)
+	//
 	get text(){
+		// get the page directly...
 		return (this.__wiki_data[this.location] || {}).text
+			// acquire the page from path...
+			|| (this.acquire(this.title) || {}).text
+			// acquire the default page...
 			|| (this.acquire(this.__default_page__) || {}).text
+			// nothing found...
 			|| '' 
 	},
 	set text(value){
