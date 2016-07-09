@@ -67,58 +67,119 @@ var Wiki = {
 	// NOTE: changing this will move the page to the new path and change
 	// 		.location acordingly...
 	// NOTE: same applies to path parts below...
+	//
+	// XXX use a template for the redirect page...
 	get path(){ 
 		return this.location },
 	set path(value){
-		var l = this.location
-		// old title...
-		var ot = this.title
 		value = normalizePath(value)
+
+		var l = this.location
+
+		if(value == l){
+			return
+		}
+
+		// old...
+		var otitle = this.title
+		var odir = this.dir
 
 		if(this.exists(l)){
 			this.__wiki_data[value] = this.__wiki_data[l]
 		}
 		this.location = value
 
-		// new title...
-		var nt = this.title
+		// new...
+		var ntitle = this.title
+		var ndir = this.dir
 
-		// update all links...
+		var redirect = false
+
+		// update links to this page...
 		this.pages(function(page){
-			page.location != l && page.links.forEach(lnk => {
-				var p = path2lst(lnk)
-				var t = p.pop()
+			// skip the old page...
+			if(page.location == l){
+				return
+			}
+			page.text = page.text.replace(page.__wiki_link__, function(lnk){
+				var from = lnk[0] == '[' ? lnk.slice(1, -1) : lnk
 
-				// 1:1 change
-				(lnk == l
-					// change all links that resolve to current page 
-					// with same basename...
-					|| (t == ot && page.acquire(p, t) == l)
-					// XXX need to take changing paths into acount...
-					|| true)
-						&& console.log(lnk, '->', p +'/'+ nt)
-						/*
-						&& (page.text.match(this.__wiki_link__) || [])
-							// get both types of links...
-							.filter(e => e == l || e == '['+l+']')
-							// unique...
-							.filter((e, i, l) => l.slice(0, i).indexOf(e) == -1)
-							// do the replacing...
-							.forEach(e =>
-								page.text = page.text.replace(
-									// XXX BUG: this will change anything 
-									// 		containing the pattern...
-									RegExp(''
-										// regexp-quote string...
-										+e.replace(/[\[\]\(\)\$\^\{\}\?\|\*\.\+]/g, '\\$1')
-										+ '', 'g'),
-									value))	
-						//*/
+				// get path/title...
+				var p = path2lst(from)
+				var t = p.pop()
+				p = normalizePath(p)
+
+				var target = page.acquire(p, t)
+				// page target changed...
+				// NOTE: this can happen either when a link was an orphan
+				// 		or if the new page path shadowed the original 
+				// 		target...
+				// XXX should we report the exact condition here???
+				if(target == value){
+					console.log('Link target changed:', lnk, '->', value)
+					return lnk
+
+				// skip links that do not resolve to target...
+				} else if(page.acquire(p, t) != l){
+					return lnk
+				}
+
+				// format the new link...
+				var to = p == '' ? ntitle : p +'/'+ ntitle
+				to = lnk[0] == '[' ? '['+to+'}' : to
+
+				// explicit link change -- replace...
+				if(from == l){
+					//console.log(lnk, '->', to)
+					return to
+
+				// path did not change -- change the title...
+				} else if(ndir == odir){
+					// conflict: the new link will not resolve to the 
+					// 		target page...
+					if(page.acquire(p, ntitle) != value){
+						console.log('ERR:', lnk, '->', to,
+							'is shadowed by:', page.acquire(p, ntitle))
+						// XXX should we add a note to the link???
+						redirect = true
+
+					// replace title...
+					} else {
+						//console.log(lnk, '->', to)
+						return to
+					}
+
+				// path changed -- keep link + add redirect page...
+				} else {
+					redirect = true
+				}
+
+				// no change...
+				return lnk
 			})
 		})
 
+		// redirect...
+		//
+		// XXX should we use a template here???
+		// 		...might be a good idea to set a .redirect attr and either
+		// 		do an internal/transparent redirect or show a redirect 
+		// 		template
+		// 		...might also be good to add an option to fix the link from
+		// 		the redirect page...
+		if(redirect){
+			console.log('CREATING REDIRECT PAGE:', l, '->', value, '')
+			this.__wiki_data[l].text = 'REDIRECT TO: ' + value
+				+'<br>'
+				+'<br><i>NOTE: This page was created when renaming the target '
+					+'page that resulted new link being broken (i.e. resolved '
+					+'to a different page from the target)</i>'
+			this.__wiki_data[l].redirect = value
+
 		// cleaup...
-		delete this.__wiki_data[l]
+		} else {
+			delete this.__wiki_data[l]
+		}
 	},
 
 	// path parts: directory...
