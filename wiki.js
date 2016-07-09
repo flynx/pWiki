@@ -28,17 +28,28 @@ var data = {
 }
 
 
+
+/*********************************************************************/
+
 var path2lst = path => 
-	(path instanceof Array ? 
-	 		path 
-			: path.split(/[\\\/]+/g))
-		.map(p => p.trim())
+	(path instanceof Array ?  path : path.split(/[\\\/]+/g))
+		// handle '..' (lookahead) and trim path elements...
+		// NOTE: this will not touch the leading '.' or '..'
+		.map((p, i, l) => 
+			(i > 0 && (p.trim() == '..' || p.trim() == '.')
+					|| (l[i+1] || '').trim() == '..') ? 
+				null 
+				: p.trim())
+		// cleanup and clear '.'...
 		.filter(p => 
-			p != '' && p != '.')
+			p != null && p != '')
 
 var normalizePath = path => 
 	path2lst(path).join('/')
 
+
+
+/*********************************************************************/
 
 var Wiki = {
 	__wiki_data: data,
@@ -46,18 +57,40 @@ var Wiki = {
 	__home_page__: 'WikiHome',
 	__default_page__: 'EmptyPage',
 	__templates__: 'Templates',
+	//__redirect_template__: 'RedirectTemplate',
 
 	__wiki_link__: RegExp('('+[
-		'[A-Z][a-z0-9]+[A-Z\/][a-zA-Z0-9\/]*',
+		'(\\./|\\.\\./|[A-Z][a-z0-9]+[A-Z/])[a-zA-Z0-9/]*',
 		'\\[[^\\]]+\\]',
 	].join('|') +')', 'g'),
+
+
+	// Resolve '.' and '..' relative to current page...
+	//
+	// With the .path set to A/B/C, this will resolve the folowing to:
+	// 	'.'			-> 'A/B' 
+	// 	'..'		-> 'A'
+	// 	'./X'		-> 'A/B/X'
+	// 	'../X'		-> 'A/X'
+	//
+	resolveDotPath: function(path){
+		path = normalizePath(path)
+		// '.' or './*'
+		return path == '.' || /^\.\//.test(path) ? 
+				path.replace(/^\./, this.dir)
+			// '..' or '../*'
+			: path == '..' || /^\.\.\//.test(path) ? 
+				path.replace(/^\.\./, 
+					normalizePath(path2lst(this.dir).slice(0, -1)))
+			: path
+	},
 
 
 	// current location...
 	get location(){
 		return this.__location || this.__home_page__ },
 	set location(value){
-		this.__location = normalizePath(value) },
+		this.__location = this.resolveDotPath(value) },
 
 	// page path...
 	//
@@ -72,7 +105,7 @@ var Wiki = {
 	get path(){ 
 		return this.location },
 	set path(value){
-		value = normalizePath(value)
+		value = this.resolveDotPath(value)
 
 		var l = this.location
 
@@ -205,7 +238,7 @@ var Wiki = {
 	// 	- explicit path
 	// 	- .title in path
 	// 	- .title in templates
-	// 	- aquire default page (same order as above)
+	// 	- aquire empty page (same order as above)
 	//
 	get text(){
 		return (this.acquireData() || {}).text || '' },
@@ -231,10 +264,8 @@ var Wiki = {
 		return links
 	},
 
-	// XXX
+	// XXX list children/sub-pages...
 	get list(){
-	},
-	set list(value){
 	},
 
 

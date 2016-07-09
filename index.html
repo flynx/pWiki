@@ -53,10 +53,7 @@ var activateWikiWords = text =>
 	text
 		// set new...
 		.replace(
-			RegExp('('+[
-				'[A-Z][a-z0-9]+[A-Z\/][a-zA-Z0-9\/]*',
-				'\\[[^\\]]+\\]',
-				].join('|') +')', 'g'),
+			Wiki.__wiki_link__,
 			'<a class="WikiWord" href="#" onclick="go($(this).text().replace(/^\\[|\\]$/g, \'\'))">$1</a>')
 
 
