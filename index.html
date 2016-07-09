@@ -21,7 +21,57 @@ var reload = () => {
 
 	$('.title').text(Wiki.title)
 
-	$('.text').html(activateWikiWords(Wiki.text))
+	// process text...
+	var text = Wiki.text
+
+	// expand macros...
+	if($('.text').prop('contenteditable') != 'true'){
+		text = text
+			// Syntax:
+			//		@<macro>( <args> )
+			.replace(/@([a-zA-Z-_]+)\(([^)]*)\)/g, function(_, macro, args){
+				args = $('<div>')
+					.html(args)
+					.text()
+						.trim()
+						.split(/\s+/g)
+
+				//console.log('>>>>>', macro, args)
+
+				if(macro == 'include' && args.length == 1){
+					w = Object.create(Wiki)
+					w.location = args[0]
+					return w.text
+				}
+
+				return _
+			})
+			// html-like macro syntax...
+			.replace(/\&lt;[a-zA-Z-_:]+.*?\/?\&gt;/g, function(t){
+				var elem = $($('<div>').html(t).text())
+				var macro = elem.prop('tagName').toLowerCase()
+
+				var args = {}
+				var a = elem.prop('attributes')
+
+				for(var i=0; i<a.length; i++){
+					args[a[i].name] = a[i].value
+				}
+
+				//console.log('>>>>>', macro, args) 
+
+				if(macro == 'include' && args.src != null){
+					w = Object.create(Wiki)
+					w.location = args.src
+					return w.text
+				}
+
+
+				return t
+			})
+	}
+
+	$('.text').html(activateWikiWords(text))
 
 	// XXX save...
 	localStorage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
@@ -85,11 +135,21 @@ $(() => {
 	// live update text...
 	// XXX is this the right way to go for large documents???
 	$('.text')
+		.focus(() => {
+			$('.text').prop('contenteditable', $('.text').prop('contenteditable') != 'true')
+			reload()
+		})
 		.on('keyup', () => { 
-			Wiki.text = clearWikiWords($('.text').clone()).html() })
+			if($('.text').prop('contenteditable') == 'true'){
+				Wiki.text = clearWikiWords($('.text').clone()).html() 
+			}
+		})
 		// XXX do this live, but on a timeout after user input...
 		// XXX need to place the cursor in the same position...
-		.blur(() => { reload() })
+		.blur(() => { 
+			$('.text').prop('contenteditable', false)
+			reload() 
+		})
 })
 </script>
 
@@ -98,7 +158,7 @@ $(() => {
 <div class="dir"></div>
 <hr>
 <h1 class="title" contenteditable tabindex=0></h1>
-<div class="text" contenteditable tabindex=0></div>
+<div class="text" tabindex=0></div>
 
 </body>
 </html>
