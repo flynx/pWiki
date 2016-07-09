@@ -68,7 +68,10 @@ $(() => {
 	Wiki.__wiki_data = localStorage['wiki-data'] ?
 		JSON.parse(localStorage['wiki-data']) 
 		: data
+	Wiki.__wiki_data.__proto__ = BaseData
+
 	Wiki.location = localStorage['wiki-location'] || Wiki.location
+
 
 	reload()
 

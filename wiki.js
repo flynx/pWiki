@@ -9,6 +9,61 @@
 
 /*********************************************************************/
 
+// XXX not sure about these...
+var BaseData = {
+	'Templates/list': function(){
+		var p = this.dir
+
+		return Object.keys(this.__wiki_data)
+			.map(function(k){
+				if(k.indexOf(p) == 0){
+					return path2lst(k.slice(p.length)).shift()
+				}
+				return null
+			})
+			.filter((e) => e != null)
+			.join('<br>')
+	},
+	'Templates/tree': function(){
+		var p = this.dir
+
+		return Object.keys(this.__wiki_data)
+			.map(function(k){
+				if(k.indexOf(p) == 0){
+					return k
+				}
+				return null
+			})
+			.filter((e) => e != null)
+			.join('<br>')
+	},
+	'Templates/links': function(){
+		var that = this
+		var p = this.dir
+		var rp = this.acquire(path2lst(p).slice(0, -1), path2lst(p).pop())
+
+		var res = []
+
+		var wiki = this.__wiki_data
+		Object.keys(wiki).forEach(function(k){
+			(wiki[k].links || []).forEach(function(l){
+				that.acquire(path2lst(l).slice(0, -1), path2lst(l).pop()) == rp
+					&& res.push([l, k])
+			})
+		})
+
+		return res
+			.map(e => '['+ e[0] +'] <i>from page: '+ e[1] +'</i>')
+			.join('<br>')
+	},
+
+	// XXX this needs a redirect...
+	'Templates/delete': function(){
+		var p = this.dir
+		delete this.__wiki_data[p]
+	},
+}
+
 
 // data store...
 // Format:
@@ -26,6 +81,7 @@ var data = {
 		text: 'This page is empty.<br><br>WikiHome',
 	},
 }
+data.__proto__ = BaseData
 
 
 
@@ -73,6 +129,7 @@ var Wiki = {
 	// 	'./X'		-> 'A/B/X'
 	// 	'../X'		-> 'A/X'
 	//
+	// NOTE: this is here as it needs the context to resolve...
 	resolveDotPath: function(path){
 		path = normalizePath(path)
 		// '.' or './*'
@@ -241,9 +298,20 @@ var Wiki = {
 	// 	- aquire empty page (same order as above)
 	//
 	get text(){
-		return (this.acquireData() || {}).text || '' },
+		var data = this.acquireData()
+		return data instanceof Function ? data.call(this, this)
+			: typeof(data) == typeof('str') ? data
+			: data != null ? data.text
+			: ''
+	},
 	set text(value){
 		var l = this.location
+
+		// prevent overwriting actions...
+		if(this.acquireData(l) instanceof Function){
+			return
+		}
+
 		this.__wiki_data[l] = this.__wiki_data[l] || {}
 		this.__wiki_data[l].text = value
 
