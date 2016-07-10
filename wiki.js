@@ -11,6 +11,23 @@
 
 // XXX not sure about these...
 var BaseData = {
+	'Templates/title': function(){ 
+		var o = Object.create(this)
+		o.location = o.dir
+		return o.title
+	},
+	'Templates/path': function(){ 
+		return this.dir },
+	'Templates/dir': function(){ 
+		return normalizePath(path2lst(this.dir).slice(0, -1)) },
+	'Templates/location': function(){ 
+		return this.dir },
+	'Templates/resolved': function(){ 
+		var o = Object.create(this)
+		o.location = o.dir
+		return o.acquire(o.dir, o.title)
+	},
+
 	'Templates/list': function(){
 		var p = this.dir
 
@@ -44,14 +61,13 @@ var BaseData = {
 	'Templates/links': function(){
 		var that = this
 		var p = this.dir
-		var rp = this.acquire(path2lst(p).slice(0, -1), path2lst(p).pop())
 
 		var res = []
 
 		var wiki = this.__wiki_data
 		Object.keys(wiki).forEach(function(k){
 			(wiki[k].links || []).forEach(function(l){
-				that.acquire(path2lst(l).slice(0, -1), path2lst(l).pop()) == rp
+				(l == p || that.acquire(path2lst(l).slice(0, -1), path2lst(l).pop()) == p)
 					&& res.push([l, k])
 			})
 		})
@@ -129,22 +145,19 @@ var Wiki = {
 
 	// Resolve '.' and '..' relative to current page...
 	//
-	// With the .path set to A/B/C, this will resolve the folowing to:
-	// 	'.'			-> 'A/B' 
-	// 	'..'		-> 'A'
-	// 	'./X'		-> 'A/B/X'
-	// 	'../X'		-> 'A/X'
-	//
+	// NOTE: '.' is relative to .path and not to .dir
 	// NOTE: this is here as it needs the context to resolve...
 	resolveDotPath: function(path){
 		path = normalizePath(path)
 		// '.' or './*'
 		return path == '.' || /^\.\//.test(path) ? 
-				path.replace(/^\./, this.dir)
+				//path.replace(/^\./, this.dir)
+				path.replace(/^\./, this.path)
 			// '..' or '../*'
 			: path == '..' || /^\.\.\//.test(path) ? 
-				path.replace(/^\.\./, 
-					normalizePath(path2lst(this.dir).slice(0, -1)))
+				//path.replace(/^\.\./, 
+				//	normalizePath(path2lst(this.dir).slice(0, -1)))
+				path.replace(/^\.\./, this.dir)
 			: path
 	},
 
