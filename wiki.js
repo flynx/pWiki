@@ -22,6 +22,7 @@ var BaseData = {
 				return null
 			})
 			.filter(e => e != null)
+			.sort()
 			.map(e => '['+ e +']')
 			.join('<br>')
 	},
@@ -36,6 +37,7 @@ var BaseData = {
 				return null
 			})
 			.filter(e => e != null)
+			.sort()
 			.map(e => '['+ e +']')
 			.join('<br>')
 	},
@@ -57,6 +59,7 @@ var BaseData = {
 		return res
 			//.map(e => '['+ e[0] +'] <i>from page: ['+ e[1] +']</i>')
 			.map(e => '['+ e[1] +'] <i>-&gt; ['+ e[0] +']</i>')
+			.sort()
 			.join('<br>')
 	},
 

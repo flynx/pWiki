@@ -44,6 +44,12 @@ var reload = () => {
 					return w.text
 				}
 
+				if(macro == 'attr' 
+						&& args.length == 1
+						&& ['title', 'path', 'location', 'dir'].indexOf(args[0]) >= 0){
+					return Wiki[args[0]]
+				}
+
 				return _
 			})
 			// html-like macro syntax...
@@ -66,6 +72,11 @@ var reload = () => {
 					return w.text
 				}
 
+				if(macro == 'attr' 
+						&& args.name != null
+						&& ['title', 'path', 'location', 'dir'].indexOf(args.name) >= 0){
+					return Wiki[args.name]
+				}
 
 				return t
 			})
