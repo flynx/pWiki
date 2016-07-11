@@ -11,24 +11,24 @@
 
 // XXX not sure about these...
 var BaseData = {
-	'Templates/title': function(){ 
+	'System/title': function(){ 
 		var o = Object.create(this)
 		o.location = o.dir
 		return o.title
 	},
-	'Templates/path': function(){ 
+	'System/path': function(){ 
 		return this.dir },
-	'Templates/dir': function(){ 
+	'System/dir': function(){ 
 		return normalizePath(path2lst(this.dir).slice(0, -1)) },
-	'Templates/location': function(){ 
+	'System/location': function(){ 
 		return this.dir },
-	'Templates/resolved': function(){ 
+	'System/resolved': function(){ 
 		var o = Object.create(this)
 		o.location = o.dir
 		return o.acquire(o.dir, o.title)
 	},
 
-	'Templates/list': function(){
+	'System/list': function(){
 		var p = this.dir
 
 		return Object.keys(this.__wiki_data)
@@ -43,7 +43,7 @@ var BaseData = {
 			.map(e => '['+ e +']')
 			.join('<br>')
 	},
-	'Templates/tree': function(){
+	'System/tree': function(){
 		var p = this.dir
 
 		return Object.keys(this.__wiki_data)
@@ -58,7 +58,7 @@ var BaseData = {
 			.map(e => '['+ e +']')
 			.join('<br>')
 	},
-	'Templates/links': function(){
+	'System/links': function(){
 		var that = this
 		var p = this.dir
 
@@ -80,7 +80,7 @@ var BaseData = {
 	},
 
 	// XXX this needs a redirect...
-	'Templates/delete': function(){
+	'System/delete': function(){
 		var p = this.dir
 		delete this.__wiki_data[p]
 	},
@@ -134,7 +134,11 @@ var Wiki = {
 
 	__home_page__: 'WikiHome',
 	__default_page__: 'EmptyPage',
-	__templates__: 'Templates',
+	__acquesition_order__: [
+		'Templates',
+	],
+	// XXX should this be read only???
+	__system__: 'System',
 	//__redirect_template__: 'RedirectTemplate',
 
 	__wiki_link__: RegExp('('+[
@@ -312,8 +316,10 @@ var Wiki = {
 	//
 	// Test acquesition order:
 	// 	- explicit path
-	// 	- .title in path
-	// 	- .title in templates
+	// 	- for each level in path
+	// 		- .title explicitly in path
+	// 		- .title in templates
+	// 	- .title in system
 	// 	- aquire empty page (same order as above)
 	//
 	get text(){
@@ -356,12 +362,23 @@ var Wiki = {
 	},
 
 
+	// navigation...
+	get parent(){
+		return this.get(this.dir)
+	},
+	get: function(path){
+		var o = Object.create(this)
+		o.location = path
+		return o
+	},
+
+
 	exists: function(path){
 		return normalizePath(path) in this.__wiki_data },
 	// get title from dir and then go up the tree...
 	_acquire: function(title){
 		title = title || this.__default_page__
-		var templates = this.__templates__
+		var acquire_from = this.__acquesition_order__
 		var data = this.__wiki_data
 		var that = this
 
@@ -379,17 +396,27 @@ var Wiki = {
 				return _res(p)
 			}
 
-			// get title from templates in path...
-			var p = path.concat([templates, title])
-			if(this.exists(p)){
-				return _res(p)
+			// get title from special paths in path...
+			for(var i=0; i < acquire_from.length; i++){
+				var p = path.concat([acquire_from[i], title])
+				if(this.exists(p)){
+					return _res(p)
+				}
 			}
 
 			if(path.length == 0){
-				return
+				break
 			}
 
 			path.pop()
+		}
+
+		// system path...
+		if(this.__system__){
+			var p = [this.__system__, title]
+			if(this.exists(p)){
+				return _res(p)
+			}
 		}
 	},
 	acquire: function(path, title){

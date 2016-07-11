@@ -16,6 +16,75 @@ var clear = () => {
 	delete localStorage['wiki-location']
 }
 
+
+var macro = {
+	__macro__pattern__: null,
+
+	context: null,
+
+	filter: {
+	},
+	macro: {
+		filter: function(args, text, filters){
+			var filter = args[0] || args.name
+
+			filters.push(filter)
+
+			return ''
+		},
+		include: function(args){
+			var path = args[0] || args.src
+
+			var text = this.context.get(path).text
+
+			// XXX get new context???
+			return this.parse(text)
+		},
+		slot: function(args){
+			// XXX processing stages: 
+			//		- if we slot for first time return it as-is
+			//		- if slot text available in slots us it to fill
+			// 		- slot seen again, save text to slots but return ''
+		},
+	},
+
+	parseArgs: function(args){
+		// XXX
+	},
+	parse: function(text){
+		var that = this
+		var filters = []
+		var slots = {}
+
+		// macro stage 1...
+		text = text.replace(this.__macro__pattern__, function(match, macro, args, text){
+			args = that.parseArgs(args)
+
+			return macro in that.macro ? 
+					that.macro[macro].call(that, args, text, filters)
+				: match
+		})
+
+		// macro stage 2...
+		text = text.replace(this.__macro__pattern__, function(match, macro, args, text){
+			args = that.parseArgs(args)
+
+			return macro in that.macro ? 
+					that.macro[macro].call(that, args, text, filters)
+				: match
+		})
+
+		// filter stage....
+		filters.forEach(function(k){
+			text = that.filter[k].call(that, text) 
+		})
+
+		return text
+	},
+}
+
+
+
 var reload = () => {
 	$('.dir').text('/' + Wiki.dir)
 
@@ -25,6 +94,7 @@ var reload = () => {
 	var text = Wiki.text
 	var editing = $('.text').prop('contenteditable') != 'true'
 	var filters = []
+	var slots = {}
 
 	// expand macros...
 	if(editing){
@@ -83,6 +153,18 @@ var reload = () => {
 					w = Object.create(Wiki)
 					w.location = args.src
 					return w.text
+				}
+
+				// XXX need content...
+				// 		Procedure:
+				//			- if new slot
+				//				- add to list
+				//				- fill
+				//			- if slot exists
+				//				- fill original
+				if(macro == 'slot' && args.name != null){
+					slots[args.name] = ''
+					return t
 				}
 
 				if(macro == 'attr' 
