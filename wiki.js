@@ -100,7 +100,11 @@ var BaseData = {
 // 	}
 var data = {
 	'Templates/EmptyPage': {
-		text: 'This page is empty.<br><br>WikiHome',
+		text: 'Page [@include(./path)] is empty.' +'<br><br>'
+			+'Links to this page:' +'<br>'
+			+'@include(./links)' +'<br><br>'
+			+'---' +'<br>'
+			+'WikiHome',
 	},
 }
 data.__proto__ = BaseData
@@ -188,10 +192,13 @@ var Wiki = {
 	// NOTE: changing this will move the page to the new path and change
 	// 		.location acordingly...
 	// NOTE: same applies to path parts below...
-	//
-	// XXX use a template for the redirect page...
+	// NOTE: changing path will update all the links to the moving page.
+	// NOTE: if a link can't be updated without a conflit then it is left
+	// 		unchanged, and a redirect page will be created.
 	get path(){ 
 		return this.location },
+	// XXX should lik updating be part of this???
+	// XXX use a template for the redirect page...
 	set path(value){
 		value = this.resolveDotPath(value)
 
@@ -432,7 +439,9 @@ var Wiki = {
 
 		// NOTE: this may be null...
 		return p 
-			|| (!no_default ? this.acquire('./'+this.__default_page__) : null)
+			|| ((!no_default && title != this.__default_page__) ? 
+				this.acquire('./'+this.__default_page__) 
+				: null)
 	},
 
 
