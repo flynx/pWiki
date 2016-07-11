@@ -3,4 +3,8 @@
   "version": "0.0.1",
   "author": "Alex A. Naanou <alex.nanou@gmail.com>",
   "license": "BSD",
+  "dependencies": {
+    "pouchdb": "^5.4.5",
+    "showdown": "^1.4.2"
+  }
 }
