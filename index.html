@@ -86,7 +86,7 @@ var macro = {
 
 
 var reload = () => {
-	$('.dir').text('/' + Wiki.dir)
+	$('.path').text('/' + Wiki.path)
 
 	$('.title').text(Wiki.title)
 
@@ -271,7 +271,7 @@ $(() => {
 
 <body>
 
-<div class="dir"></div>
+<div class="path"></div>
 <hr>
 <h1 class="title" contenteditable tabindex=0></h1>
 <div class="text" tabindex=0></div>
