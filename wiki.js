@@ -25,7 +25,7 @@ var BaseData = {
 	'System/resolved': function(){ 
 		var o = Object.create(this)
 		o.location = o.dir
-		return o.acquire(o.dir, o.title)
+		return o.get(o.dir).acquire(o.title)
 	},
 
 	'System/list': function(){
@@ -67,7 +67,7 @@ var BaseData = {
 		var wiki = this.__wiki_data
 		Object.keys(wiki).forEach(function(k){
 			(wiki[k].links || []).forEach(function(l){
-				(l == p || that.acquire(path2lst(l).slice(0, -1), path2lst(l).pop()) == p)
+				(l == p || that.get(path2lst(l).slice(0, -1)).acquire(path2lst(l).pop()) == p)
 					&& res.push([l, k])
 			})
 		})
@@ -134,8 +134,11 @@ var Wiki = {
 
 	__home_page__: 'WikiHome',
 	__default_page__: 'EmptyPage',
+	// Special sub-paths to look in on each level...
 	__acquesition_order__: [
 		'Templates',
+	],
+	__post_acquesition_order__: [
 	],
 	// XXX should this be read only???
 	__system__: 'System',
@@ -222,7 +225,7 @@ var Wiki = {
 				var t = p.pop()
 				p = normalizePath(p)
 
-				var target = page.acquire(p, t)
+				var target = page.get(p).acquire(t)
 				// page target changed...
 				// NOTE: this can happen either when a link was an orphan
 				// 		or if the new page path shadowed the original 
@@ -233,7 +236,7 @@ var Wiki = {
 					return lnk
 
 				// skip links that do not resolve to target...
-				} else if(page.acquire(p, t) != l){
+				} else if(page.get(p).acquire(t) != l){
 					return lnk
 				}
 
@@ -250,9 +253,9 @@ var Wiki = {
 				} else if(ndir == odir){
 					// conflict: the new link will not resolve to the 
 					// 		target page...
-					if(page.acquire(p, ntitle) != value){
+					if(page.get(p).acquire(ntitle) != value){
 						console.log('ERR:', lnk, '->', to,
-							'is shadowed by:', page.acquire(p, ntitle))
+							'is shadowed by:', page.get(p).acquire(ntitle))
 						// XXX should we add a note to the link???
 						redirect = true
 
@@ -323,7 +326,7 @@ var Wiki = {
 	// 	- aquire empty page (same order as above)
 	//
 	get text(){
-		var data = this.acquireData()
+		var data = this.data
 		return data instanceof Function ? data.call(this, this)
 			: typeof(data) == typeof('str') ? data
 			: data != null ? data.text
@@ -333,7 +336,7 @@ var Wiki = {
 		var l = this.location
 
 		// prevent overwriting actions...
-		if(this.acquireData(l) instanceof Function){
+		if(this.data instanceof Function){
 			return
 		}
 
@@ -347,7 +350,7 @@ var Wiki = {
 
 	// NOTE: this is set by setting .text
 	get links(){
-		var data = this.acquireData() || {}
+		var data = this.data || {}
 		var links = data.links = data.links
 			|| (this.text.match(this.__wiki_link__) || [])
 				// unwrap explicit links...
@@ -368,7 +371,7 @@ var Wiki = {
 	},
 	get: function(path){
 		var o = Object.create(this)
-		o.location = path
+		o.location = path || this.path
 		return o
 	},
 
@@ -376,32 +379,36 @@ var Wiki = {
 	exists: function(path){
 		return normalizePath(path) in this.__wiki_data },
 	// get title from dir and then go up the tree...
-	_acquire: function(title){
-		title = title || this.__default_page__
-		var acquire_from = this.__acquesition_order__
-		var data = this.__wiki_data
-		var that = this
+	acquire: function(title, no_default){
+		title = title || this.title 
 
+		var that = this
+		var acquire_from = this.__acquesition_order__ || []
+		var post_acquire_from = this.__post_acquesition_order__ || []
+		var data = this.__wiki_data
+
+		// XXX should this be .dir or .path???
 		var path = path2lst(this.dir)
 
-		var _res = function(p){
-			p = normalizePath(p)
-			return that.__wiki_data[p] && p
+		var _get = function(path, title, lst){
+			lst = (lst == null || lst.length == 0) ? [''] : lst
+			for(var i=0; i < lst.length; i++){
+				var p = path.concat([lst[i], title])
+				if(that.exists(p)){
+					p = normalizePath(p)
+					return that.__wiki_data[p] && p
+				}
+			}
 		}
 
 		while(true){
 			// get title from path...
-			var p = path.concat([title])
-			if(this.exists(p)){
-				return _res(p)
-			}
+			var p = _get(path, title)
+				// get title from special paths in path...
+				|| _get(path, title, acquire_from)
 
-			// get title from special paths in path...
-			for(var i=0; i < acquire_from.length; i++){
-				var p = path.concat([acquire_from[i], title])
-				if(this.exists(p)){
-					return _res(p)
-				}
+			if(p != null){
+				return p
 			}
 
 			if(path.length == 0){
@@ -411,33 +418,19 @@ var Wiki = {
 			path.pop()
 		}
 
-		// system path...
-		if(this.__system__){
-			var p = [this.__system__, title]
-			if(this.exists(p)){
-				return _res(p)
-			}
-		}
-	},
-	acquire: function(path, title){
-		path = path && normalizePath(path) || this.path
-		title = title || this.title
-		var wiki = this.__wiki_data
+		// default paths...
+		var p = _get(path, title, post_acquire_from)
+			// system path...
+			|| this.__system__ 
+				&& _get([this.__system__], title)
 
-		// get the page directly...
-		return (this.exists(path +'/'+ title) && path +'/'+ title)
-			// acquire the page from path...
-			|| this._acquire(title)
-			// acquire the default page...
-			|| this._acquire(this.__default_page__)
-			// nothing found...
-			|| null
+		// NOTE: this may be null...
+		return p 
+			|| (!no_default ? this.acquire(this.__default_page__) : null)
 	},
 
-	// shorthand...
-	acquireData: function(path, title){
-		var page = this.acquire(path, title)
-		return page ? this.__wiki_data[page] : null
+	get data(){
+		return this.__wiki_data[this.acquire()]
 	},
 
 
