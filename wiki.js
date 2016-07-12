@@ -12,21 +12,20 @@
 // XXX not sure about these...
 var BaseData = {
 	'System/title': function(){ 
-		var o = Object.create(this)
-		o.location = o.dir
-		return o.title
-	},
+		return this.get('..').title },
 	'System/path': function(){ 
 		return this.dir },
 	'System/dir': function(){ 
-		return normalizePath(path2lst(this.dir).slice(0, -1)) },
+		return this.get('..').dir },
 	'System/location': function(){ 
 		return this.dir },
 	'System/resolved': function(){ 
-		var o = Object.create(this)
-		o.location = o.dir
-		return o.get(o.dir).acquire('./'+o.title)
-	},
+		return this.get('..').acquire() },
+
+	'System/raw': function(){ 
+		return this.get('..').raw },
+	'System/text': function(){ 
+		return this.get('..').text },
 
 	'System/list': function(){
 		var p = this.dir
@@ -106,6 +105,28 @@ var data = {
 			+'---' +'<br>'
 			+'WikiHome',
 	},
+
+	'Templates/_view': {
+		text: '\n'
+			+'<div>/@include(../path) ([../_edit])</div>\n'
+			+'<hr>\n'
+			+'<h1>@include(../title)</h1>\n'
+			+'<br>\n'
+			+'<div>@include(../text)</div>\n'
+			+'\n',
+	},
+	'Templates/_edit': {
+		text: '\n'
+			+'<div>/@include(../path) ([../_view])</div>\n'
+			+'<hr>\n'
+			+'<h1 contenteditable>@include(../title)</h1>\n'
+			+'<br>\n'
+			+'<div class="raw" contenteditable>@include(../text)</div>\n'
+			+'<script>\n'
+			+'\t$(".raw").text($(".raw").html())\n'
+			+'</script>\n'
+			+'',
+	},
 }
 data.__proto__ = BaseData
 
@@ -157,7 +178,7 @@ var Wiki = {
 	// Resolve '.' and '..' relative to current page...
 	//
 	// NOTE: '.' is relative to .path and not to .dir
-	// NOTE: this is here as it needs the context to resolve...
+	// NOTE: this is a method as it needs the context to resolve...
 	resolveDotPath: function(path){
 		path = normalizePath(path)
 		// '.' or './*'
@@ -229,7 +250,7 @@ var Wiki = {
 			if(page.location == l){
 				return
 			}
-			page.text = page.text.replace(page.__wiki_link__, function(lnk){
+			page.raw = page.raw.replace(page.__wiki_link__, function(lnk){
 				var from = lnk[0] == '[' ? lnk.slice(1, -1) : lnk
 
 				// get path/title...
@@ -297,7 +318,7 @@ var Wiki = {
 		// 		the redirect page...
 		if(redirect){
 			console.log('CREATING REDIRECT PAGE:', l, '->', value, '')
-			this.__wiki_data[l].text = 'REDIRECT TO: ' + value
+			this.__wiki_data[l].raw = 'REDIRECT TO: ' + value
 				+'<br>'
 				+'<br><i>NOTE: This page was created when renaming the target '
 					+'page that resulted new link being broken (i.e. resolved '
@@ -337,14 +358,14 @@ var Wiki = {
 	// 	- .title in system
 	// 	- aquire empty page (same order as above)
 	//
-	get text(){
+	get raw(){
 		var data = this.data
 		return data instanceof Function ? data.call(this, this)
 			: typeof(data) == typeof('str') ? data
 			: data != null ? data.text
 			: ''
 	},
-	set text(value){
+	set raw(value){
 		var l = this.location
 
 		// prevent overwriting actions...
@@ -360,11 +381,17 @@ var Wiki = {
 		this.__wiki_data[l].links = this.links
 	},
 
+	// XXX
+	get text(){
+		return this.raw
+	},
+
+
 	// NOTE: this is set by setting .text
 	get links(){
 		var data = this.data || {}
 		var links = data.links = data.links
-			|| (this.text.match(this.__wiki_link__) || [])
+			|| (this.raw.match(this.__wiki_link__) || [])
 				// unwrap explicit links...
 				.map(e => e[0] == '[' ? e.slice(1, -1) : e)
 				// unique...
@@ -379,8 +406,7 @@ var Wiki = {
 
 	// navigation...
 	get parent(){
-		return this.get(this.dir)
-	},
+		return this.get('..') },
 	get: function(path){
 		var o = Object.create(this)
 		o.location = path || this.path
@@ -389,7 +415,7 @@ var Wiki = {
 
 
 	exists: function(path){
-		return normalizePath(path) in this.__wiki_data },
+		return normalizePath(path || this.path) in this.__wiki_data },
 	// get title from dir and then go up the tree...
 	acquire: function(path, no_default){
 		var that = this
@@ -446,15 +472,16 @@ var Wiki = {
 
 
 	// serialization...
+	// XXX
 	json: function(path){
 		return path == null ? JSON.parse(JSON.stringify(this.__wiki_data))
 			: path == '.' ? {
 					path: this.location,
-					text: this.text,
+					text: this.raw,
 				}
 			: {
 				path: path,
-				text: (this.__wiki_data[path] || {}).text,
+				text: (this.__wiki_data[path] || {}).raw,
 			}
 	},
 	// XXX should we inherit from the default???
