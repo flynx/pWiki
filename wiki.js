@@ -506,6 +506,7 @@ var macro = {
 
 	filter: {
 	},
+	// macro stage 1...
 	macro: {
 		// select filter to post-process text...
 		filter_args: ['name'],
@@ -540,8 +541,22 @@ var macro = {
 
 			} else if(name in slots){
 				slots[name] = text
-				// XXX on stage 2 need to return text
 				return ''
+			}
+		},
+	},
+	// macro stage 2...
+	macro2: {
+		slot_args: ['name'],
+		slot: function(args, text, slots){
+			var name = args.name
+
+			if(slots[name] == null){
+				// XXX ???
+				return text
+
+			} else if(name in slots){
+				return slots[name]
 			}
 		},
 	},
@@ -568,8 +583,8 @@ var macro = {
 		text = text.replace(this.__macro__pattern__, function(match, macro, args, text){
 			args = that.parseArgs(macro, args)
 
-			return macro in that.macro ? 
-					that.macro[macro].call(that, args, text, slots, filters)
+			return macro in that.macro2 ? 
+					that.macro2[macro].call(that, args, text, slots, filters)
 				: match
 		})
 
