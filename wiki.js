@@ -349,15 +349,6 @@ var Wiki = {
 
 
 	// page content...
-	//
-	// Test acquesition order:
-	// 	- explicit path
-	// 	- for each level in path
-	// 		- .title explicitly in path
-	// 		- .title in templates
-	// 	- .title in system
-	// 	- aquire empty page (same order as above)
-	//
 	get raw(){
 		var data = this.data
 		return data instanceof Function ? data.call(this, this)
@@ -381,10 +372,8 @@ var Wiki = {
 		this.__wiki_data[l].links = this.links
 	},
 
-	// XXX
-	get text(){
-		return this.raw
-	},
+	// XXX take .raw, parse macros and apply filters...
+	get text(){ return this.raw },
 
 
 	// NOTE: this is set by setting .text
@@ -503,6 +492,97 @@ var Wiki = {
 		return this
 	},
 }
+
+
+/*********************************************************************/
+
+
+var macro = {
+	__macro__pattern__: null,
+	__filters__: [
+	],
+
+	context: null,
+
+	filter: {
+	},
+	macro: {
+		// select filter to post-process text...
+		filter_args: ['name'],
+		filter: function(args, text, _, filters){
+			var filter = args[0] || args.name
+
+			filters.push(filter)
+
+			return ''
+		},
+
+		// include page/slot...
+		include_args: ['src', 'slot'],
+		include: function(args){
+			var path = args.src
+
+			var text = this.context.get(path).text
+
+			return this.parse(text)
+		},
+
+		// fill/define slot (stage 1)...
+		// XXX
+		slot_args: ['name'],
+		slot: function(args, text, slots){
+			var name = args.name
+
+			if(slots[name] == null){
+				slots[name] = text
+				// XXX return a slot macro parsable by stage 2...
+				return text
+
+			} else if(name in slots){
+				slots[name] = text
+				// XXX on stage 2 need to return text
+				return ''
+			}
+		},
+	},
+
+	parseArgs: function(macro, args){
+		// XXX parse args and populate the dict via .*_args attr...
+		// XXX
+	},
+	parse: function(text){
+		var that = this
+		var filters = []
+		var slots = {}
+
+		// macro stage 1...
+		text = text.replace(this.__macro__pattern__, function(match, macro, args, text){
+			args = that.parseArgs(macro, args)
+
+			return macro in that.macro ? 
+					that.macro[macro].call(that, args, text, slots, filters)
+				: match
+		})
+
+		// macro stage 2...
+		text = text.replace(this.__macro__pattern__, function(match, macro, args, text){
+			args = that.parseArgs(macro, args)
+
+			return macro in that.macro ? 
+					that.macro[macro].call(that, args, text, slots, filters)
+				: match
+		})
+
+		// filter stage....
+		filters.forEach(function(k){
+			text = that.filter[k].call(that, text) 
+		})
+
+		return text
+	},
+}
+
+
 
 
 /**********************************************************************
