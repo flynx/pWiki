@@ -546,6 +546,7 @@ var macro = {
 		},
 	},
 	// macro stage 2...
+	// XXX rename...
 	macro2: {
 		slot_args: ['name'],
 		slot: function(args, text, slots){
