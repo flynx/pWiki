@@ -5,9 +5,10 @@
   "license": "BSD",
   "dependencies": {
     "pouchdb": "^5.4.5",
-    "showdown": "^1.4.2"
+    "showdown": "^1.4.2",
+    "peer": "*",
+    "pouch-replicate-webrtc": "0.0.9"
   },
   "devDependencies": {
-    "peer": "*"
   }
 }
