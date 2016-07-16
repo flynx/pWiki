@@ -498,14 +498,26 @@ var Wiki = {
 
 
 var macro = {
-	__macro__pattern__: null,
+	//__macro__pattern__: /<([a-zA-Z-_:]+)(.|[\n\r])*?(>(.|[\n\r])*?<\/\1>|\/>)/mg,
+	__macro__pattern__: 
+		/<([a-zA-Z-_:]+)(.|[\n\r])*?(>(.|[\n\r])*?<\/\1>|\/>)|@([a-zA-Z-_]+)\(([^)]*)\)/mg,
 	__filters__: [
 	],
 
 	context: null,
 
+	// XXX this is preliminary...
+	// XXX add wikiword...
+	// filter(text) -> html
 	filter: {
+		default: 'html',
+
+		html: function(text){ return $('<div>').html(text) },
+
+		json: 'text',
+		text: function(text){ return $('<div>').text(text) },
 	},
+
 	// macro stage 1...
 	macro: {
 		// select filter to post-process text...
@@ -529,15 +541,14 @@ var macro = {
 		},
 
 		// fill/define slot (stage 1)...
-		// XXX
 		slot_args: ['name'],
 		slot: function(args, text, slots){
 			var name = args.name
 
 			if(slots[name] == null){
 				slots[name] = text
-				// XXX return a slot macro parsable by stage 2...
-				return text
+				// return a slot macro parsable by stage 2...
+				return '<slot name="'+name+'">'+ text +'</slot>'
 
 			} else if(name in slots){
 				slots[name] = text
@@ -545,6 +556,7 @@ var macro = {
 			}
 		},
 	},
+
 	// macro stage 2...
 	// XXX rename...
 	macro2: {
@@ -553,7 +565,6 @@ var macro = {
 			var name = args.name
 
 			if(slots[name] == null){
-				// XXX ???
 				return text
 
 			} else if(name in slots){
@@ -562,36 +573,73 @@ var macro = {
 		},
 	},
 
-	parseArgs: function(macro, args){
-		// XXX parse args and populate the dict via .*_args attr...
-		// XXX
+
+	parseElem: function(text, stage){
+		var res = {}
+
+		// @<name>(<args>)
+		if(text[0] == '@'){
+			var d = text.match(/@([a-zA-Z-_:]*)\(([^)]*)\)/)
+
+			res.text = ''
+			res.name = d[1]
+			var args = res.args = {}
+
+			var a = d[2].split(/\s+/g)
+			a.forEach(function(e, i){
+				args[(stage[res.name + '_args'] || [])[i]] = e
+			})
+
+		// html-like...
+		} else {
+			var elem = $('<div>').html(text).children().eq(0)
+			res.name = elem.prop('tagName').toLowerCase()
+
+			var args = res.args = {}
+			var a = elem.prop('attributes')
+
+			for(var i=0; i<a.length; i++){
+				args[a[i].name] = a[i].value
+			}
+
+			res.text = elem.html()
+		}
+
+		return res
 	},
+	// XXX add support for disabled filters -- -filter
 	parse: function(text){
 		var that = this
 		var filters = []
 		var slots = {}
 
 		// macro stage 1...
-		text = text.replace(this.__macro__pattern__, function(match, macro, args, text){
-			args = that.parseArgs(macro, args)
+		text = text.replace(this.__macro__pattern__, function(match){
+			var m = that.parseElem(match, that.macro)
 
-			return macro in that.macro ? 
-					that.macro[macro].call(that, args, text, slots, filters)
+			return m.name in that.macro ? 
+					that.macro[m.name].call(that, m.args, m.text, slots, filters)
 				: match
 		})
 
 		// macro stage 2...
-		text = text.replace(this.__macro__pattern__, function(match, macro, args, text){
-			args = that.parseArgs(macro, args)
+		text = text.replace(this.__macro__pattern__, function(match){
+			var m = that.parseElem(match, that.macro2)
 
-			return macro in that.macro2 ? 
-					that.macro2[macro].call(that, args, text, slots, filters)
+			return m.name in that.macro2 ? 
+					that.macro2[m.name].call(that, m.args, m.text, slots, filters)
 				: match
 		})
 
 		// filter stage....
 		filters.forEach(function(k){
-			text = that.filter[k].call(that, text) 
+			var seen = []
+			// get filter aliases...
+			while(typeof(k) == typeof('str') && seen.indexOf(k) == -1){
+				seen.push(k)
+				k = that.filter[k]
+			}
+			text = k.call(that, text) 
 		})
 
 		return text
