@@ -498,7 +498,8 @@ var Wiki = {
 
 
 var macro = {
-	//__macro__pattern__: /<([a-zA-Z-_:]+)(.|[\n\r])*?(>(.|[\n\r])*?<\/\1>|\/>)/mg,
+	// XXX this misses nested tags (i.e. pattern within a tag) within 
+	// 		one line for some reason....
 	__macro__pattern__: 
 		/<([a-zA-Z-_:]+)(.|[\n\r])*?(>(.|[\n\r])*?<\/\1>|\/>)|@([a-zA-Z-_]+)\(([^)]*)\)/mg,
 	__filters__: [
@@ -519,6 +520,7 @@ var macro = {
 	},
 
 	// macro stage 1...
+	// XXX do not like how args are defined....
 	macro: {
 		// select filter to post-process text...
 		filter_args: ['name'],
@@ -592,7 +594,7 @@ var macro = {
 
 		// html-like...
 		} else {
-			var elem = $('<div>').html(text).children().eq(0)
+			var elem = res.elem = $('<div>').html(text).children().eq(0)
 			res.name = elem.prop('tagName').toLowerCase()
 
 			var args = res.args = {}
@@ -608,28 +610,32 @@ var macro = {
 		return res
 	},
 	// XXX add support for disabled filters -- -filter
-	parse: function(text){
+	// XXX do we need to parse the contents of tags here??? (nested patterns?)
+	parse: function(text, context){
 		var that = this
 		var filters = []
 		var slots = {}
 
-		// macro stage 1...
-		text = text.replace(this.__macro__pattern__, function(match){
-			var m = that.parseElem(match, that.macro)
+		var _parse = function(text, macro){
+			return text.replace(that.__macro__pattern__, function(match){
+				var m = that.parseElem(match, macro)
 
-			return m.name in that.macro ? 
-					that.macro[m.name].call(that, m.args, m.text, slots, filters)
-				: match
-		})
+				// found a macro...
+				return m.name in macro ? 
+						macro[m.name].call(that, m.args, m.text, slots, filters)
+					// found a tag -> look inside...
+					: m.elem && m.text != ''? 
+						m.elem.html(_parse(m.text, macro))[0].outerHTML
+					// else nothing changed...
+					: match
+			})
+		}
+
+		// macro stage 1...
+		text = _parse(text, this.macro)
 
 		// macro stage 2...
-		text = text.replace(this.__macro__pattern__, function(match){
-			var m = that.parseElem(match, that.macro2)
-
-			return m.name in that.macro2 ? 
-					that.macro2[m.name].call(that, m.args, m.text, slots, filters)
-				: match
-		})
+		text = _parse(text, this.macro2)
 
 		// filter stage....
 		filters.forEach(function(k){
