@@ -111,7 +111,7 @@ var reload = () => {
 			})
 	}
 
-	$('.text').html(activateWikiWords(text, filters.indexOf('show_link_brackets') < 0 && editing))
+	$('.text').html(setWikiWords(text, filters.indexOf('show_link_brackets') < 0 && editing))
 
 	// XXX save...
 	localStorage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
@@ -130,32 +130,6 @@ var go = (path) => {
 	Wiki.location = path
 	reload()
 }
-
-var clearWikiWords = elem => {
-	// clear existing...
-	elem.find('.WikiWord').each(function(){
-		$(this).attr('braced') == 'yes' ? 
-			$(this).replaceWith(['['].concat(this.childNodes, [']']))
-			: $(this).replaceWith(this.childNodes)
-	})
-	return elem
-} 
-
-var activateWikiWords = (text, show_brackets) => 
-	text
-		// set new...
-		.replace(
-			Wiki.__wiki_link__,
-			function(l){
-				return '<a '
-					+'class="WikiWord" '
-					+'href="#" '
-					+'braced="'+ (show_brackets && l[0] == '[' ? 'yes' : 'no') +'"'
-					+'onclick="go($(this).text().replace(/^\\[|\\]$/g, \'\'))">'
-						+ (show_brackets && l[0] == '[' ? l.slice(1, -1) : l) 
-					+'</a>'
-			})
-
 
 $(() => {
 	$(window).on('popstate', function(evt){

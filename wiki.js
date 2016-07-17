@@ -6,6 +6,32 @@
 
 //var DEBUG = DEBUG != null ? DEBUG : true
 
+var clearWikiWords = elem => {
+	// clear existing...
+	elem.find('.WikiWord').each(function(){
+		$(this).attr('braced') == 'yes' ? 
+			$(this).replaceWith(['['].concat(this.childNodes, [']']))
+			: $(this).replaceWith(this.childNodes)
+	})
+	return elem
+} 
+
+var setWikiWords = (text, show_brackets) => 
+	text
+		// set new...
+		.replace(
+			Wiki.__wiki_link__,
+			function(l){
+				return '<a '
+					+'class="WikiWord" '
+					+'href="#" '
+					+'braced="'+ (show_brackets && l[0] == '[' ? 'yes' : 'no') +'"'
+					+'onclick="go($(this).text().replace(/^\\[|\\]$/g, \'\'))">'
+						+ (show_brackets && l[0] == '[' ? l.slice(1, -1) : l) 
+					+'</a>'
+			})
+
+
 
 /*********************************************************************/
 
@@ -498,11 +524,27 @@ var Wiki = {
 
 
 var macro = {
-	// XXX this misses nested tags (i.e. pattern within a tag) within 
-	// 		one line for some reason....
+
+	// Abstract macro syntax:
+	// 	Inline macro:
+	// 		@macro(arg ..)
+	//
+	// 	HTML-like:
+	// 		<macro arg=value ../>
+	//
+	// 	HTML-like with body:
+	// 		<macro arg=value ..>
+	// 			..text..
+	// 		</macro>
+	//
 	__macro__pattern__: 
 		/<([a-zA-Z-_:]+)(.|[\n\r])*?(>(.|[\n\r])*?<\/\1>|\/>)|@([a-zA-Z-_]+)\(([^)]*)\)/mg,
+
+	// default filters...
+	//
+	// NOTE: these are added AFTER the user defined filters...
 	__filters__: [
+		'wikiword',
 	],
 
 	context: null,
@@ -513,10 +555,12 @@ var macro = {
 	filter: {
 		default: 'html',
 
-		html: function(text){ return $('<div>').html(text) },
+		html: function(text){ return $('<div>').html(text).html() },
 
 		json: 'text',
-		text: function(text){ return $('<div>').text(text) },
+		text: function(text){ return $('<div>').text(text).html() },
+
+		wikiword: function(text){ return setWikiWords(text) },
 	},
 
 	// macro stage 1...
@@ -527,7 +571,11 @@ var macro = {
 		filter: function(args, text, _, filters){
 			var filter = args[0] || args.name
 
-			filters.push(filter)
+			filter[0] == '-' ?
+				// disabled -- keep at head of list...
+				filters.unshift(filter)
+				// normal -- tail...
+				: filters.push(filter)
 
 			return ''
 		},
@@ -609,7 +657,6 @@ var macro = {
 
 		return res
 	},
-	// XXX add support for disabled filters -- -filter
 	// XXX do we need to parse the contents of tags here??? (nested patterns?)
 	parse: function(text, context){
 		var that = this
@@ -638,15 +685,29 @@ var macro = {
 		text = _parse(text, this.macro2)
 
 		// filter stage....
-		filters.forEach(function(k){
-			var seen = []
-			// get filter aliases...
-			while(typeof(k) == typeof('str') && seen.indexOf(k) == -1){
-				seen.push(k)
-				k = that.filter[k]
-			}
-			text = k.call(that, text) 
-		})
+		filters
+			.concat(this.__filters__)
+			// unique -- leave last occurance..
+			.filter(function(k, i, lst){ 
+				return k[0] != '-'
+					// filter dupplicates... 
+					&& lst.slice(i+1).indexOf(k) == -1 
+						// filter disabled...
+					&& lst.slice(0, i).indexOf('-' + k) == -1
+			})
+			// unique -- leave first occurance..
+			//.filter(function(k, i, lst){ return lst.slice(0, i).indexOf(k) == -1 })
+			// apply the filters...
+			.forEach(function(k){
+				// get filter aliases...
+				var seen = []
+				while(typeof(k) == typeof('str') && seen.indexOf(k) == -1){
+					seen.push(k)
+					k = that.filter[k]
+				}
+				// call the filter
+				text = k.call(that, text) 
+			})
 
 		return text
 	},
