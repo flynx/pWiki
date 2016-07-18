@@ -6,6 +6,7 @@
 
 //var DEBUG = DEBUG != null ? DEBUG : true
 
+// XXX mve away from ES6, we still need to run this on the browser...
 var clearWikiWords = elem => {
 	// clear existing...
 	elem.find('.WikiWord').each(function(){
@@ -36,6 +37,7 @@ var setWikiWords = (text, show_brackets) =>
 /*********************************************************************/
 
 // XXX not sure about these...
+// XXX add docs...
 var BaseData = {
 	'System/title': function(){ 
 		return this.get('..').title },
@@ -123,6 +125,8 @@ var BaseData = {
 // 			],
 // 		}
 // 	}
+//
+// XXX add .json support...
 var data = {
 	'Templates/EmptyPage': {
 		text: 'Page [@include(./path)] is empty.' +'<br><br>'
@@ -180,6 +184,7 @@ var normalizePath = path =>
 
 /*********************************************************************/
 
+// XXX add .json support...
 var Wiki = {
 	__wiki_data: data,
 
@@ -415,7 +420,7 @@ var Wiki = {
 	},
 
 	// XXX list children/sub-pages...
-	get list(){
+	get children(){
 	},
 
 
@@ -432,6 +437,8 @@ var Wiki = {
 	exists: function(path){
 		return normalizePath(path || this.path) in this.__wiki_data },
 	// get title from dir and then go up the tree...
+	//
+	// XXX should we also acquire each path part???
 	acquire: function(path, no_default){
 		var that = this
 
@@ -550,7 +557,6 @@ var macro = {
 	context: null,
 
 	// XXX this is preliminary...
-	// XXX add wikiword...
 	// filter(text) -> html
 	filter: {
 		default: 'html',
@@ -657,7 +663,6 @@ var macro = {
 
 		return res
 	},
-	// XXX do we need to parse the contents of tags here??? (nested patterns?)
 	parse: function(text, context){
 		var that = this
 		var filters = []
