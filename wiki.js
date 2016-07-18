@@ -236,6 +236,14 @@ var Wiki = {
 		return this.__wiki_data[this.acquire()] },
 
 
+	// XXX
+	clone: function(){
+		var o = Object.create(Wiki)
+		o.location = this.location
+		return o
+	},
+
+
 	// page path...
 	//
 	// Format:
@@ -427,8 +435,10 @@ var Wiki = {
 	// navigation...
 	get parent(){
 		return this.get('..') },
+	// XXX add prpper insyantiation ( .clone() )...
 	get: function(path){
-		var o = Object.create(this)
+		//var o = Object.create(this)
+		var o = this.clone() 
 		o.location = path || this.path
 		return o
 	},
@@ -518,7 +528,8 @@ var Wiki = {
 		var that = this
 		Object.keys(this.__wiki_data).forEach(function(location){
 			// XXX not sure if this is the right way to go...
-			var o = Object.create(that)
+			//var o = Object.create(that)
+			var o = that.clone() 
 			o.location = location
 			callback.call(o, o)
 		})
