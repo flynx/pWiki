@@ -549,22 +549,13 @@ var macro = {
 
 	context: null,
 
-	// XXX this is preliminary...
-	// XXX add wikiword...
-	// filter(text) -> html
-	filter: {
-		default: 'html',
-
-		html: function(text){ return $('<div>').html(text).html() },
-
-		json: 'text',
-		text: function(text){ return $('<div>').text(text).html() },
-
-		wikiword: function(text){ return setWikiWords(text) },
-	},
-
-	// macro stage 1...
-	// XXX do not like how args are defined....
+	// Maacros...
+	//
+	// stage 1...
+	// XXX do not like how args are defined...
+	// 		...putting them in the same pot as the macro-handlers is 
+	// 		error-prone, need a bit more separation -- constructor?
+	// 			Macro( <doc>, <args>, <func> )
 	macro: {
 		// select filter to post-process text...
 		filter_args: ['name'],
@@ -606,8 +597,7 @@ var macro = {
 			}
 		},
 	},
-
-	// macro stage 2...
+	// stage 2...
 	// XXX rename...
 	macro2: {
 		slot_args: ['name'],
@@ -621,6 +611,22 @@ var macro = {
 				return slots[name]
 			}
 		},
+	},
+
+	// Filters...
+	//
+	// XXX this is preliminary...
+	// XXX add wikiword...
+	// filter(text) -> html
+	filter: {
+		default: 'html',
+
+		html: function(text){ return $('<div>').html(text).html() },
+
+		json: 'text',
+		text: function(text){ return $('<div>').text(text).html() },
+
+		wikiword: function(text){ return setWikiWords(text) },
 	},
 
 
@@ -657,7 +663,6 @@ var macro = {
 
 		return res
 	},
-	// XXX do we need to parse the contents of tags here??? (nested patterns?)
 	parse: function(text, context){
 		var that = this
 		var filters = []
