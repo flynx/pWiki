@@ -25,7 +25,7 @@ var reload = () => {
 	$('.title').text(Wiki.title)
 
 	// process text...
-	var text = Wiki.text
+	var text = Wiki.raw
 	var editing = $('.text').prop('contenteditable') != 'true'
 	var filters = []
 	var slots = {}
@@ -52,7 +52,7 @@ var reload = () => {
 				if(macro == 'include' && args.length == 1){
 					w = Object.create(Wiki)
 					w.location = args[0]
-					return w.text
+					return w.raw
 				}
 
 				if(macro == 'attr' 
@@ -86,7 +86,7 @@ var reload = () => {
 				if(macro == 'include' && args.src != null){
 					w = Object.create(Wiki)
 					w.location = args.src
-					return w.text
+					return w.raw
 				}
 
 				// XXX need content...

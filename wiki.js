@@ -28,26 +28,30 @@ var normalizePath = function(path){
 var clearWikiWords = function(elem){
 	// clear existing...
 	elem.find('.wikiword').each(function(){
-		$(this).attr('braced') == 'yes' ? 
+		$(this).attr('bracketed') == 'yes' ? 
 			$(this).replaceWith(['['].concat(this.childNodes, [']']))
 			: $(this).replaceWith(this.childNodes)
 	})
 	return elem } 
 
-var setWikiWords = function(text, show_brackets){
-	return text
+var setWikiWords = function(text, show_brackets, skip){
+	skip = skip || []
+	skip = skip instanceof Array ? skip : [skip]
+	return text 
 		// set new...
 		.replace(
 			Wiki.__wiki_link__,
 			function(l){
-				return '<a '
-					+'class="wikiword" '
-					+'href="#" '
-					+'braced="'+ (show_brackets && l[0] == '[' ? 'yes' : 'no') +'" '
-					+'onclick="go($(this).text())" '
-					+'>'
-						+ (!!show_brackets && l[0] == '[' ? l.slice(1, -1) : l) 
-					+'</a>'
+				return skip.indexOf(l) < 0 ? 
+					('<a '
+						+'class="wikiword" '
+						+'href="#" '
+						+'bracketed="'+ (show_brackets && l[0] == '[' ? 'yes' : 'no') +'" '
+						+'onclick="go($(this).text())" '
+						+'>'
+							+ (!!show_brackets && l[0] == '[' ? l.slice(1, -1) : l) 
+						+'</a>')
+					: l
 			})}
 
 
@@ -106,17 +110,39 @@ var macro = {
 		// include page/slot...
 		//
 		// NOTE: this will render the page in the caller's context.
-		include_args: ['src', 'slot'],
+		// NOTE: included pages are rendered completely independently 
+		// 		from the including page.
+		//
+		// XXX do we need to control the rendering of nested pages???
+		// 		...currently I do not think so...
+		// 		...if required this can be done via global and local 
+		// 		filters... (now filters are only local)
+		// XXX do we need to render just one slot??? (slot arg)
+		include_args: ['src'],
 		include: function(context, args, _, state){
 			var path = args.src
 
-			var text = context.get(path).text
-
-			//return this.parse(context, text)
-			state.include.push(this.parse(context, text))
+			// XXX not sure if we need to render the source page relative
+			// 		to this or as-is...
+			state.include
+				//.push(this.parse(context, context.get(path).raw))
+				.push(context.get(path).text)
 
 			return this.__include_marker__
 		},
+
+		/*
+		// NOTE: this is similar to include, the difference is that this
+		// 		includes the page source to the current context while 
+		// 		include works in an isolated context
+		// XXX currently this will not parse the target...
+		source_args: ['src'],
+		source: function(context, args, _, state){
+			var path = args.src
+
+			return context.get(path).raw
+		},
+		//*/
 
 		// fill/define slot (stage 1)...
 		slot_args: ['name'],
@@ -135,8 +161,7 @@ var macro = {
 		},
 	},
 	// stage 2...
-	// XXX rename...
-	macro2: {
+	post_macro: {
 		slot_args: ['name'],
 		slot: function(context, args, text, state){
 			var name = args.name
@@ -152,13 +177,9 @@ var macro = {
 
 	// Filters...
 	//
-	// NOTE: a filter should be applicable multiple times without any 
-	// 		side effects...
-	// 		XXX is this good???
+	// Signature:
+	// 	filter(text) -> html
 	//
-	// XXX this is preliminary...
-	// XXX add wikiword...
-	// filter(text) -> html
 	filter: {
 		default: 'html',
 
@@ -167,7 +188,8 @@ var macro = {
 		json: 'text',
 		text: function(context, text){ return $('<div>').text(text).html() },
 
-		wikiword: function(context, text){ return setWikiWords(text) },
+		wikiword: function(context, text){ 
+			return setWikiWords(text, null, this.__include_marker__) },
 	},
 
 
@@ -204,9 +226,9 @@ var macro = {
 
 		return res
 	},
-	parse: function(context, text){
+	parse: function(context, text, state){
 		var that = this
-		var state = {
+		state = state || {
 			filters: [],
 			slots: {},
 			include: [],
@@ -231,7 +253,12 @@ var macro = {
 		text = _parse(context, text, this.macro)
 
 		// macro stage 2...
-		text = _parse(context, text, this.macro2)
+		text = _parse(context, text, this.post_macro)
+
+		// XXX for some reason the next line parses WikiHome twice, once
+		// 		with -wikiword and oce without...
+		// 			$('body').html(Wiki.get('WikiHome/_view').text)
+		console.log('filters:', state.filters, text.slice(0, 60))
 
 		// filter stage....
 		state.filters
@@ -265,6 +292,7 @@ var macro = {
 			})
 
 		// merge includes...
+		// XXX need to check for errors (includes too short/long)...
 		text = text.replace(RegExp(this.__include_marker__, 'g'), function(){
 			return state.include.shift()
 		})
@@ -629,10 +657,7 @@ var Wiki = {
 		this.__wiki_data[l].links = this.links
 	},
 
-	// XXX take .raw, parse macros and apply filters...
-	get text(){ return this.raw },
-
-	get _text(){ return macro.parse(this, this.raw) },
+	get text(){ return macro.parse(this, this.raw) },
 
 
 	// NOTE: this is set by setting .text
