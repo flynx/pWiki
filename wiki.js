@@ -27,7 +27,7 @@ var normalizePath = function(path){
 
 var clearWikiWords = function(elem){
 	// clear existing...
-	elem.find('.WikiWord').each(function(){
+	elem.find('.wikiword').each(function(){
 		$(this).attr('braced') == 'yes' ? 
 			$(this).replaceWith(['['].concat(this.childNodes, [']']))
 			: $(this).replaceWith(this.childNodes)
@@ -41,11 +41,12 @@ var setWikiWords = function(text, show_brackets){
 			Wiki.__wiki_link__,
 			function(l){
 				return '<a '
-					+'class="WikiWord" '
+					+'class="wikiword" '
 					+'href="#" '
-					+'braced="'+ (show_brackets && l[0] == '[' ? 'yes' : 'no') +'"'
-					+'onclick="go($(this).text().replace(/^\\[|\\]$/g, \'\'))">'
-						+ (show_brackets && l[0] == '[' ? l.slice(1, -1) : l) 
+					+'braced="'+ (show_brackets && l[0] == '[' ? 'yes' : 'no') +'" '
+					+'onclick="go($(this).text())" '
+					+'>'
+						+ (!!show_brackets && l[0] == '[' ? l.slice(1, -1) : l) 
 					+'</a>'
 			})}
 
@@ -55,6 +56,8 @@ var setWikiWords = function(text, show_brackets){
 
 // XXX should inline macros support named args???
 var macro = {
+
+	__include_marker__: '__include_marker__',
 
 	// Abstract macro syntax:
 	// 	Inline macro:
@@ -78,8 +81,6 @@ var macro = {
 		'wikiword',
 	],
 
-	context: null,
-
 	// Maacros...
 	//
 	// stage 1...
@@ -90,40 +91,45 @@ var macro = {
 	macro: {
 		// select filter to post-process text...
 		filter_args: ['name'],
-		filter: function(args, text, _, filters){
+		filter: function(context, args, text, state){
 			var filter = args[0] || args.name
 
 			filter[0] == '-' ?
 				// disabled -- keep at head of list...
-				filters.unshift(filter)
+				state.filters.unshift(filter)
 				// normal -- tail...
-				: filters.push(filter)
+				: state.filters.push(filter)
 
 			return ''
 		},
 
 		// include page/slot...
+		//
+		// NOTE: this will render the page in the caller's context.
 		include_args: ['src', 'slot'],
-		include: function(args){
+		include: function(context, args, _, state){
 			var path = args.src
 
-			var text = this.context.get(path).text
+			var text = context.get(path).text
 
-			return this.parse(text)
+			//return this.parse(context, text)
+			state.include.push(this.parse(context, text))
+
+			return this.__include_marker__
 		},
 
 		// fill/define slot (stage 1)...
 		slot_args: ['name'],
-		slot: function(args, text, slots){
+		slot: function(context, args, text, state){
 			var name = args.name
 
-			if(slots[name] == null){
-				slots[name] = text
+			if(state.slots[name] == null){
+				state.slots[name] = text
 				// return a slot macro parsable by stage 2...
 				return '<slot name="'+name+'">'+ text +'</slot>'
 
-			} else if(name in slots){
-				slots[name] = text
+			} else if(name in state.slots){
+				state.slots[name] = text
 				return ''
 			}
 		},
@@ -132,19 +138,23 @@ var macro = {
 	// XXX rename...
 	macro2: {
 		slot_args: ['name'],
-		slot: function(args, text, slots){
+		slot: function(context, args, text, state){
 			var name = args.name
 
-			if(slots[name] == null){
+			if(state.slots[name] == null){
 				return text
 
-			} else if(name in slots){
-				return slots[name]
+			} else if(name in state.slots){
+				return state.slots[name]
 			}
 		},
 	},
 
 	// Filters...
+	//
+	// NOTE: a filter should be applicable multiple times without any 
+	// 		side effects...
+	// 		XXX is this good???
 	//
 	// XXX this is preliminary...
 	// XXX add wikiword...
@@ -152,12 +162,12 @@ var macro = {
 	filter: {
 		default: 'html',
 
-		html: function(text){ return $('<div>').html(text).html() },
+		html: function(context, text){ return $('<div>').html(text).html() },
 
 		json: 'text',
-		text: function(text){ return $('<div>').text(text).html() },
+		text: function(context, text){ return $('<div>').text(text).html() },
 
-		wikiword: function(text){ return setWikiWords(text) },
+		wikiword: function(context, text){ return setWikiWords(text) },
 	},
 
 
@@ -194,34 +204,37 @@ var macro = {
 
 		return res
 	},
-	parse: function(text, context){
+	parse: function(context, text){
 		var that = this
-		var filters = []
-		var slots = {}
+		var state = {
+			filters: [],
+			slots: {},
+			include: [],
+		}
 
-		var _parse = function(text, macro){
+		var _parse = function(context, text, macro){
 			return text.replace(that.__macro__pattern__, function(match){
 				var m = that.parseElem(match, macro)
 
 				// found a macro...
 				return m.name in macro ? 
-						macro[m.name].call(that, m.args, m.text, slots, filters)
+						macro[m.name].call(that, context, m.args, m.text, state)
 					// found a tag -> look inside...
 					: m.elem && m.text != ''? 
-						m.elem.html(_parse(m.text, macro))[0].outerHTML
+						m.elem.html(_parse(context, m.text, macro))[0].outerHTML
 					// else nothing changed...
 					: match
 			})
 		}
 
 		// macro stage 1...
-		text = _parse(text, this.macro)
+		text = _parse(context, text, this.macro)
 
 		// macro stage 2...
-		text = _parse(text, this.macro2)
+		text = _parse(context, text, this.macro2)
 
 		// filter stage....
-		filters
+		state.filters
 			.concat(this.__filters__)
 			// unique -- leave last occurance..
 			.filter(function(k, i, lst){ 
@@ -234,16 +247,27 @@ var macro = {
 			// unique -- leave first occurance..
 			//.filter(function(k, i, lst){ return lst.slice(0, i).indexOf(k) == -1 })
 			// apply the filters...
-			.forEach(function(k){
+			.forEach(function(f){
+				var k = f
 				// get filter aliases...
 				var seen = []
 				while(typeof(k) == typeof('str') && seen.indexOf(k) == -1){
 					seen.push(k)
 					k = that.filter[k]
 				}
-				// call the filter
-				text = k.call(that, text) 
+				// could not find the filter...
+				if(!k){
+					console.warn('Unknown filter:', f)
+					return
+				}
+				// use the filter...
+				text = k.call(that, context, text) 
 			})
+
+		// merge includes...
+		text = text.replace(RegExp(this.__include_marker__, 'g'), function(){
+			return state.include.shift()
+		})
 
 		return text
 	},
@@ -607,6 +631,8 @@ var Wiki = {
 
 	// XXX take .raw, parse macros and apply filters...
 	get text(){ return this.raw },
+
+	get _text(){ return macro.parse(this, this.raw) },
 
 
 	// NOTE: this is set by setting .text

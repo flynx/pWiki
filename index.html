@@ -121,6 +121,9 @@ var reload = () => {
 }
 
 var go = (path) => {
+	path = path.trim()
+	path = path[0] == '[' ? path.slice(1, -1) : path
+
 	history.pushState({
 			wikipath: path
 		}, 
