@@ -267,7 +267,7 @@ var BaseData = {
 	'System/raw': function(){ return this.get('..').raw },
 	'System/text': function(){ return this.get('..').text },
 
-	// XXX
+	// XXX move this to Wiki.children + rename...
 	'System/list': function(){
 		var p = this.dir
 
