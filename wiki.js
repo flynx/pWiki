@@ -327,6 +327,12 @@ var BaseData = {
 	'System/resolved': function(){ return this.get('..').acquire() },
 
 	// page data...
+	//
+	// NOTE: special case: ./raw is treated a differently when getting .text
+	// 		i.e:
+	// 			.get('./raw').text
+	// 		is the same as:
+	// 			.get('.').raw
 	'System/raw': function(){ return this.get('..').raw },
 	'System/text': function(){ return this.get('..').text },
 
