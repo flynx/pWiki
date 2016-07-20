@@ -118,16 +118,23 @@ var macro = {
 		// 		...if required this can be done via global and local 
 		// 		filters... (now filters are only local)
 		// XXX do we need to render just one slot??? (slot arg)
+		// XXX might be a good idea to wrap the result in a tag to enable
+		// 		in-place editing...
 		include_args: ['src'],
 		include: function(context, args, _, state){
 			var path = args.src
 
-			// XXX not sure if we need to render the source page relative
-			// 		to this or as-is...
+			// get and prepare the included page...
 			state.include
-				//.push(this.parse(context, context.get(path).raw))
-				.push(context.get(path).text)
+				.push(context.get(path))
+				/*
+				// XXX do we need to quote the path here??? ...might get wikiword-ed ;)
+				.push('<span class="include" src="'+path+'">'
+						+context.get(path).text
+					+'</span>')
+				//*/
 
+			// return the marker...
 			return this.__include_marker__
 		},
 
@@ -189,7 +196,7 @@ var macro = {
 		text: function(context, text){ return $('<div>').text(text).html() },
 
 		wikiword: function(context, text){ 
-			return setWikiWords(text, null, this.__include_marker__) },
+			return setWikiWords(text, true, this.__include_marker__) },
 	},
 
 
@@ -255,11 +262,6 @@ var macro = {
 		// macro stage 2...
 		text = _parse(context, text, this.post_macro)
 
-		// XXX for some reason the next line parses WikiHome twice, once
-		// 		with -wikiword and oce without...
-		// 			$('body').html(Wiki.get('WikiHome/_view').text)
-		console.log('filters:', state.filters, text.slice(0, 60))
-
 		// filter stage....
 		state.filters
 			.concat(this.__filters__)
@@ -294,7 +296,16 @@ var macro = {
 		// merge includes...
 		// XXX need to check for errors (includes too short/long)...
 		text = text.replace(RegExp(this.__include_marker__, 'g'), function(){
-			return state.include.shift()
+			var page = state.include.shift()
+			// NOTE: we are quoting html here, this is done to prevent 
+			// 		included html from messing up the outer structure with
+			// 		things like unclosed tags and stuff...
+			// XXX can this be anything other than html?
+			return $('<span>')
+				.addClass('include')
+				.attr('src', page.path)
+				.html(page.text)[0]
+					.outerHTML
 		})
 
 		return text
@@ -404,11 +415,14 @@ var data = {
 
 	'Templates/_view': {
 		text: '\n'
-			+'<div>/@include(../path) ([../_edit])</div>\n'
+			+'<div class="path">@include(../path) ([../_edit])</div>\n'
 			+'<hr>\n'
-			+'<h1>@include(../title)</h1>\n'
+			+'<h1 class="title" contenteditable tabindex="0">@include(../title)</h1>\n'
 			+'<br>\n'
-			+'<div>@include(../text)</div>\n'
+			+'<div class="text" tabindex="0">@include(..)</div>\n'
+			+'<script>\n'
+			+'    update_editor()\n'
+			+'</script>\n'
 			+'\n',
 	},
 	'Templates/_edit': {
@@ -417,7 +431,7 @@ var data = {
 			+'<hr>\n'
 			+'<h1 contenteditable>@include(../title)</h1>\n'
 			+'<br>\n'
-			+'<div class="raw" contenteditable>@include(../text)</div>\n'
+			+'<div class="raw" contenteditable>@include(../raw)</div>\n'
 			+'<script>\n'
 			+'\t$(".raw").text($(".raw").html())\n'
 			+'</script>\n'
@@ -657,7 +671,12 @@ var Wiki = {
 		this.__wiki_data[l].links = this.links
 	},
 
-	get text(){ return macro.parse(this, this.raw) },
+	// XXX not sure if this should return special function result as-is...
+	// 		...might be better to just special-case the 'raw' in path...
+	get text(){
+		// special case: if we are getting ./raw then do not parse text...
+		return this.title == 'raw' ? this.raw 
+			: macro.parse(this, this.raw) },
 
 
 	// NOTE: this is set by setting .text

@@ -20,6 +20,16 @@ var clear = () => {
 
 
 var reload = () => {
+
+	//*
+	//$('.wiki').html(Wiki.text)
+	//var editing = $('.text').prop('contenteditable') != 'false'
+
+	$('.wiki')
+		.html(Wiki.get('./_view').text)
+	//*/
+
+	/*
 	$('.path').text('/' + Wiki.path)
 
 	$('.title').text(Wiki.title)
@@ -112,6 +122,7 @@ var reload = () => {
 	}
 
 	$('.text').html(setWikiWords(text, filters.indexOf('show_link_brackets') < 0 && editing))
+	//*/
 
 	// XXX save...
 	localStorage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
@@ -120,7 +131,38 @@ var reload = () => {
 	$('title').text(Wiki.location)
 }
 
+var update_editor = function(){
+	// XXX make this update on enter...
+	$('.title')
+		.on('blur', () => { 
+			Wiki.title = $('.title').text() 
+			reload()
+		})
+
+	// live update text...
+	// XXX is this the right way to go for large documents???
+	$('.text')
+		.focus(() => {
+			console.log('EDITING...')
+			$('.text').prop('contenteditable', $('.text').prop('contenteditable') != 'true')
+			reload()
+		})
+		.on('keyup', () => { 
+			if($('.text').prop('contenteditable') == 'true'){
+				Wiki.raw = clearWikiWords($('.text').clone()).html() 
+			}
+		})
+		// XXX do this live, but on a timeout after user input...
+		// XXX need to place the cursor in the same position...
+		.blur(() => { 
+			$('.text').prop('contenteditable', false)
+			reload() 
+		})
+}
+
 var go = (path) => {
+	console.log('GO:', path)
+
 	path = path.trim()
 	path = path[0] == '[' ? path.slice(1, -1) : path
 
@@ -152,40 +194,18 @@ $(() => {
 
 	reload()
 
-	// XXX make this update on enter...
-	$('.title')
-		.on('blur', () => { 
-			Wiki.title = $('.title').text() 
-			reload()
-		})
-
-	// live update text...
-	// XXX is this the right way to go for large documents???
-	$('.text')
-		.focus(() => {
-			$('.text').prop('contenteditable', $('.text').prop('contenteditable') != 'true')
-			reload()
-		})
-		.on('keyup', () => { 
-			if($('.text').prop('contenteditable') == 'true'){
-				Wiki.raw = clearWikiWords($('.text').clone()).html() 
-			}
-		})
-		// XXX do this live, but on a timeout after user input...
-		// XXX need to place the cursor in the same position...
-		.blur(() => { 
-			$('.text').prop('contenteditable', false)
-			reload() 
-		})
+	//update_editor()
 })
 </script>
 
 <body>
 
-<div class="path"></div>
+<div class="wiki"></div>
+
+<!--div class="path"></div>
 <hr>
 <h1 class="title" contenteditable tabindex=0></h1>
-<div class="text" tabindex=0></div>
+<div class="text" tabindex=0></div-->
 
 </body>
 </html>
