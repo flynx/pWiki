@@ -156,6 +156,8 @@ var macro = {
 		slot: function(context, args, text, state){
 			var name = args.name
 
+			text = this.parse(context, text, state, true)
+
 			if(state.slots[name] == null){
 				state.slots[name] = text
 				// return a slot macro parsable by stage 2...
@@ -233,13 +235,13 @@ var macro = {
 
 		return res
 	},
-	parse: function(context, text, state){
+	parse: function(context, text, state, skip_post){
 		var that = this
-		state = state || {
-			filters: [],
-			slots: {},
-			include: [],
-		}
+		state = state || {}
+		state.filters = state.filters || []
+		state.slots = state.slots || {}
+		state.include = state.include || []
+
 
 		var _parse = function(context, text, macro){
 			return text.replace(that.__macro__pattern__, function(match){
@@ -258,9 +260,6 @@ var macro = {
 
 		// macro stage 1...
 		text = _parse(context, text, this.macro)
-
-		// macro stage 2...
-		text = _parse(context, text, this.post_macro)
 
 		// filter stage....
 		state.filters
@@ -304,9 +303,15 @@ var macro = {
 			return $('<span>')
 				.addClass('include')
 				.attr('src', page.path)
-				.html(page.text)[0]
+				// XXX need to pass the state.slots to parser...
+				.html(page.parse({ slots: state.slots }, true))[0]
 					.outerHTML
 		})
+
+		// macro stage 2...
+		if(!skip_post){
+			text = _parse(context, text, this.post_macro)
+		}
 
 		return text
 	},
@@ -677,12 +682,16 @@ var Wiki = {
 		this.__wiki_data[l].links = this.links
 	},
 
+
+	parse: function(state, skip_post){
+		// special case: if we are getting ./raw then do not parse text...
+		return this.title == 'raw' ? this.raw 
+			: macro.parse(this, this.raw, state, skip_post)
+	},
 	// XXX not sure if this should return special function result as-is...
 	// 		...might be better to just special-case the 'raw' in path...
 	get text(){
-		// special case: if we are getting ./raw then do not parse text...
-		return this.title == 'raw' ? this.raw 
-			: macro.parse(this, this.raw) },
+		return this.parse() },
 
 
 	// NOTE: this is set by setting .text
