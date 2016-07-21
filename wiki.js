@@ -75,6 +75,7 @@ var macro = {
 	// 			..text..
 	// 		</macro>
 	//
+	//
 	__macro__pattern__: 
 		/<([a-zA-Z-_:]+)(.|[\n\r])*?(>(.|[\n\r])*?<\/\1>|\/>)|@([a-zA-Z-_]+)\(([^)]*)\)/mg,
 
@@ -85,9 +86,8 @@ var macro = {
 		'wikiword',
 	],
 
-	// Maacros...
+	// Macros...
 	//
-	// stage 1...
 	// XXX do not like how args are defined...
 	// 		...putting them in the same pot as the macro-handlers is 
 	// 		error-prone, need a bit more separation -- constructor?
@@ -169,7 +169,9 @@ var macro = {
 			}
 		},
 	},
-	// stage 2...
+	
+	// Post macros... 
+	//
 	post_macro: {
 		slot_args: ['name'],
 		slot: function(context, args, text, state){
@@ -202,6 +204,20 @@ var macro = {
 	},
 
 
+	// Parsing:
+	//  1) expand macros
+	//  2) apply filters
+	//  3) merge and parse included pages:
+	//  	1) expand macros
+	//  	2) apply filters
+	//  4) expand post-macros
+	//
+	// NOTE: stage 4 parsing is executed on the final merged page only 
+	// 		once. i.e. it is not performed on the included pages.
+	// NOTE: included pages are parsed in their own context.
+	// NOTE: slots are parsed in the context of their containing page 
+	// 		and not in the location they are being placed.
+	//
 	parseElem: function(text, stage){
 		var res = {}
 
@@ -258,10 +274,10 @@ var macro = {
 			})
 		}
 
-		// macro stage 1...
+		// macro...
 		text = _parse(context, text, this.macro)
 
-		// filter stage....
+		// filter...
 		state.filters
 			.concat(this.__filters__)
 			// unique -- leave last occurance..
@@ -308,7 +324,7 @@ var macro = {
 					.outerHTML
 		})
 
-		// macro stage 2...
+		// post macro...
 		if(!skip_post){
 			text = _parse(context, text, this.post_macro)
 		}
@@ -688,8 +704,6 @@ var Wiki = {
 		return this.title == 'raw' ? this.raw 
 			: macro.parse(this, this.raw, state, skip_post)
 	},
-	// XXX not sure if this should return special function result as-is...
-	// 		...might be better to just special-case the 'raw' in path...
 	get text(){
 		return this.parse() },
 
