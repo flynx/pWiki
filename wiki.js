@@ -58,6 +58,13 @@ var setWikiWords = function(text, show_brackets, skip){
 
 /*********************************************************************/
 
+function Macro(doc, args, func){
+	func.doc = doc
+	func.macro_args = args
+	return func 
+}
+
+
 // XXX should inline macros support named args???
 var macro = {
 
@@ -75,7 +82,7 @@ var macro = {
 	// 			..text..
 	// 		</macro>
 	//
-	//
+	// XXX should inline macros support named args???
 	__macro__pattern__: 
 		/<([a-zA-Z-_:]+)(.|[\n\r])*?(>(.|[\n\r])*?<\/\1>|\/>)|@([a-zA-Z-_]+)\(([^)]*)\)/mg,
 
@@ -88,24 +95,21 @@ var macro = {
 
 	// Macros...
 	//
-	// XXX do not like how args are defined...
-	// 		...putting them in the same pot as the macro-handlers is 
-	// 		error-prone, need a bit more separation -- constructor?
-	// 			Macro( <doc>, <args>, <func> )
 	macro: {
 		// select filter to post-process text...
-		filter_args: ['name'],
-		filter: function(context, args, text, state){
-			var filter = args[0] || args.name
+		filter: Macro('Filter to post-process text',
+			['name'],
+			function(context, args, text, state){
+				var filter = args[0] || args.name
 
-			filter[0] == '-' ?
-				// disabled -- keep at head of list...
-				state.filters.unshift(filter)
-				// normal -- tail...
-				: state.filters.push(filter)
+				filter[0] == '-' ?
+					// disabled -- keep at head of list...
+					state.filters.unshift(filter)
+					// normal -- tail...
+					: state.filters.push(filter)
 
-			return ''
-		},
+				return ''
+			}),
 
 		// include page/slot...
 		//
@@ -118,72 +122,66 @@ var macro = {
 		// 		...if required this can be done via global and local 
 		// 		filters... (now filters are only local)
 		// XXX do we need to render just one slot??? (slot arg)
-		// XXX might be a good idea to wrap the result in a tag to enable
-		// 		in-place editing...
-		include_args: ['src'],
-		include: function(context, args, _, state){
-			var path = args.src
+		// 		e.g. include PageX SlotY
+		include: Macro('Include page',
+			['src'],
+			function(context, args, _, state){
+				var path = args.src
 
-			// get and prepare the included page...
-			state.include
-				.push(context.get(path))
-				/*
-				// XXX do we need to quote the path here??? ...might get wikiword-ed ;)
-				.push('<span class="include" src="'+path+'">'
-						+context.get(path).text
-					+'</span>')
-				//*/
+				// get and prepare the included page...
+				state.include
+					.push(context.get(path))
 
-			// return the marker...
-			return this.__include_marker__
-		},
+				// return the marker...
+				return this.__include_marker__
+			}),
 
-		/*
 		// NOTE: this is similar to include, the difference is that this
 		// 		includes the page source to the current context while 
 		// 		include works in an isolated context
-		// XXX currently this will not parse the target...
-		source_args: ['src'],
-		source: function(context, args, _, state){
-			var path = args.src
+		source: Macro('Include page source (without parsing)',
+			['src'], 
+			function(context, args, _, state){
+				var path = args.src
 
-			return context.get(path).raw
-		},
-		//*/
+				return context.get(path).raw
+			}),
 
 		// fill/define slot (stage 1)...
-		slot_args: ['name'],
-		slot: function(context, args, text, state){
-			var name = args.name
+		slot: Macro('Define/fill slot',
+			['name'],
+			function(context, args, text, state){
+				var name = args.name
 
-			text = this.parse(context, text, state, true)
+				text = this.parse(context, text, state, true)
 
-			if(state.slots[name] == null){
-				state.slots[name] = text
-				// return a slot macro parsable by stage 2...
-				return '<slot name="'+name+'">'+ text +'</slot>'
+				if(state.slots[name] == null){
+					state.slots[name] = text
+					// return a slot macro parsable by stage 2...
+					return '<slot name="'+name+'">'+ text +'</slot>'
 
-			} else if(name in state.slots){
-				state.slots[name] = text
-				return ''
-			}
-		},
+				} else if(name in state.slots){
+					state.slots[name] = text
+					return ''
+				}
+			}),
 	},
 	
 	// Post macros... 
 	//
 	post_macro: {
-		slot_args: ['name'],
-		slot: function(context, args, text, state){
-			var name = args.name
+		slot: Macro('',
+			['name'],
+			function(context, args, text, state){
+				var name = args.name
 
-			if(state.slots[name] == null){
-				return text
+				if(state.slots[name] == null){
+					return text
 
-			} else if(name in state.slots){
-				return state.slots[name]
-			}
-		},
+				} else if(name in state.slots){
+					return state.slots[name]
+				}
+			}),
 	},
 
 	// Filters...
@@ -231,7 +229,7 @@ var macro = {
 
 			var a = d[2].split(/\s+/g)
 			a.forEach(function(e, i){
-				args[(stage[res.name + '_args'] || [])[i]] = e
+				args[((stage[res.name] || {}).macro_args || [])[i]] = e
 			})
 
 		// html-like...
@@ -309,7 +307,8 @@ var macro = {
 			})
 
 		// merge includes...
-		// XXX need to check for errors (includes too short/long)...
+		// XXX need to check for errors (includes list shorter/longer 
+		// 		than number of markers)...
 		text = text.replace(RegExp(this.__include_marker__, 'g'), function(){
 			var page = state.include.shift()
 			// NOTE: we are quoting html here, this is done to prevent 
@@ -319,7 +318,6 @@ var macro = {
 			return $('<span>')
 				.addClass('include')
 				.attr('src', page.path)
-				// XXX need to pass the state.slots to parser...
 				.html(page.parse({ slots: state.slots }, true))[0]
 					.outerHTML
 		})
