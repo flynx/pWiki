@@ -45,20 +45,18 @@ var setWikiWords = function(text, show_brackets, skip){
 				var path = l[0] == '[' ? l.slice(1, -1) : l
 				var i = [].slice.call(arguments).slice(-2)[0]
 
-				/*
 				// XXX HACK check if we are inside a tag...
 				var rest = text.slice(i+1)
 				if(rest.indexOf('>') < rest.indexOf('<')){
 					return l
 				}
-				//*/
 
 				return skip.indexOf(l) < 0 ? 
 					('<a '
 						+'class="wikiword" '
 						+'href="#'+ path +'" '
 						+'bracketed="'+ (show_brackets && l[0] == '[' ? 'yes' : 'no') +'" '
-						+'onclick="go($(this).attr(\'href\').slice(1))" '
+						//+'onclick="event.preventDefault(); go($(this).attr(\'href\').slice(1))" '
 						+'>'
 							+ (!!show_brackets ? path : l) 
 						+'</a>')
@@ -442,34 +440,43 @@ var BaseData = {
 // XXX add .json support...
 var data = {
 	'Templates/EmptyPage': {
-		text: 'Page @include(./path) is empty.' +'<br><br>'
-			+'Links to this page:' +'<br>'
-			+'@include(./links)' +'<br><br>'
-			+'---' +'<br>'
-			+'WikiHome',
+		text: ''
+			+'<!-- place filters here so as not to takup page space: ... -->\n'
+			+'\n'
+			+'Page @include(./path) is empty.' +'<br><br>\n'
+			+'\n'
+			+'Links to this page:' +'<br>\n'
+			+'@include(./links)' +'<br><br>\n'
+			+'\n',
 	},
 
+	'Templates/_raw': {
+		text: '@source(..)',
+	},
 	'Templates/_view': {
 		text: '\n'
-			+'<div class="path">@include(../path) ([../_edit])</div>\n'
+			+'<!-- place filters here so as not to takup page space: ... -->\n'
+			+'\n'
+			+'<div>/@include(../path) (<a href="#./_edit">edit</a>)</div>\n'
 			+'<hr>\n'
 			+'<h1 class="title" contenteditable tabindex="0">@include(../title)</h1>\n'
 			+'<br>\n'
 			+'<div class="text" tabindex="0">@include(..)</div>\n'
-			+'<script>\n'
-			+'    update_editor()\n'
-			+'</script>\n'
+			+'<hr>\n'
+			+'<a href="#">home</a>\n'
 			+'\n',
 	},
 	'Templates/_edit': {
 		text: '\n'
-			+'<div>/@include(../path) ([../_view])</div>\n'
+			+'<!-- @filter(-wikiword) -->\n'
+			+'\n'
+			+'<div>/@include(../path) (<a href="#..">view</a>)</div>\n'
 			+'<hr>\n'
-			+'<h1 contenteditable>@include(../title)</h1>\n'
+			+'<h1 class ="title" contenteditable>@include(../title)</h1>\n'
 			+'<br>\n'
-			+'<div class="raw" contenteditable>@include(../raw)</div>\n'
+			+'<code><pre class="text" contenteditable>@source(../raw)</pre></code>\n'
 			+'<script>\n'
-			+'\t$(".raw").text($(".raw").html())\n'
+			+'\t$(".text").text($(".text").html())\n'
 			+'</script>\n'
 			+'',
 	},
