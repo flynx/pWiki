@@ -42,14 +42,25 @@ var setWikiWords = function(text, show_brackets, skip){
 		.replace(
 			Wiki.__wiki_link__,
 			function(l){
+				var path = l[0] == '[' ? l.slice(1, -1) : l
+				var i = [].slice.call(arguments).slice(-2)[0]
+
+				/*
+				// XXX HACK check if we are inside a tag...
+				var rest = text.slice(i+1)
+				if(rest.indexOf('>') < rest.indexOf('<')){
+					return l
+				}
+				//*/
+
 				return skip.indexOf(l) < 0 ? 
 					('<a '
 						+'class="wikiword" '
-						+'href="#" '
+						+'href="#'+ path +'" '
 						+'bracketed="'+ (show_brackets && l[0] == '[' ? 'yes' : 'no') +'" '
-						+'onclick="go($(this).text())" '
+						+'onclick="go($(this).attr(\'href\').slice(1))" '
 						+'>'
-							+ (!!show_brackets && l[0] == '[' ? l.slice(1, -1) : l) 
+							+ (!!show_brackets ? path : l) 
 						+'</a>')
 					: l
 			})}
@@ -338,12 +349,12 @@ var macro = {
 // XXX not sure about these...
 // XXX add docs...
 var BaseData = {
-	// Macro acces to standard page attributes...
-	'System/title': function(){ return this.get('..').title },
-	'System/path': function(){ return this.dir },
-	'System/dir': function(){ return this.get('..').dir },
-	'System/location': function(){ return this.dir },
-	'System/resolved': function(){ return this.get('..').acquire() },
+	// Macro acces to standard page attributes (paths)...
+	'System/title': function(){ return '['+ this.get('..').title +']' },
+	'System/path': function(){ return '['+ this.dir +']' },
+	'System/dir': function(){ return '['+ this.get('..').dir +']' },
+	'System/location': function(){ return '['+ this.dir +']' },
+	'System/resolved': function(){ return '['+ this.get('..').acquire() +']' },
 
 	// page data...
 	//
@@ -431,7 +442,7 @@ var BaseData = {
 // XXX add .json support...
 var data = {
 	'Templates/EmptyPage': {
-		text: 'Page [@include(./path)] is empty.' +'<br><br>'
+		text: 'Page @include(./path) is empty.' +'<br><br>'
 			+'Links to this page:' +'<br>'
 			+'@include(./links)' +'<br><br>'
 			+'---' +'<br>'
@@ -473,6 +484,7 @@ data.__proto__ = BaseData
 var Wiki = {
 	__wiki_data: data,
 
+	__config_page__: 'System/config',
 	__home_page__: 'WikiHome',
 	__default_page__: 'EmptyPage',
 	// Special sub-paths to look in on each level...
@@ -519,6 +531,13 @@ var Wiki = {
 
 	get data(){
 		return this.__wiki_data[this.acquire()] },
+
+	/*
+	// XXX
+	get config(){
+		return this.__wiki_data[this.__config_page__] || {}
+	},
+	//*/
 
 
 	// XXX

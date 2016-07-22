@@ -8,6 +8,7 @@
 
 <script src="ext-lib/jquery.js"></script>
 <script src="ext-lib/pouchdb.min.js"></script>
+<script src="ext-lib/peer.min.js"></script>
 <script src="wiki.js"></script>
 
 <script>
@@ -17,112 +18,10 @@ var clear = () => {
 	delete localStorage['wiki-location']
 }
 
-
-
 var reload = () => {
-
-	//*
-	//$('.wiki').html(Wiki.text)
-	//var editing = $('.text').prop('contenteditable') != 'false'
 
 	$('.wiki')
 		.html(Wiki.get('./_view').text)
-	//*/
-
-	/*
-	$('.path').text('/' + Wiki.path)
-
-	$('.title').text(Wiki.title)
-
-	// process text...
-	var text = Wiki.raw
-	var editing = $('.text').prop('contenteditable') != 'true'
-	var filters = []
-	var slots = {}
-
-	// expand macros...
-	if(editing){
-		text = text
-			// Syntax:
-			//		@<macro>( <args> )
-			.replace(/@([a-zA-Z-_]+)\(([^)]*)\)/g, function(_, macro, args){
-				args = $('<div>')
-					.html(args)
-					.text()
-						.trim()
-						.split(/\s+/g)
-
-				//console.log('>>>>>', macro, args)
-
-				if(macro == 'filter' && args.length == 1){
-					filters.push(args[0])
-					return ''
-				}
-
-				if(macro == 'include' && args.length == 1){
-					w = Object.create(Wiki)
-					w.location = args[0]
-					return w.raw
-				}
-
-				if(macro == 'attr' 
-						&& args.length == 1
-						&& ['title', 'path', 'location', 'dir'].indexOf(args[0]) >= 0){
-					return Wiki[args[0]]
-				}
-
-				return _
-			})
-			// html-like macro syntax...
-			.replace(/\&lt;[a-zA-Z-_:]+.*?\/?\&gt;/g, function(t){
-				var elem = $($('<div>').html(t).text())
-				var macro = elem.prop('tagName').toLowerCase()
-
-				var args = {}
-				var a = elem.prop('attributes')
-
-				for(var i=0; i<a.length; i++){
-					args[a[i].name] = a[i].value
-				}
-
-				//console.log('>>>>>', macro, args) 
-
-				if(macro == 'filter' && args.name != null){
-					console.log('FILTER:', args.name)
-					// XXX
-					return ''
-				}
-
-				if(macro == 'include' && args.src != null){
-					w = Object.create(Wiki)
-					w.location = args.src
-					return w.raw
-				}
-
-				// XXX need content...
-				// 		Procedure:
-				//			- if new slot
-				//				- add to list
-				//				- fill
-				//			- if slot exists
-				//				- fill original
-				if(macro == 'slot' && args.name != null){
-					slots[args.name] = ''
-					return t
-				}
-
-				if(macro == 'attr' 
-						&& args.name != null
-						&& ['title', 'path', 'location', 'dir'].indexOf(args.name) >= 0){
-					return Wiki[args.name]
-				}
-
-				return t
-			})
-	}
-
-	$('.text').html(setWikiWords(text, filters.indexOf('show_link_brackets') < 0 && editing))
-	//*/
 
 	// XXX save...
 	localStorage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
@@ -195,6 +94,21 @@ $(() => {
 	reload()
 
 	//update_editor()
+
+	$(window).on('hashchange', function(evt){
+		evt.preventDefault()
+
+		var path = location.hash.slice(1)
+		var hash = path.split('#')
+		path = hash.shift()
+		hash = hash.pop() || ''
+
+		go(path)
+
+		if(hash.length > 0){
+			// XXX focus anchor...
+		}
+	})
 })
 </script>
 
