@@ -324,17 +324,19 @@ var macro = {
 			// 		included html from messing up the outer structure with
 			// 		things like unclosed tags and stuff...
 			// XXX can this be anything other than html?
-			return $('<span>')
-				.addClass('include')
-				.attr('src', page.path)
-				.html(page.parse({ slots: state.slots }, true))[0]
-					.outerHTML
+			return $('<span/>')
+					.addClass('include')
+					.attr('src', page.path)
+					.html(page.parse({ slots: state.slots }, true))[0]
+						.outerHTML
 		})
 
 		// post macro...
 		if(!skip_post){
 			text = _parse(context, text, this.post_macro)
 		}
+
+		window.t = text
 
 		return text
 	},
@@ -461,9 +463,9 @@ var data = {
 			+'<hr>\n'
 			+'<h1 class="title" contenteditable tabindex="0">@include(../title)</h1>\n'
 			+'<br>\n'
-			+'<div class="text" tabindex="0">@include(..)</div>\n'
+			+'<div class="text" tabindex="0"> @include(..) </div>\n'
 			+'<hr>\n'
-			+'<a href="#">home</a>\n'
+			+'<a href="#/">home</a>\n'
 			+'\n',
 	},
 	'Templates/_edit': {
@@ -474,9 +476,10 @@ var data = {
 			+'<hr>\n'
 			+'<h1 class ="title" contenteditable>@include(../title)</h1>\n'
 			+'<br>\n'
-			+'<code><pre class="text" contenteditable>@source(../raw)</pre></code>\n'
+			+'<code><pre class="raw" saveto=".." contenteditable>@source(../raw)</pre></code>\n'
+			// XXX avoid this...
 			+'<script>\n'
-			+'\t$(".text").text($(".text").html())\n'
+			+'\t$(".raw").text($(".raw").html())\n'
 			+'</script>\n'
 			+'',
 	},

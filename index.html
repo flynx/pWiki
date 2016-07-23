@@ -51,17 +51,35 @@ var update_editor = function(){
 
 			//reload()
 		})
-		.on('keyup', () => { 
-			console.log('SAVING:', Wiki.path)
-			//if($(this).prop('contenteditable') == 'true'){
+		.on('keyup', function(){ 
+			if($(this).prop('contenteditable') == 'true'){
+				var to = $(this).attr('saveto') || '.'
+				console.log('SAVING:', Wiki.get(to).path)
 			//	Wiki.raw = clearWikiWords($('.text').clone()).html() 
-			//}
+			}
 		})
 		// XXX do this live, but on a timeout after user input...
 		// XXX need to place the cursor in the same position...
 		.blur(() => { 
-			$(this).removeAttr('contenteditable')
-			//reload() 
+			$(this)
+				.removeAttr('contenteditable')
+			reload() 
+		})
+
+	$('.raw')
+		.focus(function(){
+			var to = $(this).attr('saveto') || '.'
+			console.log('EDITING:', Wiki.get(to).path)
+		})
+		.on('keyup', function(){ 
+			var to = Wiki.get($(this).attr('saveto') || '.').path
+			console.log('SAVING:', to)
+			Wiki.get(to).raw = $(this).text()
+		})
+		// XXX do this live, but on a timeout after user input...
+		// XXX need to place the cursor in the same position...
+		.blur(() => { 
+			reload() 
 		})
 }
 
@@ -111,10 +129,17 @@ $(() => {
 		path = hash.shift()
 		hash = hash.pop() || ''
 
-		go(path)
+		// expand the path...
+		if(Wiki.get(path).path != path){
+			location.hash = Wiki.get(path).path
 
-		if(hash.length > 0){
-			// XXX focus anchor...
+		// open page...
+		} else {
+			go(path)
+
+			if(hash.length > 0){
+				// XXX focus anchor...
+			}
 		}
 	})
 })
