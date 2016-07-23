@@ -55,7 +55,7 @@ var update_editor = function(){
 			if($(this).prop('contenteditable') == 'true'){
 				var to = $(this).attr('saveto') || '.'
 				console.log('SAVING:', Wiki.get(to).path)
-			//	Wiki.raw = clearWikiWords($('.text').clone()).html() 
+				Wiki.get(to).raw = clearWikiWords($('.text').clone()).html() 
 			}
 		})
 		// XXX do this live, but on a timeout after user input...
