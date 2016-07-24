@@ -223,6 +223,9 @@ var macro = {
 		json: 'text',
 		text: function(context, text){ return $('<div>').text(text).html() },
 
+		// XXX
+		nl2br: function(context, text){ return $('<div>').html(text.replace(/\n/g, '<br>\n')) },
+
 		wikiword: function(context, text){ 
 			return setWikiWords(text, true, this.__include_marker__) },
 	},
