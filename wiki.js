@@ -177,7 +177,8 @@ var macro = {
 			function(context, args, text, state){
 				var name = args.name
 
-				//text = text || args.text
+				// XXX
+				text = text || args.text
 				text = this.parse(context, text, state, true)
 
 				if(state.slots[name] == null){
@@ -266,9 +267,10 @@ var macro = {
 				args[((stage[res.name] || {}).macro_args || [])[i] || i] = e
 			})
 
-			if(args.text){
-				res.text = args.text
-			}
+			// XXX not sure about this....
+			//if(args.text){
+			//	res.text = args.text
+			//}
 
 		// html-like...
 		} else {
