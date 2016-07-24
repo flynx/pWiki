@@ -93,7 +93,20 @@ var macro = {
 	//
 	// XXX should inline macros support named args???
 	__macro__pattern__: 
-		/<([a-zA-Z-_:]+)(.|[\n\r])*?(>(.|[\n\r])*?<\/\1>|\/>)|@([a-zA-Z-_]+)\(([^)]*)\)/mg,
+		///<([a-zA-Z-_:]+)(.|[\n\r])*?(>(.|[\n\r])*?<\/\1>|\/>)|@([a-zA-Z-_]+)\(([^)]*)\)/mg,
+		[[
+			// <macro arg=value ../> 
+			// <macro arg=value ..>text</macro> 
+			'<([a-zA-Z-_:]+)(.|[\\n\\r])*?(>(.|[\\n\\r])*?<\\/\\1>|\\/>)',
+			/*// same as above but HTML-level...
+			'<([a-zA-Z-_:]+)(.|[\\n\\r])*?(>(.|[\\n\\r])*?<\\/\\1>|\\/>)'
+				.replace(/</g, '\\&lt;')
+				.replace(/>/g, '\\&gt;'),
+			//*/
+
+			// @macro(arg ..)
+			'@([a-zA-Z-_]+)\\(([^)]*)\\)'
+		].join('|'), 'mg'],
 
 	// default filters...
 	//
@@ -157,11 +170,14 @@ var macro = {
 			}),
 
 		// fill/define slot (stage 1)...
+		//
+		// XXX which should have priority the arg text or the content???
 		slot: Macro('Define/fill slot',
-			['name'],
+			['name', 'text'],
 			function(context, args, text, state){
 				var name = args.name
 
+				//text = text || args.text
 				text = this.parse(context, text, state, true)
 
 				if(state.slots[name] == null){
@@ -225,6 +241,7 @@ var macro = {
 	// NOTE: slots are parsed in the context of their containing page 
 	// 		and not in the location they are being placed.
 	//
+	// XXX support quoted text...
 	parseElem: function(text, stage){
 		var res = {}
 
@@ -236,10 +253,22 @@ var macro = {
 			res.name = d[1]
 			var args = res.args = {}
 
-			var a = d[2].split(/\s+/g)
+			// XXX support escaped quotes...
+			//var a = d[2].split(/\s+/g)
+			var a = d[2]
+				.split(/((['"]).*?\2)|\s+/g)
+				// cleanup...
+				.filter(function(e){ return e && e != '' && !/^['"]$/.test(e)})
+				// remove quotes...
+				.map(function(e){ return /^(['"]).*\1$/.test(e) ? e.slice(1, -1) : e })
+
 			a.forEach(function(e, i){
-				args[((stage[res.name] || {}).macro_args || [])[i]] = e
+				args[((stage[res.name] || {}).macro_args || [])[i] || i] = e
 			})
+
+			if(args.text){
+				res.text = args.text
+			}
 
 		// html-like...
 		} else {
@@ -258,16 +287,21 @@ var macro = {
 
 		return res
 	},
-	parse: function(context, text, state, skip_post){
+	// XXX need to parse argument value content for macros...
+	// XXX try and avoid parsing HTML by hand...
+	parse: function(context, text, state, skip_post, pattern){
 		var that = this
+
 		state = state || {}
 		state.filters = state.filters || []
 		state.slots = state.slots || {}
 		state.include = state.include || []
 
+		pattern = pattern || RegExp.apply(null, this.__macro__pattern__)
 
+		// XXX need to parse argument value content for macros...
 		var _parse = function(context, text, macro){
-			return text.replace(that.__macro__pattern__, function(match){
+			return text.replace(pattern, function(match){
 				var m = that.parseElem(match, macro)
 
 				// found a macro...
@@ -459,9 +493,12 @@ var data = {
 		text: '\n'
 			+'<!-- place filters here so as not to takup page space: ... -->\n'
 			+'\n'
-			+'<div>/@include(../path) (<a href="#./_edit">edit</a>)</div>\n'
+			+'<div>@include(../path) (<a href="#./_edit">edit</a>)</div>\n'
 			+'<hr>\n'
-			+'<h1 class="title" contenteditable tabindex="0">@include(../title)</h1>\n'
+			//+'<h1 class="title" contenteditable tabindex="0">@include(../title)</h1>\n'
+			+'<h1 class="title" contenteditable tabindex="0">'
+				+'<slot name="title">@include(../title)</slot>'
+			+'</h1>\n'
 			+'<br>\n'
 			+'<div class="text" tabindex="0"> @include(..) </div>\n'
 			+'<hr>\n'
@@ -472,7 +509,7 @@ var data = {
 		text: '\n'
 			+'<!-- @filter(-wikiword) -->\n'
 			+'\n'
-			+'<div>/@include(../path) (<a href="#..">view</a>)</div>\n'
+			+'<div>@include(../path) (<a href="#..">view</a>)</div>\n'
 			+'<hr>\n'
 			+'<h1 class ="title" contenteditable>@include(../title)</h1>\n'
 			+'<br>\n'
