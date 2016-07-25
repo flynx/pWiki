@@ -224,7 +224,7 @@ var macro = {
 		text: function(context, text){ return $('<div>').text(text).html() },
 
 		// XXX
-		nl2br: function(context, text){ return $('<div>').html(text.replace(/\n/g, '<br>\n')) },
+		//nl2br: function(context, text){ return $('<div>').html(text.replace(/\n/g, '<br>\n')) },
 
 		wikiword: function(context, text){ 
 			return setWikiWords(text, true, this.__include_marker__) },
@@ -294,6 +294,9 @@ var macro = {
 	},
 	// XXX need to parse argument value content for macros...
 	// XXX try and avoid parsing HTML by hand...
+	// XXX BUG: for some reason in some pages (Dodo/_view) the contets of
+	// 		.text spill out of the element...
+	// 		...the problem is in the post macro stage...
 	parse: function(context, text, state, skip_post, pattern){
 		var that = this
 
@@ -305,6 +308,9 @@ var macro = {
 		pattern = pattern || RegExp.apply(null, this.__macro__pattern__)
 
 		// XXX need to parse argument value content for macros...
+		// XXX this does not account for nested tags -- e.g. the pattern
+		// 		will "eat" the first matching tag not regarding the nested
+		// 		tags (???)
 		var _parse = function(context, text, macro){
 			return text.replace(pattern, function(match){
 				var m = that.parseElem(match, macro)
@@ -363,11 +369,12 @@ var macro = {
 			// 		included html from messing up the outer structure with
 			// 		things like unclosed tags and stuff...
 			// XXX can this be anything other than html?
-			return $('<span/>')
+			return $('<div/>')
+				.append($('<span/>')
 					.addClass('include')
 					.attr('src', page.path)
-					.html(page.parse({ slots: state.slots }, true))[0]
-						.outerHTML
+					.html(page.parse({ slots: state.slots }, true)))
+				.html()
 		})
 
 		// post macro...
@@ -378,6 +385,85 @@ var macro = {
 		window.t = text
 
 		return text
+	},
+
+
+	_parse: function(context, text, state, skip_post, pattern){
+		var that = this
+
+		state = state || {}
+		state.filters = state.filters || []
+		state.slots = state.slots || {}
+		state.include = state.include || []
+
+		var parsed = $('<div>').html(text)
+
+		// XXX we need to parse macros in three places:
+		// 		- tags (html-style)
+		// 		- #text nodes
+		// 		- attr values
+		// 		Two ways to approach this:
+		// 			- .find('*') + .contents()
+		// 				+ simple
+		// 				- ordering problems
+		// 			- manual recursion -- .contents() -> tag | #text
+		// 				- manual
+		// 				+ more controllable
+
+		var _parseText = function(context, text, macro){
+			return text.replace(pattern, function(match){
+				// XXX parse match...
+				// XXX might be a good idea to construct an element 
+				// 		representing the match...
+				// XXX
+
+				if(name in macro){
+					// XXX call macro...
+					return macro[name].call(context, e, state)
+				}
+
+				return match
+			})
+		}
+		var _parse = function(context, parsed, macro){
+			parsed.contents().each(function(i, e){
+				// #text node -> parse the @ macros...
+				if(e.nodeType == 3){
+					// parse text...
+					var t = $(e)
+					// XXX
+					t.replaceWith(_parseText(contents, t.text(), macro))
+
+				// node -> html-style + attrs...
+				} else {
+					var name = e.nodeName.toLowerCase()
+
+					// macro match...
+					if(name in  macro){
+						// XXX call the macro...
+						$(e).replaceWith(macro[name].call(context, e, state))
+
+					// normal tag -> attrs + sub-tree...
+					} else {
+						// parse attr values...
+						for(var i=0; i < e.attributes.length; i++){
+							var attr = e.attributes[i]
+
+							// XXX
+							attr.value = _parseText(contents, attr.value, macro)
+						}
+
+						// parse sub-tree...
+						_parse(context, e, macro)
+					}
+				}
+			})
+
+			return parsed
+		}
+
+
+		// XXX
 	},
 }
 
@@ -489,6 +575,20 @@ var data = {
 			+'Links to this page:' +'<br>\n'
 			+'@include(./links)' +'<br><br>\n'
 			+'\n',
+	},
+
+	ParserTestPage: {
+		text: '<div>\n'
+				+'<h2>nested single line element</h2>\n'
+
+				// This breaks the parser on the post-macro stage...
+				+'<h3><span>\n'
+					+'nested multi-line</span> element\n'
+				+'</h3>\n'
+
+				// this will get completely messed up by the parser...
+				+'<span> abc <span> 123 </span> xyz </span>'
+			+'</div>'
 	},
 
 	'Templates/_raw': {

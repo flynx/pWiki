@@ -19,7 +19,6 @@ var clear = () => {
 }
 
 var reload = () => {
-
 	$('.wiki')
 		.html(Wiki.title[0] == '_' ? Wiki.text : Wiki.get('./_view').text)
 		.ready(update_editor)
