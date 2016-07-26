@@ -295,13 +295,12 @@ var macro = {
 		// NOTE: this modifies parsed in-place...
 		var _parse = function(context, parsed, macro){
 			$(parsed).contents().each(function(_, e){
-				// #text node -> parse the @ macros...
-				if(e.nodeType == e.TEXT_NODE){
-					$(e).replaceWith(_parseText(context, $(e).text(), macro))
+				// #text / comment node -> parse the @... macros...
+				if(e.nodeType == e.TEXT_NODE || e.nodeType == e.COMMENT_NODE){
+					// get actual element content...
+					var text = $('<div>').append($(e).clone()).html()
 
-				// comment node -> parse the @ macros...
-				} else if(e.nodeType == e.COMMENT_NODE){
-					$(e).replaceWith(_parseText(context, '<!--'+e.textContent+'-->', macro))
+					$(e).replaceWith(_parseText(context, text, macro))
 
 				// node -> html-style + attrs...
 				} else {
@@ -365,18 +364,7 @@ var macro = {
 			})
 
 		// merge includes...
-		//
-		// XXX the include macro should:
-		// 		- for text input 
-		// 			-> create page and push to state.include
-		// 			-> return placeholder
-		// 		- for dom input
-		// 			-> do nothing
 		parsed
-			// text includes...
-			// XXX I do not like that we are reparsing the whole page here...
-			// 		...the only alternative I see is traversing the whole 
-			// 		page agin -- _parse(..) stage 1.5???...
 			.html(parsed.html().replace(include_marker, function(){
 				var page = state.include.shift()
 
@@ -386,35 +374,12 @@ var macro = {
 						//.append(page
 						//	.parse({ slots: state.slots }, true))
 						.append(that
-							.parse(context,
+							.parse(page,
 								page.raw, 
 								{ slots: state.slots }, 
 								true)))
 					.html()
 			}))
-			/* XXX do we need this???
-			// tag includes...
-			.find('include').each(function(i, elem){
-				var src = $(elem).attr('src')
-
-				// ignore include tags without src...
-				if(!src){
-					return
-				}
-
-				// fill the include element with page...
-				// XXX this uses old Wiki.parse(..) method/parser...
-				$(elem)
-					.empty()
-					//.append(that.get(src)
-					//	.parse({ slots: state.slots }, true))
-					.append(that
-						.parse(context, 
-							context.get(src).raw, 
-							{ slots: state.slots }, 
-							true))
-			})
-			//*/
 
 		// post macro...
 		if(!skip_post){
