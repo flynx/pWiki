@@ -388,6 +388,9 @@ var macro = {
 	},
 
 
+	// XXX this expect a different macro signature:
+	// 		macro(context, element, state)
+	// 			-> text
 	_parse: function(context, text, state, skip_post, pattern){
 		var that = this
 
@@ -396,23 +399,12 @@ var macro = {
 		state.slots = state.slots || {}
 		state.include = state.include || []
 
-		var parsed = $('<div>').html(text)
+		// XXX update .__macro__pattern__ to only support the @macro style...
+		//var pattern = pattern || this.__macro__pattern__
+		pattern = pattern || RegExp('@([a-zA-Z-_]+)\\(([^)]*)\\)', 'mg')
 
-		// XXX we need to parse macros in three places:
-		// 		- tags (html-style)
-		// 		- #text nodes
-		// 		- attr values
-		// 		Two ways to approach this:
-		// 			- .find('*') + .contents()
-		// 				+ simple
-		// 				- ordering problems
-		// 			- manual recursion -- .contents() -> tag | #text
-		// 				- manual
-		// 				+ more controllable
+		var parsed = $('<span>').html(text)
 
-		// XXX these expect a different macro signature:
-		// 		macro(context, element, state)
-		// 			-> text
 		var _parseText = function(context, text, macro){
 			return text.replace(pattern, function(match){
 				// XXX parse match...
@@ -433,7 +425,7 @@ var macro = {
 
 					// add the attrs to the element...
 					a.forEach(function(e, i){
-						var k = ((stage[res.name] || {}).macro_args || [])[i]
+						var k = ((macro[name] || {}).macro_args || [])[i]
 						k && elem.attr(k, e)
 					})
 
@@ -444,14 +436,15 @@ var macro = {
 				return match
 			})
 		}
+		// NOTE: this modifies parsed in-place...
 		var _parse = function(context, parsed, macro){
-			parsed.contents().each(function(i, e){
+			$(parsed).contents().each(function(_, e){
 				// #text node -> parse the @ macros...
 				if(e.nodeType == 3){
 					// parse text...
 					var t = $(e)
 
-					t.replaceWith(_parseText(contents, t.text(), macro))
+					t.replaceWith(_parseText(context, t.text(), macro))
 
 				// node -> html-style + attrs...
 				} else {
@@ -467,7 +460,7 @@ var macro = {
 						for(var i=0; i < e.attributes.length; i++){
 							var attr = e.attributes[i]
 
-							attr.value = _parseText(contents, attr.value, macro)
+							attr.value = _parseText(context, attr.value, macro)
 						}
 
 						// parse sub-tree...
@@ -481,11 +474,12 @@ var macro = {
 
 
 		// macro stage...
-		// XXX need to update this.macro...
+		// XXX need to update .macro...
 		_parse(context, parsed, this.macro)
 
 		// filter stage...
-		// XXX need to update filters to take html and return html...
+		// XXX need to update .filters to take html and return html...
+		/*
 		state.filters
 			.concat(this.__filters__)
 			// unique -- leave last occurance..
@@ -509,30 +503,59 @@ var macro = {
 				}
 				// could not find the filter...
 				if(!k){
-					console.warn('Unknown filter:', f)
+					//console.warn('Unknown filter:', f)
 					return
 				}
 				// use the filter...
 				parsed = k.call(that, context, parsed) 
 			})
+		//*/
 
 		// merge includes...
-		// XXX the 'include' macro needs to only remove include elems without src attr...
-		parsed.find('include').each(function(i, elem){
-			var page = that.get($(elem).attr('src'))
+		//
+		// XXX the include macro should:
+		// 		- for text input 
+		// 			-> create page and push to state.include
+		// 			-> return placeholder
+		// 		- for dom input
+		// 			-> do nothing
+		parsed
+			// text includes...
+			// XXX I do not like that we are reparsing the whole page here...
+			// 		...the only alternative I see is traversing the whole 
+			// 		page agin -- _parse(..) stage 1.5???...
+			.html(parsed.html().replace(this.__include_marker__, function(){
+				var page = state.include.shift()
 
-			$(elem).replaceWith($('<span/>')
-				.addClass('include')
-				.attr('src', page.path)
-				.append(page._parse({ slots: state.slots }, true)))
-		})
+				return $('<include/>')
+						.attr('src', page.path)
+						.append(page
+							.parse({ slots: state.slots }, true))
+			}))
+			// tag includes...
+			.find('include').each(function(i, elem){
+				var src = $(elem).attr('src')
+
+				// ignore include tags without src...
+				if(!src){
+					return
+				}
+
+				// fill the include element with page...
+				// XXX this uses old Wiki.parse(..) method/parser...
+				$(elem)
+					.empty()
+					.append(that.get(src)
+						.parse({ slots: state.slots }, true))
+			})
 
 		// post macro...
-		// XXX need to update this.post_macro...
+		// XXX need to update .post_macro...
 		if(!skip_post){
 			_parse(context, parsed, this.post_macro)
 		}
 
+		// XXX shuld we get rid of the rot span???
 		return parsed
 	},
 }
