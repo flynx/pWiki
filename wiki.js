@@ -222,7 +222,8 @@ var macro = {
 				.replace(/\s*\/\/.*$|\s*\/\*(.|[\n\r])*?\*\/\s*/mg, '')) },
 
 		// XXX
-		//nl2br: function(context, text){ return $('<div>').html(text.replace(/\n/g, '<br>\n')) },
+		nl2br: function(context, elem){ 
+			return $('<div>').html($(elem).html().replace(/\n/g, '<br>\n')) },
 
 		wikiword: function(context, elem){ 
 			return $('<span>')
@@ -532,10 +533,8 @@ var data = {
 			+'<h1 class ="title" contenteditable>@include(../title)</h1>\n'
 			+'<br>\n'
 			+'<code><pre class="raw" saveto=".." contenteditable>@source(../raw)</pre></code>\n'
-			// XXX avoid this...
-			+'<script>\n'
-			+'\t$(".raw").text($(".raw").html())\n'
-			+'</script>\n'
+			+'<hr>\n'
+			+'<a href="#/">home</a>\n'
 			+'',
 	},
 }
