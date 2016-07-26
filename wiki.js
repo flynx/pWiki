@@ -74,323 +74,9 @@ function Macro(doc, args, func){
 }
 
 
+
 // XXX should inline macros support named args???
 var macro = {
-
-	__include_marker__: '__include_marker__',
-
-	// Abstract macro syntax:
-	// 	Inline macro:
-	// 		@macro(arg ..)
-	//
-	// 	HTML-like:
-	// 		<macro arg=value ../>
-	//
-	// 	HTML-like with body:
-	// 		<macro arg=value ..>
-	// 			..text..
-	// 		</macro>
-	//
-	// XXX should inline macros support named args???
-	__macro__pattern__: 
-		///<([a-zA-Z-_:]+)(.|[\n\r])*?(>(.|[\n\r])*?<\/\1>|\/>)|@([a-zA-Z-_]+)\(([^)]*)\)/mg,
-		[[
-			// <macro arg=value ../> 
-			// <macro arg=value ..>text</macro> 
-			'<([a-zA-Z-_:]+)(.|[\\n\\r])*?(>(.|[\\n\\r])*?<\\/\\1>|\\/>)',
-			/*// same as above but HTML-level...
-			'<([a-zA-Z-_:]+)(.|[\\n\\r])*?(>(.|[\\n\\r])*?<\\/\\1>|\\/>)'
-				.replace(/</g, '\\&lt;')
-				.replace(/>/g, '\\&gt;'),
-			//*/
-
-			// @macro(arg ..)
-			'@([a-zA-Z-_]+)\\(([^)]*)\\)'
-		].join('|'), 'mg'],
-
-	// default filters...
-	//
-	// NOTE: these are added AFTER the user defined filters...
-	__filters__: [
-		'wikiword',
-	],
-
-	// Macros...
-	//
-	macro: {
-		// select filter to post-process text...
-		filter: Macro('Filter to post-process text',
-			['name'],
-			function(context, args, text, state){
-				var filter = args[0] || args.name
-
-				filter[0] == '-' ?
-					// disabled -- keep at head of list...
-					state.filters.unshift(filter)
-					// normal -- tail...
-					: state.filters.push(filter)
-
-				return ''
-			}),
-
-		// include page/slot...
-		//
-		// NOTE: this will render the page in the caller's context.
-		// NOTE: included pages are rendered completely independently 
-		// 		from the including page.
-		//
-		// XXX do we need to control the rendering of nested pages???
-		// 		...currently I do not think so...
-		// 		...if required this can be done via global and local 
-		// 		filters... (now filters are only local)
-		// XXX do we need to render just one slot??? (slot arg)
-		// 		e.g. include PageX SlotY
-		include: Macro('Include page',
-			['src'],
-			function(context, args, _, state){
-				var path = args.src
-
-				// get and prepare the included page...
-				state.include
-					.push(context.get(path))
-
-				// return the marker...
-				return this.__include_marker__
-			}),
-
-		// NOTE: this is similar to include, the difference is that this
-		// 		includes the page source to the current context while 
-		// 		include works in an isolated context
-		source: Macro('Include page source (without parsing)',
-			['src'], 
-			function(context, args, _, state){
-				var path = args.src
-
-				return context.get(path).raw
-			}),
-
-		// fill/define slot (stage 1)...
-		//
-		// XXX which should have priority the arg text or the content???
-		slot: Macro('Define/fill slot',
-			['name', 'text'],
-			function(context, args, text, state){
-				var name = args.name
-
-				// XXX
-				text = text || args.text
-				text = this.parse(context, text, state, true)
-
-				if(state.slots[name] == null){
-					state.slots[name] = text
-					// return a slot macro parsable by stage 2...
-					return '<slot name="'+name+'">'+ text +'</slot>'
-
-				} else if(name in state.slots){
-					state.slots[name] = text
-					return ''
-				}
-			}),
-	},
-	
-	// Post macros... 
-	//
-	post_macro: {
-		slot: Macro('',
-			['name'],
-			function(context, args, text, state){
-				var name = args.name
-
-				if(state.slots[name] == null){
-					return text
-
-				} else if(name in state.slots){
-					return state.slots[name]
-				}
-			}),
-	},
-
-	// Filters...
-	//
-	// Signature:
-	// 	filter(text) -> html
-	//
-	filter: {
-		default: 'html',
-
-		html: function(context, text){ return $('<div>').html(text).html() },
-
-		json: 'text',
-		text: function(context, text){ return $('<div>').text(text).html() },
-
-		// XXX
-		//nl2br: function(context, text){ return $('<div>').html(text.replace(/\n/g, '<br>\n')) },
-
-		wikiword: function(context, text){ 
-			return setWikiWords(text, true, this.__include_marker__) },
-	},
-
-
-	// Parsing:
-	//  1) expand macros
-	//  2) apply filters
-	//  3) merge and parse included pages:
-	//  	1) expand macros
-	//  	2) apply filters
-	//  4) expand post-macros
-	//
-	// NOTE: stage 4 parsing is executed on the final merged page only 
-	// 		once. i.e. it is not performed on the included pages.
-	// NOTE: included pages are parsed in their own context.
-	// NOTE: slots are parsed in the context of their containing page 
-	// 		and not in the location they are being placed.
-	//
-	// XXX support quoted text...
-	parseElem: function(text, stage){
-		var res = {}
-
-		// @<name>(<args>)
-		if(text[0] == '@'){
-			var d = text.match(/@([a-zA-Z-_:]*)\(([^)]*)\)/)
-
-			res.text = ''
-			res.name = d[1]
-			var args = res.args = {}
-
-			// XXX support escaped quotes...
-			//var a = d[2].split(/\s+/g)
-			var a = d[2]
-				.split(/((['"]).*?\2)|\s+/g)
-				// cleanup...
-				.filter(function(e){ return e && e != '' && !/^['"]$/.test(e)})
-				// remove quotes...
-				.map(function(e){ return /^(['"]).*\1$/.test(e) ? e.slice(1, -1) : e })
-
-			a.forEach(function(e, i){
-				args[((stage[res.name] || {}).macro_args || [])[i] || i] = e
-			})
-
-			// XXX not sure about this....
-			//if(args.text){
-			//	res.text = args.text
-			//}
-
-		// html-like...
-		} else {
-			var elem = res.elem = $('<div>').html(text).children().eq(0)
-			res.name = elem.prop('tagName').toLowerCase()
-
-			var args = res.args = {}
-			var a = elem.prop('attributes')
-
-			for(var i=0; i<a.length; i++){
-				args[a[i].name] = a[i].value
-			}
-
-			res.text = elem.html()
-		}
-
-		return res
-	},
-	// XXX need to parse argument value content for macros...
-	// XXX try and avoid parsing HTML by hand...
-	// XXX BUG: for some reason in some pages (Dodo/_view) the contets of
-	// 		.text spill out of the element...
-	// 		...the problem is in the post macro stage...
-	parse: function(context, text, state, skip_post, pattern){
-		var that = this
-
-		state = state || {}
-		state.filters = state.filters || []
-		state.slots = state.slots || {}
-		state.include = state.include || []
-
-		pattern = pattern || RegExp.apply(null, this.__macro__pattern__)
-
-		// XXX need to parse argument value content for macros...
-		// XXX this does not account for nested tags -- e.g. the pattern
-		// 		will "eat" the first matching tag not regarding the nested
-		// 		tags (???)
-		var _parse = function(context, text, macro){
-			return text.replace(pattern, function(match){
-				var m = that.parseElem(match, macro)
-
-				// found a macro...
-				return m.name in macro ? 
-						macro[m.name].call(that, context, m.args, m.text, state)
-					// found a tag -> look inside...
-					: m.elem && m.text != ''? 
-						m.elem.html(_parse(context, m.text, macro))[0].outerHTML
-					// else nothing changed...
-					: match
-			})
-		}
-
-		// macro...
-		text = _parse(context, text, this.macro)
-
-		// filter...
-		state.filters
-			.concat(this.__filters__)
-			// unique -- leave last occurance..
-			.filter(function(k, i, lst){ 
-				return k[0] != '-'
-					// filter dupplicates... 
-					&& lst.slice(i+1).indexOf(k) == -1 
-						// filter disabled...
-					&& lst.slice(0, i).indexOf('-' + k) == -1
-			})
-			// unique -- leave first occurance..
-			//.filter(function(k, i, lst){ return lst.slice(0, i).indexOf(k) == -1 })
-			// apply the filters...
-			.forEach(function(f){
-				var k = f
-				// get filter aliases...
-				var seen = []
-				while(typeof(k) == typeof('str') && seen.indexOf(k) == -1){
-					seen.push(k)
-					k = that.filter[k]
-				}
-				// could not find the filter...
-				if(!k){
-					console.warn('Unknown filter:', f)
-					return
-				}
-				// use the filter...
-				text = k.call(that, context, text) 
-			})
-
-		// merge includes...
-		// XXX need to check for errors (includes list shorter/longer 
-		// 		than number of markers)...
-		text = text.replace(RegExp(this.__include_marker__, 'g'), function(){
-			var page = state.include.shift()
-			// NOTE: we are quoting html here, this is done to prevent 
-			// 		included html from messing up the outer structure with
-			// 		things like unclosed tags and stuff...
-			// XXX can this be anything other than html?
-			return $('<div/>')
-				.append($('<span/>')
-					.addClass('include')
-					.attr('src', page.path)
-					.html(page.parse({ slots: state.slots }, true)))
-				.html()
-		})
-
-		// post macro...
-		if(!skip_post){
-			text = _parse(context, text, this.post_macro)
-		}
-
-		window.t = text
-
-		return text
-	},
-}
-
-
-// XXX should inline macros support named args???
-var macro2 = {
 
 	__include_marker__: '__include_marker__',
 
@@ -539,6 +225,21 @@ var macro2 = {
 	},
 
 
+	// Parsing:
+	//  1) expand macros
+	//  2) apply filters
+	//  3) merge and parse included pages:
+	//  	1) expand macros
+	//  	2) apply filters
+	//  4) expand post-macros
+	//
+	// NOTE: stage 4 parsing is executed on the final merged page only 
+	// 		once. i.e. it is not performed on the included pages.
+	// NOTE: included pages are parsed in their own context.
+	// NOTE: slots are parsed in the context of their containing page 
+	// 		and not in the location they are being placed.
+	//
+	// XXX support quoted text...
 	// XXX this expect a different macro signature:
 	// 		macro(context, element, state)
 	// 			-> text
@@ -909,7 +610,7 @@ var Wiki = {
 		'\\[[^\\]]+\\]',
 	].join('|') +')', 'g'),
 
-	__macro_parser__: macro2,
+	__macro_parser__: macro,
 
 
 	// Resolve '.' and '..' relative to current page...
