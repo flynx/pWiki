@@ -410,16 +410,35 @@ var macro = {
 		// 				- manual
 		// 				+ more controllable
 
+		// XXX these expect a different macro signature:
+		// 		macro(context, element, state)
+		// 			-> text
 		var _parseText = function(context, text, macro){
 			return text.replace(pattern, function(match){
 				// XXX parse match...
-				// XXX might be a good idea to construct an element 
-				// 		representing the match...
-				// XXX
+				var d = text.match(/@([a-zA-Z-_:]*)\(([^)]*)\)/)
+
+				var name = d[1]
 
 				if(name in macro){
-					// XXX call macro...
-					return macro[name].call(context, e, state)
+					var elem = $('<'+name+'/>')
+
+					// format positional args....
+					var a = d[2]
+						.split(/((['"]).*?\2)|\s+/g)
+						// cleanup...
+						.filter(function(e){ return e && e != '' && !/^['"]$/.test(e)})
+						// remove quotes...
+						.map(function(e){ return /^(['"]).*\1$/.test(e) ? e.slice(1, -1) : e })
+
+					// add the attrs to the element...
+					a.forEach(function(e, i){
+						var k = ((stage[res.name] || {}).macro_args || [])[i]
+						k && elem.attr(k, e)
+					})
+
+					// call macro...
+					return macro[name].call(context, elem, state)
 				}
 
 				return match
@@ -431,16 +450,15 @@ var macro = {
 				if(e.nodeType == 3){
 					// parse text...
 					var t = $(e)
-					// XXX
+
 					t.replaceWith(_parseText(contents, t.text(), macro))
 
 				// node -> html-style + attrs...
 				} else {
 					var name = e.nodeName.toLowerCase()
 
-					// macro match...
+					// macro match -> call macro...
 					if(name in  macro){
-						// XXX call the macro...
 						$(e).replaceWith(macro[name].call(context, e, state))
 
 					// normal tag -> attrs + sub-tree...
@@ -449,7 +467,6 @@ var macro = {
 						for(var i=0; i < e.attributes.length; i++){
 							var attr = e.attributes[i]
 
-							// XXX
 							attr.value = _parseText(contents, attr.value, macro)
 						}
 
@@ -463,7 +480,60 @@ var macro = {
 		}
 
 
-		// XXX
+		// macro stage...
+		// XXX need to update this.macro...
+		_parse(context, parsed, this.macro)
+
+		// filter stage...
+		// XXX need to update filters to take html and return html...
+		state.filters
+			.concat(this.__filters__)
+			// unique -- leave last occurance..
+			.filter(function(k, i, lst){ 
+				return k[0] != '-'
+					// filter dupplicates... 
+					&& lst.slice(i+1).indexOf(k) == -1 
+						// filter disabled...
+					&& lst.slice(0, i).indexOf('-' + k) == -1
+			})
+			// unique -- leave first occurance..
+			//.filter(function(k, i, lst){ return lst.slice(0, i).indexOf(k) == -1 })
+			// apply the filters...
+			.forEach(function(f){
+				var k = f
+				// get filter aliases...
+				var seen = []
+				while(typeof(k) == typeof('str') && seen.indexOf(k) == -1){
+					seen.push(k)
+					k = that.filter[k]
+				}
+				// could not find the filter...
+				if(!k){
+					console.warn('Unknown filter:', f)
+					return
+				}
+				// use the filter...
+				parsed = k.call(that, context, parsed) 
+			})
+
+		// merge includes...
+		// XXX the 'include' macro needs to only remove include elems without src attr...
+		parsed.find('include').each(function(i, elem){
+			var page = that.get($(elem).attr('src'))
+
+			$(elem).replaceWith($('<span/>')
+				.addClass('include')
+				.attr('src', page.path)
+				.append(page._parse({ slots: state.slots }, true)))
+		})
+
+		// post macro...
+		// XXX need to update this.post_macro...
+		if(!skip_post){
+			_parse(context, parsed, this.post_macro)
+		}
+
+		return parsed
 	},
 }
 
