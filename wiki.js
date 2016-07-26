@@ -207,14 +207,19 @@ var macro = {
 	// Signature:
 	// 	filter(text) -> html
 	//
-	// XXX 
 	filter: {
 		default: 'html',
 
 		html: function(context, elem){ return $(elem) },
 
-		json: 'text',
-		text: function(context, elem){ return $('<div>').html($(elem).text()) },
+		text: function(context, elem){ return $('<span>')
+			.append($('<pre>')
+				.html($(elem).html())) },
+		// XXX expperimental...
+		json: function(context, elem){ return $('<span>')
+			.html($(elem).text()
+				// remove JS comments...
+				.replace(/\s*\/\/.*$|\s*\/\*(.|[\n\r])*?\*\/\s*/mg, '')) },
 
 		// XXX
 		//nl2br: function(context, text){ return $('<div>').html(text.replace(/\n/g, '<br>\n')) },
@@ -240,9 +245,7 @@ var macro = {
 	// 		and not in the location they are being placed.
 	//
 	// XXX support quoted text...
-	// XXX this expect a different macro signature:
-	// 		macro(context, element, state)
-	// 			-> text
+	// XXX need to quote regexp chars of .__include_marker__...
 	parse: function(context, text, state, skip_post, pattern){
 		var that = this
 
@@ -264,7 +267,7 @@ var macro = {
 		var _parseText = function(context, text, macro){
 			return text.replace(pattern, function(match){
 				// XXX parse match...
-				var d = text.match(/@([a-zA-Z-_:]*)\(([^)]*)\)/)
+				var d = match.match(/@([a-zA-Z-_:]*)\(([^)]*)\)/)
 
 				var name = d[1]
 
@@ -501,20 +504,6 @@ var data = {
 			+'\n',
 	},
 
-	ParserTestPage: {
-		text: '<div>\n'
-				+'<h2>nested single line element</h2>\n'
-
-				// This breaks the parser on the post-macro stage...
-				+'<h3><span>\n'
-					+'nested multi-line</span> element\n'
-				+'</h3>\n'
-
-				// this will get completely messed up by the parser...
-				+'<span> abc <span> 123 </span> xyz </span>'
-			+'</div>'
-	},
-
 	'Templates/_raw': {
 		text: '@source(..)',
 	},
@@ -524,7 +513,10 @@ var data = {
 			+'\n'
 			+'<div>@include(../path) (<a href="#./_edit">edit</a>)</div>\n'
 			+'<hr>\n'
-			+'<h1 class="title" contenteditable tabindex="0">@include(../title)</h1>\n'
+			+'<h1 class="title" contenteditable tabindex="0">'
+				//+'<slot name="title">@include(../title)</slot>'
+				+'@include(../title)'
+			+'</h1>\n'
 			+'<br>\n'
 			+'<div class="text" tabindex="0"> @include(..) </div>\n'
 			+'<hr>\n'
@@ -557,15 +549,20 @@ data.__proto__ = BaseData
 var Wiki = {
 	__wiki_data: data,
 
-	__config_page__: 'System/config',
+	__config_page__: 'System/Settings',
+
 	__home_page__: 'WikiHome',
+
 	__default_page__: 'EmptyPage',
+
 	// Special sub-paths to look in on each level...
 	__acquesition_order__: [
 		'Templates',
 	],
+
 	__post_acquesition_order__: [
 	],
+
 	// XXX should this be read only???
 	__system__: 'System',
 	//__redirect_template__: 'RedirectTemplate',
@@ -607,12 +604,9 @@ var Wiki = {
 	get data(){
 		return this.__wiki_data[this.acquire()] },
 
-	/*
-	// XXX
+	// XXX experimental...
 	get config(){
-		return this.__wiki_data[this.__config_page__] || {}
-	},
-	//*/
+		return JSON.parse(this.get(this.__config_page__).code) || {} },
 
 
 	// XXX
@@ -791,13 +785,13 @@ var Wiki = {
 	},
 
 
-	parse: function(state, skip_post){
+	get text(){
+		//return this.parse() 
 		// special case: if we are getting ./raw then do not parse text...
 		return this.title == 'raw' ? this.raw 
-			: this.__macro_parser__.parse(this, this.raw, state, skip_post)
-	},
-	get text(){
-		return this.parse() },
+			: this.__macro_parser__.parse(this, this.raw) },
+	get code(){
+		return this.text.html() },
 
 
 	// NOTE: this is set by setting .text
