@@ -386,12 +386,163 @@ var macro = {
 
 		return text
 	},
+}
+
+
+// XXX should inline macros support named args???
+var macro2 = {
+
+	__include_marker__: '__include_marker__',
+
+	// Abstract macro syntax:
+	// 	Inline macro:
+	// 		@macro(arg ..)
+	//
+	// 	HTML-like:
+	// 		<macro arg=value ../>
+	//
+	// 	HTML-like with body:
+	// 		<macro arg=value ..>
+	// 			..text..
+	// 		</macro>
+	//
+	// XXX should inline macros support named args???
+	__macro__pattern__: 
+		[[
+			// @macro(arg ..)
+			'@([a-zA-Z-_]+)\\(([^)]*)\\)'
+		].join('|'), 'mg'],
+
+	// default filters...
+	//
+	// NOTE: these are added AFTER the user defined filters...
+	__filters__: [
+		'wikiword',
+	],
+
+	// Macros...
+	//
+	macro: {
+		// select filter to post-process text...
+		filter: Macro('Filter to post-process text',
+			['name'],
+			function(context, elem, state){
+				var filter = $(elem).attr('name')
+
+				filter[0] == '-' ?
+					// disabled -- keep at head of list...
+					state.filters.unshift(filter)
+					// normal -- tail...
+					: state.filters.push(filter)
+
+				return ''
+			}),
+
+		// include page/slot...
+		//
+		// NOTE: this will render the page in the caller's context.
+		// NOTE: included pages are rendered completely independently 
+		// 		from the including page.
+		//
+		// XXX do we need to control the rendering of nested pages???
+		// 		...currently I do not think so...
+		// 		...if required this can be done via global and local 
+		// 		filters... (now filters are only local)
+		// XXX do we need to render just one slot??? (slot arg)
+		// 		e.g. include PageX SlotY
+		include: Macro('Include page',
+			['src'],
+			function(context, elem, state){
+				var path = $(elem).attr('src')
+
+				// get and prepare the included page...
+				state.include
+					.push(context.get(path))
+
+				// return the marker...
+				return this.__include_marker__
+			}),
+
+		// NOTE: this is similar to include, the difference is that this
+		// 		includes the page source to the current context while 
+		// 		include works in an isolated context
+		source: Macro('Include page source (without parsing)',
+			['src'], 
+			function(context, elem, state){
+				var path = $(elem).attr('src')
+
+				return context.get(path).raw
+			}),
+
+		// fill/define slot (stage 1)...
+		//
+		// XXX which should have priority the arg text or the content???
+		slot: Macro('Define/fill slot',
+			['name', 'text'],
+			function(context, elem, state){
+				var name = $(elem).attr('name')
+
+				// XXX
+				text = $(elem).html()
+				text = text == '' ? $(elem).attr('text') : text
+				text = this.parse(context, text, state, true)
+
+				if(state.slots[name] == null){
+					state.slots[name] = text
+					// return a slot macro parsable by stage 2...
+					return '<slot name="'+name+'">'+ text +'</slot>'
+
+				} else if(name in state.slots){
+					state.slots[name] = text
+					return ''
+				}
+			}),
+	},
+	
+	// Post macros... 
+	//
+	post_macro: {
+		slot: Macro('',
+			['name'],
+			function(context, elem, state){
+				var name = $(elem).attr('name')
+
+				if(state.slots[name] == null){
+					return $(elem).html()
+
+				} else if(name in state.slots){
+					return state.slots[name]
+				}
+			}),
+	},
+
+	// Filters...
+	//
+	// Signature:
+	// 	filter(text) -> html
+	//
+	// XXX 
+	filter: {
+		default: 'html',
+
+		html: function(context, elem){ return $(elem) },
+
+		json: 'text',
+		text: function(context, elem){ return $('<div>').html($(elem).text()) },
+
+		// XXX
+		//nl2br: function(context, text){ return $('<div>').html(text.replace(/\n/g, '<br>\n')) },
+
+		wikiword: function(context, elem){ 
+			return $('<span>')
+				.html(setWikiWords($(elem).html(), true, this.__include_marker__)) },
+	},
 
 
 	// XXX this expect a different macro signature:
 	// 		macro(context, element, state)
 	// 			-> text
-	_parse: function(context, text, state, skip_post, pattern){
+	parse: function(context, text, state, skip_post, pattern){
 		var that = this
 
 		state = state || {}
@@ -399,11 +550,15 @@ var macro = {
 		state.slots = state.slots || {}
 		state.include = state.include || []
 
-		// XXX update .__macro__pattern__ to only support the @macro style...
-		//var pattern = pattern || this.__macro__pattern__
-		pattern = pattern || RegExp('@([a-zA-Z-_]+)\\(([^)]*)\\)', 'mg')
+		//pattern = pattern || RegExp('@([a-zA-Z-_]+)\\(([^)]*)\\)', 'mg')
+		pattern = pattern || RegExp.apply(null, this.__macro__pattern__)
 
-		var parsed = $('<span>').html(text)
+		// XXX need to quote regexp chars...
+		var include_marker = RegExp(this.__include_marker__, 'g')
+
+		var parsed = typeof(text) == typeof('str') ? 
+			$('<span>').html(text) 
+			: text
 
 		var _parseText = function(context, text, macro){
 			return text.replace(pattern, function(match){
@@ -430,7 +585,7 @@ var macro = {
 					})
 
 					// call macro...
-					return macro[name].call(context, elem, state)
+					return macro[name].call(that, context, elem, state)
 				}
 
 				return match
@@ -440,11 +595,12 @@ var macro = {
 		var _parse = function(context, parsed, macro){
 			$(parsed).contents().each(function(_, e){
 				// #text node -> parse the @ macros...
-				if(e.nodeType == 3){
-					// parse text...
-					var t = $(e)
+				if(e.nodeType == e.TEXT_NODE){
+					$(e).replaceWith(_parseText(context, $(e).text(), macro))
 
-					t.replaceWith(_parseText(context, t.text(), macro))
+				// comment node -> parse the @ macros...
+				} else if(e.nodeType == e.COMMENT_NODE){
+					$(e).replaceWith(_parseText(context, '<!--'+e.textContent+'-->', macro))
 
 				// node -> html-style + attrs...
 				} else {
@@ -452,7 +608,7 @@ var macro = {
 
 					// macro match -> call macro...
 					if(name in  macro){
-						$(e).replaceWith(macro[name].call(context, e, state))
+						$(e).replaceWith(macro[name].call(that, context, e, state))
 
 					// normal tag -> attrs + sub-tree...
 					} else {
@@ -474,12 +630,9 @@ var macro = {
 
 
 		// macro stage...
-		// XXX need to update .macro...
 		_parse(context, parsed, this.macro)
 
 		// filter stage...
-		// XXX need to update .filters to take html and return html...
-		/*
 		state.filters
 			.concat(this.__filters__)
 			// unique -- leave last occurance..
@@ -509,7 +662,6 @@ var macro = {
 				// use the filter...
 				parsed = k.call(that, context, parsed) 
 			})
-		//*/
 
 		// merge includes...
 		//
@@ -524,14 +676,22 @@ var macro = {
 			// XXX I do not like that we are reparsing the whole page here...
 			// 		...the only alternative I see is traversing the whole 
 			// 		page agin -- _parse(..) stage 1.5???...
-			.html(parsed.html().replace(this.__include_marker__, function(){
+			.html(parsed.html().replace(include_marker, function(){
 				var page = state.include.shift()
 
-				return $('<include/>')
+				return $('<div>')
+					.append($('<include/>')
 						.attr('src', page.path)
-						.append(page
-							.parse({ slots: state.slots }, true))
+						//.append(page
+						//	.parse({ slots: state.slots }, true))
+						.append(that
+							.parse(context,
+								page.raw, 
+								{ slots: state.slots }, 
+								true)))
+					.html()
 			}))
+			/* XXX do we need this???
 			// tag includes...
 			.find('include').each(function(i, elem){
 				var src = $(elem).attr('src')
@@ -545,12 +705,17 @@ var macro = {
 				// XXX this uses old Wiki.parse(..) method/parser...
 				$(elem)
 					.empty()
-					.append(that.get(src)
-						.parse({ slots: state.slots }, true))
+					//.append(that.get(src)
+					//	.parse({ slots: state.slots }, true))
+					.append(that
+						.parse(context, 
+							context.get(src).raw, 
+							{ slots: state.slots }, 
+							true))
 			})
+			//*/
 
 		// post macro...
-		// XXX need to update .post_macro...
 		if(!skip_post){
 			_parse(context, parsed, this.post_macro)
 		}
@@ -743,6 +908,8 @@ var Wiki = {
 		'(\\./|\\.\\./|[A-Z][a-z0-9]+[A-Z/])[a-zA-Z0-9/]*',
 		'\\[[^\\]]+\\]',
 	].join('|') +')', 'g'),
+
+	__macro_parser__: macro2,
 
 
 	// Resolve '.' and '..' relative to current page...
@@ -961,7 +1128,7 @@ var Wiki = {
 	parse: function(state, skip_post){
 		// special case: if we are getting ./raw then do not parse text...
 		return this.title == 'raw' ? this.raw 
-			: macro.parse(this, this.raw, state, skip_post)
+			: this.__macro_parser__.parse(this, this.raw, state, skip_post)
 	},
 	get text(){
 		return this.parse() },
