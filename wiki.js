@@ -228,6 +228,14 @@ var macro = {
 		wikiword: function(context, elem){ 
 			return $('<span>')
 				.html(setWikiWords($(elem).html(), true, this.__include_marker__)) },
+
+
+		// XXX move this to a plugin...
+		markdown: function(context, elem){
+			var converter = new showdown.Converter()
+
+			return $('<span>').html(converter.makeHtml($(elem).html()))
+		},
 	},
 
 
@@ -512,7 +520,10 @@ var data = {
 		text: '\n'
 			+'<!-- place filters here so as not to takup page space: ... -->\n'
 			+'\n'
-			+'<div>@include(../path) (<a href="#./_edit">edit</a>)</div>\n'
+			+'<div>\n'
+				+'<a href="#tree">&#x2630;</a> \n'
+				+'@include(../path) (<a href="#./_edit">edit</a>)\n'
+			+'</div>\n'
 			+'<hr>\n'
 			+'<h1 class="title" contenteditable tabindex="0">'
 				//+'<slot name="title">@include(../title)</slot>'
@@ -528,7 +539,10 @@ var data = {
 		text: '\n'
 			+'<!-- @filter(-wikiword) -->\n'
 			+'\n'
-			+'<div>@include(../path) (<a href="#..">view</a>)</div>\n'
+			+'<div>'
+				+'<a href="#tree">&#x2630;</a> \n'
+			    +'@include(../path) (<a href="#..">view</a>)\n'
+			+'</div>\n'
 			+'<hr>\n'
 			+'<h1 class ="title" contenteditable>@include(../title)</h1>\n'
 			+'<br>\n'
