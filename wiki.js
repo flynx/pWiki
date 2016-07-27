@@ -234,7 +234,8 @@ var macro = {
 		markdown: function(context, elem){
 			var converter = new showdown.Converter()
 
-			return $('<span>').html(converter.makeHtml($(elem).html()))
+			return $('<span>')
+				.html(converter.makeHtml($(elem).html()))
 		},
 	},
 
