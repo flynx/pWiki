@@ -92,6 +92,14 @@ var go = (path) => {
 	path = path.trim()
 	path = path[0] == '[' ? path.slice(1, -1) : path
 
+	// history stuff...
+	if(path == 'History/back'){
+		return history.back()
+
+	} else if(path == 'History/forward'){
+		return history.forward()
+	}
+
 	Wiki.location = path
 
 	history.pushState({
