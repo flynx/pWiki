@@ -605,7 +605,14 @@ var Wiki = {
 
 	// XXX experimental...
 	get config(){
-		return JSON.parse(this.get(this.__config_page__).code) || {} },
+		try{
+			return JSON.parse(this.get(this.__config_page__).code) || {}
+
+		} catch(err){
+			console.error('CONFIG:', err)
+			return {}
+		}
+	},
 
 
 	// XXX
