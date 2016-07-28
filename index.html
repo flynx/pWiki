@@ -4,6 +4,13 @@
 <title>pWiki</title>
 </head>
 <style>
+
+.raw,
+.text
+{
+	display: block;
+}
+
 </style>
 
 <script src="ext-lib/jquery.js"></script>
@@ -37,13 +44,13 @@ var update_editor = function(){
 	// XXX make this update on enter...
 	$('.title')
 		.on('blur', () => { 
-			//Wiki.title = $('.title').text() 
-			//reload()
+			Wiki.title = $('.title').text() 
+			reload()
 		})
 
 	// live update text...
 	// XXX is this the right way to go for large documents???
-	$('.text')
+	var text = $('.text')
 		.focus(function(){
 			console.log('EDITING:', Wiki.path)
 
@@ -68,7 +75,10 @@ var update_editor = function(){
 			reload() 
 		})
 
-	$('.raw')
+	//text.html(Wiki.get(text.attr('saveto')).text)
+
+
+	var raw = $('.raw')
 		.focus(function(){
 			var to = $(this).attr('saveto') || '.'
 			console.log('EDITING:', Wiki.get(to).path)
@@ -83,7 +93,9 @@ var update_editor = function(){
 		.blur(() => { 
 			reload() 
 		})
-		.text($('.raw').html())
+		//.text($('.raw').html())
+	
+	//raw.text(Wiki.get(raw.attr('saveto')).raw)
 }
 
 var go = (path) => {
@@ -154,6 +166,7 @@ $(() => {
 		}
 	})
 })
+
 </script>
 
 <body>

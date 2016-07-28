@@ -143,7 +143,7 @@ var macro = {
 
 				// get and prepare the included page...
 				state.include
-					.push(context.get(path))
+					.push([elem, context.get(path)])
 
 				// return the marker...
 				return this.__include_marker__
@@ -160,35 +160,68 @@ var macro = {
 				return context.get(path).raw
 			}),
 
+		quote: Macro('Include quoted page source (without parsing)',
+			['src'], 
+			function(context, elem, state){
+				elem = $(elem)
+				var path = elem.attr('src')
+
+				return elem.text(context.get(path).raw)
+			}),
+
+		/*
 		// fill/define slot (stage 1)...
 		//
 		// XXX which should have priority the arg text or the content???
-		slot: Macro('Define/fill slot',
+		_slot: Macro('Define/fill slot',
 			['name', 'text'],
-			function(context, elem, state){
+			function(context, elem, state, parse){
 				var name = $(elem).attr('name')
 
 				// XXX
 				text = $(elem).html()
 				text = text == '' ? $(elem).attr('text') : text
 				text = this.parse(context, text, state, true)
+				//text = parse(elem)
 
 				if(state.slots[name] == null){
 					state.slots[name] = text
 					// return a slot macro parsable by stage 2...
-					return '<slot name="'+name+'">'+ text +'</slot>'
+					//return '<_slot name="'+name+'">'+ text +'</slot>'
+					return elem
 
 				} else if(name in state.slots){
 					state.slots[name] = text
 					return ''
 				}
 			}),
+		//*/
+		// convert @ macro to html-like + parse content...
+		slot: Macro('Define/fill slot',
+			['name', 'text'],
+			function(context, elem, state, parse){
+				elem = $(elem)
+				var name = elem.attr('name')
+
+				// XXX
+				text = elem.html()
+				text = text.trim() == '' ? 
+					elem.html(elem.attr('text') || '').html() 
+					: text
+				text = parse(elem)
+
+				elem.attr('text', null)
+				elem.html(text)
+
+				return elem
+			}),
 	},
 	
 	// Post macros... 
 	//
 	post_macro: {
-		slot: Macro('',
+		/*
+		_slot: Macro('',
 			['name'],
 			function(context, elem, state){
 				var name = $(elem).attr('name')
@@ -200,6 +233,25 @@ var macro = {
 					return state.slots[name]
 				}
 			}),
+		//*/
+
+		/*
+		// XXX rename to post-include and post-quote
+		'page-text': Macro('',
+			['src'],
+			function(context, elem, state){
+				elem = $(elem)
+
+				return elem.html(context.get(elem.attr('src')).text)
+			}),
+		'page-raw': Macro('',
+			['src'],
+			function(context, elem, state){
+				elem = $(elem)
+
+				return elem.text(context.get(elem.attr('src')).text)
+			}),
+		//*/
 	},
 
 	// Filters...
@@ -246,7 +298,8 @@ var macro = {
 	//  3) merge and parse included pages:
 	//  	1) expand macros
 	//  	2) apply filters
-	//  4) expand post-macros
+	//  4) fill slots
+	//  5) expand post-macros
 	//
 	// NOTE: stage 4 parsing is executed on the final merged page only 
 	// 		once. i.e. it is not performed on the included pages.
@@ -299,7 +352,13 @@ var macro = {
 					})
 
 					// call macro...
-					return macro[name].call(that, context, elem, state)
+					var res = macro[name]
+						.call(that, context, elem, state,
+							function(elem){ _parse(context, elem, macro) })
+
+					return res instanceof $ ? res[0].outerHTML 
+						: typeof(res) != typeof('str') ? res.outerHTML
+						: res
 				}
 
 				return match
@@ -321,7 +380,9 @@ var macro = {
 
 					// macro match -> call macro...
 					if(name in  macro){
-						$(e).replaceWith(macro[name].call(that, context, e, state))
+						$(e).replaceWith(macro[name]
+							.call(that, context, e, state, 
+								function(elem){ _parse(context, elem, macro) }))
 
 					// normal tag -> attrs + sub-tree...
 					} else {
@@ -380,9 +441,11 @@ var macro = {
 		parsed
 			.html(parsed.html().replace(include_marker, function(){
 				var page = state.include.shift()
+				var elem = $(page.shift())
+				page = page.pop()
 
 				return $('<div>')
-					.append($('<include/>')
+					.append(elem//$('<include/>')
 						.attr('src', page.path)
 						//.append(page
 						//	.parse({ slots: state.slots }, true))
@@ -394,9 +457,34 @@ var macro = {
 					.html()
 			}))
 
-		// post macro...
+		// post processing...
 		if(!skip_post){
-			_parse(context, parsed, this.post_macro)
+			// fill slots...
+			// XXX need to prevent this from processing slots in editable
+			// 		elements...
+			slots = {}
+			// get slots...
+			parsed.find('slot')
+				.each(function(i, e){
+					e = $(e)
+					var n = e.attr('name')
+
+					n in slots && e.detach()
+
+					slots[n] = e 
+				})
+			// place slots...
+			parsed.find('slot')
+				.each(function(i, e){
+					e = $(e)
+					var n = e.attr('name')
+
+					e.replaceWith(slots[n])
+				})
+
+			// post-macro...
+			this.post_macro 
+				&& _parse(context, parsed, this.post_macro)
 		}
 
 		// XXX shuld we get rid of the rot span???
@@ -517,21 +605,32 @@ var data = {
 	'Templates/_raw': {
 		text: '@source(..)',
 	},
+
 	'Templates/_view': {
 		text: '\n'
-			+'<!-- place filters here so as not to takup page space: ... -->\n'
 			+'\n'
 			+'<div>\n'
 				+'<a href="#tree">&#x2630;</a> \n'
-				+'@include(../path) (<a href="#./_edit">edit</a>)\n'
+				+'@include(../path)\n'
+				+'\n'
+				+'<slot name="toggle-edit-link">\n'
+					+'(<a href="#./_edit">edit</a>)\n'
+				+'</slot>\n'
+			+'\n'
 			+'</div>\n'
 			+'<hr>\n'
 			+'<h1 class="title" contenteditable tabindex="0">'
-				//+'<slot name="title">@include(../title)</slot>'
-				+'@include(../title)'
+				+'<slot name="title">'
+					+'@source(../title)'
+				+'</slot>'
+			+'\n'
 			+'</h1>\n'
 			+'<br>\n'
-			+'<div class="text" tabindex="0"> @include(..) </div>\n'
+			+'\n'
+			+'<slot name="page-content">\n'
+				+'<include src=".." class="text" saveto=".." tabindex="0"/>\n'
+			+'</slot>\n'
+			+'\n'
 			+'<hr>\n'
 			+'<a href="#/">home</a>\n'
 			+'\n',
@@ -540,16 +639,17 @@ var data = {
 		text: '\n'
 			+'<!-- @filter(-wikiword) -->\n'
 			+'\n'
-			+'<div>'
-				+'<a href="#tree">&#x2630;</a> \n'
-			    +'@include(../path) (<a href="#..">view</a>)\n'
-			+'</div>\n'
-			+'<hr>\n'
-			+'<h1 class ="title" contenteditable>@include(../title)</h1>\n'
-			+'<br>\n'
-			+'<code><pre class="raw" saveto=".." contenteditable>@source(../raw)</pre></code>\n'
-			+'<hr>\n'
-			+'<a href="#/">home</a>\n'
+			+'<include src="../_view"/>\n'
+			+'\n'
+			+'<slot name="toggle-edit-link">'
+				+'(<a href="#..">view</a>)'
+			+'</slot>\n'
+			+'\n'
+			+'<slot name="page-content">\n'
+				+'<code><pre>'
+					+'<quote src="../raw" class="raw" saveto=".." contenteditable/>'
+				+'</pre></code>\n'
+			+'</slot>'
 			+'',
 	},
 }
