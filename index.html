@@ -43,7 +43,10 @@ var reload = () => {
 var update_editor = function(){
 	// XXX make this update on enter...
 	$('.title')
-		.on('blur', () => { 
+		.focus(function(){
+			$(this).text(Wiki.title)
+		})
+		.blur(() => { 
 			Wiki.title = $('.title').text() 
 			reload()
 		})
