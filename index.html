@@ -89,7 +89,8 @@ var update_editor = function(){
 		.on('keyup', function(){ 
 			var to = Wiki.get($(this).attr('saveto') || '.').path
 			console.log('SAVING:', to)
-			Wiki.get(to).raw = $(this).text()
+			//Wiki.get(to).raw = $(this).text()
+			Wiki.get(to).raw = $(this)[0].innerText
 		})
 		// XXX do this live, but on a timeout after user input...
 		// XXX need to place the cursor in the same position...
