@@ -16,6 +16,9 @@
 <script src="ext-lib/jquery.js"></script>
 <script src="ext-lib/showdown.min.js"></script>
 
+<script src="ext-lib/FileSaver.js"></script>
+<script src="ext-lib/jszip.min.js"></script>
+
 <script src="ext-lib/pouchdb.min.js"></script>
 <script src="ext-lib/peer.min.js"></script>
 
@@ -136,6 +139,19 @@ var go = (path) => {
 		window.location)
 
 	reload()
+}
+
+var exportZip = function(){
+	var zip = new JSZip()
+
+	var pwiki = zip.folder("pWiki")
+	pwiki.file("data.json", JSON.stringify(Wiki.__wiki_data))
+
+	zip.generateAsync({type:"blob"})
+		.then(function(content) {
+			// see FileSaver.js
+			saveAs(content, "pWiki.zip")
+		})
 }
 
 $(() => {
