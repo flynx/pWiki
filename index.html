@@ -59,7 +59,7 @@ var update_editor = function(){
 
 			$(this)
 				.prop('contenteditable', 'true')
-				.html(Wiki.raw)
+				.html(Wiki.raw.replace(/\n/gm, '<br class="tmp-br"/>\n'))
 
 			//reload()
 		})
@@ -67,7 +67,18 @@ var update_editor = function(){
 			if($(this).prop('contenteditable') == 'true'){
 				var to = $(this).attr('saveto') || '.'
 				console.log('SAVING:', Wiki.get(to).path)
-				Wiki.get(to).raw = clearWikiWords($('.text').clone()).html() 
+
+				Wiki.get(to).raw = clearWikiWords(
+					$('.text').clone())
+					.html() 
+				/*// show \n in the inline editor...
+				Wiki.get(to).raw = clearWikiWords(
+					$('.text').clone()
+						.find('.tmp-br')
+							.remove()
+							.end())
+					.html() 
+				//*/
 			}
 		})
 		// XXX do this live, but on a timeout after user input...
