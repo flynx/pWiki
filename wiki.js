@@ -639,6 +639,17 @@ var BaseData = {
 //
 // XXX add .json support...
 var data = {
+	'Templates': {
+		text: '@filter(nl2br)'
+			+'XXX Genereal template description...\n'
+			+'<macro src="./*">'
+				+'<hr>'
+				+'<h2>@source(./path)</h2>'
+				+'<div>@quote(./raw)</div>'
+			+'</macro>\n'
+			+'\n',
+	},
+
 	'Templates/EmptyPage': {
 		text: ''
 			+'<!-- place filters here so as not to takup page space: ... -->\n'
@@ -651,8 +662,7 @@ var data = {
 	},
 
 	'Templates/pages': {
-		text: 
-			'<macro src="../**"> @source(./path)<br> </macro>\n'
+		text: '<macro src="../**"> @source(./path)<br> </macro>\n'
 	},
 
 	'Templates/_raw': {
@@ -663,7 +673,7 @@ var data = {
 		text: '\n'
 			+'\n'
 			+'<div>\n'
-				+'<a href="#tree">&#x2630;</a> \n'
+				+'<a href="#pages">&#x2630;</a> \n'
 				+'@include(../path)\n'
 				+'\n'
 				+'<slot name="toggle-edit-link">\n'
@@ -784,6 +794,8 @@ var Wiki = {
 			+'$')
 
 		return Object.keys(this.__wiki_data)
+				// XXX is this correct???
+				.concat(Object.keys(this.__wiki_data.__proto__))
 			.map(function(p){ return tail != '' ? 
 				normalizePath(p +'/'+ tail) 
 				: p })
