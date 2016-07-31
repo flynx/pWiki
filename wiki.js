@@ -563,11 +563,11 @@ var macro = {
 // XXX add docs...
 var BaseData = {
 	// Macro acces to standard page attributes (paths)...
-	'System/title': function(){ return '['+ this.get('..').title +']' },
-	'System/path': function(){ return '['+ this.dir +']' },
-	'System/dir': function(){ return '['+ this.get('..').dir +']' },
-	'System/location': function(){ return '['+ this.dir +']' },
-	'System/resolved': function(){ return '['+ this.get('..').acquire() +']' },
+	'System/title': function(){ return this.get('..').title },
+	'System/path': function(){ return this.dir },
+	'System/dir': function(){ return this.get('..').dir },
+	'System/location': function(){ return this.dir },
+	'System/resolved': function(){ return this.get('..').acquire() },
 
 	// page data...
 	//
@@ -642,6 +642,7 @@ var data = {
 	'Templates': {
 		text: '@filter(nl2br)'
 			+'XXX Genereal template description...\n'
+			+'\n'
 			+'<macro src="./*">'
 				+'<hr>'
 				+'<h2>@source(./path)</h2>'
@@ -662,10 +663,10 @@ var data = {
 	},
 
 	'Templates/pages': {
-		text: '<macro src="../*"> @source(./path)<br> </macro>\n'
+		text: '<macro src="../*"> [@source(./path)]<br> </macro>\n'
 	},
 	'Templates/tree': {
-		text: '<macro src="../**"> @source(./path)<br> </macro>\n'
+		text: '<macro src="../**"> [@source(./path)]<br> </macro>\n'
 	},
 
 	'Templates/_raw': {
