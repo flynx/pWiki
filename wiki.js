@@ -330,10 +330,20 @@ var macro = {
 
 		// XXX move this to a plugin...
 		markdown: function(context, elem){
-			var converter = new showdown.Converter()
+			var converter = new showdown.Converter({
+				strikethrough: true,
+				tables: true,
+				tasklists: true,
+			})
 
 			return $('<span>')
 				.html(converter.makeHtml($(elem).html()))
+				// XXX add click handling to checkboxes...
+				.find('[checked]')
+					.parent()
+						.addClass('checked')
+						.end()
+					.end()
 		},
 	},
 
@@ -641,9 +651,8 @@ var data = {
 	},
 
 	'Templates/pages': {
-		text: ''
-			+'<macro src="../**"> @source(./path)<br> </macro>'
-			+'\n',
+		text: 
+			'<macro src="../**"> @source(./path)<br> </macro>\n'
 	},
 
 	'Templates/_raw': {
