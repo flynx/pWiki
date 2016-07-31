@@ -662,6 +662,9 @@ var data = {
 	},
 
 	'Templates/pages': {
+		text: '<macro src="../*"> @source(./path)<br> </macro>\n'
+	},
+	'Templates/tree': {
 		text: '<macro src="../**"> @source(./path)<br> </macro>\n'
 	},
 
