@@ -71,10 +71,12 @@ var update_editor = function(){
 				var to = $(this).attr('saveto') || '.'
 				console.log('SAVING:', Wiki.get(to).path)
 
-				Wiki.get(to).raw = clearWikiWords(
+				/*Wiki.get(to).raw = clearWikiWords(
 					$('.text').clone())
 					.html() 
-				/*// show \n in the inline editor...
+				//*/
+				/*
+				// show \n in the inline editor...
 				Wiki.get(to).raw = clearWikiWords(
 					$('.text').clone()
 						.find('.tmp-br')
@@ -114,6 +116,34 @@ var update_editor = function(){
 		//.text($('.raw').html())
 	
 	//raw.text(Wiki.get(raw.attr('saveto')).raw)
+
+	$('include')
+		.attr('tabindex', 0)
+		.click(function(){
+			event.stopPropagation()
+		})
+		.focus(function(){
+			var to = $(this).attr('src') || '.'
+			var page = Wiki.get(to)
+			console.log('EDITING:', page.path)
+
+			// XXX select editor based on filters...
+			$(this)
+				//.html(page.text)
+				.html($('<pre>')
+					.text(page.raw))
+		})
+		.on('keyup', function(){ 
+			var to = Wiki.get($(this).attr('src') || '.').path
+			console.log('SAVING:', to)
+			//Wiki.get(to).raw = $(this).text()
+			//Wiki.get(to).raw = $(this)[0].innerText
+		})
+		// XXX do this live, but on a timeout after user input...
+		// XXX need to place the cursor in the same position...
+		.blur(() => { 
+			reload() 
+		})
 }
 
 var go = (path) => {

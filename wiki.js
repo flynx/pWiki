@@ -7,6 +7,12 @@
 
 /*********************************************************************/
 // Hepers...
+//
+var quoteRegExp =
+RegExp.quoteRegExp =
+function(str){
+	return str.replace(/([\.\\\/\(\)\[\]\$\*\+\-\{\}\@\^\&\?\<\>])/g, '\\$1')
+}
 
 var path2lst = function(path){ 
 	return (path instanceof Array ?  path : path.split(/[\\\/]+/g))
@@ -157,7 +163,9 @@ var macro = {
 			function(context, elem, state){
 				var path = $(elem).attr('src')
 
-				return context.get(path).raw
+				return context.get(path)
+					.map(function(page){ return page.raw })
+					.join('\n')
 			}),
 
 		quote: Macro('Include quoted page source (without parsing)',
@@ -166,7 +174,13 @@ var macro = {
 				elem = $(elem)
 				var path = elem.attr('src')
 
-				return elem.text(context.get(path).raw)
+				return $(context.get(path)
+					.map(function(page){
+						return elem
+							.clone()
+							.attr('src', page.path)
+							.text(page.raw)[0]
+					}))
 			}),
 
 		/*
@@ -211,10 +225,42 @@ var macro = {
 				text = parse(elem)
 
 				elem.attr('text', null)
-				elem.html(text)
+				//elem.html(text)
 
 				return elem
 			}),
+
+		macro: Macro('Define/fill slot',
+			['name', 'src'],
+			function(context, elem, state, parse){
+				elem = $(elem)
+				var name = elem.attr('name')
+				var path = elem.attr('src')
+
+				state.templates = state.templates || {}
+
+
+				if(name){
+					if(elem.html().trim() != ''){
+						state.templates[name] = elem.clone()
+
+					} else if(name in state.templates) {
+						elem = state.templates[name]
+					}
+				}
+
+				if(path){
+					return $(context.get(path)
+						.map(function(page){
+							var e = elem.clone()
+								.attr('src', page.path)
+							parse(e, page)
+							return e[0]
+						}))
+				}
+
+				return ''
+			})
 	},
 	
 	// Post macros... 
@@ -354,9 +400,14 @@ var macro = {
 					// call macro...
 					var res = macro[name]
 						.call(that, context, elem, state,
-							function(elem){ _parse(context, elem, macro) })
+							function(elem, c){ 
+								return _parse(c || context, elem, macro) })
 
-					return res instanceof $ ? res[0].outerHTML 
+					return res instanceof jQuery ? 
+							// merge html of the returned set of elements...
+							res.map(function(i, e){ return e.outerHTML })
+								.toArray()
+								.join('\n')
 						: typeof(res) != typeof('str') ? res.outerHTML
 						: res
 				}
@@ -382,7 +433,8 @@ var macro = {
 					if(name in  macro){
 						$(e).replaceWith(macro[name]
 							.call(that, context, e, state, 
-								function(elem){ _parse(context, elem, macro) }))
+								function(elem, c){ 
+									return _parse(c || context, elem, macro) }))
 
 					// normal tag -> attrs + sub-tree...
 					} else {
@@ -444,17 +496,18 @@ var macro = {
 				var elem = $(page.shift())
 				page = page.pop()
 
-				return $('<div>')
-					.append(elem//$('<include/>')
-						.attr('src', page.path)
-						//.append(page
-						//	.parse({ slots: state.slots }, true))
-						.append(that
-							.parse(page,
-								page.raw, 
-								{ slots: state.slots }, 
-								true)))
-					.html()
+				return page.map(function(page){
+					return $('<div>')
+						.append(elem
+							.clone()
+							.attr('src', page.path)
+							.append(that
+								.parse(page,
+									page.raw, 
+									{ slots: state.slots }, 
+									true)))
+						.html()
+				}).join('\n')
 			}))
 
 		// post processing...
@@ -532,21 +585,6 @@ var BaseData = {
 			.map(function(e){ return '['+ e +']' })
 			.join('<br>')
 	},
-	'System/tree': function(){
-		var p = this.dir
-
-		return Object.keys(this.__wiki_data)
-			.map(function(k){
-				if(k.indexOf(p) == 0){
-					return k
-				}
-				return null
-			})
-			.filter(function(e){ return e != null })
-			.sort()
-			.map(function(e){ return '['+ e +']' })
-			.join('<br>')
-	},
 	// list links to this page...
 	'System/links': function(){
 		var that = this
@@ -599,6 +637,12 @@ var data = {
 			+'\n'
 			+'Links to this page:' +'<br>\n'
 			+'@include(./links)' +'<br><br>\n'
+			+'\n',
+	},
+
+	'Templates/pages': {
+		text: ''
+			+'<macro src="../**"> @source(./path)<br> </macro>'
 			+'\n',
 	},
 
@@ -706,6 +750,36 @@ var Wiki = {
 				path.replace(/^\.\./, this.dir)
 			: path
 	},
+	// Get list of paths resolving '*' and '**'
+	//
+	// XXX should we list parent pages???
+	// XXX should this acquire stuff???
+	resolveStarPath: function(path){
+		// no pattern in path -> return as-is...
+		if(path.indexOf('*') < 0){
+			return [ path ]
+		}
+
+		// get the tail...
+		var tail = path.split(/\*/g).pop()
+		tail = tail == path ? '' : tail
+
+		var pattern = RegExp('^'
+			+normalizePath(path)
+				// quote regexp chars...
+				.replace(/([\.\\\/\(\)\[\]\$\+\-\{\}\@\^\&\?\<\>])/g, '\\$1')
+
+				// convert '*' and '**' to regexp...
+				.replace(/\*\*/g, '.*')
+				.replace(/^\*|([^.])\*/g, '$1[^\\/]*')
+			+'$')
+
+		return Object.keys(this.__wiki_data)
+			.map(function(p){ return tail != '' ? 
+				normalizePath(p +'/'+ tail) 
+				: p })
+			.filter(function(p){ return pattern.test(p) })
+	},
 
 
 	// current location...
@@ -734,6 +808,7 @@ var Wiki = {
 	clone: function(){
 		var o = Object.create(Wiki)
 		o.location = this.location
+		//o.__location_at = this.__location_at
 		return o
 	},
 
@@ -750,8 +825,8 @@ var Wiki = {
 	// NOTE: if a link can't be updated without a conflit then it is left
 	// 		unchanged, and a redirect page will be created.
 	get path(){ 
-		return this.location },
-	// XXX should lik updating be part of this???
+		return this.resolveStarPath(this.location)[this.at()] },
+	// XXX should link updating be part of this???
 	// XXX use a template for the redirect page...
 	set path(value){
 		value = this.resolveDotPath(value)
@@ -868,7 +943,7 @@ var Wiki = {
 	//
 	// NOTE: see .path for details...
 	get dir(){
-		return path2lst(this.location).slice(0, -1).join('/') },
+		return path2lst(this.path).slice(0, -1).join('/') },
 	set dir(value){
 		this.path = value +'/'+ this.title },
 
@@ -876,7 +951,7 @@ var Wiki = {
 	//
 	// NOTE: see .path for details...
 	get title(){ 
-		return path2lst(this.location).pop() },
+		return path2lst(this.path).pop() },
 	set title(value){
 		this.path = this.dir +'/'+ value },
 
@@ -935,10 +1010,17 @@ var Wiki = {
 	get children(){
 	},
 
+	// NOTE: .get() is not the same as .clone() in that .get() will resolve
+	// 		the path to a specific location while .clone() will keep 
+	// 		everything as-is...
+	//
 	// XXX add prpper insyantiation ( .clone() )...
 	get: function(path){
 		//var o = Object.create(this)
 		var o = this.clone() 
+		// NOTE: this is here to resolve path patterns...
+		o.location = this.path
+
 		o.location = path || this.path
 		return o
 	},
@@ -1003,7 +1085,66 @@ var Wiki = {
 	},
 
 
+	// iteration...
+	get length(){
+		return this.resolveStarPath(this.location).length },
+	// get/srt postion in list of pages...
+	// XXX do we need to min/max normalize n??
+	at: function(n){
+		// get position...
+		if(n == null){
+			return this.__location_at || 0
+		}
+
+		var l = this.length
+
+		// end of list...
+		if(n >= l || n < -l){
+			return null
+		}
+
+		var res = this.clone()
+
+		n = n < 0 ? l - n : n
+		// XXX do we min/max n???
+		n = Math.max(n, 0)
+		n = Math.min(l-1, n)
+
+		res.__location_at = n
+
+		return res
+	},
+	prev: function(){ 
+		var i = this.at() - 1
+		// NOTE: need to guard against overflows...
+		return i >= 0 ? this.at(i) : null },
+	next: function(){ 
+		return this.at(this.at() + 1) },
+
+	map: function(func){
+		var res = []
+		for(var i=0; i < this.length; i++){
+			var page = this.at(i)
+			res.push(func.call(page, page, i))
+		}
+		return res
+	},
+	filter: function(func){
+		var res = []
+		for(var i=0; i < this.length; i++){
+			var page = this.at(i)
+			func.call(page, page, i) && res.push(page)
+		}
+		return res
+	},
+	forEach: function(func){
+		this.map(func)
+		return this
+	},
+
+
 	// serialization...
+	// XXX need to account for '*' and '**' in path...
 	// XXX
 	json: function(path){
 		return path == null ? JSON.parse(JSON.stringify(this.__wiki_data))
