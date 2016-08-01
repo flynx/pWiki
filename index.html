@@ -53,8 +53,13 @@ var update_editor = function(){
 		.focus(function(){
 			$(this).text(Wiki.title)
 		})
-		.blur(() => { 
-			Wiki.title = $('.title').text() 
+		.blur(function(){ 
+			var text = $(this).text().trim()
+			if(text[0] == '/'){
+				Wiki.path = text
+			} else {
+				Wiki.title = text
+			}
 			reload()
 		})
 

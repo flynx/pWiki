@@ -110,6 +110,7 @@ var macro = {
 	// NOTE: these are added AFTER the user defined filters...
 	__filters__: [
 		'wikiword',
+		'noscript',
 	],
 
 	// Macros...
@@ -326,6 +327,21 @@ var macro = {
 		wikiword: function(context, elem){ 
 			return $('<span>')
 				.html(setWikiWords($(elem).html(), true, this.__include_marker__)) },
+		noscript: function(context, elem){ 
+			return $(elem)
+				// remove script tags...
+				.find('script')
+					.remove()
+					.end()
+				// remove js links...
+				.find('[href]')
+					.filter(function(i, e){ return /javascript:/i.test($(e).attr('href')) })
+						.attr('href', '#')
+						.end()
+					.end()
+				// remove event handlers...
+				// XXX .off() will not work here as we need to remove on* handlers...
+		},
 
 
 		// XXX move this to a plugin...
@@ -639,6 +655,24 @@ var BaseData = {
 //
 // XXX add .json support...
 var data = {
+	// System pages...
+	'System/style': {
+		text: ''
+			+'.button {\n'
+			+'  text-decoration: none;\n'
+			+'  margin: 5px;\n'
+			+'}\n'
+			+'\n'
+			+'.separator~* {\n'
+			+'  float: right;\n'
+			+'}\n'
+			+'',
+	},
+	'System/settings': {
+		text: JSON.stringify({}),
+	},
+
+	// Templates...
 	'Templates': {
 		text: '@filter(nl2br)'
 			+'XXX Genereal template description...\n'
@@ -650,7 +684,6 @@ var data = {
 			+'</macro>\n'
 			+'\n',
 	},
-
 	'Templates/EmptyPage': {
 		text: ''
 			+'<!-- place filters here so as not to takup page space: ... -->\n'
@@ -661,28 +694,35 @@ var data = {
 			+'@include(./links)' +'<br><br>\n'
 			+'\n',
 	},
-
 	'Templates/pages': {
 		text: '<macro src="../*"> [@source(./path)]<br> </macro>\n'
 	},
 	'Templates/tree': {
 		text: '<macro src="../**"> [@source(./path)]<br> </macro>\n'
 	},
-
 	'Templates/_raw': {
 		text: '@source(..)',
 	},
-
+	'Templates/_css': {
+		text: '<style>\n'
+			+'@source(..)\n'
+		+'</style>',
+	},
 	'Templates/_view': {
 		text: '\n'
+			+'@include(style/_css)\n'
 			+'\n'
 			+'<div>\n'
-				+'<a href="#pages">&#x2630;</a> \n'
+				+'<a href="#pages" class="pages-list-button button">&#x2630;</a> \n'
 				+'[@source(../path)]\n'
 				+'\n'
 				+'<slot name="toggle-edit-link">\n'
 					+'(<a href="#./_edit">edit</a>)\n'
 				+'</slot>\n'
+				+'\n'
+				+'<span class="separator"/>\n'
+				+'\n'
+				+'<a href="#NewPage/_edit" class="new-page-button button">+</a>\n'
 			+'</div>\n'
 			+'\n'
 			+'<hr>\n'
@@ -797,9 +837,12 @@ var Wiki = {
 				.replace(/^\*|([^.])\*/g, '$1[^\\/]*')
 			+'$')
 
-		return Object.keys(this.__wiki_data)
+		var data = this.__wiki_data
+		return Object.keys(data)
 				// XXX is this correct???
-				.concat(Object.keys(this.__wiki_data.__proto__))
+				.concat(Object.keys(data.__proto__)
+					// do not repeat overloaded stuff...
+					.filter(function(e){ return !data.hasOwnProperty(e) }))
 			.map(function(p){ return tail != '' ? 
 				normalizePath(p +'/'+ tail) 
 				: p })
