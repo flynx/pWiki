@@ -63,6 +63,7 @@ var update_editor = function(){
 			reload()
 		})
 
+	/*
 	// live update text...
 	// XXX is this the right way to go for large documents???
 	var text = $('.text')
@@ -80,19 +81,16 @@ var update_editor = function(){
 				var to = $(this).attr('saveto') || '.'
 				console.log('SAVING:', Wiki.get(to).path)
 
-				/*Wiki.get(to).raw = clearWikiWords(
-					$('.text').clone())
-					.html() 
-				//*/
-				/*
+				//Wiki.get(to).raw = clearWikiWords(
+				//	$('.text').clone())
+				//	.html() 
 				// show \n in the inline editor...
-				Wiki.get(to).raw = clearWikiWords(
-					$('.text').clone()
-						.find('.tmp-br')
-							.remove()
-							.end())
-					.html() 
-				//*/
+				//Wiki.get(to).raw = clearWikiWords(
+				//	$('.text').clone()
+				//		.find('.tmp-br')
+				//			.remove()
+				//			.end())
+				//	.html() 
 			}
 		})
 		// XXX do this live, but on a timeout after user input...
@@ -102,6 +100,7 @@ var update_editor = function(){
 				.removeAttr('contenteditable')
 			reload() 
 		})
+	//*/
 
 	//text.html(Wiki.get(text.attr('saveto')).text)
 
@@ -126,6 +125,7 @@ var update_editor = function(){
 	
 	//raw.text(Wiki.get(raw.attr('saveto')).raw)
 
+	/*
 	$('include')
 		.attr('tabindex', 0)
 		.click(function(){
@@ -153,6 +153,7 @@ var update_editor = function(){
 		.blur(() => { 
 			reload() 
 		})
+	//*/
 }
 
 var go = (path) => {
