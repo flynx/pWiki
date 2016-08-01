@@ -645,7 +645,7 @@ var data = {
 			+'\n'
 			+'<macro src="./*">'
 				+'<hr>'
-				+'<h2>@source(./path)</h2>'
+				+'<h2>[@source(./path)]</h2>'
 				+'<div>@quote(./raw)</div>'
 			+'</macro>\n'
 			+'\n',
@@ -678,13 +678,13 @@ var data = {
 			+'\n'
 			+'<div>\n'
 				+'<a href="#pages">&#x2630;</a> \n'
-				+'@include(../path)\n'
+				+'[@source(../path)]\n'
 				+'\n'
 				+'<slot name="toggle-edit-link">\n'
 					+'(<a href="#./_edit">edit</a>)\n'
 				+'</slot>\n'
-			+'\n'
 			+'</div>\n'
+			+'\n'
 			+'<hr>\n'
 			+'<h1 class="title" contenteditable tabindex="0">'
 				+'<slot name="title">'
@@ -908,7 +908,7 @@ var Wiki = {
 
 				// format the new link...
 				var to = p == '' ? ntitle : p +'/'+ ntitle
-				to = lnk[0] == '[' ? '['+to+'}' : to
+				to = lnk[0] == '[' ? '['+to+']' : to
 
 				// explicit link change -- replace...
 				if(from == l){
