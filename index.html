@@ -213,7 +213,9 @@ $(() => {
 	Wiki.__wiki_data = localStorage['wiki-data'] ?
 		JSON.parse(localStorage['wiki-data']) 
 		: data
-	Wiki.__wiki_data.__proto__ = data
+	if(Wiki.__wiki_data !== data){
+		Wiki.__wiki_data.__proto__ = data
+	}
 
 	Wiki.location = localStorage['wiki-location'] || Wiki.location
 
