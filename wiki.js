@@ -726,7 +726,7 @@ var data = {
 			+'</div>\n'
 			+'\n'
 			+'<hr>\n'
-			+'<h1 class="title" contenteditable tabindex="0">'
+			+'<h1 class="title" contenteditable tabindex="0" saveto="..">'
 				+'<slot name="title">'
 					+'@source(../title)'
 				+'</slot>'

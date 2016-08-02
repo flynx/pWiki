@@ -49,17 +49,25 @@ var reload = () => {
 
 var update_editor = function(){
 	// XXX make this update on enter...
+	// XXX account for title of edited page...
 	$('.title')
 		.focus(function(){
-			$(this).text(Wiki.title)
+			var to = $(this).attr('saveto') || '.'
+			$(this).text(Wiki.get(to).title)
 		})
 		.blur(function(){ 
+			var to = $(this).attr('saveto') || '.'
 			var text = $(this).text().trim()
+			var page = Wiki.get(to)
+
 			if(text[0] == '/'){
-				Wiki.path = text
+				page.path = text
 			} else {
-				Wiki.title = text
+				page.title = text
 			}
+
+			// XXX need to account for changed path sufixes...
+			Wiki.path = page.path
 			reload()
 		})
 
