@@ -931,6 +931,7 @@ var Wiki = {
 
 		// update links to this page...
 		this.pages(function(page){
+		//this.get('**').map(function(page){
 			// skip the old page...
 			if(page.location == l){
 				return
@@ -1264,6 +1265,10 @@ var Wiki = {
 	//		NOTE: the next method is used iff the previous returns 0, 
 	//			i.e. the items are equal.
 	//
+	// NOTE: the sort is local to the returned object.
+	// NOTE: the sorted object may loose sync form the actual wiki as the
+	// 		list of siblings is cached.
+	// 		...the resulting object is not to be stored for long.
 	sort: function(){
 		var that = this
 		var res = this.clone()
