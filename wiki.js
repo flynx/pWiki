@@ -84,7 +84,7 @@ function Macro(doc, args, func){
 // XXX should inline macros support named args???
 var macro = {
 
-	__include_marker__: '__include_marker__',
+	__include_marker__: '{{{include_marker}}}',
 
 	// Abstract macro syntax:
 	// 	Inline macro:
@@ -578,6 +578,10 @@ var macro = {
 // XXX not sure about these...
 // XXX add docs...
 var BaseData = {
+	// XXX Page modifiers...
+	//'System/sort': function(){ return this.get('..').sort() },
+	//'System/reverse': function(){ return this.get('..').reverse() },
+	
 	// Macro acces to standard page attributes (paths)...
 	'System/title': function(){ return this.get('..').title },
 	'System/path': function(){ return this.dir },
@@ -763,7 +767,7 @@ var data = {
 data.__proto__ = BaseData
 
 
-
+
 /*********************************************************************/
 
 // XXX add .json support...
@@ -854,6 +858,7 @@ var Wiki = {
 	get location(){
 		return this.__location || this.__home_page__ },
 	set location(value){
+		delete this.__order
 		this.__location = this.resolveDotPath(value) },
 
 
@@ -872,13 +877,16 @@ var Wiki = {
 	},
 
 
-	// XXX
 	clone: function(){
 		var o = Object.create(Wiki)
 		o.location = this.location
 		//o.__location_at = this.__location_at
+		// XXX
+		o.__parent = this
 		return o
 	},
+	end: function(){
+		return this.__parent || this },
 
 
 	// page path...
@@ -893,9 +901,10 @@ var Wiki = {
 	// NOTE: if a link can't be updated without a conflit then it is left
 	// 		unchanged, and a redirect page will be created.
 	get path(){ 
-		return this.resolveStarPath(this.location)[this.at()] },
+		return (this.__order || this.resolveStarPath(this.location))[this.at()] },
 	// XXX should link updating be part of this???
 	// XXX use a template for the redirect page...
+	// XXX need to skip explicit '.' and '..' paths...
 	set path(value){
 		value = this.resolveDotPath(value)
 
@@ -1032,8 +1041,10 @@ var Wiki = {
 	// page content...
 	get raw(){
 		var data = this.data
-		return data instanceof Function ? data.call(this, this)
-			: typeof(data) == typeof('str') ? data
+		data = data instanceof Function ? data.call(this, this) : data
+
+		return typeof(data) == typeof('str') ? data
+			: data != null && 'raw' in data ? data.raw
 			: data != null ? data.text
 			: ''
 	},
@@ -1052,7 +1063,6 @@ var Wiki = {
 		delete this.__wiki_data[l].links
 		this.__wiki_data[l].links = this.links
 	},
-
 
 	get text(){
 		//return this.parse() 
@@ -1079,9 +1089,12 @@ var Wiki = {
 	// navigation...
 	get parent(){
 		return this.get('..') },
-	// XXX list children/sub-pages...
 	get children(){
-	},
+		return this
+			.get('./*') },
+	get siblings(){
+		return this
+			.get('../*') },
 
 	// NOTE: .get() is not the same as .clone() in that .get() will resolve
 	// 		the path to a specific location while .clone() will keep 
@@ -1160,7 +1173,7 @@ var Wiki = {
 
 	// iteration...
 	get length(){
-		return this.resolveStarPath(this.location).length },
+		return (this.__order || this.resolveStarPath(this.location)).length },
 	// get/srt postion in list of pages...
 	// XXX do we need to min/max normalize n??
 	at: function(n){
@@ -1177,6 +1190,9 @@ var Wiki = {
 		}
 
 		var res = this.clone()
+		if(this.__order){
+			res.__order = this.__order.slice()
+		}
 
 		n = n < 0 ? l - n : n
 		// XXX do we min/max n???
@@ -1213,6 +1229,88 @@ var Wiki = {
 	forEach: function(func){
 		this.map(func)
 		return this
+	},
+
+
+	// sorting...
+	__default_sort_methods__: ['path'],
+	__sort_methods__: {
+		title: function(a, b){
+			return a.title < b.title ? -1
+				: a.title > b.title ? 1
+				: 0
+		},
+		path: function(a, b){
+			return a.path < b.path ? -1
+				: a.path > b.path ? 1
+				: 0
+		},
+		// XXX date, ...
+	},
+
+	// Sort siblings...
+	//
+	//	Sort pages via default method
+	//	.sort()
+	//		-> page
+	//
+	//	Sort pages via method
+	//	.sort(method)
+	//		-> page
+	//
+	//	Sort pages via method1, then method2, ...
+	//	.sort(method1, method2, ...)
+	//		-> page
+	//		NOTE: the next method is used iff the previous returns 0, 
+	//			i.e. the items are equal.
+	//
+	sort: function(){
+		var that = this
+		var res = this.clone()
+		var path = res.path
+
+		var methods = [].slice.call(arguments)
+		methods = methods.length == 0 ? this.__default_sort_methods__ : methods
+		methods = methods
+			.map(function(m){
+				return typeof(m) == typeof('str') ? that.__sort_methods__[m]
+					: m instanceof Function ? m
+					: null
+			})
+			.filter(function(m){ return !!m })
+
+		var method = function(a, b){
+				for(var i=0; i < methods.length; i++){
+					var res = methods[i].call(that, a, b)
+
+					if(res != 0){
+						return res
+					}
+				}
+				return 0
+		}
+
+		res.__order = this
+			.resolveStarPath(this.location)
+			.map(function(t){ return that.get(t) })
+			.sort(method)
+			.map(function(t){ return t.path })
+
+		res.__location_at = res.__order.indexOf(path)
+	
+		return res
+	},
+	reverse: function(){
+		var res = this.clone()
+		var path = res.path
+
+		res.__order = ((this.__order && this.__order.slice())
+				|| this.resolveStarPath(this.location))
+			.reverse()
+
+		res.__location_at = res.__order.indexOf(path)
+
+		return res
 	},
 
 
