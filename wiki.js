@@ -901,7 +901,7 @@ var Wiki = {
 
 		var l = this.location
 
-		if(value == l){
+		if(value == l || value == ''){
 			return
 		}
 
@@ -1021,7 +1021,12 @@ var Wiki = {
 	get title(){ 
 		return path2lst(this.path).pop() },
 	set title(value){
-		this.path = this.dir +'/'+ value },
+		if(value == '' || value == null){
+			return
+		}
+
+		this.path = this.dir +'/'+ value 
+	},
 
 
 	// page content...
