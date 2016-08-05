@@ -730,7 +730,8 @@ var data = {
 			+'</div>\n'
 			+'\n'
 			+'<hr>\n'
-			+'<h1 class="title" contenteditable tabindex="0" saveto="..">'
+			//+'<h1 class="title" contenteditable tabindex="0" saveto="..">'
+			+'<h1 saveto="..">'
 				+'<slot name="title">'
 					+'@source(../title)'
 				+'</slot>'
@@ -754,6 +755,12 @@ var data = {
 			+'\n'
 			+'<slot name="toggle-edit-link">'
 				+'(<a href="#..">view</a>)'
+			+'</slot>\n'
+			+'\n'
+			// XXX temporary until I figure out how to deal with the saveto=".."
+			// 		in implicit vs. explicit _view
+			+'<slot name="title" class="title" contenteditable saveto="..">'
+				+'@source(../title)'
 			+'</slot>\n'
 			+'\n'
 			+'<slot name="page-content">\n'
