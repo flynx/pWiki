@@ -84,7 +84,7 @@ function Macro(doc, args, func){
 // XXX should inline macros support named args???
 var macro = {
 
-	__include_marker__: '{{{include_marker}}}',
+	__include_marker__: '{{{INCLUDE-MARKER}}}',
 
 	// Abstract macro syntax:
 	// 	Inline macro:
@@ -116,6 +116,11 @@ var macro = {
 	// Macros...
 	//
 	macro: {
+		now: Macro('Create a now id',
+			[],
+			function(context, elem, state){
+				return ''+Date.now()
+			}),
 		// select filter to post-process text...
 		filter: Macro('Filter to post-process text',
 			['name'],
@@ -578,10 +583,6 @@ var macro = {
 // XXX not sure about these...
 // XXX add docs...
 var BaseData = {
-	// XXX Page modifiers...
-	//'System/sort': function(){ return this.get('..').sort() },
-	//'System/reverse': function(){ return this.get('..').reverse() },
-	
 	// Macro acces to standard page attributes (paths)...
 	'System/title': function(){ return this.get('..').title },
 	'System/path': function(){ return this.dir },
@@ -637,10 +638,15 @@ var BaseData = {
 			.join('<br>')
 	},
 
-	// XXX this needs a redirect...
+	// Page modifiers/actions...
+	// XXX these needs redirecting...
+	//'System/sort': function(){ return this.get('..').sort() },
+	//'System/reverse': function(){ return this.get('..').reverse() },
 	'System/delete': function(){
 		var p = this.dir
 		delete this.__wiki_data[p]
+		//return this.get('../..').text
+		return 'Removed...'
 	},
 }
 
@@ -770,11 +776,48 @@ var data = {
 			+'</slot>'
 			+'',
 	},
+
+
+	// XXX experimental...
+	// XXX need sorting...
+	'Templates/_todo': {
+		text: ''
+			+'<include src="../_view"/>\n'
+			+'\n'
+			+'<div>'
+			// XXX temporary until I figure out how to deal with the saveto=".."
+			// 		in implicit vs. explicit _view
+			+'<slot name="title" class="title" contenteditable saveto="..">'
+				+'@source(../title)'
+			+'</slot>\n'
+			+'\n'
+			+'<slot name="page-content">\n'
+				+'<div>'
+					+'<input type="checkbox"/>'
+					+'<span class="raw" contenteditable tabindex="0" '
+							+'saveto="../@now()" style="display:inline-block">'
+						+'...'
+					+'</span>'
+				+'</div>'
+				+'<br>'
+				+'<macro src="../*">'
+					+'<div>'
+						+'<input type="checkbox"/>'
+						+'<span class="raw" contenteditable tabindex="0" '
+								+'saveto="@source(./path)" style="display:inline-block">'
+							+'@include(./raw)'
+						+'</span> '
+						+'<a href="#@source(./path)/delete">&times;</a>'
+					+'</div>'
+				+'</macro>'
+			+'</slot>'
+			+'\n',
+	},
 }
 data.__proto__ = BaseData
 
 
-
+
 /*********************************************************************/
 
 // XXX add .json support...
@@ -807,6 +850,15 @@ var Wiki = {
 	__macro_parser__: macro,
 
 
+	// Resolve path variables...
+	//
+	// Supported vars:
+	// 	$NOW		- resolves to 'P'+Date.now()
+	//
+	resolvePathVars: function(path){
+		return path
+			.replace(/\$NOW|\$\{NOW\}/g, ''+Date.now())
+	},
 	// Resolve '.' and '..' relative to current page...
 	//
 	// NOTE: '.' is relative to .path and not to .dir
@@ -828,6 +880,7 @@ var Wiki = {
 	//
 	// XXX should we list parent pages???
 	// XXX should this acquire stuff???
+	// XXX should this support sorting and reversing???
 	resolveStarPath: function(path){
 		// no pattern in path -> return as-is...
 		if(path.indexOf('*') < 0){
@@ -866,7 +919,9 @@ var Wiki = {
 		return this.__location || this.__home_page__ },
 	set location(value){
 		delete this.__order
-		this.__location = this.resolveDotPath(value) },
+		delete this.__order_by
+		this.__location = this.resolvePathVars(this.resolveDotPath(value))
+	},
 
 
 	get data(){
@@ -913,7 +968,7 @@ var Wiki = {
 	// XXX use a template for the redirect page...
 	// XXX need to skip explicit '.' and '..' paths...
 	set path(value){
-		value = this.resolveDotPath(value)
+		value = this.resolvePathVars(this.resolveDotPath(value))
 
 		var l = this.location
 
@@ -1282,47 +1337,78 @@ var Wiki = {
 		var path = res.path
 
 		var methods = [].slice.call(arguments)
-		methods = methods.length == 0 ? this.__default_sort_methods__ : methods
-		methods = methods
-			.map(function(m){
-				return typeof(m) == typeof('str') ? that.__sort_methods__[m]
-					: m instanceof Function ? m
-					: null
-			})
-			.filter(function(m){ return !!m })
 
-		var method = function(a, b){
-				for(var i=0; i < methods.length; i++){
-					var res = methods[i].call(that, a, b)
+		res.__order_by = methods = methods.length == 0 ?
+				this.__default_sort_methods__ 
+			: methods
 
-					if(res != 0){
-						return res
-					}
-				}
-				return 0
-		}
+		res.update()
 
-		res.__order = this
-			.resolveStarPath(this.location)
-			.map(function(t){ return that.get(t) })
-			.sort(method)
-			.map(function(t){ return t.path })
-
-		res.__location_at = res.__order.indexOf(path)
-	
 		return res
 	},
 	reverse: function(){
 		var res = this.clone()
-		var path = res.path
 
-		res.__order = ((this.__order && this.__order.slice())
-				|| this.resolveStarPath(this.location))
-			.reverse()
+		res.__order_by = (this.__order_by || []).slice()
 
-		res.__location_at = res.__order.indexOf(path)
+		var i = res.__order_by.indexOf('reverse')
+
+		i >= 0 ? 
+			res.__order_by.splice(i, 1) 
+			: res.__order_by.push('reverse')
+
+		res.update()
 
 		return res
+	},
+
+	// XXX not sure if this is the way to go...
+	update: function(){
+		var that = this
+
+		if(this.__order || this.__order_by){
+			var path = this.path
+			var reverse = false
+
+			var methods = (this.__order_by || this.__default_sort_methods__)
+				.map(function(m){
+					if(m == 'reverse'){
+						reverse = !reverse
+						return null
+					}
+					return typeof(m) == typeof('str') ? that.__sort_methods__[m]
+						: m instanceof Function ? m
+						: null
+				})
+				.filter(function(m){ return !!m })
+
+			this.__order = this.resolveStarPath(this.location)
+
+			if(methods.length > 0){
+				var method = function(a, b){
+						for(var i=0; i < methods.length; i++){
+							var res = methods[i].call(that, a, b)
+
+							if(res != 0){
+								return res
+							}
+						}
+						return 0
+				}
+
+				this.__order = this.__order
+					.map(function(t){ return that.get(t) })
+					.sort(method)
+					.map(function(t){ return t.path })
+			}
+
+			reverse 
+				&& this.__order.reverse()
+
+			this.__location_at = this.__order.indexOf(path)
+		}
+	
+		return this
 	},
 
 
