@@ -668,6 +668,16 @@ var data = {
 	// System pages...
 	'System/style': {
 		text: ''
+			+'.raw,\n'
+			+'.text {\n'
+			+'  display: block;\n'
+			+'}\n'
+            +'\n'
+			+'input[type="checkbox"][checked]~*,'
+			+'.checked {\n'
+			+'  text-decoration: line-through;\n'
+			+'}\n'
+            +'\n'
 			+'.button {\n'
 			+'  text-decoration: none;\n'
 			+'  margin: 5px;\n'
@@ -780,11 +790,34 @@ var data = {
 
 	// XXX experimental...
 	// XXX need sorting...
+	// ToDo view...
+	'Templates/todo': {
+		text: ''
+			+'<div>'
+				+'<input type="checkbox" disabled/>'
+				+'<span class="raw" contenteditable tabindex="0" '
+						+'saveto="@source(../path)/@now()" style="display:inline-block">'
+					+'...'
+				+'</span>'
+			+'</div>'
+			+'<br>'
+			+'<macro src="../*">'
+				+'<div class="todo-item">'
+					+'<input type="checkbox"/>'
+					+'<span class="raw" contenteditable tabindex="0" '
+							+'saveto="@source(./path)" style="display:inline-block">'
+						+'@include(./raw)'
+					+'</span> '
+					+'<a class="button" href="#@source(./path)/delete">&times;</a>'
+				+'</div>'
+			+'</macro>'
+			+'\n',
+	},
+	// ToDo viewer...
 	'Templates/_todo': {
 		text: ''
 			+'<include src="../_view"/>\n'
 			+'\n'
-			+'<div>'
 			// XXX temporary until I figure out how to deal with the saveto=".."
 			// 		in implicit vs. explicit _view
 			+'<slot name="title" class="title" contenteditable saveto="..">'
@@ -792,24 +825,7 @@ var data = {
 			+'</slot>\n'
 			+'\n'
 			+'<slot name="page-content">\n'
-				+'<div>'
-					+'<input type="checkbox"/>'
-					+'<span class="raw" contenteditable tabindex="0" '
-							+'saveto="../@now()" style="display:inline-block">'
-						+'...'
-					+'</span>'
-				+'</div>'
-				+'<br>'
-				+'<macro src="../*">'
-					+'<div>'
-						+'<input type="checkbox"/>'
-						+'<span class="raw" contenteditable tabindex="0" '
-								+'saveto="@source(./path)" style="display:inline-block">'
-							+'@include(./raw)'
-						+'</span> '
-						+'<a href="#@source(./path)/delete">&times;</a>'
-					+'</div>'
-				+'</macro>'
+				+'@include(../todo)'
 			+'</slot>'
 			+'\n',
 	},
