@@ -460,6 +460,13 @@ var macro = {
 				} else {
 					var name = e.nodeName.toLowerCase()
 
+					// parse attr values...
+					for(var i=0; i < e.attributes.length; i++){
+						var attr = e.attributes[i]
+
+						attr.value = _parseText(context, attr.value, macro)
+					}
+
 					// macro match -> call macro...
 					if(name in  macro){
 						$(e).replaceWith(macro[name]
@@ -467,16 +474,8 @@ var macro = {
 								function(elem, c){ 
 									return _parse(c || context, elem, macro) }))
 
-					// normal tag -> attrs + sub-tree...
+					// normal tag -> sub-tree...
 					} else {
-						// parse attr values...
-						for(var i=0; i < e.attributes.length; i++){
-							var attr = e.attributes[i]
-
-							attr.value = _parseText(context, attr.value, macro)
-						}
-
-						// parse sub-tree...
 						_parse(context, e, macro)
 					}
 				}
@@ -795,6 +794,7 @@ var data = {
 		text: ''
 			+'<div>'
 				+'<input type="checkbox" disabled/>'
+				// XXX select all on focus...
 				+'<span class="raw" contenteditable tabindex="0" '
 						+'saveto="@source(../path)/@now()" style="display:inline-block">'
 					+'...'
@@ -804,10 +804,11 @@ var data = {
 			+'<macro src="../*">'
 				+'<div class="todo-item">'
 					+'<input type="checkbox"/>'
-					+'<span class="raw" contenteditable tabindex="0" '
-							+'saveto="@source(./path)" style="display:inline-block">'
-						+'@include(./raw)'
-					+'</span> '
+					+'<include class="raw" '
+							+'contenteditable tabindex="0" '
+							+'style="display:inline-block" '
+							+'saveto="@source(./path)" '
+							+'src="./raw"/>'
 					+'<a class="button" href="#@source(./path)/delete">&times;</a>'
 				+'</div>'
 			+'</macro>'
