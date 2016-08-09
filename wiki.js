@@ -581,6 +581,10 @@ var macro = {
 
 // XXX not sure about these...
 // XXX add docs...
+// XXX need to handle case: 
+// 		.data is function + function returns a page
+// 			-> "redirect" to that page
+// 		...is changing .path a good idea for redirecting???
 var BaseData = {
 	// Macro acces to standard page attributes (paths)...
 	'System/title': function(){ return this.get('..').title },
@@ -641,14 +645,14 @@ var BaseData = {
 	// XXX these needs redirecting...
 	//'System/sort': function(){ return this.get('..').sort() },
 	//'System/reverse': function(){ return this.get('..').reverse() },
+	/*
 	'System/delete': function(){
 		var p = this.dir
 		delete this.__wiki_data[p]
-		//return this.get('../..').text
-		return 'Removed...'
+		return this.get('..') 
 	},
+	//*/
 }
-
 
 // data store...
 // Format:
@@ -834,6 +838,30 @@ var data = {
 data.__proto__ = BaseData
 
 
+// XXX experimental...
+// 		...for some reason these are called twice...
+var PathActions = {
+	/*
+	test: function(){
+		var p = path2lst(this.location)
+
+		console.log('!!! TEST !!!')
+
+		this.location = p.slice(0, -1)
+	},
+	//*/
+	delete: function(){
+		var p = normalizePath(path2lst(this.location).slice(0, -1))
+
+		console.log('!!! DELETE: %s !!!', p)
+
+		delete this.__wiki_data[p]
+
+		this.location = p
+	},
+}
+
+
 
 /*********************************************************************/
 
@@ -875,6 +903,15 @@ var Wiki = {
 	resolvePathVars: function(path){
 		return path
 			.replace(/\$NOW|\$\{NOW\}/g, ''+Date.now())
+	},
+	resolvePathActions: function(){
+		var p = path2lst(this.path).pop()
+
+		if(p in PathActions){
+			return PathActions[p].call(this)
+		}
+
+		return this
 	},
 	// Resolve '.' and '..' relative to current page...
 	//
@@ -938,6 +975,8 @@ var Wiki = {
 		delete this.__order
 		delete this.__order_by
 		this.__location = this.resolvePathVars(this.resolveDotPath(value))
+
+		this.resolvePathActions()
 	},
 
 
@@ -1119,13 +1158,14 @@ var Wiki = {
 
 
 	// page content...
+	//
 	get raw(){
 		var data = this.data
 		data = data instanceof Function ? data.call(this, this) : data
 
 		return typeof(data) == typeof('str') ? data
-			: data != null && 'raw' in data ? data.raw
-			: data != null ? data.text
+			: data != null ?
+				('raw' in data ? data.raw : data.text)
 			: ''
 	},
 	set raw(value){
