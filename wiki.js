@@ -815,11 +815,14 @@ var data = {
 			+'<macro src="../*">'
 				+'<div class="todo-item">'
 					+'<input type="checkbox"/>'
-					+'<include class="raw" '
+					+'<include '
+							+'class="raw" '
 							+'contenteditable tabindex="0" '
 							+'style="display:inline-block" '
 							+'saveto="@source(./path)" '
-							+'src="./raw"/>'
+							+'src="."'
+						+'/>'
+					//+'<span class="separator"/>\n'
 					+'<a class="button" href="#@source(./path)/delete">&times;</a>'
 				+'</div>'
 			+'</macro>'
@@ -839,6 +842,42 @@ var data = {
 			+'<slot name="page-content">\n'
 				+'@include(../todo)'
 			+'</slot>'
+			+'\n',
+	},
+
+	'Templates/outline': {
+		text: ''
+			//*
+			+'<div>'
+				// XXX select all on focus...
+				+'<span class="raw" contenteditable tabindex="0" '
+						+'saveto="@source(../path)/@now()" style="display:inline-block">'
+					+'+'
+				+'</span>'
+			+'</div>'
+			//+'<br>'
+			//*/
+			+'<macro src="../*">'
+				+'<div class="todo-item">'
+					+'<div>'
+						+'<include '
+								+'class="raw" '
+								+'contenteditable tabindex="0" '
+								+'style="display:inline-block" '
+								+'saveto="@source(./path)" '
+								+'src="."'
+							+'/>'
+						+'<span class="separator"/>'
+						+'<a class="button" href="#@source(./path)/delete">&times;</a>'
+					+'</div>'
+					+'<div style="padding-left: 30px">'
+						+'<include '
+								+'style="display:inline-block" '
+								+'src="@source(./path)/outline" '
+							+'/>'
+					+'</div>'
+				+'</div>'
+			+'</macro>'
 			+'\n',
 	},
 }
@@ -912,6 +951,11 @@ var Wiki = {
 			.replace(/\$NOW|\$\{NOW\}/g, ''+Date.now())
 	},
 	resolvePathActions: function(){
+		// XXX this can happen when we are getting '.../*' of an empty item...
+		if(this.path == null){
+			return this
+		}
+
 		var p = path2lst(this.path).pop()
 
 		if(p in PathActions){
@@ -1025,6 +1069,8 @@ var Wiki = {
 	// NOTE: changing path will update all the links to the moving page.
 	// NOTE: if a link can't be updated without a conflit then it is left
 	// 		unchanged, and a redirect page will be created.
+	//
+	// XXX this can be null if we are getting '.../*' of an empty item...
 	get path(){ 
 		return (this.__order || this.resolveStarPath(this.location))[this.at()] },
 	// XXX should link updating be part of this???
