@@ -717,6 +717,13 @@ var data = {
 			+'@include(./links)' +'<br><br>\n'
 			+'\n',
 	},
+	// XXX this is not used yet...
+	'Templates/EmptyToDo': {
+		text: ''
+			+'@include(./todo)'
+			+'',
+	},
+
 	'Templates/pages': {
 		text: '<macro src="../*"> [@source(./path)]<br> </macro>\n'
 	},
