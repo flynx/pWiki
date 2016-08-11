@@ -7,6 +7,8 @@
 </style>
 
 <script src="ext-lib/jquery.js"></script>
+<script src="ext-lib/jquery-ui.min.js"></script>
+<script src="ext-lib/jquery.ui.touch.js"></script>
 <script src="ext-lib/showdown.min.js"></script>
 
 <script src="ext-lib/FileSaver.js"></script>
@@ -37,6 +39,15 @@ var reload = () => {
 }
 
 var update_editor = function(){
+	$('.sortable')
+		.sortable({
+			handle: ".sort-handle",
+			placeholder: "sort-placeholder",
+			forcePlaceholderSize: true,
+			axis: 'y',
+		})
+		.addTouch()
+
 	// XXX make this update on enter...
 	// XXX account for title of edited page...
 	$('.title')
