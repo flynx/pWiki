@@ -118,9 +118,7 @@ var macro = {
 	macro: {
 		now: Macro('Create a now id',
 			[],
-			function(context, elem, state){
-				return ''+Date.now()
-			}),
+			function(context, elem, state){ return ''+Date.now() }),
 		// select filter to post-process text...
 		filter: Macro('Filter to post-process text',
 			['name'],
@@ -255,8 +253,26 @@ var macro = {
 					}
 				}
 
+				// fill macro...
 				if(path){
-					return $(context.get(path)
+					var pages = context.get(path)
+
+					// no matching pages...
+					if(pages.length == 0){
+						var e = elem
+							.find('else').first().clone()
+								.attr('src', path)
+						parse(e, context)
+						return e
+
+					} 
+
+					// fill with pages...
+					elem = elem.clone()
+						.find('else')
+							.remove()
+						.end()
+					return $(pages
 						.map(function(page){
 							var e = elem.clone()
 								.attr('src', page.path)
@@ -735,6 +751,11 @@ var data = {
 			+'@include(./todo)'
 			+'',
 	},
+	'Templates/EmptyOutline': {
+		text: ''
+			+'@include(./outline)'
+			+'',
+	},
 
 	'Templates/pages': {
 		//text: '<macro src="../*"> [@source(./path)]<br> </macro>\n'
@@ -747,7 +768,7 @@ var data = {
 				+'</div>'
 			+'</macro>\n'
 	},
-	'Templates/tree': {
+	'Templates/all_pages': {
 		//text: '<macro src="../**"> [@source(./path)]<br> </macro>\n'
 		text: ''
 			+'<macro src="../**">'
@@ -755,6 +776,23 @@ var data = {
 					+'[@source(./path)]'
 					+'<span class="separator"/>\n'
 					+'<a class="button" href="#@source(./path)/delete">&times;</a>'
+				+'</div>'
+			+'</macro>\n'
+	},
+	'Templates/tree': {
+		//text: '<macro src="../**"> [@source(./path)]<br> </macro>\n'
+		text: ''
+			+'<macro src="../*">'
+				+'<div class="item">'
+					+'<a href="#@source(./path)">@source(./title)</a>'
+					+'<span class="separator"/>\n'
+					+'<a class="button" href="#@source(./path)/delete">&times;</a>'
+				+'</div>'
+				+'<div style="padding-left: 30px">'
+					+'<include '
+							+'style="display:block" '
+							+'src="@source(./path)/tree" '
+						+'/>'
 				+'</div>'
 			+'</macro>\n'
 	},
@@ -825,10 +863,41 @@ var data = {
 			+'',
 	},
 
+	// XXX experimental...
+	'Templates/_todo': {
+		text: ''
+			+'<include src="../_view"/>\n'
+			+'\n'
+			// XXX temporary until I figure out how to deal with the saveto=".."
+			// 		in implicit vs. explicit _view
+			+'<slot name="title" class="title" contenteditable saveto="..">'
+				+'@source(../title)'
+			+'</slot>\n'
+			+'\n'
+			+'<slot name="page-content">\n'
+				+'@include(../todo)'
+			+'</slot>'
+			+'\n',
+	},
+	'Templates/_outline': {
+		text: ''
+			+'<include src="../_view"/>\n'
+			+'\n'
+			// XXX temporary until I figure out how to deal with the saveto=".."
+			// 		in implicit vs. explicit _view
+			+'<slot name="title" class="title" contenteditable saveto="..">'
+				+'@source(../title)'
+			+'</slot>\n'
+			+'\n'
+			+'<slot name="page-content">\n'
+				+'@include(../outline)'
+			+'</slot>'
+			+'\n',
+	},
+
 
 	// XXX experimental...
 	// XXX need sorting...
-	// ToDo view...
 	'Templates/todo': {
 		text: ''
 			+'<div>'
@@ -864,23 +933,6 @@ var data = {
 			+'</macro>'
 			+'\n',
 	},
-	// ToDo viewer...
-	'Templates/_todo': {
-		text: ''
-			+'<include src="../_view"/>\n'
-			+'\n'
-			// XXX temporary until I figure out how to deal with the saveto=".."
-			// 		in implicit vs. explicit _view
-			+'<slot name="title" class="title" contenteditable saveto="..">'
-				+'@source(../title)'
-			+'</slot>\n'
-			+'\n'
-			+'<slot name="page-content">\n'
-				+'@include(../todo)'
-			+'</slot>'
-			+'\n',
-	},
-
 	'Templates/outline': {
 		text: ''
 			//*
