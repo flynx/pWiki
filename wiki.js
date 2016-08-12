@@ -139,15 +139,8 @@ var macro = {
 		// NOTE: this will render the page in the caller's context.
 		// NOTE: included pages are rendered completely independently 
 		// 		from the including page.
-		//
-		// XXX do we need to control the rendering of nested pages???
-		// 		...currently I do not think so...
-		// 		...if required this can be done via global and local 
-		// 		filters... (now filters are only local)
-		// XXX do we need to render just one slot??? (slot arg)
-		// 		e.g. include PageX SlotY
 		include: Macro('Include page',
-			['src'],
+			['src', 'text'],
 			function(context, elem, state){
 				var path = $(elem).attr('src')
 
@@ -234,7 +227,9 @@ var macro = {
 				return elem
 			}),
 
-		macro: Macro('Define/fill slot',
+		// XXX revise macro definition rules -- see inside...
+		// XXX do we need macro namespaces or context isolation (for inculdes)???
+		macro: Macro('Define/fill macro',
 			['name', 'src'],
 			function(context, elem, state, parse){
 				elem = $(elem)
@@ -245,7 +240,14 @@ var macro = {
 
 
 				if(name){
-					if(elem.html().trim() != ''){
+					// XXX not sure which definition rules to use for macros...
+					// 		- first define -- implemented now
+					// 		- last define -- as in slots
+					// 		- first contenr -- original
+					//if(elem.html().trim() != ''){
+					if(elem.html().trim() != '' 
+							// do not redefine...
+							&& state.templates[name] == null){
 						state.templates[name] = elem.clone()
 
 					} else if(name in state.templates) {
@@ -402,6 +404,13 @@ var macro = {
 	//
 	// XXX support quoted text...
 	// XXX need to quote regexp chars of .__include_marker__...
+	// XXX include recursion is detected but path recursion is not at 
+	// 		this point...
+	// 		e.g. the folowing paths resolve to the same page:
+	// 			/SomePage
+	// 			/SomePage/SomePage
+	// 			or any path matching:
+	// 				/\/(SomePage\/)+/
 	parse: function(context, text, state, skip_post, pattern){
 		var that = this
 
@@ -409,6 +418,7 @@ var macro = {
 		state.filters = state.filters || []
 		state.slots = state.slots || {}
 		state.include = state.include || []
+		state.seen = state.seen || []
 
 		//pattern = pattern || RegExp('@([a-zA-Z-_]+)\\(([^)]*)\\)', 'mg')
 		pattern = pattern || RegExp.apply(null, this.__macro__pattern__)
@@ -542,6 +552,12 @@ var macro = {
 				var elem = $(page.shift())
 				page = page.pop()
 
+				var seen = state.seen.slice()
+				if(seen.indexOf(page.path) >= 0){
+					return elem.html()
+				}
+				seen.push(page.path)
+
 				return page.map(function(page){
 					return $('<div>')
 						.append(elem
@@ -550,7 +566,11 @@ var macro = {
 							.append(that
 								.parse(page,
 									page.raw, 
-									{ slots: state.slots }, 
+									{ 
+										slots: state.slots,
+										templates: state.templates,
+										seen: seen,
+									}, 
 									true)))
 						.html()
 				}).join('\n')
@@ -770,48 +790,120 @@ var data = {
 			+'',
 	},
 
-	'Templates/pages': {
-		//text: '<macro src="../*"> [@source(./path)]<br> </macro>\n'
-		text: ''
-			+'<macro src="../*">'
-				+'<div class="item">'
-					+'[@source(./path)]'
-					+'<span class="separator"/>\n'
-					+'<a class="button" href="#@source(./path)/delete">&times;</a>'
-				+'</div>'
-			+'</macro>\n'
-	},
-	'Templates/all_pages': {
-		//text: '<macro src="../**"> [@source(./path)]<br> </macro>\n'
-		text: ''
-			+'<macro src="../**">'
-				+'<div class="item">'
-					+'[@source(./path)]'
-					+'<span class="separator"/>\n'
-					+'<a class="button" href="#@source(./path)/delete">&times;</a>'
-				+'</div>'
-			+'</macro>\n'
-	},
+	// XXX might be a good idea to use this for outline...
 	'Templates/tree': {
 		//text: '<macro src="../**"> [@source(./path)]<br> </macro>\n'
 		text: ''
-			+'<div class="sortable">'
-				+'<macro src="../*">'
-					+'<div class="item">'
+			+'<div class="sortable">\n'
+				+'<macro src="../*">\n'
+					+'<div class="item">\n'
 						+'<span class="sort-handle">&#x2630;</span> \n'
-						+'<a href="#@source(./path)">@source(./title)</a>'
+						+'<a href="#@source(./path)">@source(./title)</a>\n'
 						+'<span class="separator"/>\n'
-						+'<a class="button" href="#@source(./path)/delete">&times;</a>'
-					+'</div>'
-					+'<div style="padding-left: 30px">'
+						+'<a class="button" href="#@source(./path)/delete">&times;</a>\n'
+					+'</div>\n'
+					+'<div style="padding-left: 30px">\n'
 						+'<include '
 								+'style="display:block" '
 								+'src="@source(./path)/tree" '
-							+'/>'
-					+'</div>'
+							+'/>\n'
+					+'</div>\n'
 				+'</macro>\n'
-			+'</div>'
+			+'</div>\n'
 	},
+	'Templates/pages': {
+		//text: '<macro src="../*"> [@source(./path)]<br> </macro>\n'
+		text: ''
+			+'<macro src="../*">\n'
+				+'<div class="item">\n'
+					+'[@source(./path)]\n'
+					+'<span class="separator"/>\n'
+					+'<a class="button" href="#@source(./path)/delete">&times;</a>\n'
+				+'</div>\n'
+			+'</macro>\n'
+	},
+	// XXX this is essentially identical to pages, except for the path...
+	'Templates/all_pages': {
+		//text: '<macro src="../**"> [@source(./path)]<br> </macro>\n'
+		text: ''
+			+'<macro src="../**">\n'
+				+'<div class="item">\n'
+					+'[@source(./path)]\n'
+					+'<span class="separator"/>\n'
+					+'<a class="button" href="#@source(./path)/delete">&times;</a>\n'
+				+'</div>\n'
+			+'</macro>\n'
+	},
+	// XXX experimental...
+	// XXX need sorting...
+	'Templates/outline': {
+		text: ''
+			+'<macro name="item-pre-controls"/>\n'
+			+'\n'
+			+'<macro name="item-content">\n'
+				+'<include '
+						+'class="raw" '
+						+'contenteditable tabindex="0" '
+						+'style="display:inline-block" '
+						+'saveto="@source(./path)" '
+						+'src="."'
+					+'/>\n'
+			+'</macro>\n'
+			+'\n'
+			+'<macro name="item-post-controls">\n'
+				+'<a class="button" href="#@source(./path)/delete">&times;</a>\n'
+			+'</macro>\n'
+			+'\n'
+			+'\n'
+			//*
+			+'<div>\n'
+				// XXX select all on focus...
+				+'<span class="raw" contenteditable tabindex="0" '
+						+'saveto="@source(../path)/@now()" style="display:inline-block">\n'
+					+'+\n'
+				+'</span>\n'
+			+'</div>\n'
+			//+'<br>\n'
+			//*/
+			+'<div class="sortable">\n'
+				+'<macro src="../*">\n'
+					+'<div class="item">\n'
+						+'<div>\n'
+							+'<span class="sort-handle">&#x2630;</span>\n'
+							+'<macro name="item-pre-controls" src="."/>\n'
+							+'<macro name="item-content" src="."/>\n'
+							+'<span class="separator"/>\n'
+							+'<macro name="item-post-controls" src="."/>\n'
+						+'</div>\n'
+						+'<div style="padding-left: 30px">\n'
+							+'<include '
+									+'style="display:block" '
+									+'src="@source(./path)/outline" '
+								+'/>\n'
+						+'</div>\n'
+					+'</div>\n'
+					/*// XXX do we need this or should we just use CSS???
+					+'<else>\n'
+						+'<i>No items yet...</i>\n'
+					+'</else>\n'
+					//*/
+				+'</macro>\n'
+			+'</div>\n'
+			+'\n',
+	},
+	// XXX see inside...
+	'Templates/todo': {
+		text: ''
+			// XXX this feels wrong...
+			//		...and this will not wirk well with macro override rules...
+			+'<macro name="item-pre-controls">\n'
+			+'  <input type="checkbox"/>\n'
+			+'</macro>\n'
+			+'\n'
+			+'<include src="../outline">\n'
+	},
+
+	// Views...
 	'Templates/_raw': {
 		text: '@source(..)',
 	},
@@ -878,23 +970,7 @@ var data = {
 			+'</slot>'
 			+'',
 	},
-
 	// XXX experimental...
-	'Templates/_todo': {
-		text: ''
-			+'<include src="../_view"/>\n'
-			+'\n'
-			// XXX temporary until I figure out how to deal with the saveto=".."
-			// 		in implicit vs. explicit _view
-			+'<slot name="title" class="title" contenteditable saveto="..">'
-				+'@source(../title)'
-			+'</slot>\n'
-			+'\n'
-			+'<slot name="page-content">\n'
-				+'@include(../todo)'
-			+'</slot>'
-			+'\n',
-	},
 	'Templates/_outline': {
 		text: ''
 			+'<include src="../_view"/>\n'
@@ -910,85 +986,22 @@ var data = {
 			+'</slot>'
 			+'\n',
 	},
+	'Templates/_todo': {
+		text: ''
+			+'<include src="../_view"/>\n'
+			+'\n'
+			// XXX temporary until I figure out how to deal with the saveto=".."
+			// 		in implicit vs. explicit _view
+			+'<slot name="title" class="title" contenteditable saveto="..">'
+				+'@source(../title)'
+			+'</slot>\n'
+			+'\n'
+			+'<slot name="page-content">\n'
+				+'@include(../todo)'
+			+'</slot>'
+			+'\n'
+	},
 
-	// XXX experimental...
-	// XXX need sorting...
-	'Templates/todo': {
-		text: ''
-			+'<div>'
-				//+'<input type="checkbox" disabled/>'
-				// XXX select all on focus...
-				+'<span class="raw" contenteditable tabindex="0" '
-						+'saveto="@source(../path)/@now()" style="display:inline-block">'
-					+'+'
-				+'</span>'
-			+'</div>'
-			+'<br>'
-			+'<div class="sortable">'
-				+'<macro src="../*">'
-					+'<div class="item">'
-						+'<div>'
-							+'<span class="sort-handle">&#x2630;</span> \n'
-							+'<input type="checkbox"/>'
-							+'<include '
-									+'class="raw" '
-									+'contenteditable tabindex="0" '
-									+'style="display:inline-block" '
-									+'saveto="@source(./path)" '
-									+'src="."'
-								+'/>'
-							+'<span class="separator"/>\n'
-							+'<a class="button" href="#@source(./path)/delete">&times;</a>'
-						+'</div>'
-						+'<div style="padding-left: 30px">'
-							+'<include '
-									+'style="display:block" '
-									+'src="@source(./path)/todo" '
-								+'/>'
-						+'</div>'
-					+'</div>'
-				+'</macro>'
-			+'</div>'
-			+'\n',
-	},
-	'Templates/outline': {
-		text: ''
-			//*
-			+'<div>'
-				// XXX select all on focus...
-				+'<span class="raw" contenteditable tabindex="0" '
-						+'saveto="@source(../path)/@now()" style="display:inline-block">'
-					+'+'
-				+'</span>'
-			+'</div>'
-			//+'<br>'
-			//*/
-			+'<div class="sortable">'
-				+'<macro src="../*">'
-					+'<div class="item">'
-						+'<div>'
-							+'<span class="sort-handle">&#x2630;</span> \n'
-							+'<include '
-									+'class="raw" '
-									+'contenteditable tabindex="0" '
-									+'style="display:inline-block" '
-									+'saveto="@source(./path)" '
-									+'src="."'
-								+'/>'
-							+'<span class="separator"/>'
-							+'<a class="button" href="#@source(./path)/delete">&times;</a>'
-						+'</div>'
-						+'<div style="padding-left: 30px">'
-							+'<include '
-									+'style="display:block" '
-									+'src="@source(./path)/outline" '
-								+'/>'
-						+'</div>'
-					+'</div>'
-				+'</macro>'
-			+'</div>'
-			+'\n',
-	},
 }
 data.__proto__ = BaseData
 
