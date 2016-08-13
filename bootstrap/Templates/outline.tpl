@@ -1,6 +1,6 @@
 <macro name="item-pre-controls"/>
 
-<macro name="item-content">
+<macro name="item-content" class="item-content">
 	<include 
 			class="raw" 
 			contenteditable 
@@ -31,7 +31,7 @@
 			<div>
 				<span class="sort-handle">&#x2630;</span>
 				<macro name="item-pre-controls" src="."/>
-				<macro name="item-content" src="."/>
+				<macro name="item-content" src="." />
 				<span class="separator"/>
 				<macro name="item-post-controls" src="."/>
 			</div>

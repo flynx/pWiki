@@ -27,16 +27,46 @@ var clear = () => {
 	delete localStorage['wiki-location']
 }
 
+var save = () => {
+	// XXX save...
+	localStorage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
+	localStorage['wiki-location'] = Wiki.location
+}
+
 var reload = () => {
 	$('.wiki')
 		.html(Wiki.title[0] == '_' ? Wiki.text : Wiki.get('./_view').text)
 		.ready(update_editor)
 
-	// XXX save...
-	localStorage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
-	localStorage['wiki-location'] = Wiki.location
+	save()
 
 	$('title').text(Wiki.location)
+
+	$('input[type="checkbox"].state')
+		// initial state...
+		.each(function(){
+			var path = $(this).attr('saveto')
+			var value = !!Wiki.get(path).data.checked
+
+			$(this)
+				.prop('checked', value)
+				.parents('.item').first()
+					[value ? 'addClass' : 'removeClass']('checked')
+		})
+		// handle clicks...
+		.click(function(){
+			var path = $(this).attr('saveto')
+			var value = $(this).prop('checked')
+
+			Wiki.get(path).data.checked = value
+
+			$(this)
+				.parents('.item').first()
+					[value ? 'addClass' : 'removeClass']('checked')
+
+			// XXX
+			save()
+		})
 }
 
 var update_editor = function(){

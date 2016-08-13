@@ -3,8 +3,7 @@
   display: block;
 }
 
-input[type="checkbox"][checked]~*,
-.checked {
+.item.checked .item-content * {
   text-decoration: line-through;
 }
 
@@ -34,6 +33,7 @@ input[type="checkbox"][checked]~*,
   padding-left: 5px;
   padding-right: 5px;
   cursor: pointer;
+  text-decoration: none;
 }
 .item:hover .sort-handle {
   opacity: 0.3;
@@ -41,3 +41,5 @@ input[type="checkbox"][checked]~*,
 .sort-placeholder {
   display: block;
 }
+
+/* vim:set ts=4 sw=4 ft=css : */
