@@ -17,6 +17,7 @@
 <script src="ext-lib/pouchdb.min.js"></script>
 <script src="ext-lib/peer.min.js"></script>
 
+<script src="bootstrap.js"></script>
 <script src="wiki.js"></script>
 
 <script>
@@ -209,6 +210,11 @@ $(() => {
 			&& event.state.wikipath 
 			&& go(event.state.wikipath)
 	})
+
+	if(window.Bootstrap){
+		Bootstrap.__proto__ = BaseData
+		data = Wiki.__wiki_data = Bootstrap
+	}
 
 	// load stored data...
 	Wiki.__wiki_data = localStorage['wiki-data'] ?

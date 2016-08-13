@@ -703,93 +703,8 @@ var BaseData = {
 // 	}
 //
 // XXX add .json support...
+/*
 var data = {
-	// System pages...
-	'System/style': {
-		text: ''
-			+'.raw,\n'
-			+'.text {\n'
-			+'  display: block;\n'
-			+'}\n'
-            +'\n'
-			+'input[type="checkbox"][checked]~*,\n'
-			+'.checked {\n'
-			+'  text-decoration: line-through;\n'
-			+'}\n'
-            +'\n'
-			+'.button {\n'
-			+'  text-decoration: none;\n'
-			+'}\n'
-			+'.button:last-child {\n'
-			+'  margin-right: 5px;\n'
-			+'}\n'
-			+'\n'
-			+'.separator~* {\n'
-			+'  float: right;\n'
-			+'}\n'
-			+'\n'
-			+'.item:hover {\n'
-			+'  background-color: rgba(0, 0, 0, 0.05);\n'
-			+'}\n'
-			+'.item .button {\n'
-			+'  display: none;\n'
-			+'}\n'
-			+'.item:hover .button {\n'
-			+'  display: inline-block;\n'
-			+'}\n'
-			+'\n'
-			+'.sort-handle {\n'
-			+'  opacity: 0.1;\n'
-			+'  padding-left: 5px;\n'
-			+'  padding-right: 5px;\n'
-			+'  cursor: pointer;\n'
-			+'}\n'
-			+'.item:hover .sort-handle {\n'
-			+'  opacity: 0.3;\n'
-			+'}\n'
-			+'.sort-placeholder {\n'
-			+'  display: block;\n'
-			+'}\n'
-			+'',
-	},
-	'System/settings': {
-		text: JSON.stringify({}),
-	},
-
-	// Templates...
-	'Templates': {
-		text: '@filter(nl2br) @filter(-wikiword)'
-			+'XXX Genereal template description...\n'
-			+'\n'
-			+'<macro src="./*">'
-				+'<hr>'
-				+'<h2><a href="#@source(./path)/_edit">@source(./path)</a></h2>'
-				+'<div>@quote(./raw)</div>'
-			+'</macro>\n'
-			+'\n',
-	},
-	'Templates/EmptyPage': {
-		text: ''
-			+'<!-- place filters here so as not to takup page space: ... -->\n'
-			+'\n'
-			+'Page @include(./path) is empty.' +'<br><br>\n'
-			+'\n'
-			+'Links to this page:' +'<br>\n'
-			+'@include(./links)' +'<br><br>\n'
-			+'\n',
-	},
-	// XXX this is not used yet...
-	'Templates/EmptyToDo': {
-		text: ''
-			+'@include(./todo)'
-			+'',
-	},
-	'Templates/EmptyOutline': {
-		text: ''
-			+'@include(./outline)'
-			+'',
-	},
-
 	// XXX might be a good idea to use this for outline...
 	'Templates/tree': {
 		//text: '<macro src="../**"> [@source(./path)]<br> </macro>\n'
@@ -810,17 +725,6 @@ var data = {
 					+'</div>\n'
 				+'</macro>\n'
 			+'</div>\n'
-	},
-	'Templates/pages': {
-		//text: '<macro src="../*"> [@source(./path)]<br> </macro>\n'
-		text: ''
-			+'<macro src="../*">\n'
-				+'<div class="item">\n'
-					+'[@source(./path)]\n'
-					+'<span class="separator"/>\n'
-					+'<a class="button" href="#@source(./path)/delete">&times;</a>\n'
-				+'</div>\n'
-			+'</macro>\n'
 	},
 	// XXX this is essentially identical to pages, except for the path...
 	'Templates/all_pages': {
@@ -855,7 +759,6 @@ var data = {
 			+'</macro>\n'
 			+'\n'
 			+'\n'
-			//*
 			+'<div>\n'
 				// XXX select all on focus...
 				+'<span class="raw" contenteditable tabindex="0" '
@@ -864,7 +767,6 @@ var data = {
 				+'</span>\n'
 			+'</div>\n'
 			//+'<br>\n'
-			//*/
 			+'<div class="sortable">\n'
 				+'<macro src="../*">\n'
 					+'<div class="item">\n'
@@ -882,11 +784,10 @@ var data = {
 								+'/>\n'
 						+'</div>\n'
 					+'</div>\n'
-					/*// XXX do we need this or should we just use CSS???
-					+'<else>\n'
-						+'<i>No items yet...</i>\n'
-					+'</else>\n'
-					//*/
+					// XXX do we need this or should we just use CSS???
+					//+'<else>\n'
+					//	+'<i>No items yet...</i>\n'
+					//+'</else>\n'
 				+'</macro>\n'
 			+'</div>\n'
 			+'\n',
@@ -904,72 +805,6 @@ var data = {
 	},
 
 	// Views...
-	'Templates/_raw': {
-		text: '@source(..)',
-	},
-	'Templates/_css': {
-		text: '<style>\n'
-			+'@source(..)\n'
-		+'</style>',
-	},
-	'Templates/_view': {
-		text: '\n'
-			+'@include(style/_css)\n'
-			+'\n'
-			+'<div>\n'
-				+'<a href="#pages" class="pages-list-button button">&#x2630;</a> \n'
-				+'[@source(../path)]\n'
-				+'\n'
-				+'<slot name="toggle-edit-link">\n'
-					+'(<a href="#./_edit">edit</a>)\n'
-				+'</slot>\n'
-				+'\n'
-				+'<span class="separator"/>\n'
-				+'\n'
-				+'<a href="#NewPage/_edit" class="new-page-button button">+</a>\n'
-			+'</div>\n'
-			+'\n'
-			+'<hr>\n'
-			//+'<h1 class="title" contenteditable tabindex="0" saveto="..">'
-			+'<h1 saveto="..">'
-				+'<slot name="title">'
-					+'@source(../title)'
-				+'</slot>'
-			+'\n'
-			+'</h1>\n'
-			+'<br>\n'
-			+'\n'
-			+'<slot name="page-content">\n'
-				+'<include src=".." class="text" saveto=".." tabindex="0"/>\n'
-			+'</slot>\n'
-			+'\n'
-			+'<hr>\n'
-			+'<a href="#/">home</a>\n'
-			+'\n',
-	},
-	'Templates/_edit': {
-		text: '\n'
-			+'<!-- @filter(-wikiword) -->\n'
-			+'\n'
-			+'<include src="../_view"/>\n'
-			+'\n'
-			+'<slot name="toggle-edit-link">'
-				+'(<a href="#..">view</a>)'
-			+'</slot>\n'
-			+'\n'
-			// XXX temporary until I figure out how to deal with the saveto=".."
-			// 		in implicit vs. explicit _view
-			+'<slot name="title" class="title" contenteditable saveto="..">'
-				+'@source(../title)'
-			+'</slot>\n'
-			+'\n'
-			+'<slot name="page-content">\n'
-				+'<code><pre>'
-					+'<quote src="../raw" class="raw" saveto=".." contenteditable/>'
-				+'</pre></code>\n'
-			+'</slot>'
-			+'',
-	},
 	// XXX experimental...
 	'Templates/_outline': {
 		text: ''
@@ -1001,8 +836,10 @@ var data = {
 			+'</slot>'
 			+'\n'
 	},
-
 }
+//*/
+
+data = {}
 data.__proto__ = BaseData
 
 

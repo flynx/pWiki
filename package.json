@@ -4,11 +4,15 @@
   "author": "Alex A. Naanou <alex.nanou@gmail.com>",
   "license": "BSD",
   "dependencies": {
+    "glob": "^7.0.5",
     "jszip": "^2.6.1",
     "peer": "*",
     "pouch-replicate-webrtc": "0.0.9",
     "pouchdb": "^5.4.5",
     "showdown": "^1.4.2"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "scripts": {
+    "bootstrap": "node make_bootstrap.js"
+  }
 }
