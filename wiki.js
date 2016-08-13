@@ -992,6 +992,30 @@ var Wiki = {
 
 	get data(){
 		return this.__wiki_data[this.acquire()] },
+	attr: function(name, value){
+		// no args...
+		if(arguments.length == 0){
+			return this
+
+		// name...
+		} else if(arguments.length == 1 
+				&& typeof(name) == typeof('str')){
+			return this.data[name]
+
+		// object...
+		} else if(arguments.length == 1){
+			var that = this
+			Object.keys(name).forEach(function(k){
+				that.data[k] = name[k]
+			})
+
+		// name value pair...
+		} else {
+			this.data[name] = value
+		}
+
+		return this
+	},
 
 	// XXX experimental...
 	get config(){

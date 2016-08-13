@@ -46,7 +46,7 @@ var reload = () => {
 		// initial state...
 		.each(function(){
 			var path = $(this).attr('saveto')
-			var value = !!Wiki.get(path).data.checked
+			var value = !!Wiki.get(path).attr('checked')
 
 			$(this)
 				.prop('checked', value)
@@ -58,7 +58,7 @@ var reload = () => {
 			var path = $(this).attr('saveto')
 			var value = $(this).prop('checked')
 
-			Wiki.get(path).data.checked = value
+			Wiki.get(path).attr('checked', value)
 
 			$(this)
 				.parents('.item').first()
