@@ -39,6 +39,10 @@ are escaped a bit differently:
 
     \@include(SomePage)
 
+  _NOTE: if displayed on github, this will show an extra "\" in both 
+  cases, this should be ignored as pWiki will consume the escaping "\" 
+  in both the code example and the preview._
+
 
 - html-like macros -- escaped _the HTML way_
 
