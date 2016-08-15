@@ -4,7 +4,7 @@ body {
 
 .raw,
 .text {
-  display: block;
+	display: block;
 }
 
 .item.checked {
@@ -28,8 +28,13 @@ body {
 	float: right;
 }
 
-.item:hover {
+pre {
+	display: block;
 	background-color: rgba(0, 0, 0, 0.05);
+	padding: 5px;
+}
+
+.item:hover {
 }
 .item .button {
 	display: none;
