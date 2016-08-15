@@ -1,3 +1,7 @@
+body {
+	font-family: /*worksans,*/ opensans, sans-serif;
+}
+
 .raw,
 .text {
   display: block;
