@@ -48,14 +48,15 @@ var save = () => {
 }
 
 var reload = () => {
+	// load the page...
 	$('.wiki')
 		.html(Wiki.title[0] == '_' ? Wiki.text : Wiki.get('./_view').text)
 		.ready(update_editor)
 
 	save()
 
-	$('title').text(Wiki.location)
-
+	// checkbox state...
+	// XXX move this to post-filters...
 	$('input[type="checkbox"].state')
 		// initial state...
 		.each(function(){
@@ -84,6 +85,7 @@ var reload = () => {
 }
 
 var update_editor = function(){
+	// XXX move this to post-filters...
 	$('.sortable')
 		.sortable({
 			handle: ".sort-handle",
@@ -95,6 +97,7 @@ var update_editor = function(){
 
 	// XXX make this update on enter...
 	// XXX account for title of edited page...
+	// XXX move this to post-filters...
 	$('.title')
 		.focus(function(){
 			var to = $(this).attr('saveto') || '.'
@@ -120,6 +123,7 @@ var update_editor = function(){
 	/*
 	// live update text...
 	// XXX is this the right way to go for large documents???
+	// XXX move this to post-filters...
 	var text = $('.text')
 		.focus(function(){
 			console.log('EDITING:', Wiki.path)
@@ -159,6 +163,7 @@ var update_editor = function(){
 	//text.html(Wiki.get(text.attr('saveto')).text)
 
 
+	// XXX move this to post-filters...
 	var raw = $('.raw')
 		.focus(function(){
 			var to = $(this).attr('saveto') || '.'

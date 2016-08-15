@@ -1,4 +1,4 @@
-# <slot name="title">pWiki Macros</slot>
+# pWiki Macros
 
 ## Syntax
 

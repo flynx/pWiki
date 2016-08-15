@@ -112,6 +112,11 @@ var macro = {
 		'wikiword',
 		'noscript',
 	],
+	__post_filters__: [
+		//'noscript',
+		'title',
+		'editor',
+	],
 
 	// Macros...
 	//
@@ -396,6 +401,51 @@ var macro = {
 	},
 
 
+	// Post-filters...
+	//
+	// These are run on the final page.
+	//
+	// The main goal is to setup editors and other active stuff that the
+	// user should not have direct access to, but that should be 
+	// configurable per instance...
+	//
+	// for tech and other details see .filter
+	//
+	post_filter: {
+		noscript: function(context, elem){
+			// XXX
+			return elem
+		},
+
+		title: function(context, elem){
+			elem = $(elem)
+			var title = elem.find('.text h1').first()
+
+			// show first H1 as title...
+			if(elem.find('.text').text().trim().indexOf(title.text().trim()) == 0){
+				title.detach()
+				elem.find('slot[name="title"]').html(title.html())
+				$('title').html(title.text())
+
+			// show location...
+			} else {
+				$('title').text(context.location)
+			}
+
+			return elem
+		},
+		// XXX this needs save/reload...
+		editor: function(context, elem){
+			// XXX title
+			// XXX text
+			// XXX raw
+			// XXX checkbox
+
+			return elem
+		},
+	},
+
+
 	// Parsing:
 	//  1) expand macros
 	//  2) apply filters
@@ -528,41 +578,42 @@ var macro = {
 
 			return parsed
 		}
-
+		var _filter = function(lst, filters){
+			lst
+				// unique -- leave last occurance..
+				.filter(function(k, i, lst){ 
+					return k[0] != '-'
+						// filter dupplicates... 
+						&& lst.slice(i+1).indexOf(k) == -1 
+							// filter disabled...
+						&& lst.slice(0, i).indexOf('-' + k) == -1
+				})
+				// unique -- leave first occurance..
+				//.filter(function(k, i, lst){ return lst.slice(0, i).indexOf(k) == -1 })
+				// apply the filters...
+				.forEach(function(f){
+					var k = f
+					// get filter aliases...
+					var seen = []
+					while(typeof(k) == typeof('str') && seen.indexOf(k) == -1){
+						seen.push(k)
+						k = filters[k]
+					}
+					// could not find the filter...
+					if(!k){
+						//console.warn('Unknown filter:', f)
+						return
+					}
+					// use the filter...
+					parsed = k.call(that, context, parsed) 
+				})
+		}
 
 		// macro stage...
 		_parse(context, parsed, this.macro)
 
 		// filter stage...
-		state.filters
-			.concat(this.__filters__)
-			// unique -- leave last occurance..
-			.filter(function(k, i, lst){ 
-				return k[0] != '-'
-					// filter dupplicates... 
-					&& lst.slice(i+1).indexOf(k) == -1 
-						// filter disabled...
-					&& lst.slice(0, i).indexOf('-' + k) == -1
-			})
-			// unique -- leave first occurance..
-			//.filter(function(k, i, lst){ return lst.slice(0, i).indexOf(k) == -1 })
-			// apply the filters...
-			.forEach(function(f){
-				var k = f
-				// get filter aliases...
-				var seen = []
-				while(typeof(k) == typeof('str') && seen.indexOf(k) == -1){
-					seen.push(k)
-					k = that.filter[k]
-				}
-				// could not find the filter...
-				if(!k){
-					//console.warn('Unknown filter:', f)
-					return
-				}
-				// use the filter...
-				parsed = k.call(that, context, parsed) 
-			})
+		_filter(state.filters.concat(this.__filters__), this.filter)
 
 		// merge includes...
 		parsed
@@ -596,12 +647,6 @@ var macro = {
 						.html()
 				}).join('\n')
 			}))
-
-		console.log('>>>>', 
-			context.path, 
-			skip_post, 
-			parsed.find(':not([isolated="true"]) slot').length,
-			parsed.find('[isolated="true"] slot').length)
 
 		// post processing...
 		if(!skip_post){
@@ -650,6 +695,10 @@ var macro = {
 			//this.post_macro 
 			//	&& _parse(context, parsed, this.post_macro)
 		}
+
+		// post-filter stage...
+		// XXX get list from context.config...
+		_filter(this.__post_filters__, this.post_filter)
 
 		// XXX shuld we get rid of the root span???
 		return parsed.contents()
@@ -919,7 +968,7 @@ var PathActions = {
 var Wiki = {
 	__wiki_data: data,
 
-	__config_page__: 'System/Settings',
+	__config_page__: 'System/settings',
 
 	__home_page__: 'WikiHome',
 
@@ -1271,7 +1320,7 @@ var Wiki = {
 		return this.title == 'raw' ? this.raw 
 			: this.__macro_parser__.parse(this, this.raw) },
 	get code(){
-		return this.text.html() },
+		return this.text.text() },
 
 
 	// NOTE: this is set by setting .text
