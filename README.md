@@ -26,11 +26,17 @@
 
 - Wiki/note _portable app_
 
-    - a simple and functional note/todo/outline app
-    - an external/portable Wiki editor, as an alternative for in-app 
-      documentation editor with ability to seamlesly synchronize with 
-      the target app.
-    - a stand-alone testing platform for project components
+  The pWiki app is a stand-alone instance of pWiki wrapped in an app 
+  supporting all major desktop as well as mobile platforms.
+
+  The app serves the following goals:
+
+    - a simple and functional note/todo/outline app (obviously)
+    - an external/portable Wiki editor, as an alternative for 
+      in-target-app documentation editor with ability to seamlesly 
+      synchronize with the target app pWiki instance.
+    - a stand-alone testing platform and reference implementation for 
+      pWiki components.
 
 
 ### General Documentation:
@@ -39,4 +45,4 @@
 
 
 <!-- @filter(markdown) -->
-<!-- vim:set ts=4 sw=4 spell -->
+<!-- vim:set ts=2 sw=2 expandtab spell : -->
