@@ -61,6 +61,14 @@ are escaped a bit differently:
 
 ## Macros
 
+### now ()
+
+Get current date in seconds since epoch, this is equivalet Javascript's
+`Date.now()`.
+
+This is mostly used for automatically creating paths (see: todo / outline)
+
+
 ### filter (name)
 
 Enable or disable a page filter.
