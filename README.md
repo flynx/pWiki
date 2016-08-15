@@ -43,8 +43,8 @@
 
 
 ### General Documentation:
-- WikiPath / [bootstrap](bootstrap/Doc/Path.md)
-- WikiMacros / [bootstrap](bootstrap/Doc/Macros.md)
+- [Doc/Path] / [bootstrap](bootstrap/Doc/Path.md)
+- [Doc/Macros] / [bootstrap](bootstrap/Doc/Macros.md)
 
 
 <!-- @filter(markdown) -->
