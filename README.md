@@ -1,6 +1,6 @@
 # Portable Wiki (pWiki)
 
-Project goals:
+### Project goals:
 - Provide a simple embeddable Wiki
 
   This enables a zero-workflow app documentation, i.e. documentation that
