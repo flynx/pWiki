@@ -24,6 +24,34 @@ The two forms exist to fill two distinct functions:
 - inline: compatible with attribute values and short
 - html-like: element-like, simpler when dealing with html
 
+### Escaping macros
+
+Macros can be escaped for inclusion in the page, the two types of macros 
+are escaped a bit differently:
+
+- inline macros -- escaped by preceding with a `\`
+
+  ```
+  \\@include(SomePage)
+  ```
+
+  Displayed in page as:
+
+    \@include(SomePage)
+
+
+- html-like macros -- escaped _the HTML way_
+
+  ```
+  &lt;include src="SomePage"\&gt;
+  ```
+
+  Displayed in page as:
+
+	  &lt;include src="SomePage"\&gt;
+
+
+
 
 ## Macros
 
