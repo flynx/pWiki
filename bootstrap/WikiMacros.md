@@ -52,7 +52,7 @@ are escaped a bit differently:
 
   Displayed in page as:
 
-  &lt;include src="SomePage"\&gt;
+  &lt;include src="SomePage"\\&gt;
 
 
 
