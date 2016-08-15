@@ -1,3 +1,5 @@
+# <slot name="title">pWiki Macros</slot>
+
 ## Syntax
 
 Any macro can be used in any of the two forms, either _inline_ or _HTML-like_.
