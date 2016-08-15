@@ -46,8 +46,9 @@ are likely to change, and the implementation / API **will** change._
 
 
 ### General Documentation:
-- [Doc/Path] / [bootstrap Path.md](bootstrap/Doc/Path.md)
-- [Doc/Macros] / [bootstrap Macros.md](bootstrap/Doc/Macros.md)
+- [Doc/About] / [general info](README.md) -- This document.
+- [Doc/Path] / [bootstrap path](bootstrap/Doc/Path.md) -- Path mechanics.
+- [Doc/Macros] / [bootstrap macros](bootstrap/Doc/Macros.md) -- Macro documentation
 
 
 <!-- @filter(markdown) -->
