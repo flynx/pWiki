@@ -17,7 +17,7 @@ glob('bootstrap/**/*.@(tpl|md|css|html)')
 	.on('match', function(path){
 		var p = path
 			.replace('bootstrap/', '')
-			.replace(/\.(tpl|md|css|html)/, '')
+			.replace(/\.(json|txt|md|css|html)/, '')
 
 		if(p)
 

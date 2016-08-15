@@ -27,7 +27,7 @@
 
 - pWiki _portable app_
 
-  This is a simple note / todo /outline app.
+  This is a simple note / todo / outline app.
 
   The pWiki app is a stand-alone instance of pWiki wrapped in an app 
   supporting all major desktop as well as mobile platforms.
