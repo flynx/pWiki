@@ -1,4 +1,4 @@
-# Portable Wiki (pWiki)
+# <slot name="title">Portable Wiki (pWiki)</slot>
 
 _NOTE: the project is currently in prototype phase, thus most things 
 are likely to change, and the implementation / API **will** change._
