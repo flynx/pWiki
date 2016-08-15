@@ -1,5 +1,8 @@
 # Portable Wiki (pWiki)
 
+_NOTE: the project is currently in prototype phase, thus most things 
+are likely to change, and the implementation / API **will** change._
+
 ### Project goals / main features:
 
 - _Simple embeddable Wiki_
