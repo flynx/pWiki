@@ -37,7 +37,7 @@ are escaped a bit differently:
 
   Displayed in page as:
 
-    \@include(SomePage)
+  \@include(SomePage)
 
   _NOTE: if displayed on github, this will show an extra "\" in both 
   cases, this should be ignored as pWiki will consume the escaping "\" 
@@ -52,7 +52,7 @@ are escaped a bit differently:
 
   Displayed in page as:
 
-	  &lt;include src="SomePage"\&gt;
+  &lt;include src="SomePage"\&gt;
 
 
 
