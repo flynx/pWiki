@@ -31,6 +31,12 @@ glob('bootstrap/**/*.tpl')
 			+'\n\n'
 			+'var Bootstrap = ' + JSON.stringify(bootstrap)
 
+		if(!bootstrap.WikiHome && fs.existsSync('README.md')){
+			bootstrap.WikiHome = {
+				text: fs.readFileSync('README.md').toString(),
+			}
+		}
+
 		console.log('Writing:', 'bootstrap.js')
 		fs.writeFileSync('bootstrap.js', txt)
 	})

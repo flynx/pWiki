@@ -102,7 +102,7 @@ var macro = {
 	__macro__pattern__: 
 		[[
 			// @macro(arg ..)
-			'@([a-zA-Z-_]+)\\(([^)]*)\\)'
+			'\\\\?@([a-zA-Z-_]+)\\(([^)]*)\\)'
 		].join('|'), 'mg'],
 
 	// default filters...
@@ -289,7 +289,16 @@ var macro = {
 	
 	// Post macros... 
 	//
+	// XXX this is disabled for now, see end of .parse(..)
 	post_macro: {
+		'*': Macro('cleanup...',
+			[],
+			function(context, elem, state, parse, match){
+				if(match != null){
+					return match[0] == '\\' ? match.slice(1) : match
+				}
+				return elem
+			}),
 		/*
 		_slot: Macro('',
 			['name'],
@@ -432,13 +441,21 @@ var macro = {
 
 		var _parseText = function(context, text, macro){
 			return text.replace(pattern, function(match){
+				// quoted macro...
+				if(match[0] == '\\' && macro['*'] == null){
+					return match.slice(1)
+					//return match
+				}
+
 				// XXX parse match...
 				var d = match.match(/@([a-zA-Z-_:]*)\(([^)]*)\)/)
 
 				var name = d[1]
 
-				if(name in macro){
+				if(name in macro || '*' in macro){
 					var elem = $('<'+name+'/>')
+
+					name = name in macro ? name : '*'
 
 					// format positional args....
 					var a = d[2]
@@ -449,16 +466,18 @@ var macro = {
 						.map(function(e){ return /^(['"]).*\1$/.test(e) ? e.slice(1, -1) : e })
 
 					// add the attrs to the element...
-					a.forEach(function(e, i){
-						var k = ((macro[name] || {}).macro_args || [])[i]
-						k && elem.attr(k, e)
-					})
+					name != '*' 
+						&& a.forEach(function(e, i){
+							var k = ((macro[name] || {}).macro_args || [])[i]
+							k && elem.attr(k, e)
+						})
 
 					// call macro...
 					var res = macro[name]
 						.call(that, context, elem, state,
 							function(elem, c){ 
-								return _parse(c || context, elem, macro) })
+								return _parse(c || context, elem, macro) },
+							match)
 
 					return res instanceof jQuery ? 
 							// merge html of the returned set of elements...
@@ -602,12 +621,14 @@ var macro = {
 				})
 
 			// post-macro...
-			this.post_macro 
-				&& _parse(context, parsed, this.post_macro)
+			// XXX for some odd reason this clears the backslash from 
+			// 		quoted macros in raw fields...
+			//this.post_macro 
+			//	&& _parse(context, parsed, this.post_macro)
 		}
 
-		// XXX shuld we get rid of the rot span???
-		return parsed
+		// XXX shuld we get rid of the root span???
+		return parsed.contents()
 	},
 }
 
