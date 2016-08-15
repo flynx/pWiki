@@ -43,8 +43,8 @@
 
 
 ### General Documentation:
-- [Doc/Path] / [bootstrap/Doc/Path.md](bootstrap/Doc/Path.md)
-- [Doc/Macros] / [bootstrap/Doc/Macros.md](bootstrap/Doc/Macros.md)
+- [Doc/Path] / [bootstrap Path.md](bootstrap/Doc/Path.md)
+- [Doc/Macros] / [bootstrap Macros.md](bootstrap/Doc/Macros.md)
 
 
 <!-- @filter(markdown) -->
