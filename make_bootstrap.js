@@ -27,16 +27,23 @@ glob('bootstrap/**/*.@(tpl|md|css|html)')
 		}
 	})
 	.on('end', function(){
+		if(fs.existsSync('README.md')){
+			console.log('Setting:', 'About')
+			bootstrap['Doc/About'] = {
+				text: fs.readFileSync('README.md').toString(),
+			}
+		}
+		if(!bootstrap.WikiHome){
+			console.log('Setting:', 'WikiHome')
+			bootstrap.WikiHome = {
+				text: '@include(Doc/About)'
+			}
+		}
+
 		var txt = '// This file is generated automatically, '
 			+'all changes made here will be lost.'
 			+'\n\n'
 			+'var Bootstrap = ' + JSON.stringify(bootstrap)
-
-		if(!bootstrap.WikiHome && fs.existsSync('README.md')){
-			bootstrap.WikiHome = {
-				text: fs.readFileSync('README.md').toString(),
-			}
-		}
 
 		console.log('Writing:', 'bootstrap.js')
 		fs.writeFileSync('bootstrap.js', txt)

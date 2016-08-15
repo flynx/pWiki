@@ -20,18 +20,21 @@
 - _Self-hosted_ and flexible user interface
 
   The pWiki interface is implemented as a set of pWiki pages and 
-  templates within pWiki itself (see: /bootstrap), this enables the user
-  to customize the look feel and to some extent the function of the 
-  interface from within pWiki, without touching the code.
+  templates within pWiki itself (see: [Templates] / [/bootstrap](bootstrap)), 
+  this enables the user to customize the look feel and to some extent 
+  the function of the interface from within pWiki, without touching the 
+  code.
 
-- Wiki/note _portable app_
+- pWiki _portable app_
+
+  This is a simple note / todo /outline app.
 
   The pWiki app is a stand-alone instance of pWiki wrapped in an app 
   supporting all major desktop as well as mobile platforms.
 
   The app serves the following goals:
 
-    - a simple and functional note/todo/outline app (obviously)
+    - a simple and functional note / todo / outline app (obviously)
     - an external/portable Wiki editor, as an alternative for 
       in-target-app documentation editor with ability to seamlesly 
       synchronize with the target app pWiki instance.
@@ -40,8 +43,8 @@
 
 
 ### General Documentation:
-- WikiPath / [bootstrap](bootstrap/WikiPath.md)
-- WikiMacros / [bootstrap](bootstrap/WikiMacros.md)
+- WikiPath / [bootstrap](bootstrap/Doc/Path.md)
+- WikiMacros / [bootstrap](bootstrap/Doc/Macros.md)
 
 
 <!-- @filter(markdown) -->
