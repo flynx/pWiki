@@ -16,5 +16,5 @@ Project goals:
     - a stand-alone testing platform for project components
 
 General Documentation:
-- WikiPath
-- WikiMacros / [bootstrap/WikiMacros.tpl]
+- WikiPath / [bootstrap](bootstrap/WikiPath.tpl)
+- WikiMacros / [bootstrap](bootstrap/WikiMacros.tpl)
