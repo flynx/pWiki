@@ -88,7 +88,7 @@ Example:
 - `[./_edit]` -- see the macro at the end of the page.
 
 
-### include (src text)
+### include (src isolated text)
 
 Include a page. The included page is rendered independently from current
 page and is inserted as-is in macro body.
@@ -99,6 +99,7 @@ but an html element body.
 
 Arguments:
 - `src` -- path to source page.
+- `isolated` -- prevent slots from included page from affecting the including page. 
 - `text` -- is used when recursive include is detected and ignored otherwise.
 
 ### source (src) / quote (src)

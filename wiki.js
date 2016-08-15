@@ -140,7 +140,7 @@ var macro = {
 		// NOTE: included pages are rendered completely independently 
 		// 		from the including page.
 		include: Macro('Include page',
-			['src', 'text'],
+			['src', 'isolated', 'text'],
 			function(context, elem, state){
 				var path = $(elem).attr('src')
 
@@ -425,7 +425,7 @@ var macro = {
 
 		state = state || {}
 		state.filters = state.filters || []
-		state.slots = state.slots || {}
+		//state.slots = state.slots || {}
 		state.include = state.include || []
 		state.seen = state.seen || []
 
@@ -570,6 +570,7 @@ var macro = {
 				var page = state.include.shift()
 				var elem = $(page.shift())
 				page = page.pop()
+				var isolated = elem.attr('isolated') == 'true'
 
 				var seen = state.seen.slice()
 				if(seen.indexOf(page.path) >= 0){
@@ -586,14 +587,21 @@ var macro = {
 								.parse(page,
 									page.raw, 
 									{ 
-										slots: state.slots,
+										//slots: !isolated ? state.slots : {},
 										templates: state.templates,
 										seen: seen,
 									}, 
-									true)))
+									!isolated)))
+									//true)))
 						.html()
 				}).join('\n')
 			}))
+
+		console.log('>>>>', 
+			context.path, 
+			skip_post, 
+			parsed.find(':not([isolated="true"]) slot').length,
+			parsed.find('[isolated="true"] slot').length)
 
 		// post processing...
 		if(!skip_post){
@@ -605,6 +613,14 @@ var macro = {
 			parsed.find('slot')
 				.each(function(i, e){
 					e = $(e)
+
+					// XXX not sure about this...
+					// 		...check if it prevents correct slot parsing
+					// 		within an isolated include...
+					if(e.parents('[isolated="true"]').length > 0){
+						return
+					}
+
 					var n = e.attr('name')
 
 					n in slots && e.detach()
@@ -615,6 +631,14 @@ var macro = {
 			parsed.find('slot')
 				.each(function(i, e){
 					e = $(e)
+
+					// XXX not sure about this...
+					// 		...check if it prevents correct slot parsing
+					// 		within an isolated include...
+					if(e.parents('[isolated="true"]').length > 0){
+						return
+					}
+
 					var n = e.attr('name')
 
 					e.replaceWith(slots[n])
