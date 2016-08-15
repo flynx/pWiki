@@ -1,7 +1,7 @@
 # <slot name="title">Portable Wiki (pWiki)</slot>
 
-_NOTE: the project is currently in prototype phase, thus most things 
-are likely to change, and the implementation / API **will** change._
+_NOTE: the project is currently in prototype phase, thus while most things 
+are likely to change, the implementation / API **will definitely** change! ;)_
 
 ### Project goals / main features:
 
