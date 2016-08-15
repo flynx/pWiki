@@ -12,11 +12,12 @@ var glob = require('glob')
 
 var bootstrap = {}
 
-glob('bootstrap/**/*.tpl')
+// XXX add support for json...
+glob('bootstrap/**/*.@(tpl|md)')
 	.on('match', function(path){
 		var p = path
 			.replace('bootstrap/', '')
-			.replace('.tpl', '')
+			.replace(/.tpl|.md/, '')
 
 		if(p)
 
