@@ -3,6 +3,10 @@ body {
 
 }
 
+.title img {
+	vertical-align: middle;
+}
+
 .raw,
 .text {
 	display: block;
