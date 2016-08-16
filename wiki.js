@@ -417,6 +417,12 @@ var macro = {
 			return elem
 		},
 
+		// Setup the page title and .title element...
+		//
+		// Use the text from:
+		// 	1) set it H1 if it is the first tag in .text
+		// 	2) set it to .location
+		//
 		title: function(context, elem){
 			elem = $(elem)
 			var title = elem.find('.text h1').first()
@@ -424,7 +430,7 @@ var macro = {
 			// show first H1 as title...
 			if(elem.find('.text').text().trim().indexOf(title.text().trim()) == 0){
 				title.detach()
-				elem.find('slot[name="title"]').html(title.html())
+				elem.find('.title').html(title.html())
 				$('title').html(title.text())
 
 			// show location...
@@ -437,6 +443,7 @@ var macro = {
 		// XXX this needs save/reload...
 		editor: function(context, elem){
 			// XXX title
+			// 		- on focus set it to .title
 			// XXX text
 			// XXX raw
 			// XXX checkbox
