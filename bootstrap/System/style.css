@@ -7,6 +7,14 @@ body {
 	vertical-align: middle;
 }
 
+h1, h2, h3 {
+	border-bottom: solid 1px rgba(0, 0, 0, 0.1);
+	padding-bottom: 5px;
+}
+h2, h3 {
+	border-bottom: solid 1px rgba(0, 0, 0, 0.05);
+}
+
 .raw,
 .text {
 	display: block;
