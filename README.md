@@ -38,7 +38,7 @@ are likely to change, the implementation / API **will definitely** change! ;)_
 
   The app serves the following goals:
 
-    - a simple and functional note / todo / outline app (obviously)
+    - a simple and functional note / todo / outline app (_obviously_)
     - an external/portable Wiki editor, as an alternative for 
       in-target-app documentation editor with ability to seamlesly 
       synchronize with the target app pWiki instance.

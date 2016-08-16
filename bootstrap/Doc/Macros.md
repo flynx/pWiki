@@ -26,6 +26,8 @@ The two forms exist to fill two distinct functions:
 - inline: compatible with attribute values and short
 - html-like: element-like, simpler when dealing with html
 
+
+
 ### Escaping macros
 
 Macros can be escaped for inclusion in the page, the two types of macros 
@@ -68,6 +70,20 @@ Get current date in seconds since epoch, this is equivalet Javascript's
 
 This is mostly used for automatically creating paths (see: todo / outline)
 
+This is different from `$NOW` in path (see: Doc/Path) in that this gets 
+the date once per page load, i.e. the date changes on page load, while 
+`$NOW` is set every time the path is used, i.e. on every click or script
+use.
+
+**Example:**
+```
+\@now()
+```
+Will produce: `@now()` 
+
+_NOTE: when viewing from outside of pWiki, this should look like: `1471389217848`_
+
+
 
 ### filter (name)
 
@@ -84,8 +100,9 @@ Filters:
 - wikiword (default)
 - markdown
 
-Example:
-- `[./_edit]` -- see the macro at the end of the page.
+**Example:**
+- `[./_edit]` -- _see the macro at the end of the page._
+
 
 
 ### include (src isolated text)
@@ -102,6 +119,10 @@ Arguments:
 - `isolated` -- prevent slots from included page from affecting the including page. 
 - `text` -- is used when recursive include is detected and ignored otherwise.
 
+_For examples see `slot` macro exaples below._
+
+
+
 ### source (src) / quote (src)
 
 Insert a page without rendering. This is similar to include but will not
@@ -115,6 +136,12 @@ The difference between `source` and `quote` is:
 Arguments:
 - `src` -- path to source page.
 
+**Example:**
+
+[Templates/\_css] / [bootstrap css](bootstrap/Templates/_css.html):
+```
+@source(Templates/_css)
+```
 
 
 ### slot (name text)
@@ -123,6 +150,18 @@ Define or fill a slot.
 
 First occurrence of a `name` will _define_ a slot and fill it with `text`.
 Each new occurrence of a name will change slot content.
+
+**Example:**
+
+[Templates/\_view] / [bootstrap view](bootstrap/Templates/_view.html):
+```
+@source(Templates/_view)
+```
+
+[Templates/\_edit] / [bootstrap edit](bootstrap/Templates/_edit.html):
+```
+@source(Templates/_edit)
+```
 
 
 ### macro (name src text) / else ()
@@ -149,6 +188,13 @@ Arguments:
 
 `else` macro is applicable inside `macro`. it is used when the `src` path
 of `macro` matches no pages.
+
+**Example:**
+
+[Templates/pages] / [bootstrap pages](bootstrap/Templates/pages.html):
+```
+@source(Templates/pages)
+```
 
 
 <!-- @filter(markdown) -->
