@@ -9,7 +9,8 @@
     "peer": "*",
     "pouch-replicate-webrtc": "0.0.9",
     "pouchdb": "^5.4.5",
-    "showdown": "^1.4.2"
+    "showdown": "^1.4.2",
+    "xss": "^0.2.13"
   },
   "devDependencies": {},
   "scripts": {
