@@ -20,14 +20,18 @@ We call the sub-path without the _title_ a _basedir_ or simply _dir_.
 In pWiki, there is no distinction between a page and a _directory_, thus
 we do not use the later term, instead, we may use the term _sub-page_.
 
+Paths are case sensitive.
+
 
 **Page**  
 _A set of data associated with a path._
 
-A page is identified by it's path, but this does not require that every
-sub-path of that path must exist.
+A page is identified by it's path, but this does not require every
+sub-path of that path to exist -- the full path is the identifier, not
+a sequence of path parts.
 
-XXX a word about bootstrap pages that can't be deleted...
+Some pages are _bootstrapped_, i.e. are predefined in pWiki, these pages
+can be overridden but can not be removed.
 
 
 **View**  
@@ -38,7 +42,8 @@ A _view's_ path may match that of a specific page or may not match any
 page directly, but any view will resolve to a page via the _acquisition 
 process_
 
-Any page is a view, but not every view is a page.
+Any page is a view, every view resolves to a page, but not every view 
+is a page.
 
 (see: _Page acquisiton_ below)
 
