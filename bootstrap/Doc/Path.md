@@ -55,9 +55,9 @@ _XXX_
 ## Page acquisition
 
 pWiki path system differs from how traditional file system paths are 
-handled. In pWiki if a path does not reference a page directly, a search 
-is conducted to find an alternative page. This search is called _page 
-acquisition_.
+handled. In pWiki if a path does not reference a page directly (i.e. 
+it's a _view_), a search is conducted to find an alternative page. This 
+search is called _page acquisition_.
 
 **Acquisition process:**  
 _A set of rules defining how a page is retrieved via a path._
