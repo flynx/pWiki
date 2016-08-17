@@ -11,7 +11,7 @@ XXX write a set of recommendations...
 ## Basic terminology
 
 **Path**  
-One or more _names_ separated by "/" that identifies a _view_.
+_One or more _names_ separated by "/" that identifies a view._
 
 We call the last name in the path sequence a _title_.
 
@@ -22,14 +22,14 @@ we do not use the term, instead, we may use the term _sub-page_
 
 
 **View**  
-A _path_ that resolves to a _page_ that may or may not be at that specific
-path.
+_A path that resolves to a page that may or may not be at that specific
+path._
 
 (see: _Page acquisiton_ below)
 
 
 **Page**  
-A set of data associated with a _path_.
+_A set of data associated with a path._
 
 A page is identified by it's path, but this does not require that every
 sub-path of that path must exist.
@@ -38,14 +38,31 @@ XXX a word about bootstrap pages that can't be deleted...
 
 
 **WikiWord**  
-XXX
+_XXX_
 
 
 ## Page acquisition
 
-XXX motivation...
+pWiki path system differs from how traditional file system paths are 
+handled. In pWiki if a path does not reference a page directly a search 
+is conducted to find an alternative page. This search is call _page 
+acquisition_.
 
-**Acquisition process:**
+**Acquisition process:**  
+_A set of rules defining how a page is retrieved via a path._
+
+
+This is used as a simple and uniform mechanism to:
+- Get default pages for specific situations  
+  Like [Templates/EmptyPage] to handle the _page not found_ condition.
+- define generic templates/pages accessible by multiple pages in path  
+  A good example would be the viewer used to show this page [Templates/\_view]
+  and all of it's _chrome_ like the path above and links in the footer 
+  (when viewing through pWiki)
+- Overload default templates/pages
+
+
+### The acquisition order/rules:
 
 1. if _path_ matches a specific page, target _page_ is found 
 1. if _path_ does not match a page:
