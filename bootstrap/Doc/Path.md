@@ -11,21 +11,14 @@ XXX write a set of recommendations...
 ## Basic terminology
 
 **Path**  
-_One or more _names_ separated by "/" that identifies a view._
+_One or more strings (or parts) separated by "/" that identifies a view._
 
-We call the last name in the path sequence a _title_.
+We call the last _part_ in a path sequence a _title_.
 
 We call the sub-path without the _title_ a _basedir_ or simply _dir_.
 
 In pWiki, there is no distinction between a page and a _directory_, thus
-we do not use the term, instead, we may use the term _sub-page_
-
-
-**View**  
-_A path that resolves to a page that may or may not be at that specific
-path._
-
-(see: _Page acquisiton_ below)
+we do not use the later term, instead, we may use the term _sub-page_.
 
 
 **Page**  
@@ -37,6 +30,19 @@ sub-path of that path must exist.
 XXX a word about bootstrap pages that can't be deleted...
 
 
+**View**  
+_A path that resolves to a page that may or may not be at that specific
+path._
+
+A _view's_ path may match that of a specific page or may not match any
+page directly, but any view will resolve to a page via the _acquisition 
+process_
+
+Any page is a view, but not every view is a page.
+
+(see: _Page acquisiton_ below)
+
+
 **WikiWord**  
 _XXX_
 
@@ -44,8 +50,8 @@ _XXX_
 ## Page acquisition
 
 pWiki path system differs from how traditional file system paths are 
-handled. In pWiki if a path does not reference a page directly a search 
-is conducted to find an alternative page. This search is call _page 
+handled. In pWiki if a path does not reference a page directly, a search 
+is conducted to find an alternative page. This search is called _page 
 acquisition_.
 
 **Acquisition process:**  
