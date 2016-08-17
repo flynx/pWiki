@@ -61,25 +61,29 @@ XXX motivation...
 For path `Path/To/Page` the following paths are checked in order 
 and the first matching page is returned:
 
-- **`Path/To/Page`**
-- `Path/Page`
-- `Page`
-- **`Path/To/Templates/Page`** _(Check in Templates)_
-- `Path/Templates/Page`
-- `Templates/Page`
-- **`System/Page`** _(Check in `/System`, mote that only root `/System` is checked)_
-- **`Path/To/EmptyPage`** _(Check `EmptyPage`)_
-- `Path/EmptyPage`
-- `EmptyPage`
-- `Path/To/Templates/EmptyPage`
-- `Path/Templates/EmptyPage`
-- `Templates/EmptyPage` _(This is guaranteed to exist)_
+- _Check path as-is then go up:_
+  - `Path/To/Page` 
+  - `Path/Page`
+  - `Page`
+- _Check in `Templates`, in path and up:_
+  - `Path/To/Templates/Page`
+  - `Path/Templates/Page`
+  - `Templates/Page`
+- _Check root `System`:_
+  - `System/Page`
+- _Check `EmptyPage` in path, then in templates:_
+  - `Path/To/EmptyPage`
+  - `Path/EmptyPage`
+  - `EmptyPage`
+  - `Path/To/Templates/EmptyPage`
+  - `Path/Templates/EmptyPage`
+  - `Templates/EmptyPage` _(This is guaranteed to exist)_
 
 
 **Exceptions:**
 
-- `System/settings` is global and _can not be overloaded_. This is done for 
-security reasons.
+- `System/settings` is global and _can not be overloaded_ for use as 
+system configuration. This is done for security reasons.
 
 
 
