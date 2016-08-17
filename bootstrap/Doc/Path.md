@@ -7,6 +7,7 @@ page nesting or title formatting. But following this style is recommended.
 XXX write a set of recommendations...
 
 
+
 ## Basic terminology
 
 **Path**  
@@ -33,6 +34,8 @@ A set of data associated with a _path_.
 A page is identified by it's path, but this does not require that every
 sub-path of that path must exist.
 
+XXX a word about bootstrap pages that can't be deleted...
+
 
 **WikiWord**  
 XXX
@@ -40,7 +43,7 @@ XXX
 
 ## Page acquisition
 
-XXX motivation
+XXX motivation...
 
 **Acquisition process:**
 
@@ -55,21 +58,21 @@ XXX motivation
 
 **Example:**  
 
-For path `path/to/page` the following paths are checked in order 
+For path `Path/To/Page` the following paths are checked in order 
 and the first matching page is returned:
 
-- **`path/to/page`**
-- `path/page`
-- `page`
-- **`path/to/Templates/page`** _(Check in Templates)_
-- `path/Templates/page`
-- `Templates/page`
-- **`System/page`** _(Check in `/System`, mote that only root `/System` is checked)_
-- **`path/to/EmptyPage`** _(Check `EmptyPage`)_
-- `path/EmptyPage`
+- **`Path/To/Page`**
+- `Path/Page`
+- `Page`
+- **`Path/To/Templates/Page`** _(Check in Templates)_
+- `Path/Templates/Page`
+- `Templates/Page`
+- **`System/Page`** _(Check in `/System`, mote that only root `/System` is checked)_
+- **`Path/To/EmptyPage`** _(Check `EmptyPage`)_
+- `Path/EmptyPage`
 - `EmptyPage`
-- `path/to/Templates/EmptyPage`
-- `path/Templates/EmptyPage`
+- `Path/To/Templates/EmptyPage`
+- `Path/Templates/EmptyPage`
 - `Templates/EmptyPage` _(This is guaranteed to exist)_
 
 
@@ -82,17 +85,25 @@ security reasons.
 
 ## Default pages
 
-### `Templates/EmptyPage`
+XXX
 
-### `Templates/EmptyToDo`
-
-### `Templates/EmptyOutline`
+- `Templates/EmptyPage`
+- `Templates/EmptyToDo`
+- `Templates/EmptyOutline`
 
 
 
 ## Relative and absolute paths (".", ".." and "/")
 
+XXX
+
+
+
 ## Path patterns ("\*" and "\*\*")
+
+XXX
+
+
 
 ## Path actions
 
@@ -104,6 +115,8 @@ correspond to actual pages.
 ## Path variables
 
 ### `$NOW`
+
+XXX
 
 _Also see the `\@now()` macro: [Doc/Macros]._
 
