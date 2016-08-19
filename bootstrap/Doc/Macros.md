@@ -132,7 +132,8 @@ Filters:
 ]]-->
 
 <pwiki-comment>
-- [bootstrap \_edit](/bootstrap/Templates/_edit.html) &ndash; _see the macro at the end of the page._
+- [bootstrap \_edit](/bootstrap/Templates/_edit.html) &ndash; _see the 
+macro at the end of the page._
 </pwiki-comment>
 
 
@@ -171,11 +172,11 @@ Arguments:
 **Example:**
 
 <pwiki-comment>
-- [bootstrap css](bootstrap/Templates/_css.html)
+- [bootstrap css](/bootstrap/Templates/_css.html)
 </pwiki-comment>
 
 <!--[pWiki[
-[Templates/\_css] / [bootstrap css](bootstrap/Templates/_css.html):
+[Templates/\_css] / [bootstrap css](/bootstrap/Templates/_css.html):
 ```
 @source(Templates/_css)
 ```
@@ -192,17 +193,17 @@ Each new occurrence of a name will change slot content.
 **Example:**
 
 <pwiki-comment>
-- [bootstrap view](bootstrap/Templates/_view.html)
-- [bootstrap edit](bootstrap/Templates/_edit.html)
+- [bootstrap view](/bootstrap/Templates/_view.html)
+- [bootstrap edit](/bootstrap/Templates/_edit.html)
 </pwiki-comment>
 
 <!--[pWiki[
-[Templates/\_view] / [bootstrap view](bootstrap/Templates/_view.html):
+[Templates/\_view] / [bootstrap view](/bootstrap/Templates/_view.html):
 ```
 @source(Templates/_view)
 ```
 
-[Templates/\_edit] / [bootstrap edit](bootstrap/Templates/_edit.html):
+[Templates/\_edit] / [bootstrap edit](/bootstrap/Templates/_edit.html):
 ```
 @source(Templates/_edit)
 ```
@@ -238,11 +239,11 @@ of `macro` matches no pages.
 **Example:**
 
 <pwiki-comment>
-- [bootstrap pages](bootstrap/Templates/pages.html)
+- [bootstrap pages](/bootstrap/Templates/pages.html)
 </pwiki-comment>
 
 <!--[pWiki[ 
-[Templates/pages] / [bootstrap pages](bootstrap/Templates/pages.html):
+[Templates/pages] / [bootstrap pages](/bootstrap/Templates/pages.html):
 ```
 @source(Templates/pages)
 ```
