@@ -161,8 +161,11 @@ Arguments:
 
 **Example:**
 
+<pwiki-comment>
+- [bootstrap css](bootstrap/Templates/_css.html)
+</pwiki-comment><!--[pWiki[
 [Templates/\_css] / [bootstrap css](bootstrap/Templates/_css.html):
-<!--[pWiki[```
+```
 @source(Templates/_css)
 ```
 ]]-->
@@ -177,6 +180,10 @@ Each new occurrence of a name will change slot content.
 
 **Example:**
 
+<pwiki-comment>
+- [bootstrap view](bootstrap/Templates/_view.html):
+- [bootstrap edit](bootstrap/Templates/_edit.html):
+</pwiki-comment><!--[pWiki[
 [Templates/\_view] / [bootstrap view](bootstrap/Templates/_view.html):
 ```
 @source(Templates/_view)
@@ -186,6 +193,7 @@ Each new occurrence of a name will change slot content.
 ```
 @source(Templates/_edit)
 ```
+]]-->
 
 
 ### macro (name src sort) / else ()
@@ -216,10 +224,14 @@ of `macro` matches no pages.
 
 **Example:**
 
+<pwiki-comment>
+- [bootstrap pages](bootstrap/Templates/pages.html):
+</pwiki-comment><!--[pWiki[
 [Templates/pages] / [bootstrap pages](bootstrap/Templates/pages.html):
 ```
 @source(Templates/pages)
 ```
+]]-->
 
 
 <!-- @filter(markdown) -->
