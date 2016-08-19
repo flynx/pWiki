@@ -68,8 +68,8 @@ This is used as a simple and uniform mechanism to:
   Like [Templates/EmptyPage] to handle the _page not found_ condition.
 - define generic templates/pages accessible by multiple pages in path  
   A good example would be the viewer used to show this page [Templates/\_view]
-  and all of it's _chrome_ like the path above and links in the footer 
-  (when viewing through pWiki)
+  and all of it's _chrome_ like the path in the header and links in the 
+  footer <pwiki-comment>(seen: when viewing through pWiki)</pwiki-comment>
 - Overload default templates/pages
 
 

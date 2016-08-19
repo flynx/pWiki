@@ -123,6 +123,9 @@ var macro = {
 	// XXX add support for sort and reverse attrs in all relavant macros
 	// 		(see: macro for details)
 	macro: {
+		"pwiki-comment": Macro('hide in pWiki',
+			[],
+			function(context, elem, state){ return '' }),
 		now: Macro('Create a now id',
 			[],
 			function(context, elem, state){ return ''+Date.now() }),
@@ -1509,23 +1512,31 @@ var Wiki = {
 	__default_sort_methods__: ['path'],
 	__sort_methods__: {
 		title: function(a, b){
-			return a.title < b.title ? -1
-				: a.title > b.title ? 1
+			return a.page.title < b.page.title ? -1
+				: a.page.title > b.page.title ? 1
 				: 0
 		},
 		path: function(a, b){
-			return a.path < b.path ? -1
-				: a.path > b.path ? 1
+			return a.page.path < b.page.path ? -1
+				: a.page.path > b.page.path ? 1
 				: 0
 		},
 		// XXX
 		checked: function(a, b){
 			// XXX chech if with similar states the order is kept....
-			return a.checked == b.checked ? 0
-				: a.checked ? 1
+			return a.page.checked == b.page.checked ? 0
+				: a.page.checked ? 1
 				: -1
 		},
 		// XXX date, ...
+
+		// XXX use manual order and palce new items (not in order) at 
+		// 		top/bottom (option)...
+		// XXX store the order in .__wiki_data
+		manual: function(a, b){
+			// XXX
+			return 0
+		},
 	},
 
 	// Sort siblings...
@@ -1543,6 +1554,12 @@ var Wiki = {
 	//		-> page
 	//		NOTE: the next method is used iff the previous returns 0, 
 	//			i.e. the items are equal.
+	//
+	// To reverse a specific method, prepend it's name with "-", e.g. 
+	// "title" will do the default ascending sort while "-title" will do
+	// a descending sort.
+	// This is different from the "reverse" method which will simply 
+	// reverse the result.
 	//
 	// NOTE: the sort is local to the returned object.
 	// NOTE: the sorted object may loose sync form the actual wiki as the
@@ -1591,13 +1608,22 @@ var Wiki = {
 
 			var methods = (this.__order_by || this.__default_sort_methods__)
 				.map(function(m){
+					var reversed = m[0] == '-'
+					m = reversed ? m.slice(1) : m
+
 					if(m == 'reverse'){
 						reverse = !reverse
 						return null
 					}
-					return typeof(m) == typeof('str') ? that.__sort_methods__[m]
+					m = typeof(m) == typeof('str') ? that.__sort_methods__[m]
 						: m instanceof Function ? m
 						: null
+
+					return m != null ?
+						(reversed ? 
+							function(){ return -m.apply(this, arguments) } 
+							: m) 
+						: m
 				})
 				.filter(function(m){ return !!m })
 
@@ -1612,13 +1638,17 @@ var Wiki = {
 								return res
 							}
 						}
-						return 0
+						// keep order if nothing else works...
+						return a.i - b.i
 				}
 
 				this.__order = this.__order
-					.map(function(t){ return that.get(t) })
+					.map(function(t, i){ return {
+						i: i, 
+						page: that.get(t),
+					} })
 					.sort(method)
-					.map(function(t){ return t.path })
+					.map(function(t){ return t.page.path })
 			}
 
 			reverse 
