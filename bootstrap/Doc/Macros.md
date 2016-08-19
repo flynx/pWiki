@@ -164,6 +164,7 @@ Arguments:
 <pwiki-comment>
 - [bootstrap css](bootstrap/Templates/_css.html)
 </pwiki-comment>
+
 <!--[pWiki[
 [Templates/\_css] / [bootstrap css](bootstrap/Templates/_css.html):
 ```
@@ -231,12 +232,12 @@ of `macro` matches no pages.
 - [bootstrap pages](bootstrap/Templates/pages.html)
 </pwiki-comment>
 
-<!-- [pWiki[ 
+<!--[pWiki[ 
 [Templates/pages] / [bootstrap pages](bootstrap/Templates/pages.html):
 ```
 @source(Templates/pages)
 ```
-]] -->
+]]-->
 
 
 <!-- @filter(markdown) -->
