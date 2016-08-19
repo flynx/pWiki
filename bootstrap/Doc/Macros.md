@@ -43,9 +43,11 @@ are escaped a bit differently:
 
   \@include(\SomePage)
 
+  <pwiki-comment>
   _NOTE: if displayed on github, this will show an extra "\" in both 
   cases, this should be ignored as pWiki will consume the escaping "\" 
   in both the code example and the preview._
+  </pwiki-comment>
 
 
 - html-like macros -- escaped _the HTML way_
@@ -73,10 +75,6 @@ Show something in pWiki but hide it in HTML:
 Show something in HTML but hide in pWiki:
 <pre>
 &lt;pwiki-comment&gt; ... &lt;/pwiki-comment&gt;
-
-or
-
-\@pwiki-comment( ... )
 </pre>
 
 
