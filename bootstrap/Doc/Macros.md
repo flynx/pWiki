@@ -33,15 +33,15 @@ The two forms exist to fill two distinct functions:
 Macros can be escaped for inclusion in the page, the two types of macros 
 are escaped a bit differently:
 
-- inline macros -- escaped by preceding with a `\`
+- inline macros -- escaped by preceding with a "\"
 
   ```
-  \\@include(SomePage)
+  \\@include(\SomePage)
   ```
 
   Displayed in page as:
 
-  \@include(SomePage)
+  \@include(\SomePage)
 
   _NOTE: if displayed on github, this will show an extra "\" in both 
   cases, this should be ignored as pWiki will consume the escaping "\" 
@@ -51,12 +51,12 @@ are escaped a bit differently:
 - html-like macros -- escaped _the HTML way_
 
   ```
-  &lt;include src="SomePage"\&gt;
+  &lt;include src="\SomePage"\&gt;
   ```
 
   Displayed in page as:
 
-  &lt;include src="SomePage"\\&gt;
+  &lt;include src="\SomePage"\\&gt;
 
 
 
@@ -176,7 +176,7 @@ Arguments:
 </pwiki-comment>
 
 <!--[pWiki[
-[Templates/\_css] / [bootstrap css](/bootstrap/Templates/_css.html):
+[Templates/\_css] / [bootstrap css](bootstrap/Templates/_css.html):
 ```
 @source(Templates/_css)
 ```
@@ -198,12 +198,12 @@ Each new occurrence of a name will change slot content.
 </pwiki-comment>
 
 <!--[pWiki[
-[Templates/\_view] / [bootstrap view](/bootstrap/Templates/_view.html):
+[Templates/\_view] / [bootstrap view](bootstrap/Templates/_view.html):
 ```
 @source(Templates/_view)
 ```
 
-[Templates/\_edit] / [bootstrap edit](/bootstrap/Templates/_edit.html):
+[Templates/\_edit] / [bootstrap edit](bootstrap/Templates/_edit.html):
 ```
 @source(Templates/_edit)
 ```
@@ -243,7 +243,7 @@ of `macro` matches no pages.
 </pwiki-comment>
 
 <!--[pWiki[ 
-[Templates/pages] / [bootstrap pages](/bootstrap/Templates/pages.html):
+[Templates/pages] / [bootstrap pages](bootstrap/Templates/pages.html):
 ```
 @source(Templates/pages)
 ```
