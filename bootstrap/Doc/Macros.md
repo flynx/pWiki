@@ -164,7 +164,7 @@ Each new occurrence of a name will change slot content.
 ```
 
 
-### macro (name src text) / else ()
+### macro (name src sort) / else ()
 
 Apply macro to source page and include the result.
 
@@ -184,6 +184,7 @@ a named macro or in the current macro.
 Arguments:
 - `name` -- macro name (optional).
 - `src` -- path to source page (optional).
+- `sort` -- space separated list of methods to use for item sorting
 
 
 `else` macro is applicable inside `macro`. it is used when the `src` path

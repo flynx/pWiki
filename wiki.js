@@ -120,6 +120,8 @@ var macro = {
 
 	// Macros...
 	//
+	// XXX add support for sort and reverse attrs in all relavant macros
+	// 		(see: macro for details)
 	macro: {
 		now: Macro('Create a now id',
 			[],
@@ -235,15 +237,17 @@ var macro = {
 		// XXX revise macro definition rules -- see inside...
 		// XXX do we need macro namespaces or context isolation (for inculdes)???
 		macro: Macro('Define/fill macro',
-			['name', 'src'],
+			['name', 'src', 'sort', 'reverse'],
 			function(context, elem, state, parse){
 				elem = $(elem)
 				var name = elem.attr('name')
 				var path = elem.attr('src')
+				var sort = elem.attr('sort')
+				var reverse = elem.attr('reverse')
 
 				state.templates = state.templates || {}
 
-
+				// get named macro...
 				if(name){
 					// XXX not sure which definition rules to use for macros...
 					// 		- first define -- implemented now
@@ -264,15 +268,25 @@ var macro = {
 				if(path){
 					var pages = context.get(path)
 
-					// no matching pages...
+					// no matching pages -- show the else block or nothing...
 					if(pages.length == 0){
 						var e = elem
 							.find('else').first().clone()
 								.attr('src', path)
 						parse(e, context)
 						return e
-
 					} 
+
+					// see if we need to overload attrs...
+					sort = sort == null ? (elem.attr('sort') || '') : sort
+					sort = sort
+							.split(/\s+/g)
+							.filter(function(e){ return e && e != '' })
+					reverse = reverse == null ? elem.attr('reverse') == 'true' : false
+
+					// do the sorting...
+					pages = sort.length > 0 ? pages.sort(sort) : pages
+					pages = reverse ? pages.reverse() : pages
 
 					// fill with pages...
 					elem = elem.clone()
@@ -1330,6 +1344,9 @@ var Wiki = {
 		return this.text.text() },
 
 
+	get checked(){ return this.data.checked },
+	set checked(value){ this.data.checked = value },
+
 	// NOTE: this is set by setting .text
 	get links(){
 		var data = this.data || {}
@@ -1490,6 +1507,8 @@ var Wiki = {
 
 
 	// sorting...
+	// XXX make these not affect the general order unless they have to...
+	// XXX add a reverse method...
 	__default_sort_methods__: ['path'],
 	__sort_methods__: {
 		title: function(a, b){
@@ -1501,6 +1520,13 @@ var Wiki = {
 			return a.path < b.path ? -1
 				: a.path > b.path ? 1
 				: 0
+		},
+		// XXX
+		checked: function(a, b){
+			// XXX chech if with similar states the order is kept....
+			return a.checked == b.checked ? 0
+				: a.checked ? 1
+				: -1
 		},
 		// XXX date, ...
 	},
@@ -1530,7 +1556,9 @@ var Wiki = {
 		var res = this.clone()
 		var path = res.path
 
-		var methods = [].slice.call(arguments)
+		var methods = arguments[0] instanceof Array ? 
+			arguments[0] 
+			: [].slice.call(arguments)
 
 		res.__order_by = methods = methods.length == 0 ?
 				this.__default_sort_methods__ 
