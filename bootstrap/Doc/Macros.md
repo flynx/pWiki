@@ -185,6 +185,7 @@ Each new occurrence of a name will change slot content.
 - [bootstrap view](bootstrap/Templates/_view.html)
 - [bootstrap edit](bootstrap/Templates/_edit.html)
 </pwiki-comment>
+
 <!--[pWiki[
 [Templates/\_view] / [bootstrap view](bootstrap/Templates/_view.html):
 ```
@@ -227,8 +228,9 @@ of `macro` matches no pages.
 **Example:**
 
 <pwiki-comment>
-- [bootstrap pages](bootstrap/Templates/pages.html):
+- [bootstrap pages](bootstrap/Templates/pages.html)
 </pwiki-comment>
+
 <!-- [pWiki[ 
 [Templates/pages] / [bootstrap pages](bootstrap/Templates/pages.html):
 ```
