@@ -237,13 +237,12 @@ var macro = {
 		// XXX revise macro definition rules -- see inside...
 		// XXX do we need macro namespaces or context isolation (for inculdes)???
 		macro: Macro('Define/fill macro',
-			['name', 'src', 'sort', 'reverse'],
+			['name', 'src', 'sort'],
 			function(context, elem, state, parse){
 				elem = $(elem)
 				var name = elem.attr('name')
 				var path = elem.attr('src')
 				var sort = elem.attr('sort')
-				var reverse = elem.attr('reverse')
 
 				state.templates = state.templates || {}
 
@@ -282,11 +281,9 @@ var macro = {
 					sort = sort
 							.split(/\s+/g)
 							.filter(function(e){ return e && e != '' })
-					reverse = reverse == null ? elem.attr('reverse') == 'true' : false
 
 					// do the sorting...
 					pages = sort.length > 0 ? pages.sort(sort) : pages
-					pages = reverse ? pages.reverse() : pages
 
 					// fill with pages...
 					elem = elem.clone()
