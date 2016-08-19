@@ -48,6 +48,11 @@ var setWikiWords = function(text, show_brackets, skip){
 		.replace(
 			Wiki.__wiki_link__,
 			function(l){
+				// check if wikiword is escaped...
+				if(l[0] == '\\'){
+					return l.slice(1)
+				}
+
 				var path = l[0] == '[' ? l.slice(1, -1) : l
 				var i = [].slice.call(arguments).slice(-2)[0]
 
@@ -125,7 +130,9 @@ var macro = {
 	macro: {
 		"pwiki-comment": Macro('hide in pWiki',
 			[],
-			function(context, elem, state){ return '' }),
+			function(context, elem, state){ 
+				return '' 
+			}),
 		now: Macro('Create a now id',
 			[],
 			function(context, elem, state){ return ''+Date.now() }),
@@ -570,6 +577,12 @@ var macro = {
 					// get actual element content...
 					var text = $('<div>').append($(e).clone()).html()
 
+					// conditional comment...
+					if(e.nodeType == e.COMMENT_NODE 
+							&& /^<!--\[pWiki\[(.|\n)*\]\]-->$/.test(text)){
+						text = text.slice(11, -5)
+					}
+
 					$(e).replaceWith(_parseText(context, text, macro))
 
 				// node -> html-style + attrs...
@@ -1008,8 +1021,8 @@ var Wiki = {
 	//__redirect_template__: 'RedirectTemplate',
 
 	__wiki_link__: RegExp('('+[
-		'(\\./|\\.\\./|[A-Z][a-z0-9]+[A-Z/])[a-zA-Z0-9/]*',
-		'\\[[^\\]]+\\]',
+		'\\\\?(\\./|\\.\\./|[A-Z][a-z0-9]+[A-Z/])[a-zA-Z0-9/]*',
+		'\\\\?\\[[^\\]]+\\]',
 	].join('|') +')', 'g'),
 
 	__macro_parser__: macro,

@@ -60,6 +60,29 @@ are escaped a bit differently:
 
 
 
+### Conditional comments
+
+In addition to HTML and filter-specific comments pWiki provides two types
+of conditional comments that serve two specific functions:
+
+Show something in pWiki but hide it in HTML:
+```
+<!--\[pWiki[ ... ]]-->
+```
+
+Show something in HTML but hide in pWiki:
+<pre>
+&lt;pwiki-comment&gt; ... &lt;/pwiki-comment&gt;
+
+or
+
+\@pwiki-comment( ... )
+</pre>
+
+
+This will enable writing documents (mainly in _markdown_) that are usable 
+bot from within pWiki as well as outside.
+
 
 ## Macros
 
@@ -139,9 +162,10 @@ Arguments:
 **Example:**
 
 [Templates/\_css] / [bootstrap css](bootstrap/Templates/_css.html):
-```
+<!--[pWiki[```
 @source(Templates/_css)
 ```
+]]-->
 
 
 ### slot (name text)

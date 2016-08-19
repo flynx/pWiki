@@ -13,7 +13,7 @@ are likely to change, the implementation / API **will definitely** change! ;)_
   without requiring setting up and maintaining a write-convert-embed 
   workflow.
 
-  This was a requirement on the _ImageGrid.Viewer_ project and as a 
+  This was a requirement on the _\ImageGrid.Viewer_ project and as a 
   side-effect pWiki hosts it's own documentation too.
 
 - _Pluggable storage and synchronization_ mechanisms
