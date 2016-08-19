@@ -163,7 +163,7 @@ Arguments:
 
 <pwiki-comment>
 - [bootstrap css](bootstrap/Templates/_css.html)
-</pwiki-comment><!--[pWiki[
+</pwiki-comment> <!--[pWiki[
 [Templates/\_css] / [bootstrap css](bootstrap/Templates/_css.html):
 ```
 @source(Templates/_css)
@@ -183,7 +183,7 @@ Each new occurrence of a name will change slot content.
 <pwiki-comment>
 - [bootstrap view](bootstrap/Templates/_view.html):
 - [bootstrap edit](bootstrap/Templates/_edit.html):
-</pwiki-comment><!--[pWiki[
+</pwiki-comment> <!--[pWiki[
 [Templates/\_view] / [bootstrap view](bootstrap/Templates/_view.html):
 ```
 @source(Templates/_view)
@@ -226,7 +226,7 @@ of `macro` matches no pages.
 
 <pwiki-comment>
 - [bootstrap pages](bootstrap/Templates/pages.html):
-</pwiki-comment><!--[pWiki[
+</pwiki-comment> <!--[pWiki[
 [Templates/pages] / [bootstrap pages](bootstrap/Templates/pages.html):
 ```
 @source(Templates/pages)
