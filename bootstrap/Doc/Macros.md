@@ -103,7 +103,7 @@ use.
 \@now()
 ```
 
-<pwiki-comment>Will produce: `1471389217848` </pwiki-comment>
+<pwiki-comment>Will produce: `1471389217848`</pwiki-comment>
 
 <!--[pWiki[  Will produce: `@now()` ]]-->
 
@@ -125,7 +125,15 @@ Filters:
 - markdown
 
 **Example:**
-- `[./_edit]` -- _see the macro at the end of the page._
+
+
+<!--[pWiki[
+- `[Templates/_edit/_edit]` &ndash; _see the macro at the end of the page._
+]]-->
+
+<pwiki-comment>
+- [bootstrap \_edit](bootstrap/Templates/_edit.html) &ndash; _see the macro at the end of the page._
+</pwiki-comment>
 
 
 

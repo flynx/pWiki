@@ -583,7 +583,6 @@ var macro = {
 						text = text
 							.replace(/^<!--\s*\[pWiki\[/, '')
 							.replace(/\]\]\s*-->$/, '')
-						console.log('!!!!', text)
 					}
 
 					$(e).replaceWith(_parseText(context, text, macro))
