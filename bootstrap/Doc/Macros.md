@@ -102,9 +102,7 @@ use.
 ```
 \@now()
 ```
-Will produce: `@now()` 
-
-_NOTE: when viewing from outside of pWiki, this should look like: `1471389217848`_
+Will produce: <!--[pWiki[ `@now()` ]]--> <pwiki-comment> `1471389217848` </pwiki-comment>
 
 
 
