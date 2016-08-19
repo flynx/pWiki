@@ -132,7 +132,7 @@ Filters:
 ]]-->
 
 <pwiki-comment>
-- [bootstrap \_edit](bootstrap/Templates/_edit.html) &ndash; _see the macro at the end of the page._
+- [bootstrap \_edit](/bootstrap/Templates/_edit.html) &ndash; _see the macro at the end of the page._
 </pwiki-comment>
 
 
