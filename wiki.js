@@ -579,8 +579,11 @@ var macro = {
 
 					// conditional comment...
 					if(e.nodeType == e.COMMENT_NODE 
-							&& /^<!--\[pWiki\[(.|\n)*\]\]-->$/.test(text)){
-						text = text.slice(11, -5)
+							&& /^<!--\s*\[pWiki\[(.|\n)*\]\]\s*-->$/.test(text)){
+						text = text
+							.replace(/^<!--\s*\[pWiki\[/, '')
+							.replace(/\]\]\s*-->$/, '')
+						console.log('!!!!', text)
 					}
 
 					$(e).replaceWith(_parseText(context, text, macro))
