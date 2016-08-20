@@ -55,7 +55,7 @@ are likely to change, the implementation / API **will definitely** change! ;)_
 ### Project:
 - The project on [GitHub](https://github.com/flynx/pWiki)
 - pWiki [live demo](https://flynx.github.io/pWiki/) _&ndash; The data is stored in 
-local storage on the client_
+localStorage on the client_
 
 <!-- @filter(markdown) -->
 <!-- vim:set ts=2 sw=2 expandtab spell : -->
