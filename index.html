@@ -37,14 +37,18 @@
 <script>
 
 // clear the localStorage...
-var clear = () => {
+var clearStorage = function(){
 	delete localStorage['store-persistently']
 	delete localStorage['wiki-data']
 	delete localStorage['wiki-location']
 }
 
+var getStorage = function(){
+	return localStorage['store-persistently'] ? localStorage : sessionStorage
+}
+
 var save = () => {
-	var storage = localStorage['store-persistently'] ? localStorage : sessionStorage
+	var storage = getStorage() 
 
 	// XXX save...
 	storage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
@@ -270,7 +274,7 @@ $(() => {
 		data = Wiki.__wiki_data = Bootstrap
 	}
 
-	var storage = localStorage['store-persistently'] ? localStorage : sessionStorage
+	var storage = getStorage() 
 
 	// load stored data...
 	Wiki.__wiki_data = storage['wiki-data'] ?
