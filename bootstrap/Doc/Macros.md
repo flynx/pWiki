@@ -1,4 +1,4 @@
-# ![pWiki](img/pWiki-i.jpg) pWiki Macros
+# ![pWiki](/img/pWiki-i.jpg) pWiki Macros
 
 ## Syntax
 
