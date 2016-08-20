@@ -1,4 +1,4 @@
-# ![pWiki](/img/pWiki-i.jpg) pWiki Path
+# ![pWiki](img/pWiki-i.jpg) pWiki Path
 
 XXX a Wiki is a set of pages, mostly top level pages, mosty titled in
 WikiWord style, pWiki follows this culture but does not restrict either 

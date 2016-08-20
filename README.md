@@ -1,4 +1,4 @@
-# ![pWiki](/img/pWiki-i.jpg) Portable Wiki (pWiki)
+# ![pWiki](img/pWiki-i.jpg) Portable Wiki (pWiki)
 
 _NOTE: the project is currently in prototype phase, thus while most things 
 are likely to change, the implementation / API **will definitely** change! ;)_
