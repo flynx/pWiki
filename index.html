@@ -42,9 +42,11 @@ var clear = () => {
 }
 
 var save = () => {
+	var storage = localStorage['store-persistently'] ? localStorage : sessionStorage
+
 	// XXX save...
-	localStorage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
-	localStorage['wiki-location'] = Wiki.location
+	storage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
+	storage['wiki-location'] = Wiki.location
 }
 
 var reload = () => {
@@ -266,15 +268,17 @@ $(() => {
 		data = Wiki.__wiki_data = Bootstrap
 	}
 
+	var storage = localStorage['store-persistently'] ? localStorage : sessionStorage
+
 	// load stored data...
-	Wiki.__wiki_data = localStorage['wiki-data'] ?
-		JSON.parse(localStorage['wiki-data']) 
+	Wiki.__wiki_data = storage['wiki-data'] ?
+		JSON.parse(storage['wiki-data']) 
 		: data
 	if(Wiki.__wiki_data !== data){
 		Wiki.__wiki_data.__proto__ = data
 	}
 
-	Wiki.location = localStorage['wiki-location'] || Wiki.location
+	Wiki.location = storage['wiki-location'] || Wiki.location
 
 
 	reload()
