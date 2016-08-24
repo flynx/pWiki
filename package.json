@@ -5,10 +5,13 @@
   "license": "BSD",
   "dependencies": {
     "glob": "^7.0.5",
+    "ig-features": "^1.0.4",
+    "ig-object": "^1.0.1",
     "jszip": "^2.6.1",
     "peer": "*",
     "pouch-replicate-webrtc": "0.0.9",
     "pouchdb": "^5.4.5",
+    "requirejs": "^2.2.0",
     "showdown": "^1.4.2",
     "xss": "^0.2.13"
   },
