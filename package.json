@@ -5,7 +5,8 @@
   "license": "BSD",
   "dependencies": {
     "glob": "^7.0.5",
-    "ig-features": "^1.0.4",
+    "ig-features": "^2.0.0",
+    "ig-actions": "^1.0.0",
     "ig-object": "^1.0.1",
     "jszip": "^2.6.1",
     "peer": "*",
