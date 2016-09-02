@@ -1165,6 +1165,11 @@ var Wiki = {
 		//o.__location_at = this.__location_at
 		// XXX
 		o.__parent = this
+
+		if(this.__order){
+			o.__order = this.__order.slice()
+		}
+
 		return o
 	},
 	end: function(){
@@ -1463,7 +1468,7 @@ var Wiki = {
 	// iteration...
 	get length(){
 		return (this.__order || this.resolveStarPath(this.location)).length },
-	// get/srt postion in list of pages...
+	// get/set postion in list of pages...
 	// XXX do we need to min/max normalize n??
 	at: function(n){
 		// get position...
@@ -1479,9 +1484,6 @@ var Wiki = {
 		}
 
 		var res = this.clone()
-		if(this.__order){
-			res.__order = this.__order.slice()
-		}
 
 		n = n < 0 ? l - n : n
 		// XXX do we min/max n???
