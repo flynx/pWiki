@@ -3,8 +3,8 @@
 *
 *
 **********************************************************************/
-(typeof(define)[0]=='u'?function(f){module.exports=f(require)}:define)(
-function(require){ var module={} // makes module AMD/node compatible...
+((typeof define)[0]=='u'?function(f){module.exports=f(require)}:define)
+(function(require){ var module={} // make module AMD/node compatible...
 /*********************************************************************/
 
 var object = require('lib/object')
@@ -15,7 +15,7 @@ var features = require('lib/features')
 
 /*********************************************************************/
 
-var path2lst = function(path){ 
+var path2list = function(path){ 
 	return (path instanceof Array ?  path : path.split(/[\\\/]+/g))
 		// handle '..' (lookahead) and trim path elements...
 		// NOTE: this will not touch the leading '.' or '..'
@@ -28,8 +28,7 @@ var path2lst = function(path){
 		.filter(function(p){ 
 			return p != null && p != '' })}
 
-var normalizePath = function(path){ return path2lst(path).join('/') }
-
+var normalizePath = function(path){ return path2list(path).join('/') }
 
 
 
@@ -58,6 +57,8 @@ var pWikiData = {
 
 	// get a list of matching paths...
 	// XXX sort API???
+	// 		...results shoulde be sorted via the saved order if available...
+	// 		.....or should this be done at a later stage as in gen1???
 	match: function(path){
 		// path patterns -- "*"
 		if(path.indexOf('*') >= 0){
@@ -84,6 +85,7 @@ var pWikiData = {
 				.concat(Object.keys(data.__proto__)
 					// do not repeat overloaded stuff...
 					.filter(function(e){ return !data.hasOwnProperty(e) }))
+			// XXX sort???
 			.map(function(p){ return tail != '' ? 
 				normalizePath(p +'/'+ tail) 
 				: p })
@@ -115,6 +117,9 @@ var pWikiData = {
 	},
 	// clear data at path...
 	clear: function(path){
+		if(this.__data == null){
+			return this
+		}
 		var that = this
 		this.match(path).forEach(function(p){
 			delete that.__data[p]
@@ -127,6 +132,7 @@ var pWikiData = {
 
 /*********************************************************************/
 
+// XXX need a startup sequence...
 var pWikiPageActions = actions.Actions({
 	config: {
 		'home-page': 'WikiHome',
@@ -138,6 +144,8 @@ var pWikiPageActions = actions.Actions({
 			'Templates',
 		],
 		'post-acquesition-order': [],
+
+		'order-unsorted-first': false,
 	},
 
 	// pWikiData...
@@ -146,7 +154,7 @@ var pWikiPageActions = actions.Actions({
 	get length(){
 		return this.wiki.match(this.location().path).length },
 
-	resolve: ['Resolve relative path and expand path variables',
+	resolve: ['Path/Resolve relative path and expand path variables',
 		function(path){
 			path = normalizePath(path)
 
@@ -172,74 +180,15 @@ var pWikiPageActions = actions.Actions({
 
 			return path
 		}],
-
-	location: ['Get or set location',
-		function(value){
-			if(value == null){
-				return
-			}
-
-			// XXX should we set/return a default empty value here???
-			this.__location = this.__location || {}
-
-			// get location...
-			if(arguments.length == 0){
-				return this.__location || this.config['home-page']
-			}
-
-			// set location index...
-			if(typeof(value) == typeof(123)){
-				this.__location.at = value
-
-			// set location path...
-			} else if(typeof(value) == typeof('str')){
-				this.__location.path = this.resolve(value)
-				this.__location.at = 0
-
-			// object...
-			} else {
-				this.__location = value
-			}
-		}],
-	path: ['Page/Get or set path', 
-		function(value){
-			// get explcit path from location (acounting for 'at')...
-			if(arguments.length == 0){
-				var location = this.location()
-				return this.wiki.match(location.path)[location.at]
-
-			// move page to path...
-			} else if(value != null) {
-				this.wiki.move(this.path(), this.resolve(value))
-			}
-		}],
-	title: ['Page/Get or set title',
-		function(value){
-			if(arguments.length == 0){
-				return path2list(this.path()).pop()
-
-			} else if(value != null){
-				this.path(this.base() +'/'+ value)
-			}
-		}]
-	base: ['Page/Get or set directory',
-		function(base){
-			if(arguments.length == 0){
-				return path2list(this.path()).slice(0, -1).join('/')
-
-			} else if(base != null){
-				this.path(base +'/'+ this.title())
-			}
-		}]
-
-	acquire: ['',
+	// XXX should this get a page???
+	acquire: ['Path/Acquire the page path that the given path resolves to',
 		function(path, no_default){
 			var that = this
 
 			// handle paths and relative paths...
 			var p = this.get(path)
 			var title = p.title()
-			path = path2lst(p.base())
+			path = path2list(p.base())
 
 			var acquire_from = this.config['acquesition-order'] || []
 			var post_acquire_from = this.config['post-acquesition-order'] || []
@@ -285,12 +234,105 @@ var pWikiPageActions = actions.Actions({
 					: null)
 		}],
 
+	location: ['Page/Get or set location',
+		function(value){
+			if(value == null){
+				return
+			}
+
+			// XXX should we set/return a default empty value here???
+			this.__location = this.__location || {}
+
+			// get location...
+			if(arguments.length == 0){
+				return this.__location || this.config['home-page']
+			}
+
+			// set location index...
+			if(typeof(value) == typeof(123)){
+				this.__location.at = value
+
+			// set location path...
+			} else if(typeof(value) == typeof('str')){
+				this.__location.path = this.resolve(value)
+				this.__location.at = 0
+
+			// object...
+			} else {
+				this.__location = value
+			}
+		}],
+	path: ['Page/Get or set path', 
+		function(value){
+			// get explcit path from location (acounting for 'at')...
+			if(arguments.length == 0){
+				var location = this.location()
+				return this.order(true)[location.at]
+				//return this.wiki.match(location.path)[location.at]
+
+			// move page to path...
+			} else if(value != null) {
+				this.wiki.move(this.path(), this.resolve(value))
+			}
+		}],
+	title: ['Page/Get or set title',
+		function(value){
+			if(arguments.length == 0){
+				return path2list(this.path()).pop()
+
+			} else if(value != null){
+				this.path(this.base() +'/'+ value)
+			}
+		}]
+	base: ['Page/Get or set directory',
+		function(base){
+			if(arguments.length == 0){
+				return path2list(this.path()).slice(0, -1).join('/')
+
+			} else if(base != null){
+				this.path(base +'/'+ this.title())
+			}
+		}]
+
+	attr: ['Page/Get or set attribute',
+		function(name, value){
+			var d = this.data()
+			// get...
+			if(arguments.length == 1){
+				return d[name]
+
+			// clear...
+			} else if(value === undefined){
+				delete d[name]
+
+			// set...
+			} else {
+				d[name] = value
+			}
+			// XXX is it good to write the whole thing???
+			this.data(d)
+		}],
+
+	// content shorthands...
+	// XXX raw/text/checked/...
+
 	exists: ['Page/Check if path explicitly exists.', 
 		function(path){
 			path = path || this.path()
 			var location = this.location()
 			return this.wiki.match(location.path)[location.at] !== undefined
 		}],
+	// Format:
+	//	{
+	//		'order': [ <title>, .. ] | undefined,
+	//		'order-unsorted-first': <bool>,
+	//
+	//		// XXX not yet used...
+	//		'text': <string>,
+	//		'links': [ .. ],
+	// 	}
+	//
+	// XXX cache the data???
 	data: ['Page/Get or set data', 
 		function(value){
 			// get -> acquire page and get it's data...
@@ -302,11 +344,11 @@ var pWikiPageActions = actions.Actions({
 				this.wiki.data(this.path(), value || '')
 			}
 		}],
-	clear: ['Clear page', 
+	clear: ['Page/Clear page', 
 		function(){ this.wiki.clear(this.path()) }],
 
 	// NOTE: a clone references the same data, no copying is done.
-	clone: ['Get page clone (new reference)', 
+	clone: ['Page/Get page clone (new reference)', 
 		function(){
 			//var o = (new this.constructor())
 			var o = Object.create(this)
@@ -319,10 +361,10 @@ var pWikiPageActions = actions.Actions({
 
 			return o
 		}],
-	end: ['Get paren context of clone', 
+	end: ['Page/Get parent context of clone', 
 		function(){ return this.__parent_context || this }],
 	// XXX should this return false on empty path???
-	copy: ['Copy page to path', 
+	copy: ['Page/Copy page to path', 
 		function(path){
 			return path != null 
 				&& this
@@ -331,13 +373,13 @@ var pWikiPageActions = actions.Actions({
 					.clone()
 						.data(this.data()) }],
 
-	get: ['Get page by path', 
+	get: ['Page/Get page by path', 
 		function(path){
 			return this
 				.clone()
 				.location(path) }],
 
-	at: ['Get index or page at given index', 
+	at: ['Page/Get index or page at given index', 
 		function(n){
 			// get current index...
 			if(n == null){
@@ -364,15 +406,15 @@ var pWikiPageActions = actions.Actions({
 
 			return res
 		}],
-	prev: ['Get previous page', 
+	prev: ['Page/Get previous page', 
 		function(){
 			var i = this.at() - 1
 			// NOTE: need to guard against overflows...
 			return i >= 0 ? this.at(i) : null }],
-	next: ['Get next page', 
+	next: ['Page/Get next page', 
 		function(){ return this.at(this.at() + 1) }],
 
-	map: ['', 
+	map: ['Page/', 
 		function(func){
 			var res = []
 			for(var i=0; i < this.length; i++){
@@ -382,7 +424,7 @@ var pWikiPageActions = actions.Actions({
 			return res
 		}],
 	// XXX add path (str) filters...
-	filter: ['', 
+	filter: ['Page/', 
 		function(func){
 			var res = []
 			for(var i=0; i < this.length; i++){
@@ -391,16 +433,120 @@ var pWikiPageActions = actions.Actions({
 			}
 			return res
 		}],
-	each: ['', 
+	each: ['Page/', 
 		function(func){ this.map(func) }],
 	// XXX reduce???
 
-	sort: ['', function(){ }],
-	reverse: ['', function(){ }],
-	// XXX not sure if this is the right way to go...
-	update: ['', function(){ }],
-})
+	// Get/set sibling order...
+	//
+	//	Get order (title)...
+	//	.order()
+	//	.order(false)
+	//		-> order
+	//
+	//	Get order (full paths)...
+	//	.order(true)
+	//		-> order
+	//
+	//	Save local order (.__order)...
+	//	.order('local')
+	//		-> order
+	//
+	//	Save list of titles as order...
+	//	.order([<title>, .. ])
+	//		-> order
+	//
+	// NOTE: saving order to data is supported ONLY for paths that contain
+	// 		one and only one pattern and in the last path segment...
+	//
+	// XXX test... 
+	order: ['Page/Get or set sibling pages order', 
+		function(order){
+			var parent = this.get('..')
+			var path = this.location().path
+			var full_paths = false
 
+			// get full paths...
+			if(order === true || order === false){
+				full_paths = order
+				order = null
+
+			// save local order...
+			} else if(order == 'local'){
+				order = this.__order
+			}
+
+			// get order...
+			if(order == null){
+				//var pages = this.wiki.match(parent.path() + '/*')
+				var pages = this.wiki.match(path)
+				var order = (this.__order || parent.attr('order') || [])
+					// clear all paths that are not currently visible...
+					// NOTE: paths may not be visible because they are 
+					// 		fitered out by .location().path pattern...
+					.filter(function(p){ 
+						return pages.indexOf(p) >= 0 })
+
+				// keep the titles only...
+				if(!full_paths){
+					pages = pages
+							.map(function(p){ 
+								return path2list(p).pop() })
+
+				// expand titles to full paths...
+				} else {
+					var base = this.base()
+					order = order
+						.map(function(t){
+							return normalizePath(base +'/'+ t)})
+				}
+
+				// sorted...
+				if(order.length > 0){
+					// get unsorted_first config: 
+					// 		page || config || false
+					var unsorted_first = parent.attr('order-unsorted-first')
+					unsorted_first = unsorted_first == null ? 
+						 this.config['order-unsorted-first']
+						 : unsorted_first
+					unsorted_first = unsorted_first == null ? 
+						false 
+						: unsorted_first
+					// get pages not in order...
+					pages = pages
+						.filter(function(p){ 
+							return order.indexOf(p) < 0 }))
+					// build the list... 
+					return unsorted_first ?
+						pages.concat(order)
+						: order.concat(pages)
+
+				// unsorted...
+				} else {
+					return pages 
+				}
+
+			// set global manual order...
+			// XXX ugly -- revise... 
+			// check if we have a pattern...
+			} else if(path2list(path).pop().indexOf('*') >= 0 
+					// check if no patterns are in path other than the last elem...
+					&& path2list(path).slice(0, -1).join('/').match(/\*/g) == null) {
+				parent.attr('order', order)
+				delete this.__order
+
+			// set local manual order...
+			} else {
+				this.__order = order
+			}
+		}],
+	// XXX
+	sort: ['Page/', function(){ }],
+	// XXX
+	reverse: ['Page/', function(){ }],
+	// XXX not sure if this is the right way to go...
+	update: ['Page/', function(){ }],
+})
 
 var pWikiPage = pWikiFeatures.Featre({
 	title: '',
@@ -411,19 +557,44 @@ var pWikiPage = pWikiFeatures.Featre({
 
 
 
+/*********************************************************************/
 
-var pWikiDictStore = pWikiFeatures.Featre({
-	title: '',
-	tag: 'dict-store',
-})
-var pWikiLocalStorageStore = pWikiFeatures.Featre({
+var pWikiLocalStorage = pWikiFeatures.Featre({
 	title: '',
 	tag: 'localstorage-store',
 
-	depends: [
-		'dict-store',
+	config: {
+		'localstorage-key': 'pwiki-gen2-data',
+	},
+
+	actions: actions.Actions({
+		// XXX do not use .__data
+		save: ['',
+			function(){ 
+				localstorage[this.config['localstorage-key']] = 
+					JSON.stringify(this.wiki.__data) }],
+	}),
+
+	handlers: [
+		// XXX add lifecicle load handler...
+		// XXX
+		
+		[[
+			'update', 
+			'clear',
+		],
+			function(){ this.save() }],
+
+		[[
+			'path',
+			'data',
+		], 
+			function(){ arguments.length > 1 && this.save() }],
 	],
 })
+
+
+
 var pWikiPouchDBStore = pWikiFeatures.Featre({
 	title: '',
 	tag: 'pouchdb-store',
