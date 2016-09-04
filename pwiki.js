@@ -602,5 +602,29 @@ var pWikiPouchDBStore = pWikiFeatures.Featre({
 
 
 
+/*********************************************************************/
+
+// XXX should this extend pWiki or encapsulate???
+var pWikiUIActions = actions.Actions({
+	config: {
+	},
+
+	// XXX navigation...
+	up: ['', function(){}],
+	down: ['', function(){}],
+	left: ['', function(){}],
+	right: ['', function(){}],
+
+	toggleEdit: ['', function(){}],
+	togglePages: ['', function(){}],
+})
+
+var pWikiUI = pWikiFeatures.Featre({
+	title: '',
+	tag: 'ui',
+})
+
+
+
 /**********************************************************************
 * vim:set ts=4 sw=4 :                               */ return module })
