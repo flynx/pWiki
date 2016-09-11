@@ -126,6 +126,10 @@ var pWikiData = {
 		})
 		return this
 	},
+
+	// XXX
+	json: function(data){
+	},
 }
 
 
@@ -150,6 +154,11 @@ var pWikiPageActions = actions.Actions({
 
 	// pWikiData...
 	wiki: null,
+
+
+	// XXX should this be loca/dump???
+	json: ['', function(){ }],
+
 
 	get length(){
 		return this.wiki.match(this.location().path).length },
@@ -452,6 +461,11 @@ var pWikiPageActions = actions.Actions({
 	//	.order('local')
 	//		-> order
 	//
+	//	Save current order...
+	//	.order('current')
+	//		-> order
+	//		NOTE: this is a shorthand for p.order(p.order())
+	//
 	//	Save list of titles as order...
 	//	.order([<title>, .. ])
 	//		-> order
@@ -472,8 +486,13 @@ var pWikiPageActions = actions.Actions({
 				order = null
 
 			// save local order...
+			// XXX is this correct???
 			} else if(order == 'local'){
 				order = this.__order
+
+			// save current order...
+			} else if(order == 'current'){
+				return this.order(this.order())
 			}
 
 			// get order...
@@ -540,12 +559,170 @@ var pWikiPageActions = actions.Actions({
 				this.__order = order
 			}
 		}],
+
+	__default_sort_methods__: ['path'],
+	__sort_methods__: {
+		title: function(a, b){
+			return a.page.title() < b.page.title() ? -1
+				: a.page.title() > b.page.title() ? 1
+				: 0
+		},
+		path: function(a, b){
+			return a.page.path() < b.page.path() ? -1
+				: a.page.path() > b.page.path() ? 1
+				: 0
+		},
+		// XXX
+		/*
+		checked: function(a, b){
+			// XXX chech if with similar states the order is kept....
+			return a.page.checked() == b.page.checked() ? 0
+				: a.page.checked() ? 1
+				: -1
+		},
+		*/
+		// XXX date, ...
+
+		// XXX use manual order and palce new items (not in order) at 
+		// 		top/bottom (option)...
+		// XXX store the order in .__wiki_data
+		manual: function(a, b){
+			// XXX
+			return 0
+		},
+	},
+
+	// Sort siblings...
+	//
+	//	Sort pages via default method
+	//	.sort()
+	//		-> page
+	//
+	//	Sort pages via method
+	//	.sort(method)
+	//		-> page
+	//
+	//	Sort pages via method1, then method2, ...
+	//	.sort(method1, method2, ...)
+	//		-> page
+	//		NOTE: the next method is used iff the previous returns 0, 
+	//			i.e. the items are equal.
+	//
+	// To reverse a specific method, prepend it's name with "-", e.g. 
+	// "title" will do the default ascending sort while "-title" will do
+	// a descending sort.
+	// This is different from the "reverse" method which will simply 
+	// reverse the result.
+	//
+	// NOTE: the sort is local to the returned object.
+	// NOTE: the sorted object may loose sync form the actual wiki as the
+	// 		list of siblings is cached.
+	// 		...the resulting object is not to be stored for long.
 	// XXX
-	sort: ['Page/', function(){ }],
+	sort: ['Page/', 
+		function(){
+			var that = this
+			var res = this.clone()
+			var path = res.path
+
+			var methods = arguments[0] instanceof Array ? 
+				arguments[0] 
+				: [].slice.call(arguments)
+
+			res.__order_by = methods = methods.length == 0 ?
+					(this.__default_sort_methods__ 
+					 	|| pWikiPage.__default_sort_methods__)
+				: methods
+
+			res.update()
+
+			return res
+		}],
 	// XXX
-	reverse: ['Page/', function(){ }],
+	reverse: ['Page/', 
+		function(){
+			var res = this.clone()
+
+			res.__order_by = (this.__order_by || []).slice()
+
+			var i = res.__order_by.indexOf('reverse')
+
+			i >= 0 ? 
+				res.__order_by.splice(i, 1) 
+				: res.__order_by.push('reverse')
+
+			res.update()
+
+			return res
+		}],
 	// XXX not sure if this is the right way to go...
-	update: ['Page/', function(){ }],
+	// XXX
+	update: ['Page/', 
+		function(){
+			var that = this
+
+			if(this.__order || this.__order_by){
+				var path = this.path
+				var reverse = false
+
+				var sort_methods = this.__sort_methods__ 
+					|| pWikiPage.__sort_methods__
+
+				var methods = (this.__order_by 
+						|| this.__default_sort_methods__
+						|| pWikiPage.__default_sort_methods__)
+					.map(function(m){
+						var reversed = m[0] == '-'
+						m = reversed ? m.slice(1) : m
+
+						if(m == 'reverse'){
+							reverse = !reverse
+							return null
+						}
+						m = typeof(m) == typeof('str') ? sort_methods[m]
+							: m instanceof Function ? m
+							: null
+
+						return m != null ?
+							(reversed ? 
+								function(){ return -m.apply(this, arguments) } 
+								: m) 
+							: m
+					})
+					.filter(function(m){ return !!m })
+
+				// XXX
+				//this.__order = this.resolveStarPath(this.location)
+				this.__order = this.order()
+
+				if(methods.length > 0){
+					var method = function(a, b){
+							for(var i=0; i < methods.length; i++){
+								var res = methods[i].call(that, a, b)
+
+								if(res != 0){
+									return res
+								}
+							}
+							// keep order if nothing else works...
+							return a.i - b.i
+					}
+
+					this.__order = this.__order
+						.map(function(t, i){ return {
+							i: i, 
+							page: that.get(t),
+						} })
+						.sort(method)
+						.map(function(t){ return t.page.path })
+				}
+
+				reverse 
+					&& this.__order.reverse()
+
+				this.__location_at = this.__order.indexOf(path)
+			}
+		}],
 })
 
 var pWikiPage = pWikiFeatures.Featre({
@@ -602,6 +779,13 @@ var pWikiPouchDBStore = pWikiFeatures.Featre({
 
 
 
+var pWikiPeerJSSync = pWikiFeatures.Featre({
+	title: '',
+	tag: 'peerjs-sync',
+})
+
+
+
 /*********************************************************************/
 
 // XXX should this extend pWiki or encapsulate???
@@ -609,14 +793,25 @@ var pWikiUIActions = actions.Actions({
 	config: {
 	},
 
+	// XXX url?
+	// 		- couch url
+	// 		- 'local'
+	load: ['', function(){}],
+
+	reload: ['', function(){}],
+
 	// XXX navigation...
+	// 		...these in addition to default scrolling should focus elements
 	up: ['', function(){}],
 	down: ['', function(){}],
 	left: ['', function(){}],
 	right: ['', function(){}],
 
-	toggleEdit: ['', function(){}],
 	togglePages: ['', function(){}],
+	toggleWikis: ['', function(){}],
+
+	// should this be in the editor feature???
+	toggleEdit: ['', function(){}],
 })
 
 var pWikiUI = pWikiFeatures.Featre({
