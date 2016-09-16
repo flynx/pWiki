@@ -15,20 +15,39 @@ var features = require('lib/features')
 
 /*********************************************************************/
 
-var path2list = function(path){ 
+// Special path items supported:
+// 	Current position indicator:
+// 		.		a/./b/c		-> a/b/c
+// 				./b/c		-> ./b/c
+//  Up one level (left):
+// 		..		a/../b/c	-> b/c
+// 				../b/c		-> ../b/c
+//	Up one level (right):
+// 		<<		a/<</b/c	-> a/c
+//
+//
+var path2list =
+module.path2list = function(path){ 
 	return (path instanceof Array ?  path : path.split(/[\\\/]+/g))
 		// handle '..' (lookahead) and trim path elements...
 		// NOTE: this will not touch the leading '.' or '..'
 		.map(function(p, i, l){
+			// strip '..' and '.' out...
 			return (i > 0 && (p.trim() == '..' || p.trim() == '.')
-					|| (l[i+1] || '').trim() == '..') ? 
+					// strip items followed by '..'...
+					|| (l[i+1] || '').trim() == '..'
+					// strip items preceded by '<<'...
+					|| (l[i-1] || '').trim() == '<<') ? 
 				null 
 				: p.trim() })
 		// cleanup and clear '.'...
 		.filter(function(p){ 
-			return p != null && p != '' })}
+			return p != null 
+				&& p != '' 
+				&& p != '<<' })}
 
-var normalizePath = function(path){ return path2list(path).join('/') }
+var normalizePath =
+module.normalizePath = function(path){ return path2list(path).join('/') }
 
 
 
@@ -183,12 +202,15 @@ module.pWikiPageActions = actions.Actions({
 	get length(){
 		return this.wiki.match(this.location().path).length },
 
-	// XXX avoid recursive calls to things like .base(), .title(), ...
+	// XXX BUG: avoid recursive calls to things like .base(), .title(), ...
 	// 		resolve relative paths (with pattern location)
 	// 			-> current path
 	// 				-> order list (+ index)
 	// 					-> parent (relative path)
 	// 						(recur)
+	// XXX add shift mechanics to path syntax to remove leading items...
+	// 		...this is like '..' but applied to path head...
+	// 		....this is more of a normalizePath(..) thing...
 	resolve: ['Path/Resolve relative path and expand path variables',
 		function(path){
 			path = normalizePath(path)
@@ -199,7 +221,14 @@ module.pWikiPageActions = actions.Actions({
 				.replace(/\$NOW|\$\{NOW\}/g, Date.now())
 				.replace(/\$INDEX|\$\{INDEX\}/g, this.at())
 				//.replace(/\$TITLE|\$\{TITLE\}/g, this.title())
+				// NOTE: these are equivalent to '..' and '.' but not 
+				// 		identical -- the variables are useful for things
+				// 		like moving a page to "Trash/$PATH"
+				// 		XXX might be a good idea to implement something 
+				// 			like shift path syntax (like '..' but on 
+				// 			prefixed items) to remove head path sections...
 				//.replace(/\$BASE|\$\{BASE\}/g, this.base())
+				//.replace(/\$PATH|\$\{PATH\}/g, this.path())
 
 			// relative paths -- "." and ".."
 			if(path.indexOf('.') >= 0){
@@ -512,7 +541,8 @@ module.pWikiPageActions = actions.Actions({
 			// store order in a pecific path pattern...
 			// NOTE: each path pattern may have a different order...
 			// XXX
-			var parent = this.get(path)
+			//var parent = this.get(path)
+			var parent = this.get('..')
 
 			// get full paths...
 			if(order === true || order === false){
