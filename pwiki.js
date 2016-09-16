@@ -35,10 +35,12 @@ var normalizePath = function(path){ return path2list(path).join('/') }
 /*********************************************************************/
 
 // base pWiki object...
-var pWiki = object.makeConstructor('pWiki', actions.MetaActions)
+var pWiki = 
+module.pWiki = object.makeConstructor('pWiki', actions.MetaActions)
 
 // pWiki featureset...
-var pWikiFeatures = new features.FeatureSet() 
+var pWikiFeatures = 
+module.pWikiFeatures = new features.FeatureSet() 
 
 // base instance constructor...
 pWikiFeatures.__actions__ = 
@@ -52,17 +54,29 @@ pWikiFeatures.__actions__ =
 // XXX should we combine page and wiki api???
 // 		- pWikiData is wiki api
 // 		- pWiki is page api
-var pWikiData = {
+var pWikiData =
+module.pWikiData = {
 	__data: null,
+
+	// XXX
+	search: function(query){
+	},
 
 	// get a list of matching paths...
 	// XXX sort API???
 	// 		...results shoulde be sorted via the saved order if available...
 	// 		.....or should this be done at a later stage as in gen1???
+	// XXX BUG: '**' does not list all the pages while '/**' does...
 	match: function(path){
-		// path patterns -- "*"
-		if(path.indexOf('*') >= 0){
-			return [ path ]
+		var data = this.__data || {}
+
+		if(path == null){
+			return []
+		}
+
+		// strict path...
+		if(path.indexOf('*') <= 0){
+			return path in data ? [ path ] : []
 		}
 
 		// get the tail...
@@ -79,7 +93,6 @@ var pWikiData = {
 				.replace(/^\*|([^.])\*/g, '$1[^\\/]*')
 			+'$')
 
-		var data = this.__data || {}
 		return Object.keys(data)
 				// XXX is this correct???
 				.concat(Object.keys(data.__proto__)
@@ -129,6 +142,12 @@ var pWikiData = {
 
 	// XXX
 	json: function(data){
+		if(arguments.length == 0){
+			return JSON.parse(JSON.stringify(this.__data))
+
+		} else {
+			this.__data = data
+		}
 	},
 }
 
@@ -137,7 +156,8 @@ var pWikiData = {
 /*********************************************************************/
 
 // XXX need a startup sequence...
-var pWikiPageActions = actions.Actions({
+var pWikiPageActions =
+module.pWikiPageActions = actions.Actions({
 	config: {
 		'home-page': 'WikiHome',
 		'default-page': 'EmptyPage',
@@ -163,27 +183,33 @@ var pWikiPageActions = actions.Actions({
 	get length(){
 		return this.wiki.match(this.location().path).length },
 
+	// XXX avoid recursive calls to things like .base(), .title(), ...
+	// 		resolve relative paths (with pattern location)
+	// 			-> current path
+	// 				-> order list (+ index)
+	// 					-> parent (relative path)
+	// 						(recur)
 	resolve: ['Path/Resolve relative path and expand path variables',
 		function(path){
 			path = normalizePath(path)
 
 			// path variables...
 			// XXX make this more modular...
-			path
+			path = path
 				.replace(/\$NOW|\$\{NOW\}/g, Date.now())
-				.replace(/\$TITLE|\$\{TITLE\}/g, this.title())
-				.replace(/\$BASE|\$\{BASE\}/g, this.base())
 				.replace(/\$INDEX|\$\{INDEX\}/g, this.at())
+				//.replace(/\$TITLE|\$\{TITLE\}/g, this.title())
+				//.replace(/\$BASE|\$\{BASE\}/g, this.base())
 
 			// relative paths -- "." and ".."
 			if(path.indexOf('.') >= 0){
 				path = 
 					// '.' or './*'
 					path == '.' || /^\.\//.test(path) ? 
-						path.replace(/^\./, this.base)
+						normalizePath(path.replace(/^\./, this.path()))
 					// '..' or '../*'
 					: path == '..' || /^\.\.\//.test(path) ? 
-						path.replace(/^\.\./, this.base)
+						normalizePath(path.replace(/^\.\./, this.base()))
 					: path
 			}
 
@@ -195,7 +221,7 @@ var pWikiPageActions = actions.Actions({
 			var that = this
 
 			// handle paths and relative paths...
-			var p = this.get(path)
+			var p = this.get(path || this.path())
 			var title = p.title()
 			path = path2list(p.base())
 
@@ -205,7 +231,7 @@ var pWikiPageActions = actions.Actions({
 			var _get = function(path, title, lst){
 				lst = (lst == null || lst.length == 0) ? [''] : lst
 				for(var i=0; i < lst.length; i++){
-					var p = path.concat([lst[i], title])
+					var p = normalizePath(path.concat([lst[i], title]))
 					if(that.exists(p)){
 						p = normalizePath(p)
 						return that.wiki.data(p) && p
@@ -245,7 +271,7 @@ var pWikiPageActions = actions.Actions({
 
 	location: ['Page/Get or set location',
 		function(value){
-			if(value == null){
+			if(value === null){
 				return
 			}
 
@@ -275,24 +301,24 @@ var pWikiPageActions = actions.Actions({
 		function(value){
 			// get explcit path from location (acounting for 'at')...
 			if(arguments.length == 0){
-				var location = this.location()
-				return this.order(true)[location.at]
-				//return this.wiki.match(location.path)[location.at]
+				return this.order(true)[this.at()]
 
 			// move page to path...
 			} else if(value != null) {
 				this.wiki.move(this.path(), this.resolve(value))
+				// XXX
+				this.location(value)
 			}
 		}],
 	title: ['Page/Get or set title',
 		function(value){
 			if(arguments.length == 0){
-				return path2list(this.path()).pop()
+				return path2list(this.path()).pop() || ''
 
 			} else if(value != null){
 				this.path(this.base() +'/'+ value)
 			}
-		}]
+		}],
 	base: ['Page/Get or set directory',
 		function(base){
 			if(arguments.length == 0){
@@ -301,7 +327,7 @@ var pWikiPageActions = actions.Actions({
 			} else if(base != null){
 				this.path(base +'/'+ this.title())
 			}
-		}]
+		}],
 
 	attr: ['Page/Get or set attribute',
 		function(name, value){
@@ -328,8 +354,7 @@ var pWikiPageActions = actions.Actions({
 	exists: ['Page/Check if path explicitly exists.', 
 		function(path){
 			path = path || this.path()
-			var location = this.location()
-			return this.wiki.match(location.path)[location.at] !== undefined
+			return this.wiki.match(this.get(path).location().path)[this.at()] !== undefined
 		}],
 	// Format:
 	//	{
@@ -346,11 +371,11 @@ var pWikiPageActions = actions.Actions({
 		function(value){
 			// get -> acquire page and get it's data...
 			if(arguments.length == 0){
-				return this.wiki.data(this.acquire())
+				return this.wiki.data(this.acquire()) || {}
 
 			// set -> get explicit path and set data to it...
 			} else if(value != null) {
-				this.wiki.data(this.path(), value || '')
+				this.wiki.data(this.path(), value || {})
 			}
 		}],
 	clear: ['Page/Clear page', 
@@ -361,7 +386,7 @@ var pWikiPageActions = actions.Actions({
 		function(){
 			//var o = (new this.constructor())
 			var o = Object.create(this)
-				.location(this.location())
+				.location(JSON.parse(JSON.stringify(this.location())))
 
 			o.__parent_context = this
 			if(this.__order){
@@ -476,9 +501,18 @@ var pWikiPageActions = actions.Actions({
 	// XXX test... 
 	order: ['Page/Get or set sibling pages order', 
 		function(order){
-			var parent = this.get('..')
-			var path = this.location().path
+			var path = this.location().path || ''
 			var full_paths = false
+
+			// no patterns in path -> no ordering...
+			if(path.indexOf('*') < 0){
+				return [ path ]
+			}
+
+			// store order in a pecific path pattern...
+			// NOTE: each path pattern may have a different order...
+			// XXX
+			var parent = this.get(path)
 
 			// get full paths...
 			if(order === true || order === false){
@@ -534,7 +568,7 @@ var pWikiPageActions = actions.Actions({
 					// get pages not in order...
 					pages = pages
 						.filter(function(p){ 
-							return order.indexOf(p) < 0 }))
+							return order.indexOf(p) < 0 })
 					// build the list... 
 					return unsorted_first ?
 						pages.concat(order)
@@ -545,7 +579,7 @@ var pWikiPageActions = actions.Actions({
 					return pages 
 				}
 
-			// set global manual order...
+			// set persistent manual order...
 			// XXX ugly -- revise... 
 			// check if we have a pattern...
 			} else if(path2list(path).pop().indexOf('*') >= 0 
@@ -725,7 +759,7 @@ var pWikiPageActions = actions.Actions({
 		}],
 })
 
-var pWikiPage = pWikiFeatures.Featre({
+var pWikiPage = pWikiFeatures.Feature({
 	title: '',
 	tag: 'page',
 
@@ -736,7 +770,7 @@ var pWikiPage = pWikiFeatures.Featre({
 
 /*********************************************************************/
 
-var pWikiLocalStorage = pWikiFeatures.Featre({
+var pWikiLocalStorage = pWikiFeatures.Feature({
 	title: '',
 	tag: 'localstorage-store',
 
@@ -772,14 +806,14 @@ var pWikiLocalStorage = pWikiFeatures.Featre({
 
 
 
-var pWikiPouchDBStore = pWikiFeatures.Featre({
+var pWikiPouchDBStore = pWikiFeatures.Feature({
 	title: '',
 	tag: 'pouchdb-store',
 })
 
 
 
-var pWikiPeerJSSync = pWikiFeatures.Featre({
+var pWikiPeerJSSync = pWikiFeatures.Feature({
 	title: '',
 	tag: 'peerjs-sync',
 })
@@ -814,7 +848,7 @@ var pWikiUIActions = actions.Actions({
 	toggleEdit: ['', function(){}],
 })
 
-var pWikiUI = pWikiFeatures.Featre({
+var pWikiUI = pWikiFeatures.Feature({
 	title: '',
 	tag: 'ui',
 })
