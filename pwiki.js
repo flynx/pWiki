@@ -15,37 +15,52 @@ var features = require('lib/features')
 
 /*********************************************************************/
 
+// Split path into a list and handle special path elements...
+//
+// The path is split via '/' or '\', no difference is made between the 
+// two styles, e.g. 'a/b' is the same as 'a\b'.
+//
+// Consecutive '/' or '\' are treated as one, e.g. 'a///b' and 'a/b' 
+// are the same.
+//
 // Special path items supported:
-// 	Current position indicator:
-// 		.		a/./b/c		-> a/b/c
+// 	"."		- Current position indicator
+// 			  this is simply removed from positions other than 0
+// 				a/./b/c		-> a/b/c
 // 				./b/c		-> ./b/c
-//  Up one level (left):
-// 		..		a/../b/c	-> b/c
+//  ".."	- Consumes path item above (pop) / up one level
+// 				a/../b/c	-> b/c
 // 				../b/c		-> ../b/c
-//	Up one level (right):
-// 		<<		a/<</b/c	-> a/c
+//	">>"	- Consumes path item below (shift)
+// 				a/>>/b/c	-> a/c
+// 				a/b/c/>>	-> a/b/c	(XXX ???)
 //
-//
+// NOTE: the path is handled out of context, this leading '.' and '..' 
+// 		are left as-is.
+// NOTE: '>>' has no effect when at last position (XXX ???)
 var path2list =
 module.path2list = function(path){ 
 	return (path instanceof Array ?  path : path.split(/[\\\/]+/g))
 		// handle '..' (lookahead) and trim path elements...
 		// NOTE: this will not touch the leading '.' or '..'
 		.map(function(p, i, l){
-			// strip '..' and '.' out...
+			// remove '..' and '.' out at positions > 0...
 			return (i > 0 && (p.trim() == '..' || p.trim() == '.')
-					// strip items followed by '..'...
+					// remove items followed by '..'...
 					|| (l[i+1] || '').trim() == '..'
-					// strip items preceded by '<<'...
-					|| (l[i-1] || '').trim() == '<<') ? 
+					// remove items preceded by '>>'...
+					|| (l[i-1] || '').trim() == '>>') ? 
 				null 
 				: p.trim() })
-		// cleanup and clear '.'...
+		// cleanup and clear '>>'...
 		.filter(function(p){ 
 			return p != null 
 				&& p != '' 
-				&& p != '<<' })}
+				&& p != '>>' })}
 
+// Normalize path...
+//
+// This is the same as path2list(..) but also joins the path with '/'
 var normalizePath =
 module.normalizePath = function(path){ return path2list(path).join('/') }
 
@@ -180,6 +195,7 @@ module.pWikiPageActions = actions.Actions({
 	config: {
 		'home-page': 'WikiHome',
 		'default-page': 'EmptyPage',
+		'no-match-page': 'NoMatch',
 
 		'system-path': 'System',
 
@@ -208,27 +224,24 @@ module.pWikiPageActions = actions.Actions({
 	// 				-> order list (+ index)
 	// 					-> parent (relative path)
 	// 						(recur)
-	// XXX add shift mechanics to path syntax to remove leading items...
-	// 		...this is like '..' but applied to path head...
-	// 		....this is more of a normalizePath(..) thing...
 	resolve: ['Path/Resolve relative path and expand path variables',
 		function(path){
-			path = normalizePath(path)
-
 			// path variables...
 			// XXX make this more modular...
 			path = path
 				.replace(/\$NOW|\$\{NOW\}/g, Date.now())
 				.replace(/\$INDEX|\$\{INDEX\}/g, this.at())
-				//.replace(/\$TITLE|\$\{TITLE\}/g, this.title())
+				.replace(/\$TITLE|\$\{TITLE\}/g, this.title())
 				// NOTE: these are equivalent to '..' and '.' but not 
 				// 		identical -- the variables are useful for things
-				// 		like moving a page to "Trash/$PATH"
-				// 		XXX might be a good idea to implement something 
-				// 			like shift path syntax (like '..' but on 
-				// 			prefixed items) to remove head path sections...
-				//.replace(/\$BASE|\$\{BASE\}/g, this.base())
-				//.replace(/\$PATH|\$\{PATH\}/g, this.path())
+				// 		like moving a page to:
+				// 			"Trash/$PATH"
+				// 		...to move the above page out of trash move it to:
+				// 			">>/$PATH"
+				.replace(/\$BASE|\$\{BASE\}/g, this.base())
+				.replace(/\$PATH|\$\{PATH\}/g, this.path())
+				
+			path = normalizePath(path)
 
 			// relative paths -- "." and ".."
 			if(path.indexOf('.') >= 0){
@@ -326,11 +339,15 @@ module.pWikiPageActions = actions.Actions({
 				this.__location = value
 			}
 		}],
+	// XXX pattern does not match anything needs to be handled correctly...
 	path: ['Page/Get or set path', 
 		function(value){
 			// get explcit path from location (acounting for 'at')...
 			if(arguments.length == 0){
-				return this.order(true)[this.at()]
+				return this.order(true)[this.at()] 
+					// nothing matched the pattern...
+					|| this.config['no-match-page']
+					|| ''
 
 			// move page to path...
 			} else if(value != null) {
@@ -538,11 +555,9 @@ module.pWikiPageActions = actions.Actions({
 				return [ path ]
 			}
 
-			// store order in a pecific path pattern...
+			// store order in a specific path pattern...
 			// NOTE: each path pattern may have a different order...
-			// XXX
-			//var parent = this.get(path)
-			var parent = this.get('..')
+			var parent = this.wiki.data(path) || {}
 
 			// get full paths...
 			if(order === true || order === false){
@@ -563,10 +578,12 @@ module.pWikiPageActions = actions.Actions({
 			if(order == null){
 				//var pages = this.wiki.match(parent.path() + '/*')
 				var pages = this.wiki.match(path)
-				var order = (this.__order || parent.attr('order') || [])
+					.filter(function(p){
+						return p.indexOf('*') <= 0 })
+				var order = (this.__order || parent.order || [])
 					// clear all paths that are not currently visible...
 					// NOTE: paths may not be visible because they are 
-					// 		fitered out by .location().path pattern...
+					// 		filtered out by .location().path pattern...
 					.filter(function(p){ 
 						return pages.indexOf(p) >= 0 })
 
@@ -577,18 +594,18 @@ module.pWikiPageActions = actions.Actions({
 								return path2list(p).pop() })
 
 				// expand titles to full paths...
+				// XXX revise...
 				} else {
-					var base = this.base()
 					order = order
 						.map(function(t){
-							return normalizePath(base +'/'+ t)})
+							return normalizePath('./'+ t)})
 				}
 
 				// sorted...
 				if(order.length > 0){
 					// get unsorted_first config: 
 					// 		page || config || false
-					var unsorted_first = parent.attr('order-unsorted-first')
+					var unsorted_first = parent['order-unsorted-first']
 					unsorted_first = unsorted_first == null ? 
 						 this.config['order-unsorted-first']
 						 : unsorted_first
@@ -615,7 +632,8 @@ module.pWikiPageActions = actions.Actions({
 			} else if(path2list(path).pop().indexOf('*') >= 0 
 					// check if no patterns are in path other than the last elem...
 					&& path2list(path).slice(0, -1).join('/').match(/\*/g) == null) {
-				parent.attr('order', order)
+				parent.order = order
+				this.wiki.data(path, parent)
 				delete this.__order
 
 			// set local manual order...

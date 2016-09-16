@@ -125,7 +125,7 @@ XXX
 
 
 
-## Relative and absolute paths (".", "..", "&lt;&lt;" and "/")
+## Relative and absolute paths (".", "..", "&gt;&gt;" and "/")
 
 XXX
 
