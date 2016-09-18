@@ -65,6 +65,19 @@ var normalizePath =
 module.normalizePath = function(path){ return path2list(path).join('/') }
 
 
+var path2re = 
+module.path2re = function(path){
+	return RegExp('^'
+		+normalizePath(path)
+			// quote regexp chars...
+			.replace(/([\.\\\/\(\)\[\]\$\+\-\{\}\@\^\&\?\<\>])/g, '\\$1')
+
+			// convert '*' and '**' to regexp...
+			.replace(/\*\*/g, '.*')
+			.replace(/^\*|([^.])\*/g, '$1[^\\/]*')
+		+'$')}
+
+
 
 /*********************************************************************/
 
@@ -100,7 +113,6 @@ module.pWikiData = {
 	// XXX sort API???
 	// 		...results shoulde be sorted via the saved order if available...
 	// 		.....or should this be done at a later stage as in gen1???
-	// XXX BUG: '**' does not list all the pages while '/**' does...
 	match: function(path){
 		var data = this.__data || {}
 
@@ -109,23 +121,11 @@ module.pWikiData = {
 		}
 
 		// strict path...
-		if(path.indexOf('*') <= 0){
+		if(path.indexOf('*') < 0){
 			return path in data ? [ path ] : []
 		}
 
-		// get the tail...
-		var tail = path.split(/\*/g).pop()
-		tail = tail == path ? '' : tail
-
-		var pattern = RegExp('^'
-			+normalizePath(path)
-				// quote regexp chars...
-				.replace(/([\.\\\/\(\)\[\]\$\+\-\{\}\@\^\&\?\<\>])/g, '\\$1')
-
-				// convert '*' and '**' to regexp...
-				.replace(/\*\*/g, '.*')
-				.replace(/^\*|([^.])\*/g, '$1[^\\/]*')
-			+'$')
+		var pattern = path2re(path)
 
 		return Object.keys(data)
 				// XXX is this correct???
@@ -133,9 +133,7 @@ module.pWikiData = {
 					// do not repeat overloaded stuff...
 					.filter(function(e){ return !data.hasOwnProperty(e) }))
 			// XXX sort???
-			.map(function(p){ return tail != '' ? 
-				normalizePath(p +'/'+ tail) 
-				: p })
+			// XXX
 			.filter(function(p){ return pattern.test(p) })
 	},
 	// get/set data at path...
@@ -216,7 +214,9 @@ module.pWikiPageActions = actions.Actions({
 
 
 	get length(){
-		return this.wiki.match(this.location().path).length },
+		return this.wiki.match(this.location().path)
+			.filter(function(p){ return p.indexOf('*') < 0 })
+			.length },
 
 	// XXX BUG: avoid recursive calls to things like .base(), .title(), ...
 	// 		resolve relative paths (with pattern location)
@@ -226,6 +226,7 @@ module.pWikiPageActions = actions.Actions({
 	// 						(recur)
 	resolve: ['Path/Resolve relative path and expand path variables',
 		function(path){
+			path = path || this.path()
 			// path variables...
 			// XXX make this more modular...
 			path = path
@@ -503,9 +504,16 @@ module.pWikiPageActions = actions.Actions({
 			}
 			return res
 		}],
-	// XXX add path (str) filters...
+	// NOTE: a filter can take a function or a string path pattern...
 	filter: ['Page/', 
 		function(func){
+			// we got a sting pattern...
+			if(typeof(func) == typeof('str')){
+				var pattern = path2re(func)
+				func = function(page){ 
+					return pattern.test(page.path()) }
+			}
+
 			var res = []
 			for(var i=0; i < this.length; i++){
 				var page = this.at(i)
@@ -544,11 +552,19 @@ module.pWikiPageActions = actions.Actions({
 	// NOTE: saving order to data is supported ONLY for paths that contain
 	// 		one and only one pattern and in the last path segment...
 	//
-	// XXX test... 
+	// XXX (LEAK?) not sure if the current location where order is stored
+	// 		is the right way to go...
+	// 		...would be really hard to clean out...
+	// XXX should this be pattern only or by default list the siblings...
+	// XXX should the default be titles or full paths???
+	// XXX should we split order persistence into two?
+	// 			- local .__order
+	// 			- global
+	// 		...and how should we move from one to the other???
 	order: ['Page/Get or set sibling pages order', 
 		function(order){
 			var path = this.location().path || ''
-			var full_paths = false
+			var full_paths = true
 
 			// no patterns in path -> no ordering...
 			if(path.indexOf('*') < 0){
@@ -565,7 +581,7 @@ module.pWikiPageActions = actions.Actions({
 				order = null
 
 			// save local order...
-			// XXX is this correct???
+			// XXX this is wrong!!!
 			} else if(order == 'local'){
 				order = this.__order
 
@@ -578,28 +594,14 @@ module.pWikiPageActions = actions.Actions({
 			if(order == null){
 				//var pages = this.wiki.match(parent.path() + '/*')
 				var pages = this.wiki.match(path)
-					.filter(function(p){
-						return p.indexOf('*') <= 0 })
+					// filter out paths containing '*'
+					.filter(function(p){ return p.indexOf('*') < 0 })
 				var order = (this.__order || parent.order || [])
 					// clear all paths that are not currently visible...
 					// NOTE: paths may not be visible because they are 
 					// 		filtered out by .location().path pattern...
 					.filter(function(p){ 
 						return pages.indexOf(p) >= 0 })
-
-				// keep the titles only...
-				if(!full_paths){
-					pages = pages
-							.map(function(p){ 
-								return path2list(p).pop() })
-
-				// expand titles to full paths...
-				// XXX revise...
-				} else {
-					order = order
-						.map(function(t){
-							return normalizePath('./'+ t)})
-				}
 
 				// sorted...
 				if(order.length > 0){
@@ -629,9 +631,10 @@ module.pWikiPageActions = actions.Actions({
 			// set persistent manual order...
 			// XXX ugly -- revise... 
 			// check if we have a pattern...
-			} else if(path2list(path).pop().indexOf('*') >= 0 
-					// check if no patterns are in path other than the last elem...
-					&& path2list(path).slice(0, -1).join('/').match(/\*/g) == null) {
+			//} else if(path2list(path).pop().indexOf('*') >= 0 
+			//		// check if no patterns are in path other than the last elem...
+			//		&& path2list(path).slice(0, -1).join('/').match(/\*/g) == null) {
+			} else if(path.indexOf('*') >= 0){
 				parent.order = order
 				this.wiki.data(path, parent)
 				delete this.__order
@@ -900,6 +903,26 @@ var pWikiUI = pWikiFeatures.Feature({
 	title: '',
 	tag: 'ui',
 })
+
+
+
+/*********************************************************************/
+
+module._test_data = {
+	'System/EmptyPage': {},
+	'WikiMain': {},
+	'folder/page1': {},
+	'folder/page2': {},
+	'folder/page3': {},
+}
+module._test = function(){
+	var wiki = Object.create(pWikiData)
+	wiki.__data = Object.create(module._test_data)
+
+	var w = pWikiPageActions.clone()
+	w.wiki = wiki
+	return w
+}
 
 
 
