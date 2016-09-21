@@ -141,11 +141,13 @@ module.pWikiData = {
 	// XXX should from be pattern compatible???
 	data: function(path, value){
 		if(value == null){
-			return this.__data ? this.__data[path] : null
+			return this.__data ?
+				JSON.parse(JSON.stringify(this.__data[path])) 
+				: null
 
 		} else {
 			this.__data = this.__data || {}
-			this.__data[path] = value
+			this.__data[path] = JSON.parse(JSON.stringify(value))
 			return this
 		}
 	},
