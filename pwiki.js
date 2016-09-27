@@ -500,7 +500,16 @@ module.pWikiBase = actions.Actions({
 		}],
 
 	// content shorthands...
-	// XXX raw/text/checked/...
+	raw: ['Page/',
+		function(value){
+			return arguments.length == 0 ? 
+				(this.attr('text') || '') 
+				: this.attr('text', value) }],
+	checked: ['Page/', 
+		function(value){
+			return arguments.length == 0 ? 
+				!!this.attr('checked') 
+				: this.attr('checked', value || undefined) }],
 
 	exists: ['Page/Check if path explicitly exists.', 
 		function(path){
@@ -946,31 +955,10 @@ module.pWikiBase = actions.Actions({
 })
 
 
-// Basic data sort-hands...
-//
-var pWikiContent =
-module.pWikiContent = actions.Actions(pWikiBase, {
-	config: {
-	},
-
-	raw: ['Page/',
-		function(value){
-			return arguments.length == 0 ? 
-				(this.attr('text') || '') 
-				: this.attr('text', value) }],
-
-	checked: ['Page/', 
-		function(value){
-			return arguments.length == 0 ? 
-				!!this.attr('checked') 
-				: this.attr('checked', value || undefined) }],
-})
-
-
 // Data processing and macros...
 //
 var pWikiMacros =
-module.pWikiMacros = actions.Actions(pWikiContent, {
+module.pWikiMacros = actions.Actions(pWikiBase, {
 	__macro_parser__: macro,
 
 	config: {
@@ -1024,7 +1012,6 @@ module.pWikiPage = object.makeConstructor('pWikiPage',
 		// XXX not sure if we need this here...
 		//actions.MetaActions,
 		pWikiBase, 
-		pWikiContent,
 		pWikiMacros))
 
 
