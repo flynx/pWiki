@@ -919,6 +919,30 @@ module.pWikiBase = actions.Actions({
 				this.__location_at = this.__order.indexOf(path)
 			}
 		}],
+
+
+	// 
+	// Special config attrs:
+	// 	wiki		- wiki object
+	//
+	// NOTE: the input object may get modified... (XXX)
+	__init__: [function(config){
+		config = config || {}
+
+		if('wiki' in config){
+			this.wiki = config.wiki
+			// XXX don't like modifying the input...
+			delete config.wiki
+		}
+
+		var cfg = this.config = Object.create(this.config)
+		return function(){
+			// copy the given config...
+			Object.keys(config).forEach(function(k){ 
+				cfg[k] = JSON.parse(JSON.stringify(config[k]))
+			})
+		}
+	}]
 })
 
 
@@ -957,7 +981,8 @@ module.pWikiMacros = actions.Actions(pWikiContent, {
 			return arguments.length == 0 ? 
 				(this.title() == 'raw' ?
 					(this.raw() || '')
-					: pWikiMacros.__macro_parser__.parse(this, this.raw()))
+					: (this.__macro_parser__ || pWikiMacros.__macro_parser__)
+						.parse(this, this.raw()))
 				: this.raw(value) }],
 	code: ['Page/',
 		function(value){
@@ -970,6 +995,19 @@ module.pWikiMacros = actions.Actions(pWikiContent, {
 	links: ['Page/',
 		function(){
 		}],
+
+
+	// 
+	// Special config attrs:
+	// 	macro		- macro processor (optional)
+	//
+	__init__: [function(config){
+		if('macro' in config){
+			this.__macro_parser__ = config.macro
+			// XXX don't like modifying the input...
+			delete config.macro
+		}
+	}],
 })
 
 
@@ -981,10 +1019,13 @@ module.pWikiMacros = actions.Actions(pWikiContent, {
 // 		can get using native JS lookup mechanisms, or at least the 
 // 		farthest I've pushed it so far...
 var pWikiPage =
-module.pWikiPage = actions.mix(
-	pWikiBase, 
-	pWikiContent,
-	pWikiMacros)
+module.pWikiPage = object.makeConstructor('pWikiPage', 
+	actions.mix(
+		// XXX not sure if we need this here...
+		//actions.MetaActions,
+		pWikiBase, 
+		pWikiContent,
+		pWikiMacros))
 
 
 
@@ -1040,7 +1081,7 @@ var pWikiPeerJSSync = pWikiFeatures.Feature({
 
 
 
-/*********************************************************************/
+//---------------------------------------------------------------------
 
 // XXX should this extend pWiki or encapsulate???
 var pWikiUIActions = actions.Actions({
@@ -1086,15 +1127,17 @@ module._test_data = {
 	'folder/page2': {},
 	'folder/page3': {},
 }
+// XXX not sure if this is a good way to do this -- needs to be reusable
+// 		for different stores...
 module._test_data.__proto__ = BaseData
 
 module._test = function(){
 	var wiki = Object.create(pWikiData)
 	wiki.__data = Object.create(module._test_data)
 
-	var w = pWikiPage.clone()
-	w.wiki = wiki
-	return w
+	return new pWikiPage({
+		wiki: wiki,
+	})
 }
 
 
