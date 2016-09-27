@@ -101,6 +101,82 @@ pWikiFeatures.__actions__ =
 
 /*********************************************************************/
 
+var BaseData = {
+	// Macro acces to standard page attributes (paths)...
+	'System/title': function(){ return { text: this.get('..').title() } },
+	'System/path': function(){ return { text: this.base() } },
+	'System/dir': function(){ return { text: this.get('..').base() } },
+	'System/location': function(){ return { text: this.base() } },
+	'System/resolved': function(){ return { text: this.get('..').acquire() } },
+
+	// page data...
+	//
+	// NOTE: special case: ./raw is treated a differently when getting .text
+	// 		i.e:
+	// 			.get('./raw').text
+	// 		is the same as:
+	// 			.get('.').raw
+	'System/raw': function(){ return { text: this.get('..').raw() } },
+	'System/text': function(){ return { text: this.get('..').text() } },
+
+	// XXX update these to the new format -- must return an object...
+	/*
+	// XXX move this to Wiki.children + rename...
+	'System/list': function(){
+		var p = this.dir
+
+		return Object.keys(this.__wiki_data)
+			.map(function(k){
+				if(k.indexOf(p) == 0){
+					return path2lst(k.slice(p.length)).shift()
+				}
+				return null
+			})
+			.filter(function(e){ return e != null })
+			.sort()
+			.map(function(e){ return '['+ e +']' })
+			.join('<br>')
+	},
+	// list links to this page...
+	'System/links': function(){
+		var that = this
+		var p = this.dir
+
+		var res = []
+
+		var wiki = this.__wiki_data
+		Object.keys(wiki).forEach(function(k){
+			(wiki[k].links || []).forEach(function(l){
+				(l == p || that.get(path2lst(l).slice(0, -1)).acquire('./'+path2lst(l).pop()) == p)
+					&& res.push([l, k])
+			})
+		})
+
+		return res
+			//.map(function(e){ return '['+ e[0] +'] <i>from page: ['+ e[1] +']</i>' })
+			.map(function(e){ return '['+ e[1] +'] <i>-&gt; ['+ e[0] +']</i>' })
+			.sort()
+			.join('<br>')
+	},
+	//*/
+
+	// Page modifiers/actions...
+	// XXX these needs redirecting...
+	//'System/sort': function(){ return this.get('..').sort() },
+	//'System/reverse': function(){ return this.get('..').reverse() },
+	/*
+	'System/delete': function(){
+		var p = this.dir
+		delete this.__wiki_data[p]
+		return this.get('..') 
+	},
+	//*/
+}
+
+
+
+/*********************************************************************/
+
 // XXX should this be art of the main API or a separate entity???
 // XXX should we combine page and wiki api???
 // 		- pWikiData is wiki api
@@ -146,9 +222,15 @@ module.pWikiData = {
 	data: function(path, value){
 		// get the data...
 		if(value == null){
-			return this.__data ?
-				JSON.parse(JSON.stringify(this.__data[path] || {})) 
-				: null
+			if(this.__data == null){
+				return null
+			}
+
+			var data = this.__data[path]
+
+			return data == null ? null
+				: data instanceof Function ? data
+				: JSON.parse(JSON.stringify(data)) 
 
 		// set the data...
 		} else {
@@ -193,6 +275,7 @@ module.pWikiData = {
 
 
 
+
 /*********************************************************************/
 
 // Base pWiki page API...
@@ -223,38 +306,41 @@ module.pWikiBase = actions.Actions({
 	wiki: null,
 
 
-	// XXX should this be loca/dump???
+	// XXX should this be local/dump???
 	json: ['', function(){ }],
 
 
 	get length(){
+		// special case -- non-pattern path that does not exist...
+		if(this.location().path.indexOf('*') < 0 
+				&& !this.exists()){
+			return 1
+		}
+
 		return this.wiki.match(this.location().path)
+			// skip special paths containing '*'...
 			.filter(function(p){ return p.indexOf('*') < 0 })
 			.length },
 
-	// XXX BUG: avoid recursive calls to things like .base(), .title(), ...
-	// 		resolve relative paths (with pattern location)
-	// 			-> current path
-	// 				-> order list (+ index)
-	// 					-> parent (relative path)
-	// 						(recur)
 	resolve: ['Path/Resolve relative path and expand path variables',
 		function(path){
 			path = path || this.path()
 			// path variables...
 			// XXX make this more modular...
 			path = path
-				.replace(/\$NOW|\$\{NOW\}/g, Date.now())
-				.replace(/\$INDEX|\$\{INDEX\}/g, this.at())
-				.replace(/\$TITLE|\$\{TITLE\}/g, this.title())
 				// NOTE: these are equivalent to '..' and '.' but not 
 				// 		identical -- the variables are useful for things
 				// 		like moving a page to:
 				// 			"Trash/$PATH"
 				// 		...to move the above page out of trash move it to:
 				// 			">>/$PATH"
-				.replace(/\$BASE|\$\{BASE\}/g, this.base())
 				.replace(/\$PATH|\$\{PATH\}/g, this.path())
+				.replace(/\$BASE|\$\{BASE\}/g, this.base())
+
+				.replace(/\$TITLE|\$\{TITLE\}/g, this.title())
+				.replace(/\$INDEX|\$\{INDEX\}/g, this.at())
+
+				.replace(/\$NOW|\$\{NOW\}/g, Date.now())
 				
 			path = normalizePath(path)
 
@@ -290,7 +376,6 @@ module.pWikiBase = actions.Actions({
 				for(var i=0; i < lst.length; i++){
 					var p = normalizePath(path.concat([lst[i], title]))
 					if(that.exists(p)){
-						p = normalizePath(p)
 						return that.wiki.data(p) && p
 					}
 				}
@@ -427,8 +512,9 @@ module.pWikiBase = actions.Actions({
 	//		'order': [ <title>, .. ] | undefined,
 	//		'order-unsorted-first': <bool>,
 	//
-	//		// XXX not yet used...
 	//		'text': <string>,
+	//
+	//		// XXX not yet used...
 	//		'links': [ .. ],
 	// 	}
 	//
@@ -437,7 +523,8 @@ module.pWikiBase = actions.Actions({
 		function(value){
 			// get -> acquire page and get it's data...
 			if(arguments.length == 0){
-				return this.wiki.data(this.acquire()) || {}
+				var d = this.wiki.data(this.acquire()) || {}
+				return d instanceof Function ? d.call(this) : d
 
 			// set -> get explicit path and set data to it...
 			} else if(value != null) {
@@ -447,7 +534,8 @@ module.pWikiBase = actions.Actions({
 	clear: ['Page/Clear page', 
 		function(){ this.wiki.clear(this.path()) }],
 
-	// NOTE: a clone references the same data, no copying is done.
+	// NOTE: a clone references the same data and .config, no copying 
+	// 		is done.
 	clone: ['Page/Get page clone (new reference)', 
 		function(){
 			//var o = (new this.constructor())
@@ -490,8 +578,12 @@ module.pWikiBase = actions.Actions({
 
 			var l = this.length
 
+			// self...
+			if(n == this.at()){
+				return this
+
 			// out of bounds...
-			if(n >= l || n < -l){
+			} else if(n >= l || n < -l){
 				return null
 			}
 
@@ -593,6 +685,7 @@ module.pWikiBase = actions.Actions({
 
 			// store order in a specific path pattern...
 			// NOTE: each path pattern may have a different order...
+			// XXX should we check if this returns a function???
 			var parent = this.wiki.data(path) || {}
 
 			// get full paths...
@@ -985,12 +1078,16 @@ var pWikiUI = pWikiFeatures.Feature({
 /*********************************************************************/
 
 module._test_data = {
-	'System/EmptyPage': {},
+	'System/EmptyPage': {
+		text: '[@source(./path)] is empty...'
+	},
 	'WikiMain': {},
 	'folder/page1': {},
 	'folder/page2': {},
 	'folder/page3': {},
 }
+module._test_data.__proto__ = BaseData
+
 module._test = function(){
 	var wiki = Object.create(pWikiData)
 	wiki.__data = Object.create(module._test_data)

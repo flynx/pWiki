@@ -113,7 +113,7 @@ module = {
 				var path = $(elem).attr('src')
 
 				return context.get(path)
-					.map(function(page){ return page.raw })
+					.map(function(page){ return page.raw() })
 					.join('\n')
 			}),
 
@@ -127,8 +127,8 @@ module = {
 					.map(function(page){
 						return elem
 							.clone()
-							.attr('src', page.path)
-							.text(page.raw)[0]
+							.attr('src', page.path())
+							.text(page.raw())[0]
 					}))
 			}),
 
