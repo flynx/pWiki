@@ -11,6 +11,8 @@ var object = require('lib/object')
 var actions = require('lib/actions')
 var features = require('lib/features')
 
+var macro = require('macro')
+
 
 
 /*********************************************************************/
@@ -81,17 +83,19 @@ module.path2re = function(path){
 
 /*********************************************************************/
 
-// base pWiki object...
-var pWiki = 
-module.pWiki = object.makeConstructor('pWiki', actions.MetaActions)
-
 // pWiki featureset...
 var pWikiFeatures = 
 module.pWikiFeatures = new features.FeatureSet() 
 
+/*
+// base pWiki object...
+var pWiki = 
+module.pWiki = object.makeConstructor('pWiki', actions.MetaActions)
+
 // base instance constructor...
 pWikiFeatures.__actions__ = 
 	function(){ return actions.Actions(pWiki()) }
+//*/
 
 
 
@@ -140,11 +144,13 @@ module.pWikiData = {
 	// XXX should this overwrite or expand???
 	// XXX should from be pattern compatible???
 	data: function(path, value){
+		// get the data...
 		if(value == null){
 			return this.__data ?
-				JSON.parse(JSON.stringify(this.__data[path])) 
+				JSON.parse(JSON.stringify(this.__data[path] || {})) 
 				: null
 
+		// set the data...
 		} else {
 			this.__data = this.__data || {}
 			this.__data[path] = JSON.parse(JSON.stringify(value))
@@ -189,9 +195,10 @@ module.pWikiData = {
 
 /*********************************************************************/
 
-// XXX need a startup sequence...
-var pWikiPageActions =
-module.pWikiPageActions = actions.Actions({
+// Base pWiki page API...
+//
+var pWikiBase =
+module.pWikiBase = actions.Actions({
 	config: {
 		'home-page': 'WikiHome',
 		'default-page': 'EmptyPage',
@@ -205,6 +212,11 @@ module.pWikiPageActions = actions.Actions({
 		'post-acquesition-order': [],
 
 		'order-unsorted-first': false,
+
+		// sorting...
+		'default-sort-methods': [
+			'path',
+		],
 	},
 
 	// pWikiData...
@@ -383,7 +395,10 @@ module.pWikiPageActions = actions.Actions({
 			var d = this.data()
 			// get...
 			if(arguments.length == 1){
-				return d[name]
+				return d[name] === undefined ? 
+					// force returning undefined...
+					actions.UNDEFINED 
+					: d[name]
 
 			// clear...
 			} else if(value === undefined){
@@ -393,6 +408,8 @@ module.pWikiPageActions = actions.Actions({
 			} else {
 				d[name] = value
 			}
+
+			// write the data...
 			// XXX is it good to write the whole thing???
 			this.data(d)
 		}],
@@ -648,7 +665,6 @@ module.pWikiPageActions = actions.Actions({
 			}
 		}],
 
-	__default_sort_methods__: ['path'],
 	__sort_methods__: {
 		title: function(a, b){
 			return a.page.title() < b.page.title() ? -1
@@ -718,8 +734,7 @@ module.pWikiPageActions = actions.Actions({
 				: [].slice.call(arguments)
 
 			res.__order_by = methods = methods.length == 0 ?
-					(this.__default_sort_methods__ 
-					 	|| pWikiPage.__default_sort_methods__)
+					(this.config['default-sort-methods'] || ['path'])
 				: methods
 
 			res.update()
@@ -754,11 +769,11 @@ module.pWikiPageActions = actions.Actions({
 				var reverse = false
 
 				var sort_methods = this.__sort_methods__ 
-					|| pWikiPage.__sort_methods__
+					|| pWikiBase.__sort_methods__
 
 				var methods = (this.__order_by 
-						|| this.__default_sort_methods__
-						|| pWikiPage.__default_sort_methods__)
+						|| this.config['default-sort-methods'] 
+						|| ['path'])
 					.map(function(m){
 						var reversed = m[0] == '-'
 						m = reversed ? m.slice(1) : m
@@ -813,12 +828,70 @@ module.pWikiPageActions = actions.Actions({
 		}],
 })
 
-var pWikiPage = pWikiFeatures.Feature({
-	title: '',
-	tag: 'page',
 
-	actions: pWikiPageActions,
+// Basic data sort-hands...
+//
+var pWikiContent =
+module.pWikiContent = actions.Actions(pWikiBase, {
+	config: {
+	},
+
+	raw: ['Page/',
+		function(value){
+			return arguments.length == 0 ? 
+				(this.attr('text') || '') 
+				: this.attr('text', value) }],
+
+	checked: ['Page/', 
+		function(value){
+			return arguments.length == 0 ? 
+				!!this.attr('checked') 
+				: this.attr('checked', value || undefined) }],
 })
+
+
+// Data processing and macros...
+//
+var pWikiMacros =
+module.pWikiMacros = actions.Actions(pWikiContent, {
+	__macro_parser__: macro,
+
+	config: {
+	},
+
+	text: ['Page/',
+		function(value){
+			return arguments.length == 0 ? 
+				(this.title() == 'raw' ?
+					(this.raw() || '')
+					: pWikiMacros.__macro_parser__.parse(this, this.raw()))
+				: this.raw(value) }],
+	code: ['Page/',
+		function(value){
+			return arguments.length == 0 ? 
+				this.text().text()
+				// XXX should we un-encode here???
+				: this.text(value) }],
+
+	// XXX
+	links: ['Page/',
+		function(){
+		}],
+})
+
+
+// pWiki Page...
+//
+// NOTE: looks like multiple inheritance, feels like multiple inheritance
+// 		but sadly is not multiple inheritance...
+// 		...though, functionally, this is 90% there, about as far as we 
+// 		can get using native JS lookup mechanisms, or at least the 
+// 		farthest I've pushed it so far...
+var pWikiPage =
+module.pWikiPage = actions.mix(
+	pWikiBase, 
+	pWikiContent,
+	pWikiMacros)
 
 
 
@@ -922,7 +995,7 @@ module._test = function(){
 	var wiki = Object.create(pWikiData)
 	wiki.__data = Object.create(module._test_data)
 
-	var w = pWikiPageActions.clone()
+	var w = pWikiPage.clone()
 	w.wiki = wiki
 	return w
 }
