@@ -595,19 +595,19 @@ module = {
 				var isolated = elem.attr('isolated') == 'true'
 
 				var seen = state.seen.slice()
-				if(seen.indexOf(page.path) >= 0){
+				if(seen.indexOf(page.path()) >= 0){
 					return elem.html()
 				}
-				seen.push(page.path)
+				seen.push(page.path())
 
 				return page.map(function(page){
 					return $('<div>')
 						.append(elem
 							.clone()
-							.attr('src', page.path)
+							.attr('src', page.path())
 							.append(that
 								.parse(page,
-									page.raw, 
+									page.raw(), 
 									{ 
 										//slots: !isolated ? state.slots : {},
 										templates: state.templates,

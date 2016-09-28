@@ -1122,9 +1122,14 @@ module._test = function(){
 	var wiki = Object.create(pWikiData)
 	wiki.__data = Object.create(module._test_data)
 
-	return new pWikiPage({
+	var page = new pWikiPage({
 		wiki: wiki,
 	})
+
+	// XXX do some testing...
+	// XXX
+
+	return page
 }
 
 
