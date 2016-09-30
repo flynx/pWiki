@@ -189,7 +189,8 @@ module.pWikiData = {
 	search: function(query){
 	},
 
-	// get a list of matching paths...
+	// Get a list of matching paths...
+	//
 	// XXX sort API???
 	// 		...results shoulde be sorted via the saved order if available...
 	// 		.....or should this be done at a later stage as in gen1???
@@ -216,7 +217,9 @@ module.pWikiData = {
 			// XXX
 			.filter(function(p){ return pattern.test(p) })
 	},
-	// get/set data at path...
+
+	// Get/set data at path...
+	//
 	// XXX should this overwrite or expand???
 	// XXX should from be pattern compatible???
 	data: function(path, value){
@@ -239,7 +242,9 @@ module.pWikiData = {
 			return this
 		}
 	},
-	// move data from path to path...
+
+	// Move data from path to path...
+	//
 	// XXX should from be pattern compatible???
 	move: function(from, to){
 		if(this.__data == null){
@@ -250,7 +255,9 @@ module.pWikiData = {
 		this.__data[to] = d
 		return this
 	},
-	// clear data at path...
+
+	// Clear data at path...
+	//
 	clear: function(path){
 		if(this.__data == null){
 			return this
@@ -320,8 +327,32 @@ module.pWikiBase = actions.Actions({
 		return this.wiki.match(this.location().path)
 			// skip special paths containing '*'...
 			.filter(function(p){ return p.indexOf('*') < 0 })
-			.length },
+			.length 
+	},
 
+
+	// Location and path API...
+
+	// Resolve path statically...
+	//
+	// This will:
+	// 	- expand variables
+	// 	- resolve relative paths ('.', '..', and '>>')
+	//
+	// Supported variables:
+	// 	$NOW		- resolves to current date (same as Date.now())
+	//
+	// 	$PATH		- resolves to page path (same as .path())
+	// 	$BASE		- resolves to page base path (same as .base())
+	// 	$TITLE		- resolves to page title (same as .title())
+	//
+	// 	$INDEX		- resolves to page index (same as .at())
+	//
+	// NOTE: all variables are resolved relative to the page from which 
+	// 		.resolve(..) was called, e.g. the following two are equivalent:
+	// 			<page>.resolve('$PATH')
+	// 			<page>.path()
+	// NOTE: this will not resolve path patterns ('*' and '**')
 	resolve: ['Path/Resolve relative path and expand path variables',
 		function(path){
 			path = path || this.path()
@@ -475,73 +506,11 @@ module.pWikiBase = actions.Actions({
 			}
 		}],
 
-	attr: ['Page/Get or set attribute',
-		function(name, value){
-			var d = this.data()
-			// get...
-			if(arguments.length == 1){
-				return d[name] === undefined ? 
-					// force returning undefined...
-					actions.UNDEFINED 
-					: d[name]
-
-			// clear...
-			} else if(value === undefined){
-				delete d[name]
-
-			// set...
-			} else {
-				d[name] = value
-			}
-
-			// write the data...
-			// XXX is it good to write the whole thing???
-			this.data(d)
-		}],
-
-	// content shorthands...
-	raw: ['Page/',
-		function(value){
-			return arguments.length == 0 ? 
-				(this.attr('text') || '') 
-				: this.attr('text', value) }],
-	checked: ['Page/', 
-		function(value){
-			return arguments.length == 0 ? 
-				!!this.attr('checked') 
-				: this.attr('checked', value || undefined) }],
-
 	exists: ['Page/Check if path explicitly exists.', 
 		function(path){
 			path = path || this.path()
 			return this.wiki.match(this.get(path).location().path)[this.at()] !== undefined
 		}],
-	// Format:
-	//	{
-	//		'order': [ <title>, .. ] | undefined,
-	//		'order-unsorted-first': <bool>,
-	//
-	//		'text': <string>,
-	//
-	//		// XXX not yet used...
-	//		'links': [ .. ],
-	// 	}
-	//
-	// XXX cache the data???
-	data: ['Page/Get or set data', 
-		function(value){
-			// get -> acquire page and get it's data...
-			if(arguments.length == 0){
-				var d = this.wiki.data(this.acquire()) || {}
-				return d instanceof Function ? d.call(this) : d
-
-			// set -> get explicit path and set data to it...
-			} else if(value != null) {
-				this.wiki.data(this.path(), value || {})
-			}
-		}],
-	clear: ['Page/Clear page', 
-		function(){ this.wiki.clear(this.path()) }],
 
 	// NOTE: a clone references the same data and .config, no copying 
 	// 		is done.
@@ -569,12 +538,14 @@ module.pWikiBase = actions.Actions({
 					// NOTE: this is here mainly to maintain the context stack...
 					.clone()
 						.data(this.data()) }],
-
 	get: ['Page/Get page by path', 
 		function(path){
 			return this
 				.clone()
 				.location(path) }],
+
+
+	// Order and iteration API...
 
 	at: ['Page/Get index or page at given index', 
 		function(n){
@@ -930,7 +901,76 @@ module.pWikiBase = actions.Actions({
 		}],
 
 
-	// 
+	// Data API...
+
+	// Get data...
+	//
+	// Format:
+	//	{
+	//		'order': [ <title>, .. ] | undefined,
+	//		'order-unsorted-first': <bool>,
+	//
+	//		'text': <string>,
+	//
+	//		// XXX not yet used...
+	//		'links': [ .. ],
+	// 	}
+	//
+	// XXX cache the data???
+	data: ['Page/Get or set data', 
+		function(value){
+			// get -> acquire page and get it's data...
+			if(arguments.length == 0){
+				var d = this.wiki.data(this.acquire()) || {}
+				return d instanceof Function ? d.call(this) : d
+
+			// set -> get explicit path and set data to it...
+			} else if(value != null) {
+				this.wiki.data(this.path(), value || {})
+			}
+		}],
+	clear: ['Page/Clear page', 
+		function(){ this.wiki.clear(this.path()) }],
+
+	attr: ['Page/Get or set attribute',
+		function(name, value){
+			var d = this.data()
+			// get...
+			if(arguments.length == 1){
+				return d[name] === undefined ? 
+					// force returning undefined...
+					actions.UNDEFINED 
+					: d[name]
+
+			// clear...
+			} else if(value === undefined){
+				delete d[name]
+
+			// set...
+			} else {
+				d[name] = value
+			}
+
+			// write the data...
+			// XXX is it good to write the whole thing???
+			this.data(d)
+		}],
+
+	// shorthands...
+	raw: ['Page/',
+		function(value){
+			return arguments.length == 0 ? 
+				(this.attr('text') || '') 
+				: this.attr('text', value) }],
+	checked: ['Page/', 
+		function(value){
+			return arguments.length == 0 ? 
+				!!this.attr('checked') 
+				: this.attr('checked', value || undefined) }],
+
+
+	// Init... 
+	//
 	// Special config attrs:
 	// 	wiki		- wiki object
 	//
