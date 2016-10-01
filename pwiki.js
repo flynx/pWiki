@@ -1064,11 +1064,28 @@ module.hiddenPromise = {
 
 	then: function(func){
 		var that = this
+
+		// trigger lazy functions if present...
+		if(this.__lazy != null){
+			var lazy = this.__lazy
+			delete this.__lazy
+
+			return this
+				.then(lazy)
+				.then(func)
+
+			// clear any lazy stuff queued by the above to avoid any 
+			// side-effects...
+			delete this.__lazy
+		}
+
+		// no promise...
 		if(this.__promise == null){
 			this.__promise = new Promise(function(resolve, reject){
 				resolve(func.call(that))
 			})
 
+		// existing promise...
 		} else {
 			this.__promise = this.__promise.then(function(){
 				return func.apply(that, [].slice.call(arguments))
@@ -1077,6 +1094,18 @@ module.hiddenPromise = {
 		return this
 	},
 
+	// Like then, but the function will get called only if a .then(..) is
+	// called right after...
+	//
+	// NOTE: only the last lazy function is stored, the rest are discarded.
+	lazy: function(func){
+		this.__lazy = func
+		return this
+	},
+	clearLazy: function(){
+		delete this.__lazy
+		return this
+	},
 
 	// example method (sync)...
 	//
@@ -1101,13 +1130,12 @@ module.hiddenPromise = {
 	// 		.data()
 	// 			.then(function(value){ console.log(value) })
 	//
-	// XXX would be nice to be able to make the getter lazy, i.e. do 
-	// 		nothing unless a .then(..) is called right after...
-	//
 	sdata: function(d){
+		this.clearLazy()
+
 		// get...
 		if(arguments.length == 0){
-			this.then(function(){ return this.__data })
+			this.lazy(function(){ return this.__data })
 
 		// set...
 		} else {
@@ -1126,9 +1154,12 @@ module.hiddenPromise = {
 	// 		a second)...
 	data: function(d){
 		var that = this
+		this.clearLazy()
+
 		// get...
 		if(arguments.length == 0){
-			this.then(function(){
+			//this.then(function(){
+			this.lazy(function(){
 				return new Promise(function(r){
 					setTimeout(function(){ r(that.__data) }, 1000) 
 				})
