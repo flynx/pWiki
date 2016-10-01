@@ -287,6 +287,17 @@ module.pWikiData = {
 
 // Base pWiki page API...
 //
+// Page data format:
+//	{
+//		'order': [ <title>, .. ] | undefined,
+//		'order-unsorted-first': <bool>,
+//
+//		'text': <string>,
+//
+//		// XXX not yet used...
+//		'links': [ .. ],
+// 	}
+//
 var pWikiBase =
 module.pWikiBase = actions.Actions({
 	config: {
@@ -903,20 +914,6 @@ module.pWikiBase = actions.Actions({
 
 	// Data API...
 
-	// Get data...
-	//
-	// Format:
-	//	{
-	//		'order': [ <title>, .. ] | undefined,
-	//		'order-unsorted-first': <bool>,
-	//
-	//		'text': <string>,
-	//
-	//		// XXX not yet used...
-	//		'links': [ .. ],
-	// 	}
-	//
-	// XXX cache the data???
 	data: ['Page/Get or set data', 
 		function(value){
 			// get -> acquire page and get it's data...
@@ -931,7 +928,6 @@ module.pWikiBase = actions.Actions({
 		}],
 	clear: ['Page/Clear page', 
 		function(){ this.wiki.clear(this.path()) }],
-
 	attr: ['Page/Get or set attribute',
 		function(name, value){
 			var d = this.data()
@@ -1022,10 +1018,12 @@ module.pWikiMacros = actions.Actions(pWikiBase, {
 	// XXX
 	links: ['Page/',
 		function(){
+			// XXX
 		}],
 
 
-	// 
+	// Init...
+	//
 	// Special config attrs:
 	// 	macro		- macro processor (optional)
 	//
@@ -1053,6 +1051,107 @@ module.pWikiPage = object.makeConstructor('pWikiPage',
 		//actions.MetaActions,
 		pWikiBase, 
 		pWikiMacros))
+
+
+
+/*********************************************************************/
+
+
+// Experiment with hidden promises...
+var hiddenPromise = 
+module.hiddenPromise = {
+	__promise: null,
+
+	then: function(func){
+		var that = this
+		if(this.__promise == null){
+			this.__promise = new Promise(function(resolve, reject){
+				resolve(func.call(that))
+			})
+
+		} else {
+			this.__promise = this.__promise.then(function(){
+				return func.apply(that, [].slice.call(arguments))
+			})
+		}
+		return this
+	},
+
+
+	// example method (sync)...
+	//
+	// Protocol:
+	// 	.data()			- "get" data value...
+	// 	.data('new value')
+	// 					- set data value...
+	//
+	// In both cases the method will return the object (this)
+	//
+	// In both cases the internal promise when resolved will get passed
+	// the value, in both cases the old value...
+	//
+	// A more full example:
+	// 	hiddenPromise
+	// 		// get and print the value (undefined)...
+	// 		.data()
+	// 			.then(function(value){ console.log(value) })
+	// 		// set a new value...
+	// 		.data('new value')
+	// 		// get and print the new value...
+	// 		.data()
+	// 			.then(function(value){ console.log(value) })
+	//
+	// XXX would be nice to be able to make the getter lazy, i.e. do 
+	// 		nothing unless a .then(..) is called right after...
+	//
+	sdata: function(d){
+		// get...
+		if(arguments.length == 0){
+			this.then(function(){ return this.__data })
+
+		// set...
+		} else {
+			this.then(function(){ 
+				var res = this.__data
+				this.__data = d 
+				return res 
+			})
+		}
+		return this
+	},
+
+	// async data...
+	//
+	// NOTE: this is the same as above but will do it's work async (after
+	// 		a second)...
+	data: function(d){
+		var that = this
+		// get...
+		if(arguments.length == 0){
+			this.then(function(){
+				return new Promise(function(r){
+					setTimeout(function(){ r(that.__data) }, 1000) 
+				})
+			})
+
+		// set...
+		} else {
+			this.then(function(){
+				return new Promise(function(r){
+					setTimeout(
+						function(){ 
+							var res = that.__data
+							that.__data = d 
+							r(res)
+						},
+						1000) 
+				})
+			})
+		}
+		return this
+	},
+}
+
 
 
 
