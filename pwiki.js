@@ -1076,6 +1076,8 @@ module.hiddenPromise = {
 
 			// clear any lazy stuff queued by the above to avoid any 
 			// side-effects...
+			//
+			// XXX should this be done here (sunc) or in  a .then(..)???
 			delete this.__lazy
 
 			return res
