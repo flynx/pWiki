@@ -1070,13 +1070,15 @@ module.hiddenPromise = {
 			var lazy = this.__lazy
 			delete this.__lazy
 
-			return this
+			var res = this
 				.then(lazy)
 				.then(func)
 
 			// clear any lazy stuff queued by the above to avoid any 
 			// side-effects...
 			delete this.__lazy
+
+			return res
 		}
 
 		// no promise...
