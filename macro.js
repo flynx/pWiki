@@ -238,7 +238,7 @@ module = {
 					return $(pages
 						.map(function(page){
 							var e = elem.clone()
-								.attr('src', page.path)
+								.attr('src', page.path())
 							parse(e, page)
 							return e[0]
 						}))
