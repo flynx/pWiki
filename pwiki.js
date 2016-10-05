@@ -328,17 +328,37 @@ module.pWikiBase = actions.Actions({
 	json: ['', function(){ }],
 
 
+	// Refresh path cache...
+	//
+	refresh: ['', 
+		function(force){
+			// get/set location and base fields...
+			var location = this.__location = this.__location || {}
+			var path = location.path = location.path 
+				|| this.config['home-path']
+				|| 'WikiHome'
+			var at = location.at || 0
+
+			// get location cache...
+			var match = location.match
+
+			// refresh the cache...
+			if(match == null || force){
+				location.match = this.order()
+				location.at = at
+			}
+		}],
+
+
 	get length(){
-		// special case -- non-pattern path that does not exist...
-		if(this.location().path.indexOf('*') < 0 
-				&& !this.exists()){
+		// special case -- non-pattern path...
+		if(this.location().path.indexOf('*') < 0){
 			return 1
 		}
 
-		return this.wiki.match(this.location().path)
-			// skip special paths containing '*'...
-			.filter(function(p){ return p.indexOf('*') < 0 })
-			.length 
+		this.refresh()
+
+		return this.location().match.length 
 	},
 
 
@@ -459,42 +479,43 @@ module.pWikiBase = actions.Actions({
 				return
 			}
 
-			// XXX should we set/return a default empty value here???
-			this.__location = this.__location || {}
+			var location = this.__location || this.refresh().location()
 
 			// get location...
 			if(arguments.length == 0){
-				return this.__location || this.config['home-page']
+				return location
 			}
 
 			// set location index...
 			if(typeof(value) == typeof(123)){
-				this.__location.at = value
+				location.at = value
 
 			// set location path...
 			} else if(typeof(value) == typeof('str')){
-				this.__location.path = this.resolve(value)
-				this.__location.at = 0
+				location.path = this.resolve(value)
+				location.at = 0
 
 			// object...
 			} else {
 				this.__location = value
 			}
+
+			this.refresh(true)
 		}],
 	// XXX pattern does not match anything needs to be handled correctly...
+	// XXX do we need to normalize 'at'???
 	path: ['Page/Get or set path', 
 		function(value){
 			// get explcit path from location (acounting for 'at')...
 			if(arguments.length == 0){
-				return this.order(true)[this.at()] 
-					// nothing matched the pattern...
+				var location = this.location()
+				return location.match[location.at]
 					|| this.config['no-match-page']
 					|| ''
 
 			// move page to path...
 			} else if(value != null) {
 				this.wiki.move(this.path(), this.resolve(value))
-				// XXX
 				this.location(value)
 			}
 		}],
@@ -519,15 +540,16 @@ module.pWikiBase = actions.Actions({
 
 	exists: ['Page/Check if path explicitly exists.', 
 		function(path){
+			var at = path ? 0 : this.at()
 			path = path || this.path()
-			return this.wiki.match(this.get(path).location().path)[this.at()] !== undefined
+
+			return this.wiki.match(this.get(path).location().path)[at] !== undefined
 		}],
 
 	// NOTE: a clone references the same data and .config, no copying 
 	// 		is done.
 	clone: ['Page/Get page clone (new reference)', 
 		function(){
-			//var o = (new this.constructor())
 			var o = Object.create(this)
 				.location(JSON.parse(JSON.stringify(this.location())))
 
@@ -632,11 +654,6 @@ module.pWikiBase = actions.Actions({
 	//
 	//	Get order (title)...
 	//	.order()
-	//	.order(false)
-	//		-> order
-	//
-	//	Get order (full paths)...
-	//	.order(true)
 	//		-> order
 	//
 	//	Save local order (.__order)...
@@ -679,14 +696,9 @@ module.pWikiBase = actions.Actions({
 			// XXX should we check if this returns a function???
 			var parent = this.wiki.data(path) || {}
 
-			// get full paths...
-			if(order === true || order === false){
-				full_paths = order
-				order = null
-
 			// save local order...
 			// XXX this is wrong!!!
-			} else if(order == 'local'){
+			if(order == 'local'){
 				order = this.__order
 
 			// save current order...
