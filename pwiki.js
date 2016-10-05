@@ -1097,6 +1097,14 @@ module.hiddenPromise = {
 		}
 		return this
 	},
+	// NOTE: this ignores the function if there is no promise...
+	// 		XXX not sure if this is correct...
+	catch: function(func){
+		if(this.__promise != null){
+			this.__promise.catch(func)
+		}
+		return this
+	},
 
 	// Like then, but the function will get called only if a .then(..) is
 	// called right after...
