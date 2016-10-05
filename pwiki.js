@@ -1101,7 +1101,7 @@ module.hiddenPromise = {
 	// 		XXX not sure if this is correct...
 	catch: function(func){
 		if(this.__promise != null){
-			this.__promise.catch(func)
+			this.__promise = this.__promise.catch(func)
 		}
 		return this
 	},
