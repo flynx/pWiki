@@ -256,16 +256,30 @@ module.pWikiData = {
 		return this
 	},
 
-	// Clear data at path...
+	// Clear a path...
 	//
 	clear: function(path){
 		if(this.__data == null){
 			return this
 		}
-		var that = this
-		this.match(path).forEach(function(p){
-			delete that.__data[p]
+		this.remove(this.match(path))
+		return this
+	},
+
+	// explicitly remove path...
+	//
+	// NOTE: this is similar to .clear(..) but will not expand patterns, 
+	// 		thus only one page is is removed per path.
+	remove: function(path){
+		path = arguments.length > 1 ? [].slice.call(arguments) 
+			: path instanceof Array ? path 
+			: [path]
+		var data = this.__data
+
+		path.forEach(function(p){
+			delete data[p]
 		})
+
 		return this
 	},
 
@@ -344,8 +358,7 @@ module.pWikiBase = actions.Actions({
 
 			// refresh the cache...
 			if(match == null || force){
-				location.match = this.order()
-				location.at = at
+				this.order(force)
 			}
 		}],
 
@@ -492,12 +505,16 @@ module.pWikiBase = actions.Actions({
 
 			// set location path...
 			} else if(typeof(value) == typeof('str')){
-				location.path = this.resolve(value)
-				location.at = 0
+				this.__location = {
+					path: this.resolve(value),
+					at: 0,
+				}
 
 			// object...
 			} else {
 				this.__location = value
+
+				return
 			}
 
 			this.refresh(true)
@@ -652,63 +669,82 @@ module.pWikiBase = actions.Actions({
 
 	// Get/set sibling order...
 	//
-	//	Get order (title)...
+	//	Get order...
 	//	.order()
 	//		-> order
 	//
-	//	Save local order (.__order)...
-	//	.order('local')
+	//	Force get order...
+	//	.order(true)
+	//	.order('force')
+	//		-> order
+	//		NOTE: this will overwrite cache.
+	//
+	//	Get saved order...
+	//	.order('saved')
 	//		-> order
 	//
-	//	Save current order...
-	//	.order('current')
-	//		-> order
-	//		NOTE: this is a shorthand for p.order(p.order())
-	//
-	//	Save list of titles as order...
+	//	Save list of paths as order explicitly...
 	//	.order([<title>, .. ])
-	//		-> order
+	//		-> page
+	//
+	//	Save order persistently...
+	//	.order('save')
+	//		-> page
+	//
+	//	Remove set order, local if available else persistent...
+	//	.order('clear')
+	//		-> page
+	//
+	//	Remove all ordering...
+	//	.order('clear-all')
+	//		-> page
+	//
+	//
+	// List of paths passed to .order(..) can contain a '*' to indicate
+	// the pages not specified by the list.
+	// By default all unspecified pages will get appended to the resulting
+	// list, same as appending a '*' to the tail of the list passed to 
+	// .order(..)
+	//
 	//
 	// NOTE: saving order to data is supported ONLY for paths that contain
 	// 		one and only one pattern and in the last path segment...
+	// NOTE: clearing persistent ordering will remove a page (parent) from 
+	// 		data if it contains nothing but the order...
+	// NOTE: this will also maintain page position within order (.at())
 	//
 	// XXX (LEAK?) not sure if the current location where order is stored
-	// 		is the right way to go...
-	// 		...would be really hard to clean out...
-	// XXX should this be pattern only or by default list the siblings...
-	// XXX should the default be titles or full paths???
+	// 		is the right way to go -- would be really hard to clean out...
+	// 		...might be a good idea to clear pattern paths that match no 
+	// 		pages from data...
 	// XXX should we split order persistence into two?
 	// 			- local .__order
 	// 			- global
 	// 		...and how should we move from one to the other???
 	order: ['Page/Get or set sibling pages order', 
 		function(order){
-			var path = this.location().path || ''
-			var full_paths = true
-
-			// no patterns in path -> no ordering...
-			if(path.indexOf('*') < 0){
-				return [ path ]
-			}
-
-			// store order in a specific path pattern...
-			// NOTE: each path pattern may have a different order...
-			// XXX should we check if this returns a function???
-			var parent = this.wiki.data(path) || {}
-
-			// save local order...
-			// XXX this is wrong!!!
-			if(order == 'local'){
-				order = this.__order
-
-			// save current order...
-			} else if(order == 'current'){
-				return this.order(this.order())
-			}
+			var location = this.location()
+			var path = location.path || ''
+			var page = (location.match || [])[location.at || 0]
 
 			// get order...
-			if(order == null){
-				//var pages = this.wiki.match(parent.path() + '/*')
+			if(order == null || order == 'force' || order === true){
+				// no patterns in path -> no ordering...
+				if(path.indexOf('*') < 0){
+					if(!location.match){
+						location.match = [ path ]
+						this.location(location)
+					}
+					return [ path ]
+				}
+
+				// get cached order if not forced...
+				if(location.match != null && order == null){
+					return location.match
+				}
+
+				// XXX should we check if this returns a function???
+				var parent = this.wiki.data(path) || {}
 				var pages = this.wiki.match(path)
 					// filter out paths containing '*'
 					.filter(function(p){ return p.indexOf('*') < 0 })
@@ -717,48 +753,91 @@ module.pWikiBase = actions.Actions({
 					// NOTE: paths may not be visible because they are 
 					// 		filtered out by .location().path pattern...
 					.filter(function(p){ 
-						return pages.indexOf(p) >= 0 })
+						return pages.indexOf(p) >= 0 || p == '*' })
 
-				// sorted...
+				// order present...
 				if(order.length > 0){
-					// get unsorted_first config: 
-					// 		page || config || false
-					var unsorted_first = parent['order-unsorted-first']
-					unsorted_first = unsorted_first == null ? 
-						 this.config['order-unsorted-first']
-						 : unsorted_first
-					unsorted_first = unsorted_first == null ? 
-						false 
-						: unsorted_first
+					// get the spot where to place pages not in order...
+					// NOTE: if '*' is not in order, then unsorted pages
+					// 		will get appended to the end...
+					// NOTE: only one '*' is supported...
+					var i = order.indexOf('*')
+					i = i == -1 ? order.length : i
+
 					// get pages not in order...
 					pages = pages
 						.filter(function(p){ 
 							return order.indexOf(p) < 0 })
-					// build the list... 
-					return unsorted_first ?
-						pages.concat(order)
-						: order.concat(pages)
 
-				// unsorted...
+					// build the list... 
+					order.splice.apply(order, [i, 1].concat(pages))
+
+				// unsorted -- simply list the pages...
 				} else {
-					return pages 
+					order = pages 
 				}
 
-			// set persistent manual order...
-			// XXX ugly -- revise... 
-			// check if we have a pattern...
-			//} else if(path2list(path).pop().indexOf('*') >= 0 
-			//		// check if no patterns are in path other than the last elem...
-			//		&& path2list(path).slice(0, -1).join('/').match(/\*/g) == null) {
-			} else if(path.indexOf('*') >= 0){
-				parent.order = order
+				// save cache...
+				location.match = order
+				location.at = page ? order.indexOf(page) : 0
+				this.location(location)
+
+				return order.slice()
+
+			// get saved order...
+			} else if(order == 'saved'){
+				return this.__order 
+					// XXX should we check if this returns a function???
+					|| (this.wiki.data(path) || {}).order
+					|| []
+
+			// clear order...
+			// XXX should this:
+			// 		- clear all always
+			// 		- explicitly clear only local or persistent
+			// 		- progressively clear local then persistent (current)
+			} else if(order == 'clear' || order == 'clear-all'){
+				var local = !!this.__order
+
+				// local order...
+				delete this.__order
+
+				// clear persistent order...
+				if(!local || order == 'clear-all'){
+					// XXX should we check if this returns a function???
+					var parent = this.wiki.data(path)
+
+					// persistent order...
+					if(parent && parent.order){
+						delete parent.order
+
+						// remove if empty...
+						if(Object.keys(parent).length == 0){
+							this.wiki.remove(path)		
+
+						// save...
+						} else {
+							this.wiki.data(path, parent)
+						}
+					}
+				}
+
+			} else if(order == 'save') {
+				// XXX should we check if this returns a function???
+				var parent = this.wiki.data(path) || {}
+
+				var order = parent.order = this.__order || this.order()
+
 				this.wiki.data(path, parent)
 				delete this.__order
 
-			// set local manual order...
+			// set order...
 			} else {
 				this.__order = order
 			}
+
+			// save cache...
+			this.order(true)
 		}],
 
 	__sort_methods__: {
