@@ -186,16 +186,22 @@ module.pWikiData = {
 	__data: null,
 
 	// XXX
-	search: function(query){
+	search: function(query, sort){
 	},
 
 	// Get a list of matching paths...
 	//
-	// XXX sort API???
-	// 		...results shoulde be sorted via the saved order if available...
-	// 		.....or should this be done at a later stage as in gen1???
-	match: function(path){
+	// XXX sort path API...
+	// 		...should we be able to spec sort in path???
+	// XXX should we account for order here???
+	match: function(path, sort, count, from){
 		var data = this.__data || {}
+		sort = sort || (data[path] || {}).sort || []
+		sort = sort instanceof Array ? sort : [sort]
+		from = from || 0
+
+		// XXX normalize this to account for '*'
+		//var order = (data[path] || {}).order || []
 
 		if(path == null){
 			return []
@@ -213,9 +219,40 @@ module.pWikiData = {
 				.concat(Object.keys(data.__proto__)
 					// do not repeat overloaded stuff...
 					.filter(function(e){ return !data.hasOwnProperty(e) }))
-			// XXX sort???
-			// XXX
 			.filter(function(p){ return pattern.test(p) })
+
+			// page...
+			.slice(from, count ? from + count : undefined)
+
+			// prepare to sort...
+			.map(function(p, i){ 
+				return sort
+					.map(function(method){
+						method = method[0] == '-' ? method.slice(1) : method
+						return method == 'path' ? p.toLowerCase()
+							: method == 'Path' ? p
+							: method == 'title' ? path2list(p).pop().toLowerCase()
+							: method == 'Title' ? path2list(p).pop() 
+							// XXX experimental...
+							//: method == 'order' ? order.indexOf(p)
+							// attr...
+							: data[method]
+					})
+					.concat([i, p])
+			})
+			// sort...
+			.sort(function(a, b){ 
+				for(var i=0; i < sort.length+1; i++){
+					var reverse = (sort[i] || '')[0] == '-' ? -1 : 1
+					if(a[i] == b[i]){
+						continue
+					} 
+					return (a[i] > b[i] ? 1 : -1) * reverse
+				}
+				return 0
+			})
+			// cleanup...
+			.map(function(e){ return e.pop() })
 	},
 
 	// Get/set data at path...
@@ -312,6 +349,7 @@ module.pWikiData = {
 //		'links': [ .. ],
 // 	}
 //
+// XXX should .__sort and .__order be stored in .__location???
 var pWikiBase =
 module.pWikiBase = actions.Actions({
 	config: {
@@ -717,10 +755,6 @@ module.pWikiBase = actions.Actions({
 	// 		is the right way to go -- would be really hard to clean out...
 	// 		...might be a good idea to clear pattern paths that match no 
 	// 		pages from data...
-	// XXX should we split order persistence into two?
-	// 			- local .__order
-	// 			- global
-	// 		...and how should we move from one to the other???
 	order: ['Page/Get or set sibling pages order', 
 		function(order){
 			var location = this.location()
@@ -740,12 +774,12 @@ module.pWikiBase = actions.Actions({
 
 				// get cached order if not forced...
 				if(location.match != null && order == null){
-					return location.match
+					return location.match.slice()
 				}
 
 				// XXX should we check if this returns a function???
 				var parent = this.wiki.data(path) || {}
-				var pages = this.wiki.match(path)
+				var pages = this.wiki.match(path, this.__sort)
 					// filter out paths containing '*'
 					.filter(function(p){ return p.indexOf('*') < 0 })
 				var order = (this.__order || parent.order || [])
@@ -840,37 +874,6 @@ module.pWikiBase = actions.Actions({
 			this.order(true)
 		}],
 
-	__sort_methods__: {
-		title: function(a, b){
-			return a.page.title() < b.page.title() ? -1
-				: a.page.title() > b.page.title() ? 1
-				: 0
-		},
-		path: function(a, b){
-			return a.page.path() < b.page.path() ? -1
-				: a.page.path() > b.page.path() ? 1
-				: 0
-		},
-		// XXX
-		/*
-		checked: function(a, b){
-			// XXX chech if with similar states the order is kept....
-			return a.page.checked() == b.page.checked() ? 0
-				: a.page.checked() ? 1
-				: -1
-		},
-		*/
-		// XXX date, ...
-
-		// XXX use manual order and palce new items (not in order) at 
-		// 		top/bottom (option)...
-		// XXX store the order in .__wiki_data
-		manual: function(a, b){
-			// XXX
-			return 0
-		},
-	},
-
 	// Sort siblings...
 	//
 	//	Sort pages via default method
@@ -883,124 +886,56 @@ module.pWikiBase = actions.Actions({
 	//
 	//	Sort pages via method1, then method2, ...
 	//	.sort(method1, method2, ...)
+	//	.sort([method1, method2, ...])
 	//		-> page
-	//		NOTE: the next method is used iff the previous returns 0, 
-	//			i.e. the items are equal.
+	//		NOTE: the next method is used iff the previous concludes the
+	//			values equal...
 	//
 	// To reverse a specific method, prepend it's name with "-", e.g. 
 	// "title" will do the default ascending sort while "-title" will do
 	// a descending sort.
-	// This is different from the "reverse" method which will simply 
-	// reverse the result.
+	//
+	// Supported methods:
+	// 	path			- compare paths (case-insensitive)
+	// 	Path			- compare paths (case-sensitive)
+	// 	title			- compare titles (case-insensitive)
+	// 	Title			- compare titles (case-sensitive)
+	// 	<attribute>		- compare data attributes
+	//
 	//
 	// NOTE: the sort is local to the returned object.
 	// NOTE: the sorted object may loose sync form the actual wiki as the
 	// 		list of siblings is cached.
 	// 		...the resulting object is not to be stored for long.
-	// XXX
+	// NOTE: the actual sorting is done by the store...
 	sort: ['Page/', 
-		function(){
+		function(methods){
 			var that = this
 			var res = this.clone()
-			var path = res.path
 
-			var methods = arguments[0] instanceof Array ? 
-				arguments[0] 
-				: [].slice.call(arguments)
+			methods = methods instanceof Array ?  methods : [].slice.call(arguments)
 
-			res.__order_by = methods = methods.length == 0 ?
+			res.__sort = methods.length == 0 ?
 					(this.config['default-sort-methods'] || ['path'])
 				: methods
 
-			res.update()
+			res.order(true)
 
 			return res
 		}],
-	// XXX
-	reverse: ['Page/', 
+	// XXX should this be persistent???
+	// 		...e.g. survive .order('force') or .order('clear')
+	reverse: ['Page/',
 		function(){
-			var res = this.clone()
+			this.__order && this.__order.reverse()
 
-			res.__order_by = (this.__order_by || []).slice()
-
-			var i = res.__order_by.indexOf('reverse')
-
-			i >= 0 ? 
-				res.__order_by.splice(i, 1) 
-				: res.__order_by.push('reverse')
-
-			res.update()
-
-			return res
-		}],
-	// XXX not sure if this is the right way to go...
-	// XXX
-	update: ['Page/', 
-		function(){
-			var that = this
-
-			if(this.__order || this.__order_by){
-				var path = this.path
-				var reverse = false
-
-				var sort_methods = this.__sort_methods__ 
-					|| pWikiBase.__sort_methods__
-
-				var methods = (this.__order_by 
-						|| this.config['default-sort-methods'] 
-						|| ['path'])
-					.map(function(m){
-						var reversed = m[0] == '-'
-						m = reversed ? m.slice(1) : m
-
-						if(m == 'reverse'){
-							reverse = !reverse
-							return null
-						}
-						m = typeof(m) == typeof('str') ? sort_methods[m]
-							: m instanceof Function ? m
-							: null
-
-						return m != null ?
-							(reversed ? 
-								function(){ return -m.apply(this, arguments) } 
-								: m) 
-							: m
-					})
-					.filter(function(m){ return !!m })
-
-				// XXX
-				//this.__order = this.resolveStarPath(this.location)
-				this.__order = this.order()
-
-				if(methods.length > 0){
-					var method = function(a, b){
-							for(var i=0; i < methods.length; i++){
-								var res = methods[i].call(that, a, b)
-
-								if(res != 0){
-									return res
-								}
-							}
-							// keep order if nothing else works...
-							return a.i - b.i
-					}
-
-					this.__order = this.__order
-						.map(function(t, i){ return {
-							i: i, 
-							page: that.get(t),
-						} })
-						.sort(method)
-						.map(function(t){ return t.page.path })
-				}
-
-				reverse 
-					&& this.__order.reverse()
-
-				this.__location_at = this.__order.indexOf(path)
+			var location = this.location()
+			if(location.match){
+				location.match.reverse()
+				this.location(location)
 			}
 		}],
+
 
 
 	// Data API...
