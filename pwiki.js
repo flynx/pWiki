@@ -380,8 +380,8 @@ module.pWikiBase = actions.Actions({
 	json: ['', function(){ }],
 
 
-	// Refresh path cache...
-	//
+	// Location and path API...
+
 	refresh: ['', 
 		function(force){
 			// get/set location and base fields...
@@ -400,20 +400,46 @@ module.pWikiBase = actions.Actions({
 			}
 		}],
 
+	location: ['Page/Get or set location',
+		function(value){
+			if(value === null){
+				return
+			}
 
-	get length(){
-		// special case -- non-pattern path...
-		if(this.location().path.indexOf('*') < 0){
-			return 1
-		}
+			var location = this.__location || this.refresh().location()
 
-		this.refresh()
+			// get location...
+			if(arguments.length == 0){
+				return location
+			}
 
-		return this.location().match.length 
-	},
+			// set location index...
+			if(typeof(value) == typeof(123)){
+				location.at = value
 
+			// set location path...
+			} else if(typeof(value) == typeof('str')){
+				this.__location = {
+					path: this.resolve(value),
+					at: 0,
+				}
 
-	// Location and path API...
+			// object...
+			} else {
+				this.__location = value
+
+				return
+			}
+
+			this.refresh(true)
+		}],
+	exists: ['Page/Check if path explicitly exists.', 
+		function(path){
+			var at = path ? 0 : this.at()
+			path = path || this.path()
+
+			return this.wiki.match(this.get(path).location().path)[at] !== undefined
+		}],
 
 	// Resolve path statically...
 	//
@@ -524,39 +550,6 @@ module.pWikiBase = actions.Actions({
 					: null)
 		}],
 
-	location: ['Page/Get or set location',
-		function(value){
-			if(value === null){
-				return
-			}
-
-			var location = this.__location || this.refresh().location()
-
-			// get location...
-			if(arguments.length == 0){
-				return location
-			}
-
-			// set location index...
-			if(typeof(value) == typeof(123)){
-				location.at = value
-
-			// set location path...
-			} else if(typeof(value) == typeof('str')){
-				this.__location = {
-					path: this.resolve(value),
-					at: 0,
-				}
-
-			// object...
-			} else {
-				this.__location = value
-
-				return
-			}
-
-			this.refresh(true)
-		}],
 	// XXX pattern does not match anything needs to be handled correctly...
 	// XXX do we need to normalize 'at'???
 	path: ['Page/Get or set path', 
@@ -593,14 +586,9 @@ module.pWikiBase = actions.Actions({
 			}
 		}],
 
-	exists: ['Page/Check if path explicitly exists.', 
-		function(path){
-			var at = path ? 0 : this.at()
-			path = path || this.path()
 
-			return this.wiki.match(this.get(path).location().path)[at] !== undefined
-		}],
-
+	// Object API...
+	
 	// NOTE: a clone references the same data and .config, no copying 
 	// 		is done.
 	clone: ['Page/Get page clone (new reference)', 
@@ -634,6 +622,17 @@ module.pWikiBase = actions.Actions({
 
 
 	// Order and iteration API...
+
+	get length(){
+		// special case -- non-pattern path...
+		if(this.location().path.indexOf('*') < 0){
+			return 1
+		}
+
+		this.refresh()
+
+		return this.location().match.length 
+	},
 
 	at: ['Page/Get index or page at given index', 
 		function(n){
@@ -935,7 +934,6 @@ module.pWikiBase = actions.Actions({
 				this.location(location)
 			}
 		}],
-
 
 
 	// Data API...
