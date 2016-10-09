@@ -101,7 +101,8 @@ pWikiFeatures.__actions__ =
 
 /*********************************************************************/
 
-var BaseData = {
+var BaseData = 
+module.BaseData = {
 	// Macro acces to standard page attributes (paths)...
 	'System/title': function(){ return { text: this.get('..').title() } },
 	'System/path': function(){ return { text: this.base() } },
@@ -1284,14 +1285,171 @@ var pWikiPeerJSSync = pWikiFeatures.Feature({
 // XXX should this extend pWiki or encapsulate???
 var pWikiUIActions = actions.Actions({
 	config: {
+		'special-paths': {
+			//'History/back': 'historyBack',
+			//'History/forward': 'historyForward',
+		},
 	},
 
+	dom: null,
+	page: null,
+
+	__dom_filters__: {
+		// sortable elements...
+		'.sortable': function(elems){
+			elems
+				.sortable({
+					handle: ".sort-handle",
+					placeholder: "sort-placeholder",
+					forcePlaceholderSize: true,
+					axis: 'y',
+				})
+				.addTouch()
+		},
+		// title editor...
+		'.title': function(elems){
+			var client = this
+			var wiki = this.page
+			elems
+				.focus(function(){
+					var to = $(this).attr('saveto') || '.'
+					$(this).text(wiki.get(to).title())
+				})
+				.blur(function(){ 
+					var to = $(this).attr('saveto') || '.'
+					var text = $(this).text().trim()
+					var page = wiki.get(to)
+
+					if(text[0] == '/'){
+						page.path(text)
+
+					} else {
+						page.title(text)
+					}
+
+					// XXX need to account for changed path sufixes...
+					wiki.path(page.path)
+
+					client.reload()
+				})
+		},
+		// raw text editor...
+		'.raw': function(elems){
+			var client = this
+			var wiki = this.page
+			elems
+				.focus(function(){
+					var to = $(this).attr('saveto') || '.'
+					console.log('EDITING:', wiki.get(to).path())
+				})
+				.on('keyup', function(){ 
+					var to = wiki.get($(this).attr('saveto') || '.').path()
+					console.log('SAVING:', to)
+					//Wiki.get(to).raw($(this).text())
+					wiki.get(to).raw($(this)[0].innerText)
+				})
+				// XXX do this live, but on a timeout after user input...
+				// XXX need to place the cursor in the same position...
+				.blur(function(){ 
+					client.reload() 
+				})
+		},
+		// checkbox handlers...
+		'input[type="checkbox"].state': function(elems){
+			var client = this
+			var wiki = this.page
+			elems
+				// initial state...
+				.each(function(){
+					var path = $(this).attr('saveto')
+					var value = !!wiki.get(path).checked()
+
+					$(this)
+						.prop('checked', value)
+						.parents('.item').first()
+							[value ? 'addClass' : 'removeClass']('checked')
+				})
+				// handle clicks...
+				.click(function(){
+					var path = $(this).attr('saveto')
+					var value = $(this).prop('checked')
+
+					wiki.get(path).checked(value)
+
+					$(this)
+						.parents('.item').first()
+							[value ? 'addClass' : 'removeClass']('checked')
+
+					// XXX
+					//client.save()
+				})
+		},
+	}
+
+	location: ['', 
+		function(path){
+			var page = this.page
+
+			if(arguments.length == 0){
+				// XXX is this correct???
+				return page.path()
+			}
+
+			path = path.trim()
+
+			// special paths...
+			if(path in this.config['special-paths']){
+				this[this.config['special-paths'][path]]()
+			}
+
+			page.location(path)
+
+			this.reload()
+		}],
+	reload: ['', 
+		function(){
+			var that = this
+			var page = this.page
+
+			this.dom
+				// update path and render page...
+				// XXX revise the default view approach...
+				.html(page.title()[0] == '_' ? 
+					page.text() 
+					: page.get('./_view').text())
+				// activate page controls...
+				.ready(function(){
+					that.updateDom()
+				})
+		}],
+	// XXX might be a good idea to add actions to setup/clear a filter...
+	updateDom: ['', 
+		function(dom){
+			var that = this
+			dom = dom || this.dom
+
+			if(dom.attr('wiki-active') == 'yes'){
+				return
+			}
+
+			dom.attr('wiki-active', 'yes')
+
+			var filters = this.__dom_filters__ 
+				|| pWikiUIActions.__dom_filters__
+
+			// apply dom filters...
+			Object.keys(filters).forEach(function(pattern){
+				filters[pattern].call(that, dom.find(pattern))
+			})
+		}],
+
+	/*
 	// XXX url?
 	// 		- couch url
 	// 		- 'local'
-	load: ['', function(){}],
-
-	reload: ['', function(){}],
+	load: ['', 
+		function(){
+		}],
 
 	// XXX navigation...
 	// 		...these in addition to default scrolling should focus elements
@@ -1305,6 +1463,7 @@ var pWikiUIActions = actions.Actions({
 
 	// should this be in the editor feature???
 	toggleEdit: ['', function(){}],
+	//*/
 })
 
 var pWikiUI = pWikiFeatures.Feature({
