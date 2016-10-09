@@ -428,6 +428,11 @@ module.pWikiBase = actions.Actions({
 			} else {
 				this.__location = value
 
+				// NOTE: we are returning here without a refresh to avoid
+				// 		recursion...
+				// NOTE: a refresh will get called when the location value
+				// 		is accessed for the first time...
+				// XXX should we clear .match here???
 				return
 			}
 
