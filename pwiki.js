@@ -121,9 +121,11 @@ module.BaseData = {
 	'System/text': function(){ return { text: this.get('..').text() } },
 
 	// XXX update these to the new format -- must return an object...
-	/*
 	// XXX move this to Wiki.children + rename...
+	// XXX
 	'System/list': function(){
+		return 'NoImplemented'
+
 		var p = this.dir
 
 		return Object.keys(this.__wiki_data)
@@ -139,7 +141,10 @@ module.BaseData = {
 			.join('<br>')
 	},
 	// list links to this page...
+	// XXX
 	'System/links': function(){
+		return 'NoImplemented'
+
 		var that = this
 		var p = this.dir
 
@@ -159,7 +164,6 @@ module.BaseData = {
 			.sort()
 			.join('<br>')
 	},
-	//*/
 
 	// Page modifiers/actions...
 	// XXX these needs redirecting...
@@ -1310,6 +1314,7 @@ var pWikiUIActions = actions.Actions({
 		'.title': function(elems){
 			var client = this
 			var wiki = this.page
+
 			elems
 				.focus(function(){
 					var to = $(this).attr('saveto') || '.'
@@ -1332,11 +1337,16 @@ var pWikiUIActions = actions.Actions({
 
 					client.reload()
 				})
+
+			/* XXX this messes up history for some reason...
+			$('title').text(elems.first().text())
+			//*/
 		},
 		// raw text editor...
 		'.raw': function(elems){
 			var client = this
 			var wiki = this.page
+
 			elems
 				.focus(function(){
 					var to = $(this).attr('saveto') || '.'
@@ -1358,6 +1368,7 @@ var pWikiUIActions = actions.Actions({
 		'input[type="checkbox"].state': function(elems){
 			var client = this
 			var wiki = this.page
+
 			elems
 				// initial state...
 				.each(function(){
@@ -1384,7 +1395,7 @@ var pWikiUIActions = actions.Actions({
 					//client.save()
 				})
 		},
-	}
+	},
 
 	location: ['', 
 		function(path){
@@ -1404,6 +1415,8 @@ var pWikiUIActions = actions.Actions({
 
 			page.location(path)
 
+			this.dom.attr('wiki-active', 'no')
+
 			this.reload()
 		}],
 	reload: ['', 
@@ -1412,9 +1425,10 @@ var pWikiUIActions = actions.Actions({
 			var page = this.page
 
 			this.dom
+				.empty()
 				// update path and render page...
 				// XXX revise the default view approach...
-				.html(page.title()[0] == '_' ? 
+				.append(page.title()[0] == '_' ? 
 					page.text() 
 					: page.get('./_view').text())
 				// activate page controls...
@@ -1438,9 +1452,10 @@ var pWikiUIActions = actions.Actions({
 				|| pWikiUIActions.__dom_filters__
 
 			// apply dom filters...
-			Object.keys(filters).forEach(function(pattern){
-				filters[pattern].call(that, dom.find(pattern))
-			})
+			Object.keys(filters)
+				.forEach(function(pattern){
+					// XXX for some reason this works but has no effect...
+					filters[pattern].call(that, dom.find(pattern)) })
 		}],
 
 	/*
@@ -1470,6 +1485,15 @@ var pWikiUI = pWikiFeatures.Feature({
 	title: '',
 	tag: 'ui',
 })
+
+
+// XXX STUB: not sure if this is the right way...
+var pWikiClient =
+module.pWikiClient = object.makeConstructor('pWikiClient', 
+	actions.mix(
+		// XXX not sure if we need this here...
+		//actions.MetaActions,
+		pWikiUIActions))
 
 
 

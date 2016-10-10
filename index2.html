@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>pWiki</title>
+</head>
+
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-Bold.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-BoldItalic.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-ExtraBold.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-ExtraBoldItalic.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-Italic.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-Light.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-LightItalic.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-Regular.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-Semibold.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-SemiboldItalic.ttf">
+
+<link rel="stylesheet" href="css/fonts.css">
+
+<style>
+</style>
+
+<script src="ext-lib/jquery.js"></script>
+<script src="ext-lib/jquery-ui.min.js"></script>
+<script src="ext-lib/jquery.ui.touch.js"></script>
+<script src="ext-lib/showdown.min.js"></script>
+
+<script src="ext-lib/FileSaver.js"></script>
+<script src="ext-lib/jszip.min.js"></script>
+
+<script src="ext-lib/pouchdb.min.js"></script>
+<script src="ext-lib/peer.min.js"></script>
+
+<script src="bootstrap.js"></script>
+
+<script data-main="ui" src="ext-lib/require.js"></script>
+
+<script>
+
+var exportZip = function(){
+	var zip = new JSZip()
+
+	var pwiki = zip.folder("pWiki")
+	pwiki.file("data.json", JSON.stringify(Wiki.__wiki_data))
+
+	zip.generateAsync({type:"blob"})
+		.then(function(content) {
+			// see FileSaver.js
+			saveAs(content, "pWiki.zip")
+		})
+}
+
+
+$(function(){requirejs(['pwiki'], function(pwiki){
+
+	var wiki = Object.create(pwiki.pWikiData)
+	var page = window.page = new pwiki.pWikiPage({
+		wiki: wiki,
+	})
+
+	// XXX load data...
+	var data = wiki.__data = {} 
+
+	// load bootstrap data...
+	if(window.Bootstrap){
+		Bootstrap.__proto__ = pwiki.BaseData
+		data.__proto__ = Bootstrap
+	}
+
+	var client = window.client = new pwiki.pWikiClient()
+	client.page = page
+	client.dom = $('.wiki')
+
+	// XXX get and load page location...
+	client.location('WikiHome')
+
+
+	// XXX move to client setup... 
+	// XXX need to resolve relative hashes...
+	$(window).on('hashchange', function(evt){
+		evt.preventDefault()
+
+		var path = location.hash.slice(1)
+		var hash = path.split('#')
+		path = hash.shift()
+		hash = hash.pop() || ''
+
+		// expand the path...
+		if(page.get(path).path() != path){
+			location.hash = page.get(path).path()
+
+		// open page...
+		} else {
+			client.location(path)
+
+			if(hash.length > 0){
+				// XXX focus anchor...
+			}
+		}
+	})
+})})
+
+</script>
+
+<body>
+
+<div class="wiki" />
+
+</body>
+</html>
+
+<!-- vim:set sw=4 ts=4 : -->

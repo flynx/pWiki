@@ -8,6 +8,41 @@
 /*********************************************************************/
 
 
+var setWikiWords = function(text, show_brackets, skip){
+	skip = skip || []
+	skip = skip instanceof Array ? skip : [skip]
+	return text 
+		// set new...
+		.replace(
+			macro.__wiki_link__,
+			function(l){
+				// check if wikiword is escaped...
+				if(l[0] == '\\'){
+					return l.slice(1)
+				}
+
+				var path = l[0] == '[' ? l.slice(1, -1) : l
+				var i = [].slice.call(arguments).slice(-2)[0]
+
+				// XXX HACK check if we are inside a tag...
+				var rest = text.slice(i+1)
+				if(rest.indexOf('>') < rest.indexOf('<')){
+					return l
+				}
+
+				return skip.indexOf(l) < 0 ? 
+					('<a '
+						+'class="wikiword" '
+						+'href="#'+ path +'" '
+						+'bracketed="'+ (show_brackets && l[0] == '[' ? 'yes' : 'no') +'" '
+						//+'onclick="event.preventDefault(); go($(this).attr(\'href\').slice(1))" '
+						+'>'
+							+ (!!show_brackets ? path : l) 
+						+'</a>')
+					: l
+			})}
+
+
 
 
 /*********************************************************************/
@@ -57,6 +92,14 @@ module = {
 		'title',
 		'editor',
 	],
+
+	// XXX should this be here???
+	__wiki_link__: RegExp('('+[
+		'\\\\?(\\./|\\.\\./|[A-Z][a-z0-9]+[A-Z/])[a-zA-Z0-9/]*',
+		'\\\\?\\[[^\\]]+\\]',
+	].join('|') +')', 'g'),
+
+
 
 	// Macros...
 	//
@@ -379,6 +422,8 @@ module = {
 		// 	1) set it H1 if it is the first tag in .text
 		// 	2) set it to .location
 		//
+		// NOTE: we do not set the title tag here because this will be 
+		// 		done for every included page... 
 		title: function(context, elem){
 			elem = $(elem)
 			var title = elem.find('.text h1').first()
@@ -387,11 +432,6 @@ module = {
 			if(elem.find('.text').text().trim().indexOf(title.text().trim()) == 0){
 				title.detach()
 				elem.find('.title').html(title.html())
-				$('title').html(title.text())
-
-			// show location...
-			} else {
-				$('title').text(context.location)
 			}
 
 			return elem
