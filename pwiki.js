@@ -1298,6 +1298,7 @@ var pWikiUIActions = actions.Actions({
 	dom: null,
 	page: null,
 
+	// XXX might be a good idea to add actions to setup/clear a filter...
 	__dom_filters__: {
 		// sortable elements...
 		'.sortable': function(elems){
@@ -1415,7 +1416,6 @@ var pWikiUIActions = actions.Actions({
 
 			page.location(path)
 
-			this.dom.attr('wiki-active', 'no')
 
 			this.reload()
 		}],
@@ -1425,6 +1425,7 @@ var pWikiUIActions = actions.Actions({
 			var page = this.page
 
 			this.dom
+				.attr('wiki-active', 'no')
 				.empty()
 				// update path and render page...
 				// XXX revise the default view approach...
