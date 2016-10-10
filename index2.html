@@ -71,31 +71,30 @@ $(function(){requirejs(['pwiki'], function(pwiki){
 	client.page = page
 	client.dom = $('.wiki')
 
-	// XXX get and load page location...
-	client.location('WikiHome')
+	// get the base url...
+	var url = window.location.hash.slice(1)
+	url = url != '' ? url 
+		// XXX get and load page location...
+		// XXX
+		: 'WikiHome' 
 
+	// go to base location...
+	client.location(url)
 
+	// handle hash change...
 	// XXX move to client setup... 
-	// XXX need to resolve relative hashes...
 	$(window).on('hashchange', function(evt){
 		evt.preventDefault()
 
 		var path = location.hash.slice(1)
-		var hash = path.split('#')
-		path = hash.shift()
-		hash = hash.pop() || ''
 
 		// expand the path...
 		if(page.get(path).path() != path){
-			location.hash = page.get(path).path()
+			location.hash = client.get(path).path()
 
 		// open page...
 		} else {
 			client.location(path)
-
-			if(hash.length > 0){
-				// XXX focus anchor...
-			}
 		}
 	})
 })})

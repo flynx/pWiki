@@ -1398,6 +1398,8 @@ var pWikiUIActions = actions.Actions({
 		},
 	},
 
+	// XXX add support for anchors -- #Wiki/Path#anchor...
+	// 		...not working yet...
 	location: ['', 
 		function(path){
 			var page = this.page
@@ -1407,17 +1409,40 @@ var pWikiUIActions = actions.Actions({
 				return page.path()
 			}
 
-			path = path.trim()
+			path = path.trim().split('#')
+			var hash = path[1]
+			path = path[0]
 
 			// special paths...
 			if(path in this.config['special-paths']){
 				this[this.config['special-paths'][path]]()
 			}
 
+			var orig = this.location()
+
 			page.location(path)
 
-
 			this.reload()
+
+			// reset scroll location...
+			orig != this.location()
+				&& this.dom
+					.scrollParent()
+						.scrollLeft(0)
+						.scrollTop(0)
+
+			// focus hash..
+			// XXX not working yet...
+			hash != null && hash != ''
+				&& this.dom
+					.scrollParent()
+						.scrollLeft(0)
+						.scrollTop(
+							(this.dom
+							 	.find('#'+hash+', a[name="'+hash+'"]').first()
+									.offset() || {}).top || 0)
+				&& console.log('HASH:', hash)
+
 		}],
 	reload: ['', 
 		function(){
@@ -1459,6 +1484,10 @@ var pWikiUIActions = actions.Actions({
 					filters[pattern].call(that, dom.find(pattern)) })
 		}],
 
+	// shorthand...
+	get: ['', 
+		function(){ return this.page.get.apply(this.page, arguments) }]
+
 	/*
 	// XXX url?
 	// 		- couch url
@@ -1493,7 +1522,7 @@ var pWikiClient =
 module.pWikiClient = object.makeConstructor('pWikiClient', 
 	actions.mix(
 		// XXX not sure if we need this here...
-		//actions.MetaActions,
+		actions.MetaActions,
 		pWikiUIActions))
 
 
