@@ -118,7 +118,7 @@ module.BaseData = {
 	// 		is the same as:
 	// 			.get('.').raw
 	'System/raw': function(){ return { text: this.get('..').raw() } },
-	'System/text': function(){ return { text: this.get('..').text() } },
+	'System/html': function(){ return { text: this.get('..').html() } },
 
 	// XXX update these to the new format -- must return an object...
 	// XXX move this to Wiki.children + rename...
@@ -141,22 +141,26 @@ module.BaseData = {
 			.join('<br>')
 	},
 	// list links to this page...
-	// XXX
+	// XXX this is done, though we cant use this until we solve .html(..)
+	// 		macro recursion issues...
 	'System/links': function(){
 		return 'NoImplemented'
-
 		var that = this
-		var p = this.dir
+		var p = this.path()
 
 		var res = []
 
-		var wiki = this.__wiki_data
-		Object.keys(wiki).forEach(function(k){
-			(wiki[k].links || []).forEach(function(l){
-				(l == p || that.get(path2lst(l).slice(0, -1)).acquire('./'+path2lst(l).pop()) == p)
-					&& res.push([l, k])
+		this.wiki.match('**')
+			.forEach(function(p){
+				var pa = that.acquire(p)
+
+				that.get(p).links().forEach(function(l){
+					var la = that.acquire(l)
+					if(l == p || la == p || la == pa){
+						res.push([l, p])
+					}
+				})
 			})
-		})
 
 		return res
 			//.map(function(e){ return '['+ e[0] +'] <i>from page: ['+ e[1] +']</i>' })
@@ -1034,25 +1038,46 @@ module.pWikiMacros = actions.Actions(pWikiBase, {
 	config: {
 	},
 
-	text: ['Page/',
+	html: ['Page/',
 		function(value){
+			// get...
 			return arguments.length == 0 ? 
 				(this.title() == 'raw' ?
+					// special case -- if title is 'raw' then return text as-is...
 					(this.raw() || '')
+					// parse macros...
 					: (this.__macro_parser__ || pWikiMacros.__macro_parser__)
 						.parse(this, this.raw()))
-				: this.raw(value) }],
+
+				// set...
+				: this
+					// clear cached stuff related to text...
+					.attr('links', undefined)
+					// set the value...
+					.raw(value) }],
 	code: ['Page/',
 		function(value){
 			return arguments.length == 0 ? 
-				this.text().text()
+				this.html().text()
 				// XXX should we un-encode here???
-				: this.text(value) }],
-
-	// XXX
-	links: ['Page/',
-		function(){
-			// XXX
+				: this.html(value) }],
+	links: ['Page/List links from page',
+		function(force){
+			// get and cache links...
+			if(force || this.attr('links') == null){
+				var text = this.html()
+				var links = typeof(text) == typeof('str') ? []
+					: text.find('[href]')
+						.map(function(){ 
+							var url = $(this).attr('href') 
+							return url[0] == '#' ? url.slice(1) : null
+						})
+						.toArray()
+				this.attr('links', links)
+				return links
+			}
+			// get cached links...
+			return this.attr('links')
 		}],
 
 
@@ -1455,8 +1480,8 @@ var pWikiUIActions = actions.Actions({
 				// update path and render page...
 				// XXX revise the default view approach...
 				.append(page.title()[0] == '_' ? 
-					page.text() 
-					: page.get('./_view').text())
+					page.html() 
+					: page.get('./_view').html())
 				// activate page controls...
 				.ready(function(){
 					that.updateDom()
