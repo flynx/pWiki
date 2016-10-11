@@ -120,6 +120,7 @@ module.BaseData = {
 	'System/raw': function(){ return { text: this.get('..').raw() } },
 	'System/html': function(){ return { text: this.get('..').html() } },
 
+	// list all path elements on a level, including empty path sections...
 	// XXX update these to the new format -- must return an object...
 	// XXX move this to Wiki.children + rename...
 	// XXX
@@ -143,6 +144,10 @@ module.BaseData = {
 	// list links to this page...
 	// XXX this is done, though we cant use this until we solve .html(..)
 	// 		macro recursion issues...
+	// XXX cache the result + need a strategy to drop parts of cache when
+	// 		irrelevant -- when path/text changes...
+	// XXX might be a good idea to move this to the store, at least the
+	// 		management, part...
 	'System/links': function(){
 		return 'NoImplemented'
 		var that = this
@@ -154,13 +159,21 @@ module.BaseData = {
 			.forEach(function(p){
 				var pa = that.acquire(p)
 
-				that.get(p).links().forEach(function(l){
-					var la = that.acquire(l)
-					if(l == p || la == p || la == pa){
-						res.push([l, p])
-					}
-				})
+				that.get(p)
+					// XXX this will render the page which might not be 
+					// 		the best idea in some cases...
+					.links()
+						.forEach(function(l){
+							var la = that.acquire(l)
+							if(l == p || la == p || la == pa){
+								res.push([l, p])
+							}
+						})
 			})
+
+		// cache the result...
+		// XXX
+		this.attr('rev-links', res)
 
 		return res
 			//.map(function(e){ return '['+ e[0] +'] <i>from page: ['+ e[1] +']</i>' })
@@ -242,10 +255,14 @@ module.pWikiData = {
 							: method == 'Path' ? p
 							: method == 'title' ? path2list(p).pop().toLowerCase()
 							: method == 'Title' ? path2list(p).pop() 
+
+							// special case...
+							: method == 'checked' ? (data[p][method] ? 1 : 0)
+
 							// XXX experimental...
 							//: method == 'order' ? order.indexOf(p)
 							// attr...
-							: data[method]
+							: data[p][method]
 					})
 					.concat([i, p])
 			})
@@ -1311,7 +1328,7 @@ var pWikiPeerJSSync = pWikiFeatures.Feature({
 
 //---------------------------------------------------------------------
 
-// XXX should this extend pWiki or encapsulate???
+// XXX should this extend pWiki or encapsulate (current)???
 var pWikiUIActions = actions.Actions({
 	config: {
 		'special-paths': {
@@ -1546,7 +1563,6 @@ var pWikiUI = pWikiFeatures.Feature({
 var pWikiClient =
 module.pWikiClient = object.makeConstructor('pWikiClient', 
 	actions.mix(
-		// XXX not sure if we need this here...
 		actions.MetaActions,
 		pWikiUIActions))
 
