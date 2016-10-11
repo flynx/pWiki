@@ -1344,12 +1344,28 @@ var pWikiUIActions = actions.Actions({
 	__dom_filters__: {
 		// sortable elements...
 		'.sortable': function(elems){
+			var wiki = this.page
 			elems
 				.sortable({
 					handle: ".sort-handle",
 					placeholder: "sort-placeholder",
 					forcePlaceholderSize: true,
 					axis: 'y',
+
+					update: function(evt, ui){
+						// get item list...
+						var order = ui.item
+							.parent().children('macro[src]')
+								.map(function(){ return $(this).attr('src') })
+								.toArray()
+
+						// save the order...
+						// XXX need to mix this with .sort(..)
+						wiki
+							.get(order[0] + '/../*')
+								.order(['*'].concat(order))
+								.order('save')
+					},
 				})
 				.addTouch()
 		},
