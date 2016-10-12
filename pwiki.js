@@ -218,8 +218,6 @@ module.pWikiData = {
 	// XXX should we account for order here???
 	match: function(path, sort, count, from){
 		var data = this.__data || {}
-		sort = sort || (data[path] || {}).sort || []
-		sort = sort instanceof Array ? sort : [sort]
 		from = from || 0
 
 		// XXX normalize this to account for '*'
@@ -233,6 +231,12 @@ module.pWikiData = {
 		if(path.indexOf('*') < 0){
 			return path in data ? [ path ] : []
 		}
+
+		sort = sort || (data[path] || {}).sort || ['order']
+		sort = sort instanceof Array ? sort : [sort]
+
+		var order = (data[path] || {}).order || []
+
 
 		var pattern = path2re(path)
 
@@ -250,7 +254,25 @@ module.pWikiData = {
 			.map(function(p, i){ 
 				return sort
 					.map(function(method){
+						// explicit order...
+						if(method instanceof Array){
+							i = method.indexOf(p)
+							i = i < 0 ? method.indexOf('*') : i
+							i = i < 0 ? method.length : i
+							return i
+						}
+
+						// drop the reversal marker...
 						method = method[0] == '-' ? method.slice(1) : method
+
+						// stored order...
+						if(method == 'order'){
+							i = order.indexOf(p)
+							i = i < 0 ? order.indexOf('*') : i
+							i = i < 0 ? order.length : i
+							return i
+						}
+
 						return method == 'path' ? p.toLowerCase()
 							: method == 'Path' ? p
 							: method == 'title' ? path2list(p).pop().toLowerCase()
@@ -259,8 +281,6 @@ module.pWikiData = {
 							// special case...
 							: method == 'checked' ? (data[p][method] ? 1 : 0)
 
-							// XXX experimental...
-							//: method == 'order' ? order.indexOf(p)
 							// attr...
 							: data[p][method]
 					})
@@ -375,7 +395,6 @@ module.pWikiData = {
 //		'links': [ .. ],
 // 	}
 //
-// XXX should .__sort and .__order be stored in .__location???
 var pWikiBase =
 module.pWikiBase = actions.Actions({
 	config: {
@@ -407,6 +426,7 @@ module.pWikiBase = actions.Actions({
 
 
 	// Location and path API...
+
 
 	refresh: ['', 
 		function(force){
@@ -628,9 +648,6 @@ module.pWikiBase = actions.Actions({
 				.location(JSON.parse(JSON.stringify(this.location())))
 
 			o.__parent_context = this
-			if(this.__order){
-				o.__order = this.__order.slice()
-			}
 
 			return o
 		}],
@@ -781,6 +798,9 @@ module.pWikiBase = actions.Actions({
 	// 		data if it contains nothing but the order...
 	// NOTE: this will also maintain page position within order (.at())
 	//
+	// NOTE: the actual sorting/ordering is done in .wiki.match(..)
+	//
+	// XXX should we also cache the saved sort and order???
 	// XXX (LEAK?) not sure if the current location where order is stored
 	// 		is the right way to go -- would be really hard to clean out...
 	// 		...might be a good idea to clear pattern paths that match no 
@@ -809,37 +829,15 @@ module.pWikiBase = actions.Actions({
 
 				// XXX should we check if this returns a function???
 				var parent = this.wiki.data(path) || {}
-				var pages = this.wiki.match(path, this.__sort)
+
+				var sort = (location.sort || parent.sort || ['order']).slice()
+
+				var i = sort.indexOf('order')
+				location.order && i >= 0 && sort.splice(i, 1, location.order)
+
+				var order = this.wiki.match(path, sort)
 					// filter out paths containing '*'
 					.filter(function(p){ return p.indexOf('*') < 0 })
-				var order = (this.__order || parent.order || [])
-					// clear all paths that are not currently visible...
-					// NOTE: paths may not be visible because they are 
-					// 		filtered out by .location().path pattern...
-					.filter(function(p){ 
-						return pages.indexOf(p) >= 0 || p == '*' })
-
-				// order present...
-				if(order.length > 0){
-					// get the spot where to place pages not in order...
-					// NOTE: if '*' is not in order, then unsorted pages
-					// 		will get appended to the end...
-					// NOTE: only one '*' is supported...
-					var i = order.indexOf('*')
-					i = i == -1 ? order.length : i
-
-					// get pages not in order...
-					pages = pages
-						.filter(function(p){ 
-							return order.indexOf(p) < 0 })
-
-					// build the list... 
-					order.splice.apply(order, [i, 1].concat(pages))
-
-				// unsorted -- simply list the pages...
-				} else {
-					order = pages 
-				}
 
 				// save cache...
 				location.match = order
@@ -850,7 +848,7 @@ module.pWikiBase = actions.Actions({
 
 			// get saved order...
 			} else if(order == 'saved'){
-				return this.__order 
+				return location.order 
 					// XXX should we check if this returns a function???
 					|| (this.wiki.data(path) || {}).order
 					|| []
@@ -861,10 +859,10 @@ module.pWikiBase = actions.Actions({
 			// 		- explicitly clear only local or persistent
 			// 		- progressively clear local then persistent (current)
 			} else if(order == 'clear' || order == 'clear-all'){
-				var local = !!this.__order
+				var local = !!location.order
 
 				// local order...
-				delete this.__order
+				delete location.order
 
 				// clear persistent order...
 				if(!local || order == 'clear-all'){
@@ -886,21 +884,23 @@ module.pWikiBase = actions.Actions({
 					}
 				}
 
+			// save order...
 			} else if(order == 'save') {
 				// XXX should we check if this returns a function???
 				var parent = this.wiki.data(path) || {}
 
-				var order = parent.order = this.__order || this.order()
+				var order = parent.order = location.order || this.order()
 
 				this.wiki.data(path, parent)
-				delete this.__order
+				delete location.order
 
 			// set order...
 			} else {
-				this.__order = order
+				location.order = order
 			}
 
 			// save cache...
+			this.location(location)
 			this.order(true)
 		}],
 
@@ -930,6 +930,8 @@ module.pWikiBase = actions.Actions({
 	// 	Path			- compare paths (case-sensitive)
 	// 	title			- compare titles (case-insensitive)
 	// 	Title			- compare titles (case-sensitive)
+	// 	checked			- checked state
+	// 	order			- the set manual order (see .order(..))
 	// 	<attribute>		- compare data attributes
 	//
 	//
@@ -938,16 +940,20 @@ module.pWikiBase = actions.Actions({
 	// 		list of siblings is cached.
 	// 		...the resulting object is not to be stored for long.
 	// NOTE: the actual sorting is done by the store...
+	//
+	// XXX add 'save' and 'saved' actions...
 	sort: ['Page/', 
 		function(methods){
 			var that = this
 			var res = this.clone()
+			var location = this.location()
 
 			methods = methods instanceof Array ?  methods : [].slice.call(arguments)
 
-			res.__sort = methods.length == 0 ?
+			location.sort = methods.length == 0 ?
 					(this.config['default-sort-methods'] || ['path'])
 				: methods
+			res.location(location)
 
 			res.order(true)
 
@@ -957,13 +963,21 @@ module.pWikiBase = actions.Actions({
 	// 		...e.g. survive .order('force') or .order('clear')
 	reverse: ['Page/',
 		function(){
-			this.__order && this.__order.reverse()
-
 			var location = this.location()
-			if(location.match){
-				location.match.reverse()
-				this.location(location)
+
+			// reverse the match...
+			location.match && location.match.reverse()
+
+			// reverse order...
+			location.order = this.order().reverse()
+
+			// reverse sort...
+			if(location.sort){
+				location.sort = location.sort
+					.map(function(m){ return m[0] == '-' ? m.slice(1) : '-'+m })
 			}
+
+			this.location(location)
 		}],
 
 
@@ -1360,7 +1374,6 @@ var pWikiUIActions = actions.Actions({
 								.toArray()
 
 						// save the order...
-						// XXX need to mix this with .sort(..)
 						wiki
 							.get(order[0] + '/../*')
 								.order(['*'].concat(order))
