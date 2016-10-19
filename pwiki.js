@@ -1361,8 +1361,8 @@ var pWikiUIActions = actions.Actions({
 			var wiki = this.page
 			elems
 				.sortable({
-					handle: ".sort-handle",
-					placeholder: "sort-placeholder",
+					handle: '.sort-handle',
+					placeholder: 'sort-placeholder',
 					forcePlaceholderSize: true,
 					axis: 'y',
 
@@ -1380,7 +1380,11 @@ var pWikiUIActions = actions.Actions({
 								.order('save')
 					},
 				})
-				.addTouch()
+				// NOTE: we are only adding touch to the active elements
+				// 		to avoid the side-effect of it canceling the default
+				// 		behaviour (i.e. scrolling)...
+				.find('.sort-handle')
+					.addTouch()
 		},
 		// title editor...
 		'.title': function(elems){
