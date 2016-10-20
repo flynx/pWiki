@@ -7,7 +7,7 @@
     <author email="alex.nanou@gmail.com" href="https://github.com/flynx">
         Alex A. Naanou
     </author>
-    <content src="index.html" />
+    <content src="index2.html" />
     <preference name="DisallowOverscroll" value="true" />
     <preference name="android-minSdkVersion" value="14" />
     <plugin name="cordova-plugin-file" source="npm" spec="~4.1.1" />
