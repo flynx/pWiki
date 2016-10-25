@@ -1,0 +1,4 @@
+The following files are live in npm modules and should not be updated here:
+- object.js
+- actions.js
+- features.js
