@@ -1,8 +1,8 @@
 # ![pWiki](img/pWiki-i.jpg) pWiki Path
 
-XXX a Wiki is a set of pages, mostly top level pages, mosty titled in
+XXX a Wiki is a set of pages, _mostly_ top level pages, _mostly_ titled in
 WikiWord style, pWiki follows this culture but does not restrict either 
-page nesting or title formatting. But following this style is recommended.
+page nesting or title formatting, though following this style is recommended.
 
 XXX write a set of recommendations...
 
@@ -27,11 +27,11 @@ Paths are case sensitive.
 _A set of data associated with a path._
 
 A page is identified by it's path, but this does not require every
-sub-path of that path to exist -- the full path is the identifier, not
-a sequence of path parts.
+sub-path of that path to exist -- the full path is the identifier.
 
 Some pages are _bootstrapped_, i.e. are predefined in pWiki, these pages
-can be overridden but can not be removed.
+can be overridden but can not be removed. This is done to make it simple 
+to revert to the default state if something goes wrong.
 
 
 **View**  
@@ -49,7 +49,22 @@ is a page.
 
 
 **WikiWord**  
-_XXX_
+_A WikiWork is a specially formated string that is treated as a link_
+
+In pWiki a simple WikiWord is any string starting with a capital letter,
+must contain at least and one more capital letter and can consist of 
+letters, numbers, underscores (WikiWord itself is a good example)
+
+A _Path WikiWord_ is a set of path parts separated by '/' the first part
+must start with a capital letter and the rest can contain letters, numbers
+and/or underscores (example: Path/to/somepage).
+
+
+
+**Special path characters**
+User page titles must not contain the leading underscore `_` character, 
+such paths are used internally.
+
 
 
 ## Page acquisition
@@ -119,15 +134,28 @@ system configuration. This is done for security reasons.
 
 XXX
 
-- `Templates/EmptyPage`
-- `Templates/EmptyToDo`
-- `Templates/EmptyOutline`
+- `EmptyPage`
+- `EmptyToDo`
+- `EmptyOutline`
+- `NoMatch`
 
 
 
 ## Relative and absolute paths (".", "..", "&gt;&gt;" and "/")
 
-XXX
+pWiki follows the traditional path semantics with one addition, the "&gt;&gt;"
+that is similar to ".." but works in the opposite direction, removing 
+the next, i.e. child, path element.
+
+To illustrate the relative and absolute mechanics:
+
+| Source Page		| Path					| Resolves to					|
+|-------------------|-----------------------|-------------------------------|
+| \Example/Page		| \\./Target/Page		| \Example/Page/Target/Page		|
+| \Example/Page		| \\../Target/Page		| \Example/Target/Page			|
+| \Example/Page		| &gt;&gt;\/Target/Page	| \Example/Page/Page			|
+| \Example/Page		| \/Target/Page			| \/Target/Page					|
+
 
 
 

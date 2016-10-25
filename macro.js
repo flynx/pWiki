@@ -16,7 +16,7 @@ var setWikiWords = function(text, show_brackets, skip){
 		.replace(
 			macro.__wiki_link__,
 			function(l){
-				// check if wikiword is escaped...
+				// check if WikiWord is escaped...
 				if(l[0] == '\\'){
 					return l.slice(1)
 				}
@@ -95,7 +95,8 @@ module = {
 
 	// XXX should this be here???
 	__wiki_link__: RegExp('('+[
-		'\\\\?(\\./|\\.\\./|[A-Z][a-z0-9]+[A-Z/])[a-zA-Z0-9/]*',
+		//'\\\\?(\\/|\\./|\\.\\./|>>|[A-Z][_a-z0-9]+[A-Z/])[_a-zA-Z0-9/]*',
+		'\\\\?\\/?(\\./|\\.\\./|>>|[A-Z][_a-z0-9]+[A-Z/])[_a-zA-Z0-9/]*',
 		'\\\\?\\[[^\\]]+\\]',
 	].join('|') +')', 'g'),
 
