@@ -1,11 +1,12 @@
 # ![pWiki](img/pWiki-i.jpg) pWiki Path
 
-XXX a Wiki is a set of pages, _mostly_ top level pages, _mostly_ titled in
-WikiWord style, pWiki follows this culture but does not restrict either 
-page nesting or title formatting, though following this style is recommended.
+A Wiki is a set of _pages_, each uniquely defined by it's _title_. Titles 
+are traditionally formatted as WikiWords. pWiki closely follows this 
+culture, while not restricting either page title formatting nor page 
+nesting (nested paths), though in the general case following the Wiki 
+style is recommended.
 
 XXX write a set of recommendations...
-
 
 
 ## Basic terminology
@@ -29,14 +30,16 @@ _A set of data associated with a path._
 A page is identified by it's path, but this does not require every
 sub-path of that path to exist -- the full path is the identifier.
 
+Not every path _identifies_ a page, but every path _resolves_ to a page.
+
 Some pages are _bootstrapped_, i.e. are predefined in pWiki, these pages
 can be overridden but can not be removed. This is done to make it simple 
 to revert to the default state if something goes wrong.
 
 
 **View**  
-_A path that resolves to a page that may or may not be at that specific
-path._
+_A path that resolves to a page that may or may not be at (identified by) 
+that specific path._
 
 A _view's_ path may match that of a specific page or may not match any
 page directly, but any view will resolve to a page via the _acquisition 
@@ -48,22 +51,27 @@ is a page.
 (see: _Page acquisiton_ below)
 
 
-**WikiWord**  
-_A WikiWork is a specially formated string that is treated as a link_
+**\WikiWord**  
+_A WikiWork is a specially formated string that is treated as a link in
+page text_
 
 In pWiki a simple WikiWord is any string starting with a capital letter,
 must contain at least and one more capital letter and can consist of 
 letters, numbers, underscores (WikiWord itself is a good example)
 
-A _Path WikiWord_ is a set of path parts separated by '/' the first part
-must start with a capital letter and the rest can contain letters, numbers
-and/or underscores (example: Path/to/somepage).
+A WikiWord path (_WikiPath_) is a set of path parts separated by '/' the
+first part must start with a capital letter and the rest can contain 
+letters, numbers and/or underscores (example: Path/to/somepage).
+
+_Note that this is not actually a part of the path specification but it 
+is part of the Wiki culture and a convenient way to automatically link 
+to pages (handled by pWiki macros when rendering pages)._
 
 
 
-**Special path characters**
-User page titles must not contain the leading underscore `_` character, 
-such paths are used internally.
+**Special path characters**  
+Titles of _user pages_ must not contain the leading underscore `_` 
+character, such paths are used internally.
 
 
 
@@ -81,7 +89,7 @@ _A set of rules defining how a page is retrieved via a path._
 This is used as a simple and uniform mechanism to:
 - Get default pages for specific situations  
   Like [Templates/EmptyPage] to handle the _page not found_ condition.
-- define generic templates/pages accessible by multiple pages in path  
+- Define generic templates/pages accessible by multiple pages in path  
   A good example would be the viewer used to show this page [Templates/\_view]
   and all of it's _chrome_ like the path in the header and links in the 
   footer <pwiki-comment>(seen: when viewing through pWiki)</pwiki-comment>
@@ -132,12 +140,33 @@ system configuration. This is done for security reasons.
 
 ## Default pages
 
-XXX
+**EmptyPage**  
+A page resolved when a page does not exist. Used as a template for 
+new/empty pages.
 
-- `EmptyPage`
-- `EmptyToDo`
-- `EmptyOutline`
-- `NoMatch`
+This page is guaranteed to exist by the system.
+
+Located at: Templates/EmptyPage
+
+
+**EmptyToDo**   
+Used as a template for new/empty ToDo pages.
+
+XXX mechanics not yet decided...
+
+Located at: Templates/EmptyToDo
+
+
+**EmptyOutline**  
+Used as a template for new/empty outline pages.
+
+XXX mechanics not yet decided...
+
+Located at: Templates/EmptyOutline
+
+
+**NoMatch**  
+Returned when pattern matches no pages.
 
 
 
@@ -158,10 +187,45 @@ To illustrate the relative and absolute mechanics:
 
 
 
-
 ## Path patterns ("\*" and "\*\*")
 
-XXX
+Path patterns are used to match/iterate multiple pages. The syntax is 
+similar to path glob patterns.
+
+- `*` matches any page in a sub-path on one level
+- `**` matches any page in a sub-path recursively
+
+Note that neither will match parts of paths that do not explicitly 
+identify pages.
+
+
+**Example:**
+
+XXX revise...
+
+For the following paths:
+
+```
+WikiHome
+SomePage
+Path/to/OtherPage
+Path/Page
+```
+
+Patterns and their matches:
+- `*` will match:
+	- WikiHome
+	- SomePage
+- `**` will match:
+	- WikiHome
+	- SomePage
+	- Path/to/OtherPage
+	- Path/Page
+- `\Path/*` will match:
+	- Path/Page
+
+Note that neither `\Path` nor `\Path/to` does not refer to any real pages,
+thus neither is matched by any of the patterns explicitly.
 
 
 
@@ -174,18 +238,29 @@ correspond to actual pages.
 
 ## Path variables
 
-### `$NOW`
+Path variables are resolved when path is resolved or accessed.
 
-XXX
+**`$NOW`**  
+Replaced with the current time.
 
 _Also see the `\@now()` macro: [Doc/Macros]._
 
 
+**`$PATH`**  
+Replaced with current page path.
 
-## WikiWord
 
-XXX not actualy part of the path spec but a way (culture) to define paths 
-in pages + automatic link creation.
+**`$BASE`**  
+Replaced with current page basedir.
+
+
+**`$TITLE`**  
+Replaced with current page title.
+
+
+**`$INDEX`**  
+Replaced with current page index in pattern selection.
+
 
 
 <!-- @filter(markdown) -->
