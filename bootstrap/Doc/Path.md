@@ -6,7 +6,6 @@ culture, while not restricting either page title formatting nor page
 nesting (nested paths), though in the general case following the Wiki 
 style is recommended.
 
-XXX write a set of recommendations...
 
 
 ## Basic terminology
@@ -152,15 +151,11 @@ Located at: Templates/EmptyPage
 **EmptyToDo**   
 Used as a template for new/empty ToDo pages.
 
-XXX mechanics not yet decided...
-
 Located at: Templates/EmptyToDo
 
 
 **EmptyOutline**  
 Used as a template for new/empty outline pages.
-
-XXX mechanics not yet decided...
 
 Located at: Templates/EmptyOutline
 
@@ -178,12 +173,12 @@ the next, i.e. child, path element instead of parent.
 
 To illustrate the relative and absolute mechanics:
 
-| Title				 | Source Page		| Path					| Resolves to					|
-|--------------------|------------------|-----------------------|-------------------------------|
-| "." - current path | \Example/Path	| \\./Target/Page		| \Example/Path/Target/Page		|
-| ".." - parent path | \Example/Path	| \\../Target/Page		| \Example/Target/Page			|
-| "&gt;&gt;"		 | \Example/Path	| &gt;&gt;\/Target/Page	| \Example/Path/Page			|
-| "/" - root dir	 | \Example/Path	| \/Target/Page			| \/Target/Page					|
+| Title				| Source Page		| Path					| Resolves to				|
+|-------------------|-------------------|-----------------------|---------------------------|
+| "." - current		| \Example/Path		| \\./Target/Page		| \Example/Path/Target/Page	|
+| ".." - parent		| \Example/Path		| \\../Target/Page		| \Example/Target/Page		|
+| "&gt;&gt;"		| \Example/Path		| &gt;&gt;\/Target/Page	| \Example/Path/Page		|
+| "/" - root dir	| \Example/Path		| \/Target/Page			| \/Target/Page				|
 
 
 _Note that neither a leading ".." at root level, nor a trailing "&gt;&gt;" 
