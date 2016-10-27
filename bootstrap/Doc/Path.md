@@ -173,17 +173,22 @@ Returned when pattern matches no pages.
 ## Relative and absolute paths (".", "..", "&gt;&gt;" and "/")
 
 pWiki follows the traditional path semantics with one addition, the "&gt;&gt;"
-that is similar to ".." but works in the opposite direction, removing 
-the next, i.e. child, path element.
+that is similar to ".." but works in the opposite direction, consuming 
+the next, i.e. child, path element instead of parent.
 
 To illustrate the relative and absolute mechanics:
 
-| Source Page		| Path					| Resolves to					|
-|-------------------|-----------------------|-------------------------------|
-| \Example/Page		| \\./Target/Page		| \Example/Page/Target/Page		|
-| \Example/Page		| \\../Target/Page		| \Example/Target/Page			|
-| \Example/Page		| &gt;&gt;\/Target/Page	| \Example/Page/Page			|
-| \Example/Page		| \/Target/Page			| \/Target/Page					|
+| Title				 | Source Page		| Path					| Resolves to					|
+|--------------------|------------------|-----------------------|-------------------------------|
+| "." - current path | \Example/Path	| \\./Target/Page		| \Example/Path/Target/Page		|
+| ".." - parent path | \Example/Path	| \\../Target/Page		| \Example/Target/Page			|
+| "&gt;&gt;"		 | \Example/Path	| &gt;&gt;\/Target/Page	| \Example/Path/Page			|
+| "/" - root dir	 | \Example/Path	| \/Target/Page			| \/Target/Page					|
+
+
+_Note that neither a leading ".." at root level, nor a trailing "&gt;&gt;" 
+in any path, will have any effect, and will simply be ignored (e.g. 
+"\/../Page" is same as "/Page" and "\Path/&gt;&gt;" is the same as "Path")_
 
 
 
