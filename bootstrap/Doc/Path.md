@@ -259,7 +259,7 @@ Replaced with current page title.
 
 
 **`$INDEX`**  
-Replaced with current page index in pattern selection.
+Replaced with current page index in pattern matching.
 
 
 

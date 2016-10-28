@@ -474,6 +474,7 @@ module = {
 	// 			/SomePage/SomePage
 	// 			or any path matching:
 	// 				/\/(SomePage\/)+/
+	// XXX slow when lots of pages need to be included...
 	parse: function(context, text, state, skip_post, pattern){
 		var that = this
 
@@ -551,16 +552,22 @@ module = {
 				// #text / comment node -> parse the @... macros...
 				if(e.nodeType == e.TEXT_NODE || e.nodeType == e.COMMENT_NODE){
 					// get actual element content...
-					var text = $('<div>').append($(e).clone()).html()
+					var text = e.nodeValue
 
 					// conditional comment...
-					if(e.nodeType == e.COMMENT_NODE 
-							&& /^<!--\s*\[pWiki\[(.|\n)*\]\]\s*-->$/.test(text)){
-						text = text
-							.replace(/^<!--\s*\[pWiki\[/, '')
-							.replace(/\]\]\s*-->$/, '')
+					if(e.nodeType == e.COMMENT_NODE){
+						text =  /^<!--\s*\[pWiki\[(.|\n)*\]\]\s*-->$/.test(text) ?
+							text
+								.replace(/^<!--\s*\[pWiki\[/, '')
+								.replace(/\]\]\s*-->$/, '')
+							: ('<!--'+ text +'-->')
 					}
 
+					/*
+					var t = _parseText(context, text, macro)
+					text != t 
+						&& $(e).replaceWith(t)
+					//*/
 					$(e).replaceWith(_parseText(context, text, macro))
 
 				// node -> html-style + attrs...
@@ -627,38 +634,46 @@ module = {
 		// filter stage...
 		_filter(state.filters.concat(this.__filters__), this.filter)
 
+		// XXX DEBUG...
+		var t = Date.now()
+		console.log('>>>', context.path())
+
 		// merge includes...
 		parsed
-			.html(parsed.html().replace(include_marker, function(){
-				var page = state.include.shift()
-				var elem = $(page.shift())
-				page = page.pop()
-				var isolated = elem.attr('isolated') == 'true'
+			.html(parsed.html()
+				.replace(include_marker, function(){
+					var page = state.include.shift()
+					var elem = $(page.shift())
+					page = page.pop()
+					var isolated = elem.attr('isolated') == 'true'
 
-				var seen = state.seen.slice()
-				if(seen.indexOf(page.path()) >= 0){
-					return elem.html()
-				}
-				seen.push(page.path())
+					var seen = state.seen.slice()
+					if(seen.indexOf(page.path()) >= 0){
+						return elem.html()
+					}
+					seen.push(page.path())
 
-				return page.map(function(page){
-					return $('<div>')
-						.append(elem
-							.clone()
-							.attr('src', page.path())
-							.append(that
-								.parse(page,
-									page.raw(), 
-									{ 
-										//slots: !isolated ? state.slots : {},
-										templates: state.templates,
-										seen: seen,
-									}, 
-									!isolated)))
-									//true)))
-						.html()
-				}).join('\n')
-			}))
+					return page.map(function(page){
+						return $('<div>')
+							.append(elem
+								.clone()
+								.attr('src', page.path())
+								.append(that
+									.parse(page,
+										page.raw(), 
+										{ 
+											//slots: !isolated ? state.slots : {},
+											templates: state.templates,
+											seen: seen,
+										}, 
+										!isolated)))
+										//true)))
+							.html()
+					}).join('\n')
+				}))
+
+		// XXX DEBUG...
+		console.log('<<<', context.path(),'TIME:', Date.now() - t)
 
 		// post processing...
 		if(!skip_post){
