@@ -165,7 +165,7 @@ Returned when pattern matches no pages.
 
 
 
-## Relative and absolute paths (".", "..", "&gt;&gt;" and "/")
+## Relative and absolute paths
 
 pWiki follows the traditional path semantics with one addition, the "&gt;&gt;"
 that is similar to ".." but works in the opposite direction, consuming 
