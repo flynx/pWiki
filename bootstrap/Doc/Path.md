@@ -173,12 +173,12 @@ the next, i.e. child, path element instead of parent.
 
 To illustrate the relative and absolute mechanics:
 
-| Title				| Source Page		| Path					| Resolves to				|
-|-------------------|-------------------|-----------------------|---------------------------|
-| "." - current		| \Example/Path		| \\./Target/Page		| \Example/Path/Target/Page	|
-| ".." - parent		| \Example/Path		| \\../Target/Page		| \Example/Target/Page		|
-| "&gt;&gt;"		| \Example/Path		| &gt;&gt;\/Target/Page	| \Example/Path/Page		|
-| "/" - root dir	| \Example/Path		| \/Target/Page			| \/Target/Page				|
+| Title				| Source Page | Path				  | Resolves to				|
+|-------------------|-------------|-----------------------|-------------------------|
+| "." - current		| \SourcePage | \\./Target/Page		  | \SourcePage/Target/Page |
+| ".." - parent		| \SourcePage | \\../Target/Page	  | \Target/Page			|
+| "&gt;&gt;"		| \SourcePage | &gt;&gt;\/Target/Page | \SourcePage/Page		|
+| "/" - root dir	| \SourcePage | \/Target/Page		  | \/Target/Page			|
 
 
 _Note that neither a leading ".." at root level, nor a trailing "&gt;&gt;" 
@@ -187,13 +187,13 @@ in any path, will have any effect, and will simply be ignored (e.g.
 
 
 
-## Path patterns ("\*" and "\*\*")
+## Path patterns
 
 Path patterns are used to match/iterate multiple pages. The syntax is 
 similar to path glob patterns.
 
-- `*` matches any page in a sub-path on one level
-- `**` matches any page in a sub-path recursively
+- "\*" - matches any page in a sub-path on one level
+- "\*\*" - matches any page in a sub-path recursively
 
 Note that neither will match parts of paths that do not explicitly 
 identify pages.
