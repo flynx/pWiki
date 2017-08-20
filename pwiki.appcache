@@ -1,0 +1,16 @@
+CACHE MANIFEST
+# Timestamp: 20170820133038
+
+CACHE:
+lib/*.js
+ext-lib/*.js
+*.js
+css/*.css
+css/fonts/Open_Sans/*.ttf
+index.html
+index2.html
+manifest.json
+
+NETWORK:
+*
+
