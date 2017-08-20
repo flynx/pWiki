@@ -1,18 +1,39 @@
 CACHE MANIFEST
-# Timestamp: 20170820134516
+# Timestamp: 20170820135037
 
 CACHE:
-ext-lib/*
+ext-lib/FileSaver.js
+ext-lib/jquery-ui.min.js
+ext-lib/jquery.js
+ext-lib/jquery.ui.touch.js
+ext-lib/jszip.min.js
+ext-lib/peer.min.js
+ext-lib/pouchdb.min.js
+ext-lib/require.js
+ext-lib/showdown.min.js
+
 lib/actions.js
 lib/features.js
 lib/object.js
+
 pwiki.js
 wiki.js
 bootstrap.js
 macro.js
 ui.js
+
 css/fonts.css
-css/fonts/Open_Sans/*.ttf
+css/fonts/Open_Sans/OpenSans-Bold.ttf
+css/fonts/Open_Sans/OpenSans-BoldItalic.ttf
+css/fonts/Open_Sans/OpenSans-ExtraBold.ttf
+css/fonts/Open_Sans/OpenSans-ExtraBoldItalic.ttf
+css/fonts/Open_Sans/OpenSans-Italic.ttf
+css/fonts/Open_Sans/OpenSans-Light.ttf
+css/fonts/Open_Sans/OpenSans-LightItalic.ttf
+css/fonts/Open_Sans/OpenSans-Regular.ttf
+css/fonts/Open_Sans/OpenSans-Semibold.ttf
+css/fonts/Open_Sans/OpenSans-SemiboldItalic.ttf
+
 index.html
 index2.html
 manifest.json
