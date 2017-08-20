@@ -2,5 +2,6 @@
 	"short_name": "pWiki",
 	"name": "Portable Wiki",
 	"display": "standalone",
-	"Theme_color": "white"
+	"orientation": "portrait",
+	"theme_color": "white"
 }
