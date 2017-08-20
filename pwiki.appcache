@@ -1,11 +1,17 @@
 CACHE MANIFEST
-# Timestamp: 20170820133038
+# Timestamp: 20170820134516
 
 CACHE:
-lib/*.js
-ext-lib/*.js
-*.js
-css/*.css
+ext-lib/*
+lib/actions.js
+lib/features.js
+lib/object.js
+pwiki.js
+wiki.js
+bootstrap.js
+macro.js
+ui.js
+css/fonts.css
 css/fonts/Open_Sans/*.ttf
 index.html
 index2.html
