@@ -1,5 +1,5 @@
 CACHE MANIFEST
-# Timestamp: 20170825133100
+# Timestamp: 20180419130137
 
 CACHE:
 ext-lib/FileSaver.js
@@ -33,6 +33,10 @@ css/fonts/Open_Sans/OpenSans-LightItalic.ttf
 css/fonts/Open_Sans/OpenSans-Regular.ttf
 css/fonts/Open_Sans/OpenSans-Semibold.ttf
 css/fonts/Open_Sans/OpenSans-SemiboldItalic.ttf
+
+img/pWiki-192px.jpg
+img/pWiki-96px.jpg
+img/pWiki-48px.jpg
 
 index.html
 index2.html

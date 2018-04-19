@@ -3,5 +3,22 @@
 	"name": "pWiki",
 	"display": "standalone",
 	"orientation": "portrait",
-	"theme_color": "white"
+	"theme_color": "white",
+	"icons": [
+		{
+			"src": "img/pWiki-48px.jpg",
+			"type": "image/jpeg",
+			"sizes": "48x48"
+		},
+		{
+			"src": "img/pWiki-96px.jpg",
+			"type": "image/jpeg",
+			"sizes": "96x96"
+		},
+		{
+			"src": "img/pWiki-192px.jpg",
+			"type": "image/jpeg",
+			"sizes": "192x192"
+		}
+	]
 }
