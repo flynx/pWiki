@@ -8,17 +8,17 @@
 		{
 			"src": "img/pWiki-48px.jpg",
 			"type": "image/jpeg",
-			"sizes": "48x48"
+			"sizes": "48x36"
 		},
 		{
 			"src": "img/pWiki-96px.jpg",
 			"type": "image/jpeg",
-			"sizes": "96x96"
+			"sizes": "96x71"
 		},
 		{
 			"src": "img/pWiki-192px.jpg",
 			"type": "image/jpeg",
-			"sizes": "192x192"
+			"sizes": "192x143"
 		}
 	]
 }
