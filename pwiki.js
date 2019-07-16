@@ -90,7 +90,7 @@ module.pWikiFeatures = new features.FeatureSet()
 /*
 // base pWiki object...
 var pWiki = 
-module.pWiki = object.makeConstructor('pWiki', actions.MetaActions)
+module.pWiki = object.Constructor('pWiki', actions.MetaActions)
 
 // base instance constructor...
 pWikiFeatures.__actions__ = 
@@ -1135,7 +1135,7 @@ module.pWikiMacros = actions.Actions(pWikiBase, {
 // 		can get using native JS lookup mechanisms, or at least the 
 // 		farthest I've pushed it so far...
 var pWikiPage =
-module.pWikiPage = object.makeConstructor('pWikiPage', 
+module.pWikiPage = object.Constructor('pWikiPage', 
 	actions.mix(
 		// XXX not sure if we need this here...
 		//actions.MetaActions,
@@ -1596,7 +1596,7 @@ var pWikiUI = pWikiFeatures.Feature({
 
 // XXX STUB: not sure if this is the right way...
 var pWikiClient =
-module.pWikiClient = object.makeConstructor('pWikiClient', 
+module.pWikiClient = object.Constructor('pWikiClient', 
 	actions.mix(
 		actions.MetaActions,
 		pWikiUIActions))
