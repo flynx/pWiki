@@ -49,9 +49,9 @@ are likely to change, the implementation / API **will definitely** change! ;)_
 ### General Documentation:
 <pwiki-comment>
 
-- [general info](README.md) -- This document.
-- [bootstrap path](bootstrap/Doc/Path.md) -- Path mechanics.
-- [bootstrap macros](bootstrap/Doc/Macros.md) -- Macro documentation
+- [General info](README.md) -- This document.
+- [Bootstrap path](bootstrap/Doc/Path.md) -- Path mechanics.
+- [Bootstrap macros](bootstrap/Doc/Macros.md) -- Macro documentation
 
 </pwiki-comment>
 <!--[pWiki[
