@@ -129,7 +129,8 @@ var macro = {
 				return '' }),
 		now: Macro('Create a now id',
 			[],
-			function(context, elem, state){ return ''+Date.now() }),
+			function(context, elem, state){ 
+				return ''+Date.now() }),
 		// select filter to post-process text...
 		filter: Macro('Filter to post-process text',
 			['name'],
