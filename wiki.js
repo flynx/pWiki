@@ -171,7 +171,8 @@ var macro = {
 				var path = $(elem).attr('src')
 
 				return context.get(path)
-					.map(function(page){ return page.raw })
+					.map(function(page){ 
+						return page.raw })
 					.join('\n') }),
 
 		quote: Macro('Include quoted page source (without parsing)',
@@ -198,7 +199,9 @@ var macro = {
 
 				// XXX
 				text = $(elem).html()
-				text = text == '' ? $(elem).attr('text') : text
+				text = text == '' ? 
+					$(elem).attr('text') 
+					: text
 				text = this.parse(context, text, state, true)
 				//text = parse(elem)
 
@@ -210,9 +213,7 @@ var macro = {
 
 				} else if(name in state.slots){
 					state.slots[name] = text
-					return ''
-				}
-			}),
+					return '' } }),
 		//*/
 		// convert @ macro to html-like + parse content...
 		slot: Macro('Define/fill slot',
@@ -293,7 +294,8 @@ var macro = {
 							parse(e, page)
 							return e[0] })) }
 
-				return '' }) },
+				return '' }),
+	},
 	
 	// Post macros... 
 	//
@@ -378,7 +380,8 @@ var macro = {
 					.end()
 				// remove js links...
 				.find('[href]')
-					.filter(function(i, e){ return /javascript:/i.test($(e).attr('href')) })
+					.filter(function(i, e){ 
+							return /javascript:/i.test($(e).attr('href')) })
 						.attr('href', '#')
 						.end()
 					.end()
@@ -648,8 +651,8 @@ var macro = {
 											}, 
 											!isolated)))
 											//true)))
-								.html()
-						}).join('\n') }))
+								.html() })
+								.join('\n') }))
 
 		// post processing...
 		if(!skip_post){
@@ -773,8 +776,7 @@ var BaseData = {
 	'System/delete': function(){
 		var p = this.dir
 		delete this.__wiki_data[p]
-		return this.get('..') 
-	},
+		return this.get('..') },
 	//*/
 }
 
