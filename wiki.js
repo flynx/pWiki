@@ -11,8 +11,8 @@
 var quoteRegExp =
 RegExp.quoteRegExp =
 function(str){
-	return str.replace(/([\.\\\/\(\)\[\]\$\*\+\-\{\}\@\^\&\?\<\>])/g, '\\$1')
-}
+	return str
+		.replace(/([\.\\\/\(\)\[\]\$\*\+\-\{\}\@\^\&\?\<\>])/g, '\\$1') }
 
 var path2lst = function(path){ 
 	return (path instanceof Array ?  path : path.split(/[\\\/]+/g))
@@ -36,8 +36,7 @@ var clearWikiWords = function(elem){
 	elem.find('.wikiword').each(function(){
 		$(this).attr('bracketed') == 'yes' ? 
 			$(this).replaceWith(['['].concat(this.childNodes, [']']))
-			: $(this).replaceWith(this.childNodes)
-	})
+			: $(this).replaceWith(this.childNodes) })
 	return elem } 
 
 var setWikiWords = function(text, show_brackets, skip){
@@ -50,8 +49,7 @@ var setWikiWords = function(text, show_brackets, skip){
 			function(l){
 				// check if wikiword is escaped...
 				if(l[0] == '\\'){
-					return l.slice(1)
-				}
+					return l.slice(1) }
 
 				var path = l[0] == '[' ? l.slice(1, -1) : l
 				var i = [].slice.call(arguments).slice(-2)[0]
@@ -59,8 +57,7 @@ var setWikiWords = function(text, show_brackets, skip){
 				// XXX HACK check if we are inside a tag...
 				var rest = text.slice(i+1)
 				if(rest.indexOf('>') < rest.indexOf('<')){
-					return l
-				}
+					return l }
 
 				return skip.indexOf(l) < 0 ? 
 					('<a '
@@ -71,8 +68,7 @@ var setWikiWords = function(text, show_brackets, skip){
 						+'>'
 							+ (!!show_brackets ? path : l) 
 						+'</a>')
-					: l
-			})}
+					: l })}
 
 
 
@@ -81,8 +77,7 @@ var setWikiWords = function(text, show_brackets, skip){
 function Macro(doc, args, func){
 	func.doc = doc
 	func.macro_args = args
-	return func 
-}
+	return func }
 
 
 
@@ -131,8 +126,7 @@ var macro = {
 		"pwiki-comment": Macro('hide in pWiki',
 			[],
 			function(context, elem, state){ 
-				return '' 
-			}),
+				return '' }),
 		now: Macro('Create a now id',
 			[],
 			function(context, elem, state){ return ''+Date.now() }),
@@ -148,8 +142,7 @@ var macro = {
 					// normal -- tail...
 					: state.filters.push(filter)
 
-				return ''
-			}),
+				return '' }),
 
 		// include page/slot...
 		//
@@ -166,8 +159,7 @@ var macro = {
 					.push([elem, context.get(path)])
 
 				// return the marker...
-				return this.__include_marker__
-			}),
+				return this.__include_marker__ }),
 
 		// NOTE: this is similar to include, the difference is that this
 		// 		includes the page source to the current context while 
@@ -179,8 +171,7 @@ var macro = {
 
 				return context.get(path)
 					.map(function(page){ return page.raw })
-					.join('\n')
-			}),
+					.join('\n') }),
 
 		quote: Macro('Include quoted page source (without parsing)',
 			['src'], 
@@ -193,9 +184,7 @@ var macro = {
 						return elem
 							.clone()
 							.attr('src', page.path)
-							.text(page.raw)[0]
-					}))
-			}),
+							.text(page.raw)[0] })) }),
 
 		/*
 		// fill/define slot (stage 1)...
@@ -241,8 +230,7 @@ var macro = {
 				elem.attr('text', null)
 				//elem.html(text)
 
-				return elem
-			}),
+				return elem }),
 
 		// XXX revise macro definition rules -- see inside...
 		// XXX do we need macro namespaces or context isolation (for inculdes)???
@@ -269,9 +257,7 @@ var macro = {
 						state.templates[name] = elem.clone()
 
 					} else if(name in state.templates) {
-						elem = state.templates[name]
-					}
-				}
+						elem = state.templates[name] } }
 
 				// fill macro...
 				if(path){
@@ -283,8 +269,7 @@ var macro = {
 							.find('else').first().clone()
 								.attr('src', path)
 						parse(e, context)
-						return e
-					} 
+						return e } 
 
 					// see if we need to overload attrs...
 					sort = sort == null ? (elem.attr('sort') || '') : sort
@@ -305,13 +290,9 @@ var macro = {
 							var e = elem.clone()
 								.attr('src', page.path)
 							parse(e, page)
-							return e[0]
-						}))
-				}
+							return e[0] })) }
 
-				return ''
-			})
-	},
+				return '' }) },
 	
 	// Post macros... 
 	//
@@ -321,10 +302,10 @@ var macro = {
 			[],
 			function(context, elem, state, parse, match){
 				if(match != null){
-					return match[0] == '\\' ? match.slice(1) : match
-				}
-				return elem
-			}),
+					return match[0] == '\\' ? 
+						match.slice(1) 
+						: match }
+				return elem }),
 		/*
 		_slot: Macro('',
 			['name'],
@@ -335,9 +316,7 @@ var macro = {
 					return $(elem).html()
 
 				} else if(name in state.slots){
-					return state.slots[name]
-				}
-			}),
+					return state.slots[name] } }),
 		//*/
 
 		/*
@@ -347,15 +326,13 @@ var macro = {
 			function(context, elem, state){
 				elem = $(elem)
 
-				return elem.html(context.get(elem.attr('src')).text)
-			}),
+				return elem.html(context.get(elem.attr('src')).text) }),
 		'page-raw': Macro('',
 			['src'],
 			function(context, elem, state){
 				elem = $(elem)
 
-				return elem.text(context.get(elem.attr('src')).text)
-			}),
+				return elem.text(context.get(elem.attr('src')).text) }),
 		//*/
 	},
 
@@ -367,20 +344,26 @@ var macro = {
 	filter: {
 		default: 'html',
 
-		html: function(context, elem){ return $(elem) },
+		html: function(context, elem){ 
+			return $(elem) },
 
-		text: function(context, elem){ return $('<span>')
-			.append($('<pre>')
-				.html($(elem).html())) },
+		text: function(context, elem){ 
+			return $('<span>')
+				.append($('<pre>')
+					.html($(elem).html())) },
 		// XXX expperimental...
-		json: function(context, elem){ return $('<span>')
-			.html($(elem).text()
-				// remove JS comments...
-				.replace(/\s*\/\/.*$|\s*\/\*(.|[\n\r])*?\*\/\s*/mg, '')) },
+		json: function(context, elem){ 
+			return $('<span>')
+				.html($(elem).text()
+					// remove JS comments...
+					.replace(/\s*\/\/.*$|\s*\/\*(.|[\n\r])*?\*\/\s*/mg, '')) },
 
 		// XXX
 		nl2br: function(context, elem){ 
-			return $('<div>').html($(elem).html().replace(/\n/g, '<br>\n')) },
+			return $('<div>')
+				.html($(elem)
+					.html()
+					.replace(/\n/g, '<br>\n')) },
 
 		wikiword: function(context, elem){ 
 			return $('<span>')
@@ -417,8 +400,7 @@ var macro = {
 					.parent()
 						.addClass('checked')
 						.end()
-					.end()
-		},
+					.end() },
 	},
 
 
@@ -435,8 +417,7 @@ var macro = {
 	post_filter: {
 		noscript: function(context, elem){
 			// XXX
-			return elem
-		},
+			return elem },
 
 		// Setup the page title and .title element...
 		//
@@ -456,11 +437,9 @@ var macro = {
 
 			// show location...
 			} else {
-				$('title').text(context.location)
-			}
+				$('title').text(context.location) }
 
-			return elem
-		},
+			return elem },
 		// XXX this needs save/reload...
 		editor: function(context, elem){
 			// XXX title
@@ -469,8 +448,7 @@ var macro = {
 			// XXX raw
 			// XXX checkbox
 
-			return elem
-		},
+			return elem },
 	},
 
 
@@ -508,22 +486,23 @@ var macro = {
 		state.seen = state.seen || []
 
 		//pattern = pattern || RegExp('@([a-zA-Z-_]+)\\(([^)]*)\\)', 'mg')
-		pattern = pattern || RegExp.apply(null, this.__macro__pattern__)
+		pattern = pattern 
+			|| RegExp.apply(null, this.__macro__pattern__)
 
 		// XXX need to quote regexp chars...
 		var include_marker = RegExp(this.__include_marker__, 'g')
 
-		var parsed = typeof(text) == typeof('str') ? 
-			$('<span>').html(text) 
-			: text
+		var parsed = 
+			typeof(text) == typeof('str') ? 
+				$('<span>').html(text) 
+				: text
 
 		var _parseText = function(context, text, macro){
 			return text.replace(pattern, function(match){
 				// quoted macro...
 				if(match[0] == '\\' && macro['*'] == null){
-					return match.slice(1)
-					//return match
-				}
+					return match.slice(1) }
+					//return match }
 
 				// XXX parse match...
 				var d = match.match(/@([a-zA-Z-_:]*)\(([^)]*)\)/)
@@ -547,8 +526,7 @@ var macro = {
 					name != '*' 
 						&& a.forEach(function(e, i){
 							var k = ((macro[name] || {}).macro_args || [])[i]
-							k && elem.attr(k, e)
-						})
+							k && elem.attr(k, e) })
 
 					// call macro...
 					var res = macro[name]
@@ -563,17 +541,15 @@ var macro = {
 								.toArray()
 								.join('\n')
 						: typeof(res) != typeof('str') ? res.outerHTML
-						: res
-				}
+						: res }
 
-				return match
-			})
-		}
+				return match }) }
 		// NOTE: this modifies parsed in-place...
 		var _parse = function(context, parsed, macro){
 			$(parsed).contents().each(function(_, e){
 				// #text / comment node -> parse the @... macros...
-				if(e.nodeType == e.TEXT_NODE || e.nodeType == e.COMMENT_NODE){
+				if(e.nodeType == e.TEXT_NODE 
+						|| e.nodeType == e.COMMENT_NODE){
 					// get actual element content...
 					var text = $('<div>').append($(e).clone()).html()
 
@@ -582,8 +558,7 @@ var macro = {
 							&& /^<!--\s*\[pWiki\[(.|\n)*\]\]\s*-->$/.test(text)){
 						text = text
 							.replace(/^<!--\s*\[pWiki\[/, '')
-							.replace(/\]\]\s*-->$/, '')
-					}
+							.replace(/\]\]\s*-->$/, '') }
 
 					$(e).replaceWith(_parseText(context, text, macro))
 
@@ -595,8 +570,7 @@ var macro = {
 					for(var i=0; i < e.attributes.length; i++){
 						var attr = e.attributes[i]
 
-						attr.value = _parseText(context, attr.value, macro)
-					}
+						attr.value = _parseText(context, attr.value, macro) }
 
 					// macro match -> call macro...
 					if(name in  macro){
@@ -607,13 +581,9 @@ var macro = {
 
 					// normal tag -> sub-tree...
 					} else {
-						_parse(context, e, macro)
-					}
-				}
-			})
+						_parse(context, e, macro) } } })
 
-			return parsed
-		}
+			return parsed }
 		var _filter = function(lst, filters){
 			lst
 				// unique -- leave last occurance..
@@ -622,8 +592,7 @@ var macro = {
 						// filter dupplicates... 
 						&& lst.slice(i+1).indexOf(k) == -1 
 							// filter disabled...
-						&& lst.slice(0, i).indexOf('-' + k) == -1
-				})
+						&& lst.slice(0, i).indexOf('-' + k) == -1 })
 				// unique -- leave first occurance..
 				//.filter(function(k, i, lst){ return lst.slice(0, i).indexOf(k) == -1 })
 				// apply the filters...
@@ -631,19 +600,16 @@ var macro = {
 					var k = f
 					// get filter aliases...
 					var seen = []
-					while(typeof(k) == typeof('str') && seen.indexOf(k) == -1){
+					while(typeof(k) == typeof('str') 
+							&& seen.indexOf(k) == -1){
 						seen.push(k)
-						k = filters[k]
-					}
+						k = filters[k] }
 					// could not find the filter...
 					if(!k){
 						//console.warn('Unknown filter:', f)
-						return
-					}
+						return }
 					// use the filter...
-					parsed = k.call(that, context, parsed) 
-				})
-		}
+					parsed = k.call(that, context, parsed) }) }
 
 		// macro stage...
 		_parse(context, parsed, this.macro)
@@ -653,36 +619,36 @@ var macro = {
 
 		// merge includes...
 		parsed
-			.html(parsed.html().replace(include_marker, function(){
-				var page = state.include.shift()
-				var elem = $(page.shift())
-				page = page.pop()
-				var isolated = elem.attr('isolated') == 'true'
+			.html(parsed.html()
+				.replace(include_marker, 
+					function(){
+						var page = state.include.shift()
+						var elem = $(page.shift())
+						page = page.pop()
+						var isolated = elem.attr('isolated') == 'true'
 
-				var seen = state.seen.slice()
-				if(seen.indexOf(page.path) >= 0){
-					return elem.html()
-				}
-				seen.push(page.path)
+						var seen = state.seen.slice()
+						if(seen.indexOf(page.path) >= 0){
+							return elem.html() }
+						seen.push(page.path)
 
-				return page.map(function(page){
-					return $('<div>')
-						.append(elem
-							.clone()
-							.attr('src', page.path)
-							.append(that
-								.parse(page,
-									page.raw, 
-									{ 
-										//slots: !isolated ? state.slots : {},
-										templates: state.templates,
-										seen: seen,
-									}, 
-									!isolated)))
-									//true)))
-						.html()
-				}).join('\n')
-			}))
+						return page.map(function(page){
+							return $('<div>')
+								.append(elem
+									.clone()
+									.attr('src', page.path)
+									.append(that
+										.parse(page,
+											page.raw, 
+											{ 
+												//slots: !isolated ? state.slots : {},
+												templates: state.templates,
+												seen: seen,
+											}, 
+											!isolated)))
+											//true)))
+								.html()
+						}).join('\n') }))
 
 		// post processing...
 		if(!skip_post){
@@ -699,15 +665,13 @@ var macro = {
 					// 		...check if it prevents correct slot parsing
 					// 		within an isolated include...
 					if(e.parents('[isolated="true"]').length > 0){
-						return
-					}
+						return }
 
 					var n = e.attr('name')
 
 					n in slots && e.detach()
 
-					slots[n] = e 
-				})
+					slots[n] = e })
 			// place slots...
 			parsed.find('slot')
 				.each(function(i, e){
@@ -717,13 +681,11 @@ var macro = {
 					// 		...check if it prevents correct slot parsing
 					// 		within an isolated include...
 					if(e.parents('[isolated="true"]').length > 0){
-						return
-					}
+						return }
 
 					var n = e.attr('name')
 
-					e.replaceWith(slots[n])
-				})
+					e.replaceWith(slots[n]) })
 
 			// post-macro...
 			// XXX for some odd reason this clears the backslash from 
@@ -737,8 +699,7 @@ var macro = {
 		_filter(this.__post_filters__, this.post_filter)
 
 		// XXX shuld we get rid of the root span???
-		return parsed.contents()
-	},
+		return parsed.contents() },
 }
 
 
@@ -775,16 +736,15 @@ var BaseData = {
 
 		return Object.keys(this.__wiki_data)
 			.map(function(k){
-				if(k.indexOf(p) == 0){
-					return path2lst(k.slice(p.length)).shift()
-				}
-				return null
-			})
-			.filter(function(e){ return e != null })
+				return k.indexOf(p) == 0 ?
+					path2lst(k.slice(p.length)).shift() 
+					: null })
+			.filter(function(e){ 
+				return e != null })
 			.sort()
-			.map(function(e){ return '['+ e +']' })
-			.join('<br>')
-	},
+			.map(function(e){ 
+				return '['+ e +']' })
+			.join('<br>') },
 	// list links to this page...
 	'System/links': function(){
 		var that = this
@@ -794,18 +754,15 @@ var BaseData = {
 
 		var wiki = this.__wiki_data
 		Object.keys(wiki).forEach(function(k){
-			(wiki[k].links || []).forEach(function(l){
+			;(wiki[k].links || []).forEach(function(l){
 				(l == p || that.get(path2lst(l).slice(0, -1)).acquire('./'+path2lst(l).pop()) == p)
-					&& res.push([l, k])
-			})
-		})
+					&& res.push([l, k]) }) })
 
 		return res
 			//.map(function(e){ return '['+ e[0] +'] <i>from page: ['+ e[1] +']</i>' })
 			.map(function(e){ return '['+ e[1] +'] <i>-&gt; ['+ e[0] +']</i>' })
 			.sort()
-			.join('<br>')
-	},
+			.join('<br>') },
 
 	// Page modifiers/actions...
 	// XXX these needs redirecting...
@@ -992,8 +949,7 @@ var PathActions = {
 
 		delete this.__wiki_data[p]
 
-		this.location = p
-	},
+		this.location = p },
 }
 
 
@@ -1037,22 +993,18 @@ var Wiki = {
 	//
 	resolvePathVars: function(path){
 		return path
-			.replace(/\$NOW|\$\{NOW\}/g, ''+Date.now())
-	},
+			.replace(/\$NOW|\$\{NOW\}/g, ''+Date.now()) },
 	resolvePathActions: function(){
 		// XXX this can happen when we are getting '.../*' of an empty item...
 		if(this.path == null){
-			return this
-		}
+			return this }
 
 		var p = path2lst(this.path).pop()
 
 		if(p in PathActions){
-			return PathActions[p].call(this)
-		}
+			return PathActions[p].call(this) }
 
-		return this
-	},
+		return this },
 	// Resolve '.' and '..' relative to current page...
 	//
 	// NOTE: '.' is relative to .path and not to .dir
@@ -1068,8 +1020,7 @@ var Wiki = {
 				//path.replace(/^\.\./, 
 				//	normalizePath(path2lst(this.dir).slice(0, -1)))
 				path.replace(/^\.\./, this.dir)
-			: path
-	},
+			: path },
 	// Get list of paths resolving '*' and '**'
 	//
 	// XXX should we list parent pages???
@@ -1078,8 +1029,7 @@ var Wiki = {
 	resolveStarPath: function(path){
 		// no pattern in path -> return as-is...
 		if(path.indexOf('*') < 0){
-			return [ path ]
-		}
+			return [ path ] }
 
 		// get the tail...
 		var tail = path.split(/\*/g).pop()
@@ -1097,27 +1047,29 @@ var Wiki = {
 
 		var data = this.__wiki_data
 		return Object.keys(data)
-				// XXX is this correct???
-				.concat(Object.keys(data.__proto__)
-					// do not repeat overloaded stuff...
-					.filter(function(e){ return !data.hasOwnProperty(e) }))
-			.map(function(p){ return tail != '' ? 
-				normalizePath(p +'/'+ tail) 
-				: p })
-			.filter(function(p){ return pattern.test(p) })
-	},
+			// XXX is this correct???
+			.concat(Object.keys(data.__proto__)
+				// do not repeat overloaded stuff...
+				.filter(function(e){ 
+					return !data.hasOwnProperty(e) }))
+			.map(function(p){ 
+				return tail != '' ? 
+					normalizePath(p +'/'+ tail) 
+					: p })
+			.filter(function(p){ 
+				return pattern.test(p) }) },
 
 
 	// current location...
 	get location(){
-		return this.__location || this.__home_page__ },
+		return this.__location 
+			|| this.__home_page__ },
 	set location(value){
 		delete this.__order
 		delete this.__order_by
 		this.__location = this.resolvePathVars(this.resolveDotPath(value))
 
-		this.resolvePathActions()
-	},
+		this.resolvePathActions() },
 
 
 	get data(){
@@ -1136,16 +1088,13 @@ var Wiki = {
 		} else if(arguments.length == 1){
 			var that = this
 			Object.keys(name).forEach(function(k){
-				that.data[k] = name[k]
-			})
+				that.data[k] = name[k] })
 
 		// name value pair...
 		} else {
-			this.data[name] = value
-		}
+			this.data[name] = value }
 
-		return this
-	},
+		return this },
 
 	// XXX experimental...
 	get config(){
@@ -1154,9 +1103,7 @@ var Wiki = {
 
 		} catch(err){
 			console.error('CONFIG:', err)
-			return {}
-		}
-	},
+			return {} } },
 
 
 	clone: function(){
@@ -1167,13 +1114,12 @@ var Wiki = {
 		o.__parent = this
 
 		if(this.__order){
-			o.__order = this.__order.slice()
-		}
+			o.__order = this.__order.slice() }
 
-		return o
-	},
+		return o },
 	end: function(){
-		return this.__parent || this },
+		return this.__parent 
+			|| this },
 
 
 	// page path...
@@ -1190,7 +1136,8 @@ var Wiki = {
 	//
 	// XXX this can be null if we are getting '.../*' of an empty item...
 	get path(){ 
-		return (this.__order || this.resolveStarPath(this.location))[this.at()] },
+		return (this.__order 
+				|| this.resolveStarPath(this.location))[this.at()] },
 	// XXX should link updating be part of this???
 	// XXX use a template for the redirect page...
 	// XXX need to skip explicit '.' and '..' paths...
@@ -1200,16 +1147,14 @@ var Wiki = {
 		var l = this.location
 
 		if(value == l || value == ''){
-			return
-		}
+			return }
 
 		// old...
 		var otitle = this.title
 		var odir = this.dir
 
 		if(this.exists(l)){
-			this.__wiki_data[value] = this.__wiki_data[l]
-		}
+			this.__wiki_data[value] = this.__wiki_data[l] }
 		this.location = value
 
 		// new...
@@ -1223,8 +1168,7 @@ var Wiki = {
 		//this.get('**').map(function(page){
 			// skip the old page...
 			if(page.location == l){
-				return
-			}
+				return }
 			page.raw = page.raw.replace(page.__wiki_link__, function(lnk){
 				var from = lnk[0] == '[' ? lnk.slice(1, -1) : lnk
 
@@ -1245,8 +1189,7 @@ var Wiki = {
 
 				// skip links that do not resolve to target...
 				} else if(page.get(p).acquire('./'+t) != l){
-					return lnk
-				}
+					return lnk }
 
 				// format the new link...
 				var to = p == '' ? ntitle : p +'/'+ ntitle
@@ -1270,18 +1213,14 @@ var Wiki = {
 					// replace title...
 					} else {
 						//console.log(lnk, '->', to)
-						return to
-					}
+						return to }
 
 				// path changed -- keep link + add redirect page...
 				} else {
-					redirect = true
-				}
+					redirect = true }
 
 				// no change...
-				return lnk
-			})
-		})
+				return lnk }) })
 
 		// redirect...
 		//
@@ -1302,9 +1241,7 @@ var Wiki = {
 
 		// cleaup...
 		} else {
-			delete this.__wiki_data[l]
-		}
-	},
+			delete this.__wiki_data[l] } },
 
 	// path parts: directory...
 	//
@@ -1321,11 +1258,9 @@ var Wiki = {
 		return path2lst(this.path).pop() },
 	set title(value){
 		if(value == '' || value == null){
-			return
-		}
+			return }
 
-		this.path = this.dir +'/'+ value 
-	},
+		this.path = this.dir +'/'+ value },
 
 
 	// page content...
@@ -1337,35 +1272,35 @@ var Wiki = {
 		return typeof(data) == typeof('str') ? data
 			: data != null ?
 				('raw' in data ? data.raw : data.text)
-			: ''
-	},
+			: '' },
 	set raw(value){
 		var l = this.location
 
 		// prevent overwriting actions...
 		if(this.data instanceof Function){
-			return
-		}
+			return }
 
 		this.__wiki_data[l] = this.__wiki_data[l] || {}
 		this.__wiki_data[l].text = value
 
 		// cache links...
 		delete this.__wiki_data[l].links
-		this.__wiki_data[l].links = this.links
-	},
+		this.__wiki_data[l].links = this.links },
 
 	get text(){
 		//return this.parse() 
 		// special case: if we are getting ./raw then do not parse text...
-		return this.title == 'raw' ? this.raw 
+		return this.title == 'raw' ? 
+			this.raw 
 			: this.__macro_parser__.parse(this, this.raw) },
 	get code(){
 		return this.text.text() },
 
 
-	get checked(){ return this.data.checked },
-	set checked(value){ this.data.checked = value },
+	get checked(){ 
+		return this.data.checked },
+	set checked(value){ 
+		this.data.checked = value },
 
 	// NOTE: this is set by setting .text
 	get links(){
@@ -1376,8 +1311,7 @@ var Wiki = {
 				.map(function(e){ return e[0] == '[' ? e.slice(1, -1) : e })
 				// unique...
 				.filter(function(e, i, l){ return l.slice(0, i).indexOf(e) == -1 })
-		return links
-	},
+		return links },
 
 
 	// navigation...
@@ -1402,8 +1336,7 @@ var Wiki = {
 		o.location = this.path
 
 		o.location = path || this.path
-		return o
-	},
+		return o },
 
 
 	exists: function(path){
@@ -1429,10 +1362,8 @@ var Wiki = {
 				var p = path.concat([lst[i], title])
 				if(that.exists(p)){
 					p = normalizePath(p)
-					return that.__wiki_data[p] && p
-				}
-			}
-		}
+					return that.__wiki_data[p] 
+						&& p } } }
 
 		while(true){
 			// get title from path...
@@ -1441,15 +1372,12 @@ var Wiki = {
 				|| _get(path, title, acquire_from)
 
 			if(p != null){
-				return p
-			}
+				return p }
 
 			if(path.length == 0){
-				break
-			}
+				break }
 
-			path.pop()
-		}
+			path.pop() }
 
 		// default paths...
 		var p = _get(path, title, post_acquire_from)
@@ -1461,27 +1389,26 @@ var Wiki = {
 		return p 
 			|| ((!no_default && title != this.__default_page__) ? 
 				this.acquire('./'+this.__default_page__) 
-				: null)
-	},
+				: null) },
 
 
 	// iteration...
 	get length(){
-		return (this.__order || this.resolveStarPath(this.location)).length },
+		return (this.__order 
+				|| this.resolveStarPath(this.location))
+			.length },
 	// get/set postion in list of pages...
 	// XXX do we need to min/max normalize n??
 	at: function(n){
 		// get position...
 		if(n == null){
-			return this.__location_at || 0
-		}
+			return this.__location_at || 0 }
 
 		var l = this.length
 
 		// end of list...
 		if(n >= l || n < -l){
-			return null
-		}
+			return null }
 
 		var res = this.clone()
 
@@ -1492,12 +1419,13 @@ var Wiki = {
 
 		res.__location_at = n
 
-		return res
-	},
+		return res },
 	prev: function(){ 
 		var i = this.at() - 1
 		// NOTE: need to guard against overflows...
-		return i >= 0 ? this.at(i) : null },
+		return i >= 0 ? 
+			this.at(i) 
+			: null },
 	next: function(){ 
 		return this.at(this.at() + 1) },
 
@@ -1505,22 +1433,18 @@ var Wiki = {
 		var res = []
 		for(var i=0; i < this.length; i++){
 			var page = this.at(i)
-			res.push(func.call(page, page, i))
-		}
-		return res
-	},
+			res.push(func.call(page, page, i)) }
+		return res },
 	filter: function(func){
 		var res = []
 		for(var i=0; i < this.length; i++){
 			var page = this.at(i)
-			func.call(page, page, i) && res.push(page)
-		}
-		return res
-	},
+			func.call(page, page, i) 
+				&& res.push(page) }
+		return res },
 	forEach: function(func){
 		this.map(func)
-		return this
-	},
+		return this },
 
 
 	// sorting...
@@ -1529,22 +1453,25 @@ var Wiki = {
 	__default_sort_methods__: ['path'],
 	__sort_methods__: {
 		title: function(a, b){
-			return a.page.title < b.page.title ? -1
-				: a.page.title > b.page.title ? 1
-				: 0
-		},
+			return a.page.title < b.page.title ? 
+					-1
+				: a.page.title > b.page.title ? 
+					1
+				: 0 },
 		path: function(a, b){
-			return a.page.path < b.page.path ? -1
-				: a.page.path > b.page.path ? 1
-				: 0
-		},
+			return a.page.path < b.page.path ? 
+					-1
+				: a.page.path > b.page.path ? 
+					1
+				: 0 },
 		// XXX
 		checked: function(a, b){
 			// XXX chech if with similar states the order is kept....
-			return a.page.checked == b.page.checked ? 0
-				: a.page.checked ? 1
-				: -1
-		},
+			return a.page.checked == b.page.checked ? 
+					0
+				: a.page.checked ? 
+					1
+				: -1 },
 		// XXX date, ...
 
 		// XXX use manual order and palce new items (not in order) at 
@@ -1552,8 +1479,7 @@ var Wiki = {
 		// XXX store the order in .__wiki_data
 		manual: function(a, b){
 			// XXX
-			return 0
-		},
+			return 0 },
 	},
 
 	// Sort siblings...
@@ -1592,13 +1518,12 @@ var Wiki = {
 			: [].slice.call(arguments)
 
 		res.__order_by = methods = methods.length == 0 ?
-				this.__default_sort_methods__ 
+			this.__default_sort_methods__ 
 			: methods
 
 		res.update()
 
-		return res
-	},
+		return res },
 	reverse: function(){
 		var res = this.clone()
 
@@ -1612,8 +1537,7 @@ var Wiki = {
 
 		res.update()
 
-		return res
-	},
+		return res },
 
 	// XXX not sure if this is the way to go...
 	update: function(){
@@ -1630,19 +1554,21 @@ var Wiki = {
 
 					if(m == 'reverse'){
 						reverse = !reverse
-						return null
-					}
-					m = typeof(m) == typeof('str') ? that.__sort_methods__[m]
-						: m instanceof Function ? m
+						return null }
+					m = typeof(m) == typeof('str') ? 
+							that.__sort_methods__[m]
+						: m instanceof Function ? 
+							m
 						: null
 
 					return m != null ?
 						(reversed ? 
-							function(){ return -m.apply(this, arguments) } 
+							function(){ 
+								return -m.apply(this, arguments) } 
 							: m) 
-						: m
-				})
-				.filter(function(m){ return !!m })
+						: m })
+				.filter(function(m){ 
+					return !!m })
 
 			this.__order = this.resolveStarPath(this.location)
 
@@ -1652,65 +1578,60 @@ var Wiki = {
 							var res = methods[i].call(that, a, b)
 
 							if(res != 0){
-								return res
-							}
-						}
+								return res } }
 						// keep order if nothing else works...
-						return a.i - b.i
-				}
+						return a.i - b.i }
 
 				this.__order = this.__order
-					.map(function(t, i){ return {
-						i: i, 
-						page: that.get(t),
-					} })
+					.map(function(t, i){ 
+						return {
+							i: i, 
+							page: that.get(t),
+						} })
 					.sort(method)
-					.map(function(t){ return t.page.path })
-			}
+					.map(function(t){ 
+						return t.page.path }) }
 
 			reverse 
 				&& this.__order.reverse()
 
-			this.__location_at = this.__order.indexOf(path)
-		}
+			this.__location_at = this.__order.indexOf(path) }
 	
-		return this
-	},
+		return this },
 
 
 	// serialization...
 	// XXX need to account for '*' and '**' in path...
 	// XXX
 	json: function(path){
-		return path == null ? JSON.parse(JSON.stringify(this.__wiki_data))
-			: path == '.' ? {
+		return path == null ? 
+				JSON.parse(JSON.stringify(this.__wiki_data))
+			: path == '.' ? 
+				{
 					path: this.location,
 					text: this.raw,
 				}
 			: {
 				path: path,
 				text: (this.__wiki_data[path] || {}).raw,
-			}
-	},
+			} },
 	// XXX should we inherit from the default???
 	load: function(json){
-		this.__wiki_data = json
-	},
+		this.__wiki_data = json },
 
 
 	// iteration...
 	// XXX this is not page specific, might need refactoring...
 	pages: function(callback){
 		var that = this
-		Object.keys(this.__wiki_data).forEach(function(location){
-			// XXX not sure if this is the right way to go...
-			//var o = Object.create(that)
-			var o = that.clone() 
-			o.location = location
-			callback.call(o, o)
-		})
-		return this
-	},
+		Object.keys(this.__wiki_data)
+			.forEach(function(location){
+				// XXX not sure if this is the right way to go...
+				//var o = Object.create(that)
+				var o = that.clone() 
+				o.location = location
+				callback.call(o, o) })
+		return this },
 }
 
 
