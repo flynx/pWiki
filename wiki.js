@@ -138,13 +138,11 @@ var macro = {
 			['name'],
 			function(context, elem, state){
 				var filter = $(elem).attr('name')
-
 				filter[0] == '-' ?
 					// disabled -- keep at head of list...
 					state.filters.unshift(filter)
 					// normal -- tail...
 					: state.filters.push(filter)
-
 				return '' }),
 
 		// include page/slot...
@@ -156,11 +154,9 @@ var macro = {
 			['src', 'isolated', 'text'],
 			function(context, elem, state){
 				var path = $(elem).attr('src')
-
 				// get and prepare the included page...
 				state.include
 					.push([elem, context.get(path)])
-
 				// return the marker...
 				return this.__include_marker__ }),
 
@@ -171,7 +167,6 @@ var macro = {
 			['src'], 
 			function(context, elem, state){
 				var path = $(elem).attr('src')
-
 				return context.get(path)
 					.map(function(page){ 
 						return page.raw })
@@ -182,7 +177,6 @@ var macro = {
 			function(context, elem, state){
 				elem = $(elem)
 				var path = elem.attr('src')
-
 				return $(context.get(path)
 					.map(function(page){
 						return elem
@@ -329,15 +323,13 @@ var macro = {
 		'page-text': Macro('',
 			['src'],
 			function(context, elem, state){
-				elem = $(elem)
-
-				return elem.html(context.get(elem.attr('src')).text) }),
+				return $(elem)
+					.html(context.get(elem.attr('src')).text) }),
 		'page-raw': Macro('',
 			['src'],
 			function(context, elem, state){
-				elem = $(elem)
-
-				return elem.text(context.get(elem.attr('src')).text) }),
+				return $(elem)
+					.text(context.get(elem.attr('src')).text) }),
 		//*/
 	},
 
@@ -372,7 +364,10 @@ var macro = {
 
 		wikiword: function(context, elem){ 
 			return $('<span>')
-				.html(setWikiWords($(elem).html(), true, this.__include_marker__)) },
+				.html(setWikiWords(
+					$(elem).html(), 
+					true, 
+					this.__include_marker__)) },
 		// XXX need to remove all on* event handlers...
 		noscript: function(context, elem){ 
 			return $(elem)
@@ -524,9 +519,15 @@ var macro = {
 					var a = d[2]
 						.split(/((['"]).*?\2)|\s+/g)
 						// cleanup...
-						.filter(function(e){ return e && e != '' && !/^['"]$/.test(e)})
+						.filter(function(e){ 
+							return e 
+								&& e != '' 
+								&& !/^['"]$/.test(e)})
 						// remove quotes...
-						.map(function(e){ return /^(['"]).*\1$/.test(e) ? e.slice(1, -1) : e })
+						.map(function(e){ 
+							return /^(['"]).*\1$/.test(e) ? 
+								e.slice(1, -1) 
+								: e })
 
 					// add the attrs to the element...
 					name != '*' 
@@ -543,10 +544,13 @@ var macro = {
 
 					return res instanceof jQuery ? 
 							// merge html of the returned set of elements...
-							res.map(function(i, e){ return e.outerHTML })
+							res
+								.map(function(i, e){ 
+									return e.outerHTML })
 								.toArray()
 								.join('\n')
-						: typeof(res) != typeof('str') ? res.outerHTML
+						: typeof(res) != typeof('str') ? 
+							res.outerHTML
 						: res }
 
 				return match }) }
@@ -675,7 +679,8 @@ var macro = {
 
 					var n = e.attr('name')
 
-					n in slots && e.detach()
+					n in slots 
+						&& e.detach()
 
 					slots[n] = e })
 			// place slots...
@@ -720,11 +725,16 @@ var macro = {
 // 		...is changing .path a good idea for redirecting???
 var BaseData = {
 	// Macro acces to standard page attributes (paths)...
-	'System/title': function(){ return this.get('..').title },
-	'System/path': function(){ return this.dir },
-	'System/dir': function(){ return this.get('..').dir },
-	'System/location': function(){ return this.dir },
-	'System/resolved': function(){ return this.get('..').acquire() },
+	'System/title': function(){ 
+		return this.get('..').title },
+	'System/path': function(){ 
+		return this.dir },
+	'System/dir': function(){ 
+		return this.get('..').dir },
+	'System/location': function(){ 
+		return this.dir },
+	'System/resolved': function(){ 
+		return this.get('..').acquire() },
 
 	// page data...
 	//
@@ -733,8 +743,10 @@ var BaseData = {
 	// 			.get('./raw').text
 	// 		is the same as:
 	// 			.get('.').raw
-	'System/raw': function(){ return this.get('..').raw },
-	'System/text': function(){ return this.get('..').text },
+	'System/raw': function(){ 
+		return this.get('..').raw },
+	'System/text': function(){ 
+		return this.get('..').text },
 
 	// XXX move this to Wiki.children + rename...
 	'System/list': function(){
@@ -760,13 +772,18 @@ var BaseData = {
 
 		var wiki = this.__wiki_data
 		Object.keys(wiki).forEach(function(k){
-			;(wiki[k].links || []).forEach(function(l){
-				(l == p || that.get(path2lst(l).slice(0, -1)).acquire('./'+path2lst(l).pop()) == p)
-					&& res.push([l, k]) }) })
+			;(wiki[k].links || [])
+				.forEach(function(l){
+					;(l == p 
+							|| that
+								.get(path2lst(l).slice(0, -1))
+								.acquire('./'+path2lst(l).pop()) == p)
+						&& res.push([l, k]) }) })
 
 		return res
 			//.map(function(e){ return '['+ e[0] +'] <i>from page: ['+ e[1] +']</i>' })
-			.map(function(e){ return '['+ e[1] +'] <i>-&gt; ['+ e[0] +']</i>' })
+			.map(function(e){ 
+				return '['+ e[1] +'] <i>-&gt; ['+ e[0] +']</i>' })
 			.sort()
 			.join('<br>') },
 
@@ -1272,11 +1289,16 @@ var Wiki = {
 	//
 	get raw(){
 		var data = this.data
-		data = data instanceof Function ? data.call(this, this) : data
+		data = data instanceof Function ? 
+			data.call(this, this) 
+			: data
 
-		return typeof(data) == typeof('str') ? data
+		return typeof(data) == typeof('str') ? 
+				data
 			: data != null ?
-				('raw' in data ? data.raw : data.text)
+				('raw' in data ? 
+					data.raw 
+					: data.text)
 			: '' },
 	set raw(value){
 		var l = this.location
@@ -1313,9 +1335,13 @@ var Wiki = {
 		var links = data.links = data.links
 			|| (this.raw.match(this.__wiki_link__) || [])
 				// unwrap explicit links...
-				.map(function(e){ return e[0] == '[' ? e.slice(1, -1) : e })
+				.map(function(e){ 
+					return e[0] == '[' ? 
+						e.slice(1, -1) 
+						: e })
 				// unique...
-				.filter(function(e, i, l){ return l.slice(0, i).indexOf(e) == -1 })
+				.filter(function(e, i, l){ 
+					return l.slice(0, i).indexOf(e) == -1 })
 		return links },
 
 
@@ -1362,7 +1388,9 @@ var Wiki = {
 		var data = this.__wiki_data
 
 		var _get = function(path, title, lst){
-			lst = (lst == null || lst.length == 0) ? [''] : lst
+			lst = (lst == null || lst.length == 0) ? 
+				[''] 
+				: lst
 			for(var i=0; i < lst.length; i++){
 				var p = path.concat([lst[i], title])
 				if(that.exists(p)){
@@ -1385,10 +1413,14 @@ var Wiki = {
 			path.pop() }
 
 		// default paths...
-		var p = _get(path, title, post_acquire_from)
-			// system path...
-			|| this.__system__ 
-				&& _get([this.__system__], title)
+		var p = _get(
+			path, 
+			title, 
+			post_acquire_from)
+				// system path...
+				|| this.__system__ 
+				&& _get([this.__system__], 
+			title)
 
 		// NOTE: this may be null...
 		return p 
