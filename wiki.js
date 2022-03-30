@@ -41,7 +41,9 @@ var clearWikiWords = function(elem){
 
 var setWikiWords = function(text, show_brackets, skip){
 	skip = skip || []
-	skip = skip instanceof Array ? skip : [skip]
+	skip = skip instanceof Array ? 
+		skip 
+		: [skip]
 	return text 
 		// set new...
 		.replace(
