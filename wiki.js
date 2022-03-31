@@ -10,9 +10,10 @@
 //
 var quoteRegExp =
 RegExp.quoteRegExp =
-function(str){
-	return str
-		.replace(/([\.\\\/\(\)\[\]\$\*\+\-\{\}\@\^\&\?\<\>])/g, '\\$1') }
+	RegExp.quoteRegExp 
+		|| function(str){
+			return str
+				.replace(/([\.\\\/\(\)\[\]\$\*\+\-\{\}\@\^\&\?\<\>])/g, '\\$1') }
 
 var path2lst = function(path){ 
 	return (path instanceof Array ?  path : path.split(/[\\\/]+/g))
