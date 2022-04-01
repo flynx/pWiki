@@ -104,11 +104,16 @@ pWikiFeatures.__actions__ =
 var BaseData = 
 module.BaseData = {
 	// Macro acces to standard page attributes (paths)...
-	'System/title': function(){ return { text: this.get('..').title() } },
-	'System/path': function(){ return { text: this.base() } },
-	'System/dir': function(){ return { text: this.get('..').base() } },
-	'System/location': function(){ return { text: this.base() } },
-	'System/resolved': function(){ return { text: this.get('..').acquire() } },
+	'System/title': function(){ 
+		return { text: this.get('..').title() } },
+	'System/path': function(){ 
+		return { text: this.base() } },
+	'System/dir': function(){ 
+		return { text: this.get('..').base() } },
+	'System/location': function(){ 
+		return { text: this.base() } },
+	'System/resolved': function(){ 
+		return { text: this.get('..').acquire() } },
 
 	// page data...
 	//
@@ -117,8 +122,10 @@ module.BaseData = {
 	// 			.get('./raw').text
 	// 		is the same as:
 	// 			.get('.').raw
-	'System/raw': function(){ return { text: this.get('..').raw() } },
-	'System/html': function(){ return { text: this.get('..').html() } },
+	'System/raw': function(){ 
+		return { text: this.get('..').raw() } },
+	'System/html': function(){ 
+		return { text: this.get('..').html() } },
 
 	// list all path elements on a level, including empty path sections...
 	// XXX update these to the new format -- must return an object...
@@ -128,19 +135,15 @@ module.BaseData = {
 		return 'NoImplemented'
 
 		var p = this.dir
-
 		return Object.keys(this.__wiki_data)
 			.map(function(k){
 				if(k.indexOf(p) == 0){
-					return path2lst(k.slice(p.length)).shift()
-				}
-				return null
-			})
+					return path2lst(k.slice(p.length)).shift() }
+				return null })
 			.filter(function(e){ return e != null })
 			.sort()
 			.map(function(e){ return '['+ e +']' })
-			.join('<br>')
-	},
+			.join('<br>') },
 	// list links to this page...
 	// XXX this is done, though we cant use this until we solve .html(..)
 	// 		macro recursion issues...
@@ -154,11 +157,9 @@ module.BaseData = {
 		var p = this.path()
 
 		var res = []
-
 		this.wiki.match('**')
 			.forEach(function(p){
 				var pa = that.acquire(p)
-
 				that.get(p)
 					// XXX this will render the page which might not be 
 					// 		the best idea in some cases...
@@ -166,10 +167,7 @@ module.BaseData = {
 						.forEach(function(l){
 							var la = that.acquire(l)
 							if(l == p || la == p || la == pa){
-								res.push([l, p])
-							}
-						})
-			})
+								res.push([l, p]) } }) })
 
 		// cache the result...
 		// XXX
@@ -179,8 +177,7 @@ module.BaseData = {
 			//.map(function(e){ return '['+ e[0] +'] <i>from page: ['+ e[1] +']</i>' })
 			.map(function(e){ return '['+ e[1] +'] <i>-&gt; ['+ e[0] +']</i>' })
 			.sort()
-			.join('<br>')
-	},
+			.join('<br>') },
 
 	// Page modifiers/actions...
 	// XXX these needs redirecting...
@@ -190,8 +187,7 @@ module.BaseData = {
 	'System/delete': function(){
 		var p = this.dir
 		delete this.__wiki_data[p]
-		return this.get('..') 
-	},
+		return this.get('..') },
 	//*/
 }
 
@@ -224,16 +220,20 @@ module.pWikiData = {
 		//var order = (data[path] || {}).order || []
 
 		if(path == null){
-			return []
-		}
+			return [] }
 
 		// strict path...
 		if(path.indexOf('*') < 0){
-			return path in data ? [ path ] : []
-		}
+			return path in data ? 
+				[ path ] 
+				: [] }
 
-		sort = sort || (data[path] || {}).sort || ['order']
-		sort = sort instanceof Array ? sort : [sort]
+		sort = sort 
+			|| (data[path] || {}).sort 
+			|| ['order']
+		sort = sort instanceof Array ? 
+			sort 
+			: [sort]
 
 		var order = (data[path] || {}).order || []
 
@@ -244,11 +244,16 @@ module.pWikiData = {
 				// XXX is this correct???
 				.concat(Object.keys(data.__proto__)
 					// do not repeat overloaded stuff...
-					.filter(function(e){ return !data.hasOwnProperty(e) }))
-			.filter(function(p){ return pattern.test(p) })
+					.filter(function(e){ 
+						return !data.hasOwnProperty(e) }))
+			.filter(function(p){ 
+				return pattern.test(p) })
 
 			// page...
-			.slice(from, count ? from + count : undefined)
+			.slice(from, 
+				count ? 
+					from + count 
+					: undefined)
 
 			// prepare to sort...
 			.map(function(p, i){ 
@@ -259,8 +264,7 @@ module.pWikiData = {
 							i = method.indexOf(p)
 							i = i < 0 ? method.indexOf('*') : i
 							i = i < 0 ? method.length : i
-							return i
-						}
+							return i }
 
 						// drop the reversal marker...
 						method = method[0] == '-' ? method.slice(1) : method
@@ -270,36 +274,36 @@ module.pWikiData = {
 							i = order.indexOf(p)
 							i = i < 0 ? order.indexOf('*') : i
 							i = i < 0 ? order.length : i
-							return i
-						}
+							return i }
 
-						return method == 'path' ? p.toLowerCase()
-							: method == 'Path' ? p
-							: method == 'title' ? path2list(p).pop().toLowerCase()
-							: method == 'Title' ? path2list(p).pop() 
-
+						return method == 'path' ? 
+								p.toLowerCase()
+							: method == 'Path' ? 
+								p
+							: method == 'title' ? 
+								path2list(p).pop().toLowerCase()
+							: method == 'Title' ? 
+								path2list(p).pop() 
 							// special case...
-							: method == 'checked' ? (data[p][method] ? 1 : 0)
-
+							: method == 'checked' ? 
+								(data[p][method] ? 
+									1 
+									: 0)
 							// attr...
 							: data[p][method]
 					})
-					.concat([i, p])
-			})
+					.concat([i, p]) })
 			// sort...
 			.sort(function(a, b){ 
 				for(var i=0; i < sort.length+1; i++){
 					var reverse = (sort[i] || '')[0] == '-' ? -1 : 1
 					if(a[i] == b[i]){
-						continue
-					} 
-					return (a[i] > b[i] ? 1 : -1) * reverse
-				}
-				return 0
-			})
+						continue } 
+					return (a[i] > b[i] ? 1 : -1) * reverse }
+				return 0 })
 			// cleanup...
-			.map(function(e){ return e.pop() })
-	},
+			.map(function(e){ 
+				return e.pop() }) },
 
 	// Get/set data at path...
 	//
@@ -309,62 +313,57 @@ module.pWikiData = {
 		// get the data...
 		if(value == null){
 			if(this.__data == null){
-				return null
-			}
+				return null }
 
 			var data = this.__data[path]
 
-			return data == null ? null
-				: data instanceof Function ? data
+			return data == null ? 
+					null
+				: data instanceof Function ? 
+					data
 				: JSON.parse(JSON.stringify(data)) 
 
 		// set the data...
 		} else {
 			this.__data = this.__data || {}
 			this.__data[path] = JSON.parse(JSON.stringify(value))
-			return this
-		}
-	},
+			return this } },
 
 	// Move data from path to path...
 	//
 	// XXX should from be pattern compatible???
 	move: function(from, to){
 		if(this.__data == null){
-			return
-		}
+			return }
 		var d = this.__data[from]
 		this.clear(from)
 		this.__data[to] = d
-		return this
-	},
+		return this },
 
 	// Clear a path...
 	//
 	clear: function(path){
 		if(this.__data == null){
-			return this
-		}
+			return this }
 		this.remove(this.match(path))
-		return this
-	},
+		return this },
 
 	// explicitly remove path...
 	//
 	// NOTE: this is similar to .clear(..) but will not expand patterns, 
 	// 		thus only one page is is removed per path.
 	remove: function(path){
-		path = arguments.length > 1 ? [].slice.call(arguments) 
-			: path instanceof Array ? path 
+		path = arguments.length > 1 ? 
+				[].slice.call(arguments) 
+			: path instanceof Array ? 
+				path 
 			: [path]
 		var data = this.__data
 
 		path.forEach(function(p){
-			delete data[p]
-		})
+			delete data[p] })
 
-		return this
-	},
+		return this },
 
 	// XXX
 	json: function(data){
@@ -372,9 +371,7 @@ module.pWikiData = {
 			return JSON.parse(JSON.stringify(this.__data))
 
 		} else {
-			this.__data = data
-		}
-	},
+			this.__data = data } },
 }
 
 
@@ -442,22 +439,18 @@ module.pWikiBase = actions.Actions({
 
 			// refresh the cache...
 			if(match == null || force){
-				this.order(force)
-			}
-		}],
+				this.order(force) } }],
 
 	location: ['Page/Get or set location',
 		function(value){
 			if(value === null){
-				return
-			}
+				return }
 
 			var location = this.__location || this.refresh().location()
 
 			// get location...
 			if(arguments.length == 0){
-				return location
-			}
+				return location }
 
 			// set location index...
 			if(typeof(value) == typeof(123)){
@@ -479,18 +472,17 @@ module.pWikiBase = actions.Actions({
 				// NOTE: a refresh will get called when the location value
 				// 		is accessed for the first time...
 				// XXX should we clear .match here???
-				return
-			}
+				return }
 
-			this.refresh(true)
-		}],
+			this.refresh(true) }],
 	exists: ['Page/Check if path explicitly exists.', 
 		function(path){
-			var at = path ? 0 : this.at()
+			var at = path ? 
+				0 
+				: this.at()
 			path = path || this.path()
 
-			return this.wiki.match(this.get(path).location().path)[at] !== undefined
-		}],
+			return this.wiki.match(this.get(path).location().path)[at] !== undefined }],
 
 	// Resolve path statically...
 	//
@@ -543,11 +535,9 @@ module.pWikiBase = actions.Actions({
 					// '..' or '../*'
 					: path == '..' || /^\.\.\//.test(path) ? 
 						normalizePath(path.replace(/^\.\./, this.base()))
-					: path
-			}
+					: path }
 
-			return path
-		}],
+			return path }],
 	// XXX should this get a page???
 	acquire: ['Path/Acquire the page path that the given path resolves to',
 		function(path, no_default){
@@ -566,10 +556,7 @@ module.pWikiBase = actions.Actions({
 				for(var i=0; i < lst.length; i++){
 					var p = normalizePath(path.concat([lst[i], title]))
 					if(that.exists(p)){
-						return that.wiki.data(p) && p
-					}
-				}
-			}
+						return that.wiki.data(p) && p } } }
 
 			while(true){
 				// get title from path...
@@ -578,15 +565,12 @@ module.pWikiBase = actions.Actions({
 					|| _get(path, title, acquire_from)
 
 				if(p != null){
-					return p
-				}
+					return p }
 
 				if(path.length == 0){
-					break
-				}
+					break }
 
-				path.pop()
-			}
+				path.pop() }
 
 			// default paths...
 			var p = _get(path, title, post_acquire_from)
@@ -598,8 +582,7 @@ module.pWikiBase = actions.Actions({
 			return p 
 				|| ((!no_default && title != this.config['default-page']) ? 
 					this.acquire('./'+this.config['default-page']) 
-					: null)
-		}],
+					: null) }],
 
 	// XXX pattern does not match anything needs to be handled correctly...
 	// XXX do we need to normalize 'at'???
@@ -615,27 +598,21 @@ module.pWikiBase = actions.Actions({
 			// move page to path...
 			} else if(value != null) {
 				this.wiki.move(this.path(), this.resolve(value))
-				this.location(value)
-			}
-		}],
+				this.location(value) } }],
 	title: ['Page/Get or set title',
 		function(value){
 			if(arguments.length == 0){
 				return path2list(this.path()).pop() || ''
 
 			} else if(value != null){
-				this.path(this.base() +'/'+ value)
-			}
-		}],
+				this.path(this.base() +'/'+ value) } }],
 	base: ['Page/Get or set directory',
 		function(base){
 			if(arguments.length == 0){
 				return path2list(this.path()).slice(0, -1).join('/')
 
 			} else if(base != null){
-				this.path(base +'/'+ this.title())
-			}
-		}],
+				this.path(base +'/'+ this.title()) } }],
 
 
 	// Object API...
@@ -649,10 +626,10 @@ module.pWikiBase = actions.Actions({
 
 			o.__parent_context = this
 
-			return o
-		}],
+			return o }],
 	end: ['Page/Get parent context of clone', 
-		function(){ return this.__parent_context || this }],
+		function(){ 
+			return this.__parent_context || this }],
 	// XXX should this return false on empty path???
 	copy: ['Page/Copy page to path', 
 		function(path){
@@ -674,20 +651,17 @@ module.pWikiBase = actions.Actions({
 	get length(){
 		// special case -- non-pattern path...
 		if(this.location().path.indexOf('*') < 0){
-			return 1
-		}
+			return 1 }
 
 		this.refresh()
 
-		return this.location().match.length 
-	},
+		return this.location().match.length },
 
 	at: ['Page/Get index or page at given index', 
 		function(n){
 			// get current index...
 			if(n == null){
-				return this.location().at || 0
-			}
+				return this.location().at || 0 }
 
 			// get page at index...
 
@@ -699,8 +673,7 @@ module.pWikiBase = actions.Actions({
 
 			// out of bounds...
 			} else if(n >= l || n < -l){
-				return null
-			}
+				return null }
 
 			var res = this.clone()
 
@@ -711,25 +684,25 @@ module.pWikiBase = actions.Actions({
 
 			res.location(n)
 
-			return res
-		}],
+			return res }],
 	prev: ['Page/Get previous page', 
 		function(){
 			var i = this.at() - 1
 			// NOTE: need to guard against overflows...
-			return i >= 0 ? this.at(i) : null }],
+			return i >= 0 ? 
+				this.at(i) 
+				: null }],
 	next: ['Page/Get next page', 
-		function(){ return this.at(this.at() + 1) }],
+		function(){ 
+			return this.at(this.at() + 1) }],
 
 	map: ['Page/', 
 		function(func){
 			var res = []
 			for(var i=0; i < this.length; i++){
 				var page = this.at(i)
-				res.push(func.call(page, page, i))
-			}
-			return res
-		}],
+				res.push(func.call(page, page, i)) }
+			return res }],
 	// NOTE: a filter can take a function or a string path pattern...
 	// NOTE: only absolute path patterns are supported...
 	filter: ['Page/', 
@@ -738,18 +711,17 @@ module.pWikiBase = actions.Actions({
 			if(typeof(func) == typeof('str')){
 				var pattern = path2re(func)
 				func = function(page){ 
-					return pattern.test(page.path()) }
-			}
+					return pattern.test(page.path()) } }
 
 			var res = []
 			for(var i=0; i < this.length; i++){
 				var page = this.at(i)
-				func.call(page, page, i) && res.push(page)
-			}
-			return res
-		}],
+				func.call(page, page, i) 
+					&& res.push(page) }
+			return res }],
 	each: ['Page/', 
-		function(func){ this.map(func) }],
+		function(func){ 
+			this.map(func) }],
 	// XXX reduce???
 
 	// Get/set sibling order...
@@ -812,20 +784,19 @@ module.pWikiBase = actions.Actions({
 			var page = (location.match || [])[location.at || 0]
 
 			// get order...
-			if(order == null || order == 'force' || order === true){
+			if(order == null 
+					|| order == 'force' 
+					|| order === true){
 				// no patterns in path -> no ordering...
 				if(path.indexOf('*') < 0){
 					if(!location.match){
 						location.match = [ path ]
-						this.location(location)
-					}
-					return [ path ]
-				}
+						this.location(location) }
+					return [ path ] }
 
 				// get cached order if not forced...
 				if(location.match != null && order == null){
-					return location.match.slice()
-				}
+					return location.match.slice() }
 
 				// XXX should we check if this returns a function???
 				var parent = this.wiki.data(path) || {}
@@ -833,15 +804,20 @@ module.pWikiBase = actions.Actions({
 				var sort = (location.sort || parent.sort || ['order']).slice()
 
 				var i = sort.indexOf('order')
-				location.order && i >= 0 && sort.splice(i, 1, location.order)
+				location.order 
+					&& i >= 0 
+					&& sort.splice(i, 1, location.order)
 
 				var order = this.wiki.match(path, sort)
 					// filter out paths containing '*'
-					.filter(function(p){ return p.indexOf('*') < 0 })
+					.filter(function(p){ 
+						return p.indexOf('*') < 0 })
 
 				// save cache...
 				location.match = order
-				location.at = page ? order.indexOf(page) : 0
+				location.at = page ? 
+					order.indexOf(page) 
+					: 0
 				this.location(location)
 
 				return order.slice()
@@ -879,30 +855,27 @@ module.pWikiBase = actions.Actions({
 
 						// save...
 						} else {
-							this.wiki.data(path, parent)
-						}
-					}
-				}
-
+							this.wiki.data(path, parent) } } }
 			// save order...
-			} else if(order == 'save') {
+			} else if(order == 'save'){
 				// XXX should we check if this returns a function???
 				var parent = this.wiki.data(path) || {}
 
-				var order = parent.order = location.order || this.order()
+				var order = 
+				parent.order = 
+					location.order 
+						|| this.order()
 
 				this.wiki.data(path, parent)
 				delete location.order
 
 			// set order...
 			} else {
-				location.order = order
-			}
+				location.order = order }
 
 			// save cache...
 			this.location(location)
-			this.order(true)
-		}],
+			this.order(true) }],
 
 	// Sort siblings...
 	//
@@ -948,17 +921,19 @@ module.pWikiBase = actions.Actions({
 			var res = this.clone()
 			var location = this.location()
 
-			methods = methods instanceof Array ?  methods : [].slice.call(arguments)
+			methods = methods instanceof Array ?
+				methods 
+				: [].slice.call(arguments)
 
 			location.sort = methods.length == 0 ?
-					(this.config['default-sort-methods'] || ['path'])
+				(this.config['default-sort-methods'] 
+					|| ['path'])
 				: methods
 			res.location(location)
 
 			res.order(true)
 
-			return res
-		}],
+			return res }],
 	// XXX should this be persistent???
 	// 		...e.g. survive .order('force') or .order('clear')
 	reverse: ['Page/',
@@ -966,7 +941,8 @@ module.pWikiBase = actions.Actions({
 			var location = this.location()
 
 			// reverse the match...
-			location.match && location.match.reverse()
+			location.match 
+				&& location.match.reverse()
 
 			// reverse order...
 			location.order = this.order().reverse()
@@ -974,11 +950,12 @@ module.pWikiBase = actions.Actions({
 			// reverse sort...
 			if(location.sort){
 				location.sort = location.sort
-					.map(function(m){ return m[0] == '-' ? m.slice(1) : '-'+m })
-			}
+					.map(function(m){ 
+						return m[0] == '-' ? 
+							m.slice(1) 
+							: '-'+m }) }
 
-			this.location(location)
-		}],
+			this.location(location) }],
 
 
 	// Data API...
@@ -988,15 +965,16 @@ module.pWikiBase = actions.Actions({
 			// get -> acquire page and get it's data...
 			if(arguments.length == 0){
 				var d = this.wiki.data(this.acquire()) || {}
-				return d instanceof Function ? d.call(this) : d
+				return d instanceof Function ? 
+					d.call(this) 
+					: d
 
 			// set -> get explicit path and set data to it...
 			} else if(value != null) {
-				this.wiki.data(this.path(), value || {})
-			}
-		}],
+				this.wiki.data(this.path(), value || {}) } }],
 	clear: ['Page/Clear page', 
-		function(){ this.wiki.clear(this.path()) }],
+		function(){ 
+			this.wiki.clear(this.path()) }],
 	attr: ['Page/Get or set attribute',
 		function(name, value){
 			var d = this.data()
@@ -1013,25 +991,25 @@ module.pWikiBase = actions.Actions({
 
 			// set...
 			} else {
-				d[name] = value
-			}
+				d[name] = value }
 
 			// write the data...
 			// XXX is it good to write the whole thing???
-			this.data(d)
-		}],
+			this.data(d) }],
 
 	// shorthands...
 	raw: ['Page/',
 		function(value){
 			return arguments.length == 0 ? 
-				(this.attr('text') || '') 
+				(this.attr('text') 
+					|| '') 
 				: this.attr('text', value) }],
 	checked: ['Page/', 
 		function(value){
 			return arguments.length == 0 ? 
 				!!this.attr('checked') 
-				: this.attr('checked', value || undefined) }],
+				: this.attr('checked', 
+					value || undefined) }],
 
 
 	// Init... 
@@ -1046,17 +1024,13 @@ module.pWikiBase = actions.Actions({
 		if('wiki' in config){
 			this.wiki = config.wiki
 			// XXX don't like modifying the input...
-			delete config.wiki
-		}
+			delete config.wiki }
 
 		var cfg = this.config = Object.create(this.config)
 		return function(){
 			// copy the given config...
 			Object.keys(config).forEach(function(k){ 
-				cfg[k] = JSON.parse(JSON.stringify(config[k]))
-			})
-		}
-	}]
+				cfg[k] = JSON.parse(JSON.stringify(config[k])) }) } }],
 })
 
 
@@ -1097,19 +1071,19 @@ module.pWikiMacros = actions.Actions(pWikiBase, {
 			// get and cache links...
 			if(force || this.attr('links') == null){
 				var text = this.html()
-				var links = typeof(text) == typeof('str') ? []
+				var links = typeof(text) == typeof('str') ? 
+					[]
 					: text.find('[href]')
 						.map(function(){ 
 							var url = $(this).attr('href') 
-							return url[0] == '#' ? url.slice(1) : null
-						})
+							return url[0] == '#' ? 
+								url.slice(1) 
+								: null })
 						.toArray()
 				this.attr('links', links)
-				return links
-			}
+				return links }
 			// get cached links...
-			return this.attr('links')
-		}],
+			return this.attr('links') }],
 
 
 	// Init...
@@ -1121,9 +1095,7 @@ module.pWikiMacros = actions.Actions(pWikiBase, {
 		if('macro' in config){
 			this.__macro_parser__ = config.macro
 			// XXX don't like modifying the input...
-			delete config.macro
-		}
-	}],
+			delete config.macro } }],
 })
 
 
@@ -1170,31 +1142,24 @@ module.hiddenPromise = {
 			// XXX should this be done here (sunc) or in  a .then(..)???
 			delete this.__lazy
 
-			return res
-		}
+			return res }
 
 		// no promise...
 		if(this.__promise == null){
 			this.__promise = new Promise(function(resolve, reject){
-				resolve(func.call(that))
-			})
+				resolve(func.call(that)) })
 
 		// existing promise...
 		} else {
 			this.__promise = this.__promise.then(function(){
-				return func.apply(that, [].slice.call(arguments))
-			})
-		}
-		return this
-	},
+				return func.apply(that, [].slice.call(arguments)) }) }
+		return this },
 	// NOTE: this ignores the function if there is no promise...
 	// 		XXX not sure if this is correct...
 	catch: function(func){
 		if(this.__promise != null){
-			this.__promise = this.__promise.catch(func)
-		}
-		return this
-	},
+			this.__promise = this.__promise.catch(func) }
+		return this },
 
 	// Like then, but the function will get called only if a .then(..) is
 	// called right after...
@@ -1202,12 +1167,10 @@ module.hiddenPromise = {
 	// NOTE: only the last lazy function is stored, the rest are discarded.
 	lazy: function(func){
 		this.__lazy = func
-		return this
-	},
+		return this },
 	clearLazy: function(){
 		delete this.__lazy
-		return this
-	},
+		return this },
 
 	// example method (sync)...
 	//
@@ -1237,18 +1200,16 @@ module.hiddenPromise = {
 
 		// get...
 		if(arguments.length == 0){
-			this.lazy(function(){ return this.__data })
+			this.lazy(function(){ 
+				return this.__data })
 
 		// set...
 		} else {
 			this.then(function(){ 
 				var res = this.__data
 				this.__data = d 
-				return res 
-			})
-		}
-		return this
-	},
+				return res }) }
+		return this },
 
 	// async data...
 	//
@@ -1263,9 +1224,9 @@ module.hiddenPromise = {
 			//this.then(function(){
 			this.lazy(function(){
 				return new Promise(function(r){
-					setTimeout(function(){ r(that.__data) }, 1000) 
-				})
-			})
+					setTimeout(
+						function(){ r(that.__data) }, 
+						1000) }) })
 
 		// set...
 		} else {
@@ -1275,14 +1236,9 @@ module.hiddenPromise = {
 						function(){ 
 							var res = that.__data
 							that.__data = d 
-							r(res)
-						},
-						1000) 
-				})
-			})
-		}
-		return this
-	},
+							r(res) },
+						1000) }) }) }
+		return this },
 }
 
 
@@ -1372,22 +1328,21 @@ var pWikiUIActions = actions.Actions({
 						// get item list...
 						var order = ui.item
 							.parent().children('macro[src]')
-								.map(function(){ return $(this).attr('src') })
+								.map(function(){ 
+									return $(this).attr('src') })
 								.toArray()
 
 						// save the order...
 						wiki
 							.get(order[0] + '/../*')
 								.order(['*'].concat(order))
-								.order('save')
-					},
+								.order('save') }, 
 				})
 				// NOTE: we are only adding touch to the active elements
 				// 		to avoid the side-effect of it canceling the default
 				// 		behaviour (i.e. scrolling)...
 				.find('.sort-handle')
-					.addTouch()
-		},
+					.addTouch() },
 		// title editor...
 		'.title': function(elems){
 			var client = this
@@ -1396,8 +1351,7 @@ var pWikiUIActions = actions.Actions({
 			elems
 				.focus(function(){
 					var to = $(this).attr('saveto') || '.'
-					$(this).text(wiki.get(to).title())
-				})
+					$(this).text(wiki.get(to).title()) })
 				.blur(function(){ 
 					var to = $(this).attr('saveto') || '.'
 					var text = $(this).text().trim()
@@ -1407,14 +1361,12 @@ var pWikiUIActions = actions.Actions({
 						page.path(text)
 
 					} else {
-						page.title(text)
-					}
+						page.title(text) }
 
 					// XXX need to account for changed path sufixes...
 					wiki.path(page.path)
 
-					client.reload()
-				})
+					client.reload() })
 
 			/* XXX this messes up history for some reason...
 			$('title').text(elems.first().text())
@@ -1428,20 +1380,16 @@ var pWikiUIActions = actions.Actions({
 			elems
 				.focus(function(){
 					var to = $(this).attr('saveto') || '.'
-					console.log('EDITING:', wiki.get(to).path())
-				})
+					console.log('EDITING:', wiki.get(to).path()) })
 				.on('keyup', function(){ 
 					var to = wiki.get($(this).attr('saveto') || '.').path()
 					console.log('SAVING:', to)
 					//Wiki.get(to).raw($(this).text())
-					wiki.get(to).raw($(this)[0].innerText)
-				})
+					wiki.get(to).raw($(this)[0].innerText) })
 				// XXX do this live, but on a timeout after user input...
 				// XXX need to place the cursor in the same position...
 				.blur(function(){ 
-					client.reload() 
-				})
-		},
+					client.reload() }) },
 		// checkbox handlers...
 		'input[type="checkbox"].state': function(elems){
 			var client = this
@@ -1456,8 +1404,7 @@ var pWikiUIActions = actions.Actions({
 					$(this)
 						.prop('checked', value)
 						.parents('.item').first()
-							[value ? 'addClass' : 'removeClass']('checked')
-				})
+							[value ? 'addClass' : 'removeClass']('checked') })
 				// handle clicks...
 				.click(function(){
 					var path = $(this).attr('saveto')
@@ -1467,12 +1414,13 @@ var pWikiUIActions = actions.Actions({
 
 					$(this)
 						.parents('.item').first()
-							[value ? 'addClass' : 'removeClass']('checked')
+							[value ? 
+								'addClass' 
+								: 'removeClass']('checked')
 
 					// XXX
 					//client.save()
-				})
-		},
+				}) },
 	},
 
 	// XXX add support for anchors -- #Wiki/Path#anchor...
@@ -1483,8 +1431,7 @@ var pWikiUIActions = actions.Actions({
 
 			if(arguments.length == 0){
 				// XXX is this correct???
-				return page.path()
-			}
+				return page.path() }
 
 			path = path.trim().split('#')
 			var hash = path[1]
@@ -1492,8 +1439,7 @@ var pWikiUIActions = actions.Actions({
 
 			// special paths...
 			if(path in this.config['special-paths']){
-				this[this.config['special-paths'][path]]()
-			}
+				this[this.config['special-paths'][path]]() }
 
 			var orig = this.location()
 
@@ -1518,8 +1464,7 @@ var pWikiUIActions = actions.Actions({
 							(this.dom
 							 	.find('#'+hash+', a[name="'+hash+'"]').first()
 									.offset() || {}).top || 0)
-				&& console.log('HASH:', hash)
-
+				&& console.log('HASH:', hash) 
 		}],
 	reload: ['', 
 		function(){
@@ -1536,9 +1481,7 @@ var pWikiUIActions = actions.Actions({
 					: page.get('./_view').html())
 				// activate page controls...
 				.ready(function(){
-					that.updateDom()
-				})
-		}],
+					that.updateDom() }) }],
 	// XXX might be a good idea to add actions to setup/clear a filter...
 	updateDom: ['', 
 		function(dom){
@@ -1546,8 +1489,7 @@ var pWikiUIActions = actions.Actions({
 			dom = dom || this.dom
 
 			if(dom.attr('wiki-active') == 'yes'){
-				return
-			}
+				return }
 
 			dom.attr('wiki-active', 'yes')
 
@@ -1558,12 +1500,12 @@ var pWikiUIActions = actions.Actions({
 			Object.keys(filters)
 				.forEach(function(pattern){
 					// XXX for some reason this works but has no effect...
-					filters[pattern].call(that, dom.find(pattern)) })
-		}],
+					filters[pattern].call(that, dom.find(pattern)) }) }],
 
 	// shorthand...
 	get: ['', 
-		function(){ return this.page.get.apply(this.page, arguments) }]
+		function(){ 
+			return this.page.get.apply(this.page, arguments) }]
 
 	/*
 	// XXX url?
@@ -1629,8 +1571,7 @@ module._test = function(){
 	// XXX do some testing...
 	// XXX
 
-	return page
-}
+	return page }
 
 
 
