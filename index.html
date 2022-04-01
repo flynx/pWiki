@@ -47,25 +47,26 @@
 var clearStorage = function(){
 	delete localStorage['store-persistently']
 	delete localStorage['wiki-data']
-	delete localStorage['wiki-location']
-}
+	delete localStorage['wiki-location'] }
 
 var getStorage = function(){
-	return localStorage['store-persistently'] ? localStorage : sessionStorage
-}
+	return localStorage['store-persistently'] ? 
+			localStorage 
+			: sessionStorage }
 
 var save = () => {
 	var storage = getStorage() 
 
 	// XXX save...
 	storage['wiki-data'] = JSON.stringify(Wiki.__wiki_data)
-	storage['wiki-location'] = Wiki.location
-}
+	storage['wiki-location'] = Wiki.location }
 
 var reload = () => {
 	// load the page...
 	$('.wiki')
-		.html(Wiki.title[0] == '_' ? Wiki.text : Wiki.get('./_view').text)
+		.html(Wiki.title[0] == '_' ? 
+				Wiki.text 
+				: Wiki.get('./_view').text)
 		.ready(update_editor)
 
 	save()
@@ -81,8 +82,9 @@ var reload = () => {
 			$(this)
 				.prop('checked', value)
 				.parents('.item').first()
-					[value ? 'addClass' : 'removeClass']('checked')
-		})
+					[value ? 
+							'addClass' 
+							: 'removeClass']('checked') })
 		// handle clicks...
 		.click(function(){
 			var path = $(this).attr('saveto')
@@ -92,12 +94,12 @@ var reload = () => {
 
 			$(this)
 				.parents('.item').first()
-					[value ? 'addClass' : 'removeClass']('checked')
+					[value ? 
+							'addClass' 
+							: 'removeClass']('checked')
 
 			// XXX
-			save()
-		})
-}
+			save() }) }
 
 var update_editor = function(){
 	// XXX move this to post-filters...
@@ -116,8 +118,7 @@ var update_editor = function(){
 	$('.title')
 		.focus(function(){
 			var to = $(this).attr('saveto') || '.'
-			$(this).text(Wiki.get(to).title)
-		})
+			$(this).text(Wiki.get(to).title) })
 		.blur(function(){ 
 			var to = $(this).attr('saveto') || '.'
 			var text = $(this).text().trim()
@@ -127,13 +128,11 @@ var update_editor = function(){
 				page.path = text
 
 			} else {
-				page.title = text
-			}
+				page.title = text }
 
 			// XXX need to account for changed path sufixes...
 			Wiki.path = page.path
-			reload()
-		})
+			reload() })
 
 	/*
 	// live update text...
@@ -164,15 +163,13 @@ var update_editor = function(){
 				//			.remove()
 				//			.end())
 				//	.html() 
-			}
-		})
+			} })
 		// XXX do this live, but on a timeout after user input...
 		// XXX need to place the cursor in the same position...
 		.blur(() => { 
 			$(this)
 				.removeAttr('contenteditable')
-			reload() 
-		})
+			reload() })
 	//*/
 
 	//text.html(Wiki.get(text.attr('saveto')).text)
@@ -182,19 +179,16 @@ var update_editor = function(){
 	var raw = $('.raw')
 		.focus(function(){
 			var to = $(this).attr('saveto') || '.'
-			console.log('EDITING:', Wiki.get(to).path)
-		})
+			console.log('EDITING:', Wiki.get(to).path) })
 		.on('keyup', function(){ 
 			var to = Wiki.get($(this).attr('saveto') || '.').path
 			console.log('SAVING:', to)
 			//Wiki.get(to).raw = $(this).text()
-			Wiki.get(to).raw = $(this)[0].innerText
-		})
+			Wiki.get(to).raw = $(this)[0].innerText })
 		// XXX do this live, but on a timeout after user input...
 		// XXX need to place the cursor in the same position...
 		.blur(() => { 
-			reload() 
-		})
+			reload() })
 		//.text($('.raw').html())
 	
 	//raw.text(Wiki.get(raw.attr('saveto')).raw)
@@ -203,8 +197,7 @@ var update_editor = function(){
 	$('include')
 		.attr('tabindex', 0)
 		.click(function(){
-			event.stopPropagation()
-		})
+			event.stopPropagation() })
 		.focus(function(){
 			var to = $(this).attr('src') || '.'
 			var page = Wiki.get(to)
@@ -214,8 +207,7 @@ var update_editor = function(){
 			$(this)
 				//.html(page.text)
 				.html($('<pre>')
-					.text(page.raw))
-		})
+					.text(page.raw)) })
 		.on('keyup', function(){ 
 			var to = Wiki.get($(this).attr('src') || '.').path
 			console.log('SAVING:', to)
@@ -225,8 +217,7 @@ var update_editor = function(){
 		// XXX do this live, but on a timeout after user input...
 		// XXX need to place the cursor in the same position...
 		.blur(() => { 
-			reload() 
-		})
+			reload() })
 	//*/
 }
 
@@ -241,8 +232,7 @@ var go = (path) => {
 		return history.back()
 
 	} else if(path == 'History/forward'){
-		return history.forward()
-	}
+		return history.forward() }
 
 	Wiki.location = path
 
@@ -252,8 +242,7 @@ var go = (path) => {
 		Wiki.title, 
 		window.location)
 
-	reload()
-}
+	reload() }
 
 var exportZip = function(){
 	var zip = new JSZip()
@@ -264,22 +253,18 @@ var exportZip = function(){
 	zip.generateAsync({type:"blob"})
 		.then(function(content) {
 			// see FileSaver.js
-			saveAs(content, "pWiki.zip")
-		})
-}
+			saveAs(content, "pWiki.zip") }) }
 
 $(() => {
 	$(window).on('popstate', function(evt){
 		event.state 
 			&& event.state.wikipath 
-			&& go(event.state.wikipath)
-	})
+			&& go(event.state.wikipath) })
 
 	// load bootstrap data...
 	if(window.Bootstrap){
 		Bootstrap.__proto__ = BaseData
-		data = Wiki.__wiki_data = Bootstrap
-	}
+		data = Wiki.__wiki_data = Bootstrap }
 
 	var storage = getStorage() 
 
@@ -288,8 +273,7 @@ $(() => {
 		JSON.parse(storage['wiki-data']) 
 		: data
 	if(Wiki.__wiki_data !== data){
-		Wiki.__wiki_data.__proto__ = data
-	}
+		Wiki.__wiki_data.__proto__ = data }
 
 	Wiki.location = storage['wiki-location'] || Wiki.location
 
@@ -317,10 +301,7 @@ $(() => {
 
 			if(hash.length > 0){
 				// XXX focus anchor...
-			}
-		}
-	})
-})
+			} } }) })
 
 </script>
 
