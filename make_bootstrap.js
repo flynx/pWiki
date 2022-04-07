@@ -31,6 +31,10 @@ glob('bootstrap/**/*.@(tpl|md|css|html)')
 			bootstrap['Doc/About'] = {
 				text: fs.readFileSync('README.md').toString(),
 			} }
+		if(fs.existsSync('LICENSE')){
+			bootstrap['LICENSE'] = {
+				text: fs.readFileSync('LICENSE').toString(),
+			} }
 		if(!bootstrap.WikiHome){
 			console.log('Setting:', 'WikiHome')
 			bootstrap.WikiHome = {

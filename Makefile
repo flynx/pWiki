@@ -10,4 +10,7 @@ bootstrap.js:
 bootstrap: bootstrap.js
 
 
+clean:
+	rm -f bootstrap.js
+
 
