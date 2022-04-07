@@ -190,9 +190,10 @@ module.BaseData = {
 		return this.get('..').reverse() },
 
 	'System/delete': function(){
-		var p = this.dir
-		delete this.__wiki_data[p]
-		return this.get('..') },
+		this.get('..').clear()
+		// XXX need a propper redirect...
+		return this.get('..')
+	},
 	//*/
 }
 

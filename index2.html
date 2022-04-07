@@ -70,7 +70,10 @@ $(function(){requirejs(['pwiki'], function(pwiki){
 	// load bootstrap data...
 	if(window.Bootstrap){
 		Bootstrap.__proto__ = pwiki.BaseData
-		data.__proto__ = Bootstrap }
+		// XXX
+		var data = wiki.__data = Bootstrap
+		//data.__proto__ = Bootstrap 
+	}
 
 	var client = window.client = 
 		new pwiki.pWikiClient()
