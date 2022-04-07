@@ -2,6 +2,7 @@
 
 
 
+
 bootstrap.js: scripts/bootstrap.js
 	node $<
 
@@ -9,6 +10,16 @@ bootstrap.js: scripts/bootstrap.js
 
 .PHONY: bootstrap
 bootstrap: bootstrap.js
+
+
+node_modules:
+	npm install
+
+
+dev: node_modules
+	cp $</ig-object/object.js lib/
+	cp $</ig-actions/actions.js lib/
+	cp $</ig-features/features.js lib/
 
 
 

@@ -4,20 +4,22 @@
   "author": "Alex A. Naanou <alex.nanou@gmail.com>",
   "license": "BSD",
   "dependencies": {
-    "glob": "^7.1.4",
-    "ig-actions": "^1.9.0",
-    "ig-features": "^2.2.6",
-    "ig-object": "^2.0.0",
-    "jszip": "^2.6.1",
-    "peer": "^0.2.10",
-    "pouch-replicate-webrtc": "0.0.9",
-    "pouchdb": "^7.1.1",
-    "requirejs": "^2.3.6",
-    "showdown": "^1.9.0",
-    "xss": "^0.2.13"
+    "glob": "*",
+    "ig-actions": "*",
+    "ig-features": "*",
+    "ig-object": "*",
+    "jszip": "*",
+    "requirejs": "*"
+  },
+  "disabled-dependencies": {
+    "peer": "*",
+    "pouch-replicate-webrtc": "*",
+    "pouchdb": "*",
+    "showdown": "*",
+    "xss": "*"
   },
   "devDependencies": {},
   "scripts": {
-    "bootstrap": "node make_bootstrap.js"
+    "bootstrap": "node scripts/bootstrap.js"
   }
 }

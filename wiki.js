@@ -16,17 +16,21 @@ RegExp.quoteRegExp =
 				.replace(/([\.\\\/\(\)\[\]\$\*\+\-\{\}\@\^\&\?\<\>])/g, '\\$1') }
 
 var path2lst = function(path){ 
-	return (path instanceof Array ?  path : path.split(/[\\\/]+/g))
+	return (path instanceof Array ? 
+			path 
+			: path.split(/[\\\/]+/g))
 		// handle '..' (lookahead) and trim path elements...
 		// NOTE: this will not touch the leading '.' or '..'
 		.map(function(p, i, l){
-			return (i > 0 && (p.trim() == '..' || p.trim() == '.')
+			return (i > 0 
+					&& (p.trim() == '..' || p.trim() == '.')
 					|| (l[i+1] || '').trim() == '..') ? 
 				null 
 				: p.trim() })
 		// cleanup and clear '.'...
 		.filter(function(p){ 
-			return p != null && p != '' })}
+			return p != null 
+				&& p != '' })}
 
 var normalizePath = function(path){
 	return path2lst(path).join('/') }

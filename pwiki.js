@@ -14,7 +14,6 @@ var features = require('lib/features')
 var macro = require('macro')
 
 
-
 /*********************************************************************/
 
 // Split path into a list and handle special path elements...
@@ -42,12 +41,15 @@ var macro = require('macro')
 // NOTE: '>>' has no effect when at last position (XXX ???)
 var path2list =
 module.path2list = function(path){ 
-	return (path instanceof Array ?  path : path.split(/[\\\/]+/g))
+	return (path instanceof Array ? 
+			path 
+			: path.split(/[\\\/]+/g))
 		// handle '..' (lookahead) and trim path elements...
 		// NOTE: this will not touch the leading '.' or '..'
 		.map(function(p, i, l){
 			// remove '..' and '.' out at positions > 0...
-			return (i > 0 && (p.trim() == '..' || p.trim() == '.')
+			return (i > 0 
+					&& (p.trim() == '..' || p.trim() == '.')
 					// remove items followed by '..'...
 					|| (l[i+1] || '').trim() == '..'
 					// remove items preceded by '>>'...
@@ -64,7 +66,8 @@ module.path2list = function(path){
 //
 // This is the same as path2list(..) but also joins the path with '/'
 var normalizePath =
-module.normalizePath = function(path){ return path2list(path).join('/') }
+module.normalizePath = function(path){ 
+	return path2list(path).join('/') }
 
 
 var path2re = 
