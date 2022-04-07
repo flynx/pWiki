@@ -1,6 +1,7 @@
 /**********************************************************************
 * 
 *
+* XXX this seems a bit overcomplicated...
 *
 **********************************************************************/
 ((typeof define)[0]=='u'?function(f){module.exports=f(require)}:define)
