@@ -1107,7 +1107,8 @@ module.pWikiMacros = actions.Actions(pWikiBase, {
 // 		can get using native JS lookup mechanisms, or at least the 
 // 		farthest I've pushed it so far...
 var pWikiPage =
-module.pWikiPage = object.Constructor('pWikiPage', 
+module.pWikiPage = 
+object.Constructor('pWikiPage', 
 	actions.mix(
 		// XXX not sure if we need this here...
 		//actions.MetaActions,

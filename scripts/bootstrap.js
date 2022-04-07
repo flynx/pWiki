@@ -18,28 +18,29 @@ glob('bootstrap/**/*.@(tpl|md|css|html)')
 		var p = path
 			.replace('bootstrap/', '')
 			.replace(/\.(json|txt|md|css|html)/, '')
-
-		p
-			&& console.log('Found:', p)
-
+		console.log('Found:', p)
 		bootstrap[p] = {
 			text: fs.readFileSync(path).toString(),
 		} })
 	.on('end', function(){
+
+		// extra root stuff...
 		if(fs.existsSync('README.md')){
 			console.log('Setting:', 'About')
 			bootstrap['Doc/About'] = {
 				text: fs.readFileSync('README.md').toString(),
 			} }
-		if(fs.existsSync('LICENSE')){
-			console.log('Setting:', 'LICENSE')
-			bootstrap['LICENSE'] = {
-				text: fs.readFileSync('LICENSE').toString(),
-			} }
 		if(!bootstrap.WikiHome){
 			console.log('Setting:', 'WikiHome')
 			bootstrap.WikiHome = {
 				text: '@include(Doc/About)'
+			} }
+		if(fs.existsSync('LICENSE')){
+			console.log('Setting:', 'LICENSE')
+			bootstrap['LICENSE'] = {
+				text: `${ 
+						fs.readFileSync('LICENSE').toString() 
+					}<!-- @filter(text) -->`,
 			} }
 
 		var txt = '// This file is generated automatically, '

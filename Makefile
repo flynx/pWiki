@@ -2,12 +2,14 @@
 
 
 
-bootstrap.js:
-	node make_bootstrap.js
+bootstrap.js: scripts/bootstrap.js
+	node $<
+
 
 
 .PHONY: bootstrap
 bootstrap: bootstrap.js
+
 
 
 clean:

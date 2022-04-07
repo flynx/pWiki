@@ -95,4 +95,5 @@ pre {
 }
 
 /* @filter(-wikiword) */
+/* @filter(text) */
 /* vim:set ts=4 sw=4 ft=css : */

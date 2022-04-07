@@ -344,7 +344,6 @@ var macro = {
 
 		html: function(context, elem){ 
 			return $(elem) },
-
 		text: function(context, elem){ 
 			return $('<span>')
 				.append($('<pre>')
@@ -454,6 +453,7 @@ var macro = {
 	},
 
 
+	//
 	// Parsing:
 	//  1) expand macros
 	//  2) apply filters
@@ -956,15 +956,13 @@ data.__proto__ = BaseData
 // XXX experimental...
 // 		...for some reason these are called twice...
 var PathActions = {
-	/*
+	// XXX
 	test: function(){
 		var p = path2lst(this.location)
 
 		console.log('!!! TEST !!!')
 
-		this.location = p.slice(0, -1)
-	},
-	//*/
+		this.location = p.slice(0, -1) },
 	delete: function(){
 		var p = normalizePath(path2lst(this.location).slice(0, -1))
 
@@ -1091,7 +1089,6 @@ var Wiki = {
 		delete this.__order
 		delete this.__order_by
 		this.__location = this.resolvePathVars(this.resolveDotPath(value))
-
 		this.resolvePathActions() },
 
 

@@ -47,23 +47,19 @@ are likely to change, the implementation / API **will definitely** change! ;)_
 
 ### General Documentation:
 <pwiki-comment>
-
 - [General info](README.md) - This document.
 - [Bootstrap path](bootstrap/Doc/Path.md) - Path mechanics.
 - [Bootstrap macros](bootstrap/Doc/Macros.md) - Macro documentation
-
 </pwiki-comment>
 <!--[pWiki[
-
 - [Doc/About] - This document.
 - [Doc/Path] - Path mechanics.
 - [Doc/Macros] - Macro documentation
-
 ]]-->
 
 
-
 ### Project:
+
 - The project on [GitHub](https://github.com/flynx/pWiki)
 - pWiki [live demo (hosted on Gitgub)](https://flynx.github.io/pWiki/) _&ndash; 
 The data is stored in sessionStorage on the client, closing the tab/browser 
@@ -72,15 +68,10 @@ will reset the wiki._
 
 ### License and Copyright
 
-
 pWiki is developed by [Alex A. Naanou](https://github.com/flynx) and 
-licensed under the 
-<pwiki-comment>
-[3-Clause BSD License](LICENSE)
-</pwiki-comment>
-<!--[pWiki[
-[3-Clause BSD License](#LICENSE)
-]]-->
+licensed under the <pwiki-comment>[3-Clause BSD License](LICENSE)
+</pwiki-comment><!--[pWiki[ [3-Clause BSD License](#LICENSE) ]]-->
+
 
 
 <!-- @filter(markdown) -->
