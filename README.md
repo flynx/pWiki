@@ -72,9 +72,15 @@ will reset the wiki._
 
 ### License and Copyright
 
-pWiki is developed by [Alex A. Naanou](https://github.com/flynx) and 
-licensed under the [3-Clause BSD License](LICENSE)
 
+pWiki is developed by [Alex A. Naanou](https://github.com/flynx) and 
+licensed under the 
+<pwiki-comment>
+[3-Clause BSD License](LICENSE)
+</pwiki-comment>
+<!--[pWiki[
+[3-Clause BSD License](#LICENSE)
+]]-->
 
 
 <!-- @filter(markdown) -->
