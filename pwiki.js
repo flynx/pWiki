@@ -184,9 +184,11 @@ module.BaseData = {
 
 	// Page modifiers/actions...
 	// XXX these needs redirecting...
-	//'System/sort': function(){ return this.get('..').sort() },
-	//'System/reverse': function(){ return this.get('..').reverse() },
-	/*
+	'System/sort': function(){ 
+		return this.get('..').sort() },
+	'System/reverse': function(){ 
+		return this.get('..').reverse() },
+
 	'System/delete': function(){
 		var p = this.dir
 		delete this.__wiki_data[p]
@@ -422,7 +424,8 @@ module.pWikiBase = actions.Actions({
 
 
 	// XXX should this be local/dump???
-	json: ['', function(){ }],
+	json: ['', 
+		function(){ }],
 
 
 	// Location and path API...
@@ -1056,7 +1059,6 @@ module.pWikiMacros = actions.Actions(pWikiBase, {
 					// parse macros...
 					: (this.__macro_parser__ || pWikiMacros.__macro_parser__)
 						.parse(this, this.raw()))
-
 				// set...
 				: this
 					// clear cached stuff related to text...
@@ -1274,13 +1276,16 @@ var pWikiLocalStorage = pWikiFeatures.Feature({
 			'update', 
 			'clear',
 		],
-			function(){ this.save() }],
+			function(){ 
+				this.save() }],
 
 		[[
 			'path',
 			'data',
 		], 
-			function(){ arguments.length > 1 && this.save() }],
+			function(){
+				arguments.length > 1 
+					&& this.save() }],
 	],
 })
 
@@ -1372,10 +1377,7 @@ var pWikiUIActions = actions.Actions({
 
 					client.reload() })
 
-			/* XXX this messes up history for some reason...
-			$('title').text(elems.first().text())
-			//*/
-		},
+			$('title').text(elems.first().text()) },
 		// raw text editor...
 		'.raw': function(elems){
 			var client = this
@@ -1468,8 +1470,7 @@ var pWikiUIActions = actions.Actions({
 							(this.dom
 							 	.find('#'+hash+', a[name="'+hash+'"]').first()
 									.offset() || {}).top || 0)
-				&& console.log('HASH:', hash) 
-		}],
+				&& console.log('HASH:', hash) }],
 	reload: ['', 
 		function(){
 			var that = this

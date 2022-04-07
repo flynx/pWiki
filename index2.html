@@ -52,17 +52,17 @@ var exportZip = function(){
 	zip.generateAsync({type:"blob"})
 		.then(function(content) {
 			// see FileSaver.js
-			saveAs(content, "pWiki.zip")
-		})
-}
+			saveAs(content, "pWiki.zip") }) }
 
 
 $(function(){requirejs(['pwiki'], function(pwiki){
 
 	var wiki = Object.create(pwiki.pWikiData)
-	var page = window.page = new pwiki.pWikiPage({
-		wiki: wiki,
-	})
+
+	var page = window.page = 
+		new pwiki.pWikiPage({
+			wiki: wiki,
+		})
 
 	// XXX load data...
 	var data = wiki.__data = {} 
@@ -70,16 +70,17 @@ $(function(){requirejs(['pwiki'], function(pwiki){
 	// load bootstrap data...
 	if(window.Bootstrap){
 		Bootstrap.__proto__ = pwiki.BaseData
-		data.__proto__ = Bootstrap
-	}
+		data.__proto__ = Bootstrap }
 
-	var client = window.client = new pwiki.pWikiClient()
+	var client = window.client = 
+		new pwiki.pWikiClient()
 	client.page = page
 	client.dom = $('.wiki')
 
 	// get the base url...
 	var url = window.location.hash.slice(1)
-	url = url != '' ? url 
+	url = url != '' ? 
+		url 
 		// XXX get and load page location...
 		// XXX
 		: 'WikiHome' 
@@ -100,9 +101,8 @@ $(function(){requirejs(['pwiki'], function(pwiki){
 
 		// open page...
 		} else {
-			client.location(path)
-		}
-	})
+			client.location(path) } })
+
 })})
 
 </script>

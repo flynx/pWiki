@@ -18,17 +18,17 @@ var setWikiWords = function(text, show_brackets, skip){
 			function(l){
 				// check if WikiWord is escaped...
 				if(l[0] == '\\'){
-					return l.slice(1)
-				}
+					return l.slice(1) }
 
-				var path = l[0] == '[' ? l.slice(1, -1) : l
+				var path = l[0] == '[' ? 
+					l.slice(1, -1) 
+					: l
 				var i = [].slice.call(arguments).slice(-2)[0]
 
 				// XXX HACK check if we are inside a tag...
 				var rest = text.slice(i+1)
 				if(rest.indexOf('>') < rest.indexOf('<')){
-					return l
-				}
+					return l }
 
 				return skip.indexOf(l) < 0 ? 
 					('<a '
@@ -39,9 +39,7 @@ var setWikiWords = function(text, show_brackets, skip){
 						+'>'
 							+ (!!show_brackets ? path : l) 
 						+'</a>')
-					: l
-			})}
-
+					: l })}
 
 
 
@@ -50,8 +48,7 @@ var setWikiWords = function(text, show_brackets, skip){
 function Macro(doc, args, func){
 	func.doc = doc
 	func.macro_args = args
-	return func 
-}
+	return func }
 
 
 
@@ -110,11 +107,11 @@ module = {
 		"pwiki-comment": Macro('hide in pWiki',
 			[],
 			function(context, elem, state){ 
-				return '' 
-			}),
+				return '' }),
 		now: Macro('Create a now id',
 			[],
-			function(context, elem, state){ return ''+Date.now() }),
+			function(context, elem, state){ 
+				return ''+Date.now() }),
 		// select filter to post-process text...
 		filter: Macro('Filter to post-process text',
 			['name'],
@@ -127,8 +124,7 @@ module = {
 					// normal -- tail...
 					: state.filters.push(filter)
 
-				return ''
-			}),
+				return '' }),
 
 		// include page/slot...
 		//
@@ -145,8 +141,7 @@ module = {
 					.push([elem, context.get(path)])
 
 				// return the marker...
-				return this.__include_marker__
-			}),
+				return this.__include_marker__ }),
 
 		// NOTE: this is similar to include, the difference is that this
 		// 		includes the page source to the current context while 
@@ -158,8 +153,7 @@ module = {
 
 				return context.get(path)
 					.map(function(page){ return page.raw() })
-					.join('\n')
-			}),
+					.join('\n') }),
 
 		quote: Macro('Include quoted page source (without parsing)',
 			['src'], 
@@ -172,9 +166,7 @@ module = {
 						return elem
 							.clone()
 							.attr('src', page.path())
-							.text(page.raw())[0]
-					}))
-			}),
+							.text(page.raw())[0] })) }),
 
 		/*
 		// fill/define slot (stage 1)...
@@ -199,9 +191,7 @@ module = {
 
 				} else if(name in state.slots){
 					state.slots[name] = text
-					return ''
-				}
-			}),
+					return '' } }),
 		//*/
 		// convert @ macro to html-like + parse content...
 		slot: Macro('Define/fill slot',
@@ -220,8 +210,7 @@ module = {
 				elem.attr('text', null)
 				//elem.html(text)
 
-				return elem
-			}),
+				return elem }),
 
 		// XXX revise macro definition rules -- see inside...
 		// XXX do we need macro namespaces or context isolation (for inculdes)???
@@ -248,9 +237,7 @@ module = {
 						state.templates[name] = elem.clone()
 
 					} else if(name in state.templates) {
-						elem = state.templates[name]
-					}
-				}
+						elem = state.templates[name] } }
 
 				// fill macro...
 				if(path){
@@ -262,8 +249,7 @@ module = {
 							.find('else').first().clone()
 								.attr('src', path)
 						parse(e, context)
-						return e
-					} 
+						return e } 
 
 					// see if we need to overload attrs...
 					sort = sort == null ? (elem.attr('sort') || '') : sort
@@ -284,12 +270,9 @@ module = {
 							var e = elem.clone()
 								.attr('src', page.path())
 							parse(e, page)
-							return e[0]
-						}))
-				}
+							return e[0] })) }
 
-				return ''
-			})
+				return '' })
 	},
 	
 	// Post macros... 
@@ -300,10 +283,10 @@ module = {
 			[],
 			function(context, elem, state, parse, match){
 				if(match != null){
-					return match[0] == '\\' ? match.slice(1) : match
-				}
-				return elem
-			}),
+					return match[0] == '\\' ? 
+						match.slice(1) 
+						: match }
+				return elem }),
 		/*
 		_slot: Macro('',
 			['name'],
@@ -314,9 +297,7 @@ module = {
 					return $(elem).html()
 
 				} else if(name in state.slots){
-					return state.slots[name]
-				}
-			}),
+					return state.slots[name] } }),
 		//*/
 
 		/*
@@ -326,15 +307,13 @@ module = {
 			function(context, elem, state){
 				elem = $(elem)
 
-				return elem.html(context.get(elem.attr('src')).text)
-			}),
+				return elem.html(context.get(elem.attr('src')).text) }),
 		'page-raw': Macro('',
 			['src'],
 			function(context, elem, state){
 				elem = $(elem)
 
-				return elem.text(context.get(elem.attr('src')).text)
-			}),
+				return elem.text(context.get(elem.attr('src')).text) }),
 		//*/
 	},
 
@@ -346,11 +325,12 @@ module = {
 	filter: {
 		default: 'html',
 
-		html: function(context, elem){ return $(elem) },
-
-		text: function(context, elem){ return $('<span>')
-			.append($('<pre>')
-				.html($(elem).html())) },
+		html: function(context, elem){ 
+			return $(elem) },
+		text: function(context, elem){ 
+			return $('<span>')
+				.append($('<pre>')
+					.html($(elem).html())) },
 		// XXX expperimental...
 		json: function(context, elem){ return $('<span>')
 			.html($(elem).text()
@@ -359,7 +339,10 @@ module = {
 
 		// XXX
 		nl2br: function(context, elem){ 
-			return $('<div>').html($(elem).html().replace(/\n/g, '<br>\n')) },
+			return $('<div>')
+				.html($(elem)
+					.html()
+					.replace(/\n/g, '<br>\n')) },
 
 		wikiword: function(context, elem){ 
 			return $('<span>')
@@ -396,8 +379,7 @@ module = {
 					.parent()
 						.addClass('checked')
 						.end()
-					.end()
-		},
+					.end() },
 	},
 
 
@@ -414,8 +396,7 @@ module = {
 	post_filter: {
 		noscript: function(context, elem){
 			// XXX
-			return elem
-		},
+			return elem },
 
 		// Setup the page title and .title element...
 		//
@@ -432,11 +413,9 @@ module = {
 			// show first H1 as title...
 			if(elem.find('.text').text().trim().indexOf(title.text().trim()) == 0){
 				title.detach()
-				elem.find('.title').html(title.html())
-			}
+				elem.find('.title').html(title.html()) }
 
-			return elem
-		},
+			return elem },
 		// XXX this needs save/reload...
 		editor: function(context, elem){
 			// XXX title
@@ -445,8 +424,7 @@ module = {
 			// XXX raw
 			// XXX checkbox
 
-			return elem
-		},
+			return elem },
 	},
 
 
@@ -485,7 +463,8 @@ module = {
 		state.seen = state.seen || []
 
 		//pattern = pattern || RegExp('@([a-zA-Z-_]+)\\(([^)]*)\\)', 'mg')
-		pattern = pattern || RegExp.apply(null, this.__macro__pattern__)
+		pattern = pattern
+			|| RegExp.apply(null, this.__macro__pattern__)
 
 		// XXX need to quote regexp chars...
 		var include_marker = RegExp(this.__include_marker__, 'g')
@@ -498,9 +477,8 @@ module = {
 			return text.replace(pattern, function(match){
 				// quoted macro...
 				if(match[0] == '\\' && macro['*'] == null){
-					return match.slice(1)
-					//return match
-				}
+					return match.slice(1) }
+					//return match }
 
 				// XXX parse match...
 				var d = match.match(/@([a-zA-Z-_:]*)\(([^)]*)\)/)
@@ -510,22 +488,30 @@ module = {
 				if(name in macro || '*' in macro){
 					var elem = $('<'+name+'/>')
 
-					name = name in macro ? name : '*'
+					name = name in macro ? 
+						name 
+						: '*'
 
 					// format positional args....
 					var a = d[2]
 						.split(/((['"]).*?\2)|\s+/g)
 						// cleanup...
-						.filter(function(e){ return e && e != '' && !/^['"]$/.test(e)})
+						.filter(function(e){ 
+							return e 
+								&& e != '' 
+								&& !/^['"]$/.test(e)})
 						// remove quotes...
-						.map(function(e){ return /^(['"]).*\1$/.test(e) ? e.slice(1, -1) : e })
+						.map(function(e){ 
+							return /^(['"]).*\1$/.test(e) ? 
+								e.slice(1, -1) 
+								: e })
 
 					// add the attrs to the element...
 					name != '*' 
 						&& a.forEach(function(e, i){
 							var k = ((macro[name] || {}).macro_args || [])[i]
-							k && elem.attr(k, e)
-						})
+							k 
+								&& elem.attr(k, e) })
 
 					// call macro...
 					var res = macro[name]
@@ -539,35 +525,29 @@ module = {
 							res.map(function(i, e){ return e.outerHTML })
 								.toArray()
 								.join('\n')
-						: typeof(res) != typeof('str') ? res.outerHTML
-						: res
-				}
+						: typeof(res) != typeof('str') ? 
+							res.outerHTML
+						: res }
 
-				return match
-			})
-		}
+				return match }) }
 		// NOTE: this modifies parsed in-place...
 		var _parse = function(context, parsed, macro){
 			$(parsed).contents().each(function(_, e){
 				// #text / comment node -> parse the @... macros...
-				if(e.nodeType == e.TEXT_NODE || e.nodeType == e.COMMENT_NODE){
+				if(e.nodeType == e.TEXT_NODE 
+						|| e.nodeType == e.COMMENT_NODE){
 					// get actual element content...
-					var text = e.nodeValue
+					// NOTE: we need to do this like this to avoid 
+					// 		unparsing special characters...
+					var text = $('<div>').append($(e).clone()).html()
 
 					// conditional comment...
-					if(e.nodeType == e.COMMENT_NODE){
-						text =  /^<!--\s*\[pWiki\[(.|\n)*\]\]\s*-->$/.test(text) ?
-							text
-								.replace(/^<!--\s*\[pWiki\[/, '')
-								.replace(/\]\]\s*-->$/, '')
-							: ('<!--'+ text +'-->')
-					}
+					if(e.nodeType == e.COMMENT_NODE 
+							&& /^<!--\s*\[pWiki\[(.|\n)*\]\]\s*-->$/.test(text)){
+						text = text
+							.replace(/^<!--\s*\[pWiki\[/, '')
+							.replace(/\]\]\s*-->$/, '') }
 
-					/*
-					var t = _parseText(context, text, macro)
-					text != t 
-						&& $(e).replaceWith(t)
-					//*/
 					$(e).replaceWith(_parseText(context, text, macro))
 
 				// node -> html-style + attrs...
@@ -578,8 +558,7 @@ module = {
 					for(var i=0; i < e.attributes.length; i++){
 						var attr = e.attributes[i]
 
-						attr.value = _parseText(context, attr.value, macro)
-					}
+						attr.value = _parseText(context, attr.value, macro) }
 
 					// macro match -> call macro...
 					if(name in  macro){
@@ -590,13 +569,9 @@ module = {
 
 					// normal tag -> sub-tree...
 					} else {
-						_parse(context, e, macro)
-					}
-				}
-			})
+						_parse(context, e, macro) } } })
 
-			return parsed
-		}
+			return parsed }
 		var _filter = function(lst, filters){
 			lst
 				// unique -- leave last occurance..
@@ -605,8 +580,7 @@ module = {
 						// filter dupplicates... 
 						&& lst.slice(i+1).indexOf(k) == -1 
 							// filter disabled...
-						&& lst.slice(0, i).indexOf('-' + k) == -1
-				})
+						&& lst.slice(0, i).indexOf('-' + k) == -1 })
 				// unique -- leave first occurance..
 				//.filter(function(k, i, lst){ return lst.slice(0, i).indexOf(k) == -1 })
 				// apply the filters...
@@ -616,17 +590,13 @@ module = {
 					var seen = []
 					while(typeof(k) == typeof('str') && seen.indexOf(k) == -1){
 						seen.push(k)
-						k = filters[k]
-					}
+						k = filters[k] }
 					// could not find the filter...
 					if(!k){
 						//console.warn('Unknown filter:', f)
-						return
-					}
+						return }
 					// use the filter...
-					parsed = k.call(that, context, parsed) 
-				})
-		}
+					parsed = k.call(that, context, parsed) }) }
 
 		// macro stage...
 		_parse(context, parsed, this.macro)
@@ -649,8 +619,7 @@ module = {
 
 					var seen = state.seen.slice()
 					if(seen.indexOf(page.path()) >= 0){
-						return elem.html()
-					}
+						return elem.html() }
 					seen.push(page.path())
 
 					return page.map(function(page){
@@ -669,11 +638,10 @@ module = {
 										!isolated)))
 										//true)))
 							.html()
-					}).join('\n')
-				}))
+					}).join('\n') }))
 
 		// XXX DEBUG...
-		console.log('<<<', context.path(),'TIME:', Date.now() - t)
+		//console.log('<<<', context.path(),'TIME:', Date.now() - t)
 
 		// post processing...
 		if(!skip_post){
@@ -690,15 +658,14 @@ module = {
 					// 		...check if it prevents correct slot parsing
 					// 		within an isolated include...
 					if(e.parents('[isolated="true"]').length > 0){
-						return
-					}
+						return }
 
 					var n = e.attr('name')
 
-					n in slots && e.detach()
+					n in slots 
+						&& e.detach()
 
-					slots[n] = e 
-				})
+					slots[n] = e })
 			// place slots...
 			parsed.find('slot')
 				.each(function(i, e){
@@ -708,13 +675,11 @@ module = {
 					// 		...check if it prevents correct slot parsing
 					// 		within an isolated include...
 					if(e.parents('[isolated="true"]').length > 0){
-						return
-					}
+						return }
 
 					var n = e.attr('name')
 
-					e.replaceWith(slots[n])
-				})
+					e.replaceWith(slots[n]) })
 
 			// post-macro...
 			// XXX for some odd reason this clears the backslash from 
@@ -728,8 +693,7 @@ module = {
 		_filter(this.__post_filters__, this.post_filter)
 
 		// XXX shuld we get rid of the root span???
-		return parsed.contents()
-	},
+		return parsed.contents() },
 }
 
 
