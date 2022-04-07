@@ -32,6 +32,7 @@ glob('bootstrap/**/*.@(tpl|md|css|html)')
 				text: fs.readFileSync('README.md').toString(),
 			} }
 		if(fs.existsSync('LICENSE')){
+			console.log('Setting:', 'LICENSE')
 			bootstrap['LICENSE'] = {
 				text: fs.readFileSync('LICENSE').toString(),
 			} }
