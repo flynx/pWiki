@@ -69,5 +69,13 @@ are likely to change, the implementation / API **will definitely** change! ;)_
 The data is stored in sessionStorage on the client, closing the tab/browser 
 will reset the wiki._
 
+
+### License and Copyright
+
+pWiki is developed by [Alex A. Naanou](https://github.com/flynx) and 
+licensed under the [3-Clause BSD License](LICENSE)
+
+
+
 <!-- @filter(markdown) -->
 <!-- vim:set ts=2 sw=2 expandtab spell : -->
