@@ -71,13 +71,31 @@ module.normalizePath = function(path){
 	return path2list(path).join('/') }
 
 
+// XXX add pattern to match all subpaths above...
+// 		Ex:
+// 			'a/b/c/^' shold mathc 'a/b/c', 'a/b', 'a'
 var path2re = 
 module.path2re = function(path){
 	return RegExp('^'
 		+normalizePath(path)
-			// quote regexp chars...
+			/*/ quote regexp chars...
 			.replace(/([\.\\\/\(\)\[\]\$\+\-\{\}\@\^\&\?\<\>])/g, '\\$1')
-
+			/*/// XXX experimental...
+			.replace(/([\.\\\/\(\)\[\]\$\+\-\{\}\@\^\&\?\>])/g, '\\$1')
+			// '<' -> handle subpath matching...
+			// XXX this needs * up the stack...
+			.replace(/.*</, function(match){
+				return `(${ match
+					.replace(/(\\[\\\/])?<$/, '')
+					.split(/\\[\\\/]/)
+					.reduce(function(res, e){
+						return res.concat([
+							(res.length > 0 ? 
+								res[res.length-1] +'\/' 
+								: '')
+							+ e]) }, [])
+					.join('|') })` })
+			//*/
 			// convert '*' and '**' to regexp...
 			.replace(/\*\*/g, '.*')
 			.replace(/^\*|([^.])\*/g, '$1[^\\/]*')
@@ -185,17 +203,43 @@ module.BaseData = {
 
 	// Page modifiers/actions...
 	// XXX these needs redirecting...
+	// 		...not sure if using history here is the right way to go...
+	'System/_sort': function(){ 
+		this.get('..').sort() },
 	'System/sort': function(){ 
-		return this.get('..').sort() },
+		// XXX does not work for some reason...
+		//this.get('../_sort')
+		this.get('..').sort()
+		history
+			&& history.back() },
+	'System/_reverse': function(){ 
+		this.get('..').reverse() },
 	'System/reverse': function(){ 
-		return this.get('..').reverse() },
+		// XXX does not work for some reason...
+		//this.get('../_reverse')
+		this.get('..').reverse()
+		history
+			&& history.back() },
 
+	'System/_delete': function(){
+		this.get('..').clear() },
 	'System/delete': function(){
+		// XXX does not work for some reason...
+		//this.get('../_delete')
 		this.get('..').clear()
-		// XXX need a propper redirect...
-		return this.get('..')
-	},
-	//*/
+		history
+			&& history.back() },
+	
+	'System/back': function(){
+		history.go(-2) },
+	// XXX not sure how to deal with this...
+	//'System/foreward': function(){
+	//	history.go(1) },
+	
+	// XXX need to support simple functions...
+	// 		...return a list to simulate a list of pages...
+	'System/test': function(){
+		return ['list', 'of', 'links'] },
 }
 
 
@@ -255,13 +299,11 @@ module.pWikiData = {
 						return !data.hasOwnProperty(e) }))
 			.filter(function(p){ 
 				return pattern.test(p) })
-
 			// page...
 			.slice(from, 
 				count ? 
 					from + count 
 					: undefined)
-
 			// prepare to sort...
 			.map(function(p, i){ 
 				return sort
@@ -274,13 +316,19 @@ module.pWikiData = {
 							return i }
 
 						// drop the reversal marker...
-						method = method[0] == '-' ? method.slice(1) : method
+						method = method[0] == '-' ? 
+							method.slice(1) 
+							: method
 
 						// stored order...
 						if(method == 'order'){
 							i = order.indexOf(p)
-							i = i < 0 ? order.indexOf('*') : i
-							i = i < 0 ? order.length : i
+							i = i < 0 ? 
+								order.indexOf('*') 
+								: i
+							i = i < 0 ? 
+								order.length 
+								: i
 							return i }
 
 						return method == 'path' ? 
@@ -297,8 +345,7 @@ module.pWikiData = {
 									1 
 									: 0)
 							// attr...
-							: data[p][method]
-					})
+							: data[p][method] })
 					.concat([i, p]) })
 			// sort...
 			.sort(function(a, b){ 

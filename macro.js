@@ -252,13 +252,17 @@ module = {
 						return e } 
 
 					// see if we need to overload attrs...
-					sort = sort == null ? (elem.attr('sort') || '') : sort
+					sort = sort == null ? 
+						(elem.attr('sort') || '') 
+						: sort
 					sort = sort
 							.split(/\s+/g)
 							.filter(function(e){ return e && e != '' })
 
 					// do the sorting...
-					pages = sort.length > 0 ? pages.sort(sort) : pages
+					pages = sort.length > 0 ? 
+						pages.sort(sort) 
+						: pages
 
 					// fill with pages...
 					elem = elem.clone()
