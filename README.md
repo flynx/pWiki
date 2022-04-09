@@ -46,6 +46,10 @@ are likely to change, the implementation / API **will definitely** change! ;)_
       pWiki components.
 
 ### General Documentation:
+<!--
+NOTE: newlines here are needed to satisfy all the various markdown 
+      parsers, especially GitHub's... 
+-->
 <pwiki-comment>
 
 - [General info](README.md) - This document.
