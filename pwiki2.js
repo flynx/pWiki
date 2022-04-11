@@ -112,6 +112,7 @@ module.pWikiPath = {
 
 // XXX should we support page symlinking???
 // XXX store keys must be normalized...
+// XXX must support store stacks...
 var store = 
 module.store = {
 	exists: function(path){
@@ -145,6 +146,7 @@ module.store = {
 		for(var p of pWikiPath.paths(path)){
 			if(p in this){
 				return p } } },
+	// XXX should this call actions???
 	get: function(path){
 		var that = this
 		path = this.match(path)
@@ -175,6 +177,52 @@ module.store = {
 		return this },
 }
 
+
+// XXX need to specify page format....
+// XXX need a way to set the page path...
+var actions = 
+module.actions = {
+	__proto__: store,
+
+	// base actions (virtual pages)...
+	'/System/raw': function(page, path){
+		return { text: this.get(path +'/..') } },
+	// XXX ...
+}
+
+
+var relProxy = 
+function(name){
+	return function(path='.', ...args){
+		return this.store[name](
+			pWikiPath.relative(this.path, path), 
+			...args) } } 
+
+// page interface...
+var page =
+module.page = {
+	store: undefined,
+	path: undefined,
+	text: undefined,
+
+	exists: relProxy('exists'), 
+	match: relProxy('match'), 
+	// XXX should this return page objects???
+	get: relProxy('get'), 
+
+	update: function(path='.', data, mode){
+		if(arguments.length == 1){
+			data = path
+			path = '.' }
+		return this.store.update(pWikiPath.relative(this.path, path), data, mode) },
+	delete: relProxy('delete'),
+
+	// XXX
+	clear: function(){
+	},
+	expand: function(){
+	},
+}
 
 
 //---------------------------------------------------------------------
