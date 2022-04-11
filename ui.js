@@ -6,9 +6,6 @@
 
 var requirejs_cfg = {
 	paths: {
-		// XXX one approach to avoid at least this section is to copy the
-		// 		modules to lib/*, this way we'll need the map section below
-		// 		only...	(without automation this also sounds bad)
 		'lib/object': [
 			'./node_modules/ig-object/object',
 			'./lib/object',
