@@ -12,6 +12,7 @@
 /*********************************************************************/
 
 
+// XXX might be a good idea to make this compatible with node's path API...
 var pWikiPath = 
 module.pWikiPath = {
 
@@ -110,9 +111,11 @@ module.pWikiPath = {
 
 //---------------------------------------------------------------------
 
-// XXX should we support page symlinking???
-// XXX store keys must be normalized...
+// NOTE: store keys must be normalized...
+//
 // XXX must support store stacks...
+// XXX path macros???
+// XXX should we support page symlinking???
 var store = 
 module.store = {
 	exists: function(path){
@@ -230,7 +233,40 @@ module.page = {
 
 //---------------------------------------------------------------------
 
+// Abstract macro syntax:
+// 	Inline macro:
+// 		@macro(arg ..)
+//
+// 	HTML-like:
+// 		<macro arg=value ../>
+//
+// 	HTML-like with body:
+// 		<macro arg=value ..>
+// 			..text..
+// 		</macro>
+//
+// XXX should inline macros support named args???
+var MACRO_PATTERN =
+	[[
+		// @macro(arg ..)
+		'\\\\?@([a-zA-Z-_]+)\\(([^)]*)\\)',
+
+		// <macro ..> | <macro ../>
+		'<\\s*($MACROS)(\\s+[^>]*)?/?>',
+		// </macro>
+		'</\\s*($MACROS)\\s*>',
+	].join('|'), 'mg'],
+
+var WIKIWORD_PATTERN =
+	RegExp('('+[
+		//'\\\\?(\\/|\\./|\\.\\./|>>|[A-Z][_a-z0-9]+[A-Z/])[_a-zA-Z0-9/]*',
+		'\\\\?\\/?(\\./|\\.\\./|>>|[A-Z][_a-z0-9]+[A-Z/])[_a-zA-Z0-9/]*',
+		'\\\\?\\[[^\\]]+\\]',
+	].join('|') +')', 'g'),
+
 var macros = {
+	now: function(){},
+	macro: function(){},
 }
 var expandPage = function(page){
 }
