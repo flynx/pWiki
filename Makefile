@@ -16,6 +16,7 @@ node_modules:
 	npm install
 
 
+# XXX is this a good idea???
 dev: node_modules
 	cp $</ig-object/object.js lib/
 	cp $</ig-actions/actions.js lib/
