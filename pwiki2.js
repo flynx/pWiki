@@ -233,25 +233,31 @@ module.page = {
 
 //---------------------------------------------------------------------
 
+// XXX add escaping...
 var _MACRO_PATTERN =
 	[[
 		// @macro(arg ..)
-		'\\\\?@(?<nameInline>$MACROS)\\((?<argsInline>[^)]*)\\)',
+		// XXX add support for '\)' in args...
+		'\\\\?@(?<nameInline>$MACROS)\\((?<argsInline>([^)])*)\\)',
 		// <macro ..> | <macro ../>
-		'<\\s*(?<nameOpen>$MACROS)(?<argsOpen>\\s+[^>]*)?/?>',
+		// XXX revise escaped > and />
+		'<\\s*(?<nameOpen>$MACROS)(?<argsOpen>\\s+([^>/])*)?/?>',
 		// </macro>
 		'</\\s*(?<nameClose>$MACROS)\\s*>',
 	].join('|'), 'smig']
-// XXX add support for escaped quotes...
+var MACRO_PATTERN_GROUPS = 8
+// XXX still buggy...
 var MACRO_ARGS_PATTERN = 
 	RegExp('('+[
 		// named args...
-		'(?<nameQuoted>[a-zA-Z-_]+)\\s*=([\'"])(?<valueQupted>[^\\3]*)\\3\\s*',
+		'(?<nameQuoted>[a-zA-Z-_]+)\\s*=([\'"])(?<valueQupted>([^\\3]|\\\\3)*)\\3\\s*',
 		'(?<nameUnquoted>[a-zA-Z-_]+)\\s*=(?<valueUnquoted>[^\\s]*)',
 		// positional args...
-		'([\'"])(?<argQuoted>[^\\7]*)\\7',
+		'([\'"])(?<argQuoted>([^\\8]|\\\\8)*)\\8',
 		'(?<arg>[^\\s]+)',
 	].join('|') +')', 'smig')
+//var MACRO_ARGS_PATTERN_GROUPS = 10
+var MACRO_ARGS_PATTERN_GROUPS = 12
 // XXX do we need basic inline and block commets a-la lisp???
 var COMMENT_PATTERN = 
 	RegExp('('+[
@@ -300,7 +306,7 @@ function(str){
 // XXX closure: macros...
 var lex =
 module.lex = 
-function*(str, m=6, a=10){
+function*(str){
 	// NOTE: we are doing a separate pass for comments to completely 
 	// 		decouple them from the base macro syntax, making them fully 
 	// 		transparent...
@@ -316,7 +322,7 @@ function*(str, m=6, a=10){
 	var macro = false
 	while(lst.length > 0){
 		if(macro){
-			var cur = lst.splice(0, m)
+			var cur = lst.splice(0, MACRO_PATTERN_GROUPS)
 			var match = cur[0]
 			// special case: quoted inline macro -> text...
 			if(match.startsWith('\\@')){
@@ -324,19 +330,26 @@ function*(str, m=6, a=10){
 				macro = false 
 				continue }
 			// group args...
-			var _args = (cur[2] || cur[4] || '')
+			
+			console.log('--- args:', cur[2] || cur[5] || '')
+			//var _args = (cur[2] || cur[4] || '')
+			var _args = (cur[2] || cur[5] || '')
 				.split(MACRO_ARGS_PATTERN)
 			var args = {}
 			var i = -1
 			while(_args.length > 1){
 				i++
-				var arg = _args.splice(0, a)
+				var arg = _args.splice(0, MACRO_ARGS_PATTERN_GROUPS)
+				console.log('  -', arg)
 				// NOTE: for positional args we use order (i) as key...
-				args[ arg[2] || arg[5] || i ] = 
-					arg[4] || arg[6] || arg[8] || arg[9] }
+				//args[ arg[2] || arg[5] || i ] = 
+				//	arg[4] || arg[6] || arg[8] || arg[9] }
+				args[ arg[2] || arg[6] || i ] = 
+					arg[4] || arg[7] || arg[9] || arg[11] }
 			// macro-spec...
 			yield {
-				name: (cur[1] || cur[3] || cur[5]).toLowerCase(),
+				//name: (cur[1] || cur[3] || cur[5]).toLowerCase(),
+				name: (cur[1] || cur[4] || cur[7]).toLowerCase(),
 				type: match[0] == '@' ?
 						'inline'
 					: match[1] == '/' ?
@@ -355,6 +368,7 @@ function*(str, m=6, a=10){
 			if(str != ''){
 				yield str }
 			macro = true } } }
+
 
 //
 // 	<item> ::=
