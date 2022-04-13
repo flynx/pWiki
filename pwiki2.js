@@ -236,13 +236,12 @@ module.page = {
 var _MACRO_PATTERN =
 	[[
 		// @macro(arg ..)
-		//'\\\\?\\\\?@(?<nameInline>$MACROS)\\((?<argsInline>[^)]*)\\)',
 		'\\\\?@(?<nameInline>$MACROS)\\((?<argsInline>[^)]*)\\)',
 		// <macro ..> | <macro ../>
 		'<\\s*(?<nameOpen>$MACROS)(?<argsOpen>\\s+[^>]*)?/?>',
 		// </macro>
 		'</\\s*(?<nameClose>$MACROS)\\s*>',
-	].join('|'), 'mg']
+	].join('|'), 'smig']
 // XXX add support for escaped quotes...
 var MACRO_ARGS_PATTERN = 
 	RegExp('('+[
@@ -252,30 +251,68 @@ var MACRO_ARGS_PATTERN =
 		// positional args...
 		'([\'"])(?<argQuoted>[^\\7]*)\\7',
 		'(?<arg>[^\\s]+)',
-	].join('|') +')', 'g')
+	].join('|') +')', 'smig')
+// XXX do we need basic inline and block commets a-la lisp???
+var COMMENT_PATTERN = 
+	RegExp('('+[
+		// <!--[pwiki[ .. ]]-->
+		'<!--\\[pwiki\\[(?<uncomment>.*)\\]\\]-->',
+
+		// <pwiki-comment> .. </pwiki-comment>
+		'<\\s*pwiki-comment[^>]*>.*<\\/\\s*pwiki-comment\\s*>',
+		// <pwiki-comment .. />
+		'<\\s*pwiki-comment[^\\/>]*\\/>',
+	].join('|') +')', 'smig')
 
 
-var macros = {
-	now: function(){},
-	macro: function(){},
-	filter: function(){},
-}
 
-// XXX move into the parser...
-var MACRO_PATTERN = 
-module.MACRO_PATTERN =
-	new RegExp(
-		'('+ _MACRO_PATTERN[0]
-			.replace(/\$MACROS/g, Object.keys(macros).join('|')) +')',
-		_MACRO_PATTERN[1])
+var clearComments = 
+module.clearComments =
+function(str){
+	return str
+		.replace(COMMENT_PATTERN, function(...a){
+			var groups = a.pop()
+			return groups.uncomment ? 
+				groups.uncomment
+				: ''}) }
 
 
+// 
+// 	<item> ::=
+// 		<string>
+// 		| {
+// 			name: <string>,
+// 			type: 'inline'
+// 				| 'element'
+// 				| 'opening'
+// 				| 'closing',
+// 			args: {
+// 				<index>: <value>,
+// 				<key>: <value>,
+// 				...
+// 			}
+// 			match: <string>,
+// 		}
+//
 // XXX need m and a to be calculated automatically rather than hardcoded...
+// 		...can we use .replace(..) for its access to named groups???
 // XXX feels a bit ugly...
+// XXX closure: macros...
 var lex =
 module.lex = 
 function*(str, m=6, a=10){
-	var lst = str.split(MACRO_PATTERN)
+	// NOTE: we are doing a separate pass for comments to completely 
+	// 		decouple them from the base macro syntax, making them fully 
+	// 		transparent...
+	str = clearComments(str)
+
+	var lst = str.split(
+		// XXX cache this???
+		new RegExp(
+			'('+ _MACRO_PATTERN[0]
+				.replace(/\$MACROS/g, Object.keys(macros).join('|')) +')',
+			_MACRO_PATTERN[1]))
+
 	var macro = false
 	while(lst.length > 0){
 		if(macro){
@@ -299,13 +336,13 @@ function*(str, m=6, a=10){
 					arg[4] || arg[6] || arg[8] || arg[9] }
 			// macro-spec...
 			yield {
-				name: cur[1] || cur[3] || cur[5],
+				name: (cur[1] || cur[3] || cur[5]).toLowerCase(),
 				type: match[0] == '@' ?
 						'inline'
 					: match[1] == '/' ?
 						'closing'
 					: match[match.length-2] == '/' ?
-						'self-closing'
+						'element'
 					: 'opening',
 				args, 
 				match,
@@ -319,7 +356,20 @@ function*(str, m=6, a=10){
 				yield str }
 			macro = true } } }
 
-// XXX normalize lex to be a generator...
+//
+// 	<item> ::=
+// 		<string>
+// 		| {
+// 			type: 'inline'
+// 				| 'element'
+// 				| 'block',
+// 			block: [ .. ],
+//
+//			// rest of items are the same as for lex(..)
+// 			...
+// 		}
+//
+// XXX normalize lex to be a generator???
 var group = 
 module.group =
 function*(lex, to=false){
@@ -345,6 +395,7 @@ function*(lex, to=false){
 
 
 
+// XXX
 var expandPage = 
 module.expandPage =
 function(page){
@@ -362,7 +413,19 @@ var WIKIWORD_PATTERN =
 	].join('|') +')', 'g')
 
 
+
 //---------------------------------------------------------------------
+
+var macros = {
+	now: function(){},
+	filter: function(){},
+	include: function(){},
+	source: function(){},
+	quote: function(){},
+	macro: function(){},
+	slot: function(){},
+}
+
 
 
 
