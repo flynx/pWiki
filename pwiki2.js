@@ -233,47 +233,137 @@ module.page = {
 
 //---------------------------------------------------------------------
 
-// Abstract macro syntax:
-// 	Inline macro:
-// 		@macro(arg ..)
-//
-// 	HTML-like:
-// 		<macro arg=value ../>
-//
-// 	HTML-like with body:
-// 		<macro arg=value ..>
-// 			..text..
-// 		</macro>
-//
-// XXX should inline macros support named args???
-var MACRO_PATTERN =
+var _MACRO_PATTERN =
 	[[
 		// @macro(arg ..)
-		'\\\\?@([a-zA-Z-_]+)\\(([^)]*)\\)',
-
+		//'\\\\?\\\\?@(?<nameInline>$MACROS)\\((?<argsInline>[^)]*)\\)',
+		'\\\\?@(?<nameInline>$MACROS)\\((?<argsInline>[^)]*)\\)',
 		// <macro ..> | <macro ../>
-		'<\\s*($MACROS)(\\s+[^>]*)?/?>',
+		'<\\s*(?<nameOpen>$MACROS)(?<argsOpen>\\s+[^>]*)?/?>',
 		// </macro>
-		'</\\s*($MACROS)\\s*>',
-	].join('|'), 'mg'],
+		'</\\s*(?<nameClose>$MACROS)\\s*>',
+	].join('|'), 'mg']
+// XXX add support for escaped quotes...
+var MACRO_ARGS_PATTERN = 
+	RegExp('('+[
+		// named args...
+		'(?<nameQuoted>[a-zA-Z-_]+)\\s*=([\'"])(?<valueQupted>[^\\3]*)\\3\\s*',
+		'(?<nameUnquoted>[a-zA-Z-_]+)\\s*=(?<valueUnquoted>[^\\s]*)',
+		// positional args...
+		'([\'"])(?<argQuoted>[^\\7]*)\\7',
+		'(?<arg>[^\\s]+)',
+	].join('|') +')', 'g')
+
+
+var macros = {
+	now: function(){},
+	macro: function(){},
+	filter: function(){},
+}
+
+// XXX move into the parser...
+var MACRO_PATTERN = 
+module.MACRO_PATTERN =
+	new RegExp(
+		'('+ _MACRO_PATTERN[0]
+			.replace(/\$MACROS/g, Object.keys(macros).join('|')) +')',
+		_MACRO_PATTERN[1])
+
+
+// XXX need m and a to be calculated automatically rather than hardcoded...
+// XXX feels a bit ugly...
+var lex =
+module.lex = 
+function*(str, m=6, a=10){
+	var lst = str.split(MACRO_PATTERN)
+	var macro = false
+	while(lst.length > 0){
+		if(macro){
+			var cur = lst.splice(0, m)
+			var match = cur[0]
+			// special case: quoted inline macro -> text...
+			if(match.startsWith('\\@')){
+				yield match
+				macro = false 
+				continue }
+			// group args...
+			var _args = (cur[2] || cur[4] || '')
+				.split(MACRO_ARGS_PATTERN)
+			var args = {}
+			var i = -1
+			while(_args.length > 1){
+				i++
+				var arg = _args.splice(0, a)
+				// NOTE: for positional args we use order (i) as key...
+				args[ arg[2] || arg[5] || i ] = 
+					arg[4] || arg[6] || arg[8] || arg[9] }
+			// macro-spec...
+			yield {
+				name: cur[1] || cur[3] || cur[5],
+				type: match[0] == '@' ?
+						'inline'
+					: match[1] == '/' ?
+						'closing'
+					: match[match.length-2] == '/' ?
+						'self-closing'
+					: 'opening',
+				args, 
+				match,
+			}
+			macro = false
+		// normal text...
+		} else {
+			var str = lst.shift()
+			// skip empty strings from output...
+			if(str != ''){
+				yield str }
+			macro = true } } }
+
+// XXX normalize lex to be a generator...
+var group = 
+module.group =
+function*(lex, to=false){
+	// NOTE: we are not using for .. of .. here as it depletes the 
+	// 		generator even if the end is not reached...
+	while(true){
+		var {value, done} = lex.next()
+		if(done){
+			if(to){
+				throw new Error('Premature end of unpit: Expected closing "'+ to +'"') }
+			return }
+		if(value.type == 'opening'){
+			value.body = [...group(lex, value.name)]
+			value.type = 'block'
+			yield value
+			continue
+		} else if(value.type == 'closing'){
+			if(value.name != to){
+				throw new Error('Unexpected closing "'+ value.name +'"') }
+			// NOTE: we are intentionally not yielding the value here...
+			return } 
+		yield value } } 
+
+
+
+var expandPage = 
+module.expandPage =
+function(page){
+}
+
+
+
+//---------------------------------------------------------------------
 
 var WIKIWORD_PATTERN =
 	RegExp('('+[
 		//'\\\\?(\\/|\\./|\\.\\./|>>|[A-Z][_a-z0-9]+[A-Z/])[_a-zA-Z0-9/]*',
 		'\\\\?\\/?(\\./|\\.\\./|>>|[A-Z][_a-z0-9]+[A-Z/])[_a-zA-Z0-9/]*',
 		'\\\\?\\[[^\\]]+\\]',
-	].join('|') +')', 'g'),
-
-var macros = {
-	now: function(){},
-	macro: function(){},
-}
-var expandPage = function(page){
-}
-
+	].join('|') +')', 'g')
 
 
 //---------------------------------------------------------------------
+
 
 
 
