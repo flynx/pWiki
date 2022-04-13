@@ -394,6 +394,10 @@ function*(lex, to=false){
 		yield value } } 
 
 
+var parse = 
+function*(str){
+	yield* group(lex(str)) }
+
 
 // XXX
 var expandPage = 
