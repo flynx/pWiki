@@ -377,13 +377,16 @@ function*(str){
 // 			type: 'inline'
 // 				| 'element'
 // 				| 'block',
-// 			block: [ .. ],
+// 			block: [
+// 				<item>,
+// 				...
+// 			],
 //
 //			// rest of items are the same as for lex(..)
 // 			...
 // 		}
 //
-// XXX normalize lex to be a generator???
+// XXX normalize lex to be a generator (???)
 var group = 
 module.group =
 function*(lex, to=false){
@@ -391,15 +394,27 @@ function*(lex, to=false){
 	// 		generator even if the end is not reached...
 	while(true){
 		var {value, done} = lex.next()
+		// check if unclosed blocks remaining...
 		if(done){
 			if(to){
-				throw new Error('Premature end of unpit: Expected closing "'+ to +'"') }
+				throw new Error(
+					'Premature end of unpit: Expected closing "'+ to +'"') }
 			return }
+		// assert nesting rules...
+		if(macros[value.name] instanceof Array
+				&& macros[value.name].includes(to)){
+			throw new Error(
+				'Unexpected "'+ value.name +'" macro' 
+					+(to ? 
+						' in "'+to+'"' 
+						: '')) }
+		// open block...
 		if(value.type == 'opening'){
 			value.body = [...group(lex, value.name)]
 			value.type = 'block'
 			yield value
 			continue
+		// close block...
 		} else if(value.type == 'closing'){
 			if(value.name != to){
 				throw new Error('Unexpected closing "'+ value.name +'"') }
@@ -409,6 +424,7 @@ function*(lex, to=false){
 
 
 var parse = 
+module.parse =
 function*(str){
 	yield* group(lex(str)) }
 
@@ -442,6 +458,9 @@ var macros = {
 	quote: function(){},
 	macro: function(){},
 	slot: function(){},
+
+	// nesting rules...
+	'else': ['macro'],
 }
 
 
