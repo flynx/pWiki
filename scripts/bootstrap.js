@@ -47,6 +47,9 @@ glob('bootstrap/**/*.@(tpl|md|css|html)')
 			+'all changes made here will be lost.'
 			+'\n\n'
 			+'var Bootstrap = ' + JSON.stringify(bootstrap)
+			+'\n\n'
+			+'typeof(module) != "undefined" \n'
+			+'	&& (module.exports = Bootstrap)'
 
 		console.log('Writing:', 'bootstrap.js')
 		fs.writeFileSync('bootstrap.js', txt) })
