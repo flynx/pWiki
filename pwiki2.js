@@ -207,14 +207,17 @@ function(name){
 var page =
 module.page = {
 	store: undefined,
+
 	path: undefined,
+	referrer: undefined,
+
 	text: undefined,
 
+	// relative proxies to store...
 	exists: relProxy('exists'), 
 	match: relProxy('match'), 
 	// XXX should this return page objects???
 	get: relProxy('get'), 
-
 	update: function(path='.', data, mode){
 		if(arguments.length == 1){
 			data = path
@@ -224,8 +227,6 @@ module.page = {
 
 	// XXX
 	clear: function(){
-	},
-	expand: function(){
 	},
 }
 
