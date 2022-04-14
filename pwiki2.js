@@ -234,30 +234,30 @@ module.page = {
 //---------------------------------------------------------------------
 
 // XXX add escaping...
-var _MACRO_PATTERN =
+var MACRO_PATTERN_STR =
 	[[
 		// @macro(arg ..)
 		// XXX add support for '\)' in args...
-		'\\\\?@(?<nameInline>$MACROS)\\((?<argsInline>([^)])*)\\)',
+		'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>([^)])*)\\)',
 		// <macro ..> | <macro ../>
 		// XXX revise escaped > and />
-		'<\\s*(?<nameOpen>$MACROS)(?<argsOpen>\\s+([^>/])*)?/?>',
+		'<\\s*(?<nameOpen>MACROS)(?<argsOpen>\\s+([^>/])*)?/?>',
 		// </macro>
-		'</\\s*(?<nameClose>$MACROS)\\s*>',
+		'</\\s*(?<nameClose>MACROS)\\s*>',
 	].join('|'), 'smig']
-var MACRO_PATTERN_GROUPS = 8
+var MACRO_PATTERN
+var MACRO_PATTERN_GROUPS = 
+	'<MACROS>'.split(new RegExp(`(${ MACRO_PATTERN_STR })`)).length-2
 // XXX still buggy...
 var MACRO_ARGS_PATTERN = 
 	RegExp('('+[
 		// named args...
-		'(?<nameQuoted>[a-zA-Z-_]+)\\s*=([\'"])(?<valueQupted>([^\\3]|\\\\3)*)\\3\\s*',
+		'(?<nameQuoted>[a-zA-Z-_]+)\\s*=([\'"])(?<valueQuoted>([^\\3]|\\\\3)*)\\3\\s*',
 		'(?<nameUnquoted>[a-zA-Z-_]+)\\s*=(?<valueUnquoted>[^\\s]*)',
 		// positional args...
 		'([\'"])(?<argQuoted>([^\\8]|\\\\8)*)\\8',
 		'(?<arg>[^\\s]+)',
 	].join('|') +')', 'smig')
-//var MACRO_ARGS_PATTERN_GROUPS = 10
-var MACRO_ARGS_PATTERN_GROUPS = 12
 // XXX do we need basic inline and block commets a-la lisp???
 var COMMENT_PATTERN = 
 	RegExp('('+[
@@ -276,11 +276,10 @@ var clearComments =
 module.clearComments =
 function(str){
 	return str
-		.replace(COMMENT_PATTERN, function(...a){
-			var groups = a.pop()
-			return groups.uncomment ? 
-				groups.uncomment
-				: ''}) }
+		.replace(COMMENT_PATTERN, 
+			function(...a){
+				return a.pop().uncomment 
+					|| '' }) }
 
 
 // 
@@ -300,10 +299,11 @@ function(str){
 // 			match: <string>,
 // 		}
 //
-// XXX need m and a to be calculated automatically rather than hardcoded...
-// 		...can we use .replace(..) for its access to named groups???
+//
+// NOTE: this internally uses macros' keys to generate the lexing pattern.
+//
+// XXX closure: macros
 // XXX feels a bit ugly...
-// XXX closure: macros...
 var lex =
 module.lex = 
 function*(str){
@@ -313,43 +313,47 @@ function*(str){
 	str = clearComments(str)
 
 	var lst = str.split(
-		// XXX cache this???
-		new RegExp(
-			'('+ _MACRO_PATTERN[0]
-				.replace(/\$MACROS/g, Object.keys(macros).join('|')) +')',
-			_MACRO_PATTERN[1]))
+		module.MACRO_PATTERN 
+			?? (MACRO_PATTERN = module.MACRO_PATTERN = 
+				new RegExp(
+					'('+ MACRO_PATTERN_STR[0]
+						.replace(/MACROS/g, 
+							Object.keys(macros).join('|')) +')',
+					MACRO_PATTERN_STR[1])))
 
 	var macro = false
 	while(lst.length > 0){
 		if(macro){
-			var cur = lst.splice(0, MACRO_PATTERN_GROUPS)
-			var match = cur[0]
-			// special case: quoted inline macro -> text...
+			var match = lst.splice(0, MACRO_PATTERN_GROUPS)[0]
+			// NOTE: we essentially are parsing the detected macro a 
+			// 		second time here, this gives us access to named groups
+			// 		avoiding maintaining match indexes with the .split(..) 
+			// 		output...
+			// XXX for some reason .match(..) here returns a list with a string...
+			var cur = [...match.matchAll(MACRO_PATTERN)][0].groups
+			// special case: escaped inline macro -> keep as text...
 			if(match.startsWith('\\@')){
 				yield match
 				macro = false 
 				continue }
-			// group args...
-			
-			console.log('--- args:', cur[2] || cur[5] || '')
-			//var _args = (cur[2] || cur[4] || '')
-			var _args = (cur[2] || cur[5] || '')
-				.split(MACRO_ARGS_PATTERN)
+			// args...
 			var args = {}
 			var i = -1
-			while(_args.length > 1){
+			for(var {groups} 
+					of (cur.argsInline ?? cur.argsOpen ?? '')
+						.matchAll(MACRO_ARGS_PATTERN)){
 				i++
-				var arg = _args.splice(0, MACRO_ARGS_PATTERN_GROUPS)
-				console.log('  -', arg)
-				// NOTE: for positional args we use order (i) as key...
-				//args[ arg[2] || arg[5] || i ] = 
-				//	arg[4] || arg[6] || arg[8] || arg[9] }
-				args[ arg[2] || arg[6] || i ] = 
-					arg[4] || arg[7] || arg[9] || arg[11] }
+				args[groups.nameQuoted ?? groups.nameUnquoted ?? i] =
+					groups.valueQuoted 
+					?? groups.valueUnquoted 
+					?? groups.argQuoted 
+					?? groups.arg }
 			// macro-spec...
 			yield {
-				//name: (cur[1] || cur[3] || cur[5]).toLowerCase(),
-				name: (cur[1] || cur[4] || cur[7]).toLowerCase(),
+				name: (cur.nameInline 
+						?? cur.nameOpen 
+						?? cur.nameClose)
+					.toLowerCase(),
 				type: match[0] == '@' ?
 						'inline'
 					: match[1] == '/' ?
@@ -386,6 +390,10 @@ function*(str){
 // 			...
 // 		}
 //
+//
+// NOTE: this internaly uses macros to check for propper nesting
+//
+// XXX closure: macros
 // XXX normalize lex to be a generator (???)
 var group = 
 module.group =
@@ -450,6 +458,8 @@ var WIKIWORD_PATTERN =
 
 //---------------------------------------------------------------------
 
+var filters = {
+}
 var macros = {
 	now: function(){},
 	filter: function(){},

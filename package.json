@@ -8,6 +8,7 @@
     "ig-actions": "*",
     "ig-features": "*",
     "ig-object": "*",
+    "ig-types": "^6.9.4",
     "jszip": "*",
     "requirejs": "*"
   },
@@ -18,7 +19,6 @@
     "showdown": "*",
     "xss": "*"
   },
-  "devDependencies": {},
   "scripts": {
     "bootstrap": "node scripts/bootstrap.js"
   }
