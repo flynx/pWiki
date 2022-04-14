@@ -79,6 +79,7 @@ module.pWikiPath = {
 		parent = this.normalize(parent, 'array')
 		return this.normalize(parent.concat(path), format) },
 
+	//paths: function*(path='/', leading_slash=true){
 	paths: function*(path='/'){
 		path = this.normalize(path, 'array')
 		// handle '', '.', and '/' paths...
@@ -101,6 +102,9 @@ module.pWikiPath = {
 				var p = path.slice()
 				while(p.length > 0){
 					yield this.relative(p, tpl +'/'+ page, 'string')
+					//yield leading_slash ? 
+					//	this.relative(p, tpl +'/'+ page, 'string')
+					//	: this.relative(p, tpl +'/'+ page, 'string').slice(1)
 					// special case: non-relative template/page path...
 					if(tpl[0] == '/'){
 						break }
@@ -113,6 +117,7 @@ module.pWikiPath = {
 
 // NOTE: store keys must be normalized...
 //
+// XXX should this be strict about leading '/' in paths???
 // XXX must support store stacks...
 // XXX path macros???
 // XXX should we support page symlinking???
@@ -133,6 +138,7 @@ module.store = {
 
 	// XXX BUG: '/a*/' does not match '/a/b/...' -- need to replace 
 	// 		pattern + with * for partial patterns...
+	// XXX BUG: '*' and '**' seem to produce identical results...
 	match: function(path){
 		// pattern match * / **
 		if(path.includes('*') 
