@@ -117,7 +117,8 @@ module.pWikiPath = {
 
 // NOTE: store keys must be normalized...
 //
-// XXX should this be strict about leading '/' in paths???
+// XXX LEADING_SLASH should this be strict about leading '/' in paths???
+// 		...this may lead to duplicate paths created -- '/a/b' and 'a/b'
 // XXX must support store stacks...
 // XXX path macros???
 // XXX should we support page symlinking???
@@ -129,7 +130,9 @@ module.store = {
 	paths: function(){
 		return Object.keys(this)
 			.filter(function(p){
-				return p[0] == '/'  }) },
+				// XXX LEADING_SLASH
+				//return p[0] == '/'  }) },
+				return p.includes('/')  }) },
 	pages: function(){
 		var that = this
 		this.paths()
@@ -143,7 +146,8 @@ module.store = {
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
-			var pattern = new RegExp(`^\/?${
+			// XXX LEADING_SLASH
+			var pattern = new RegExp(`^\\/?${
 				pWikiPath.normalize(path, 'string')
 					.replace(/\//, '\\/')
 					.replace(/\*\*/, '.+')
@@ -153,7 +157,16 @@ module.store = {
 					return pattern.test(p)}) }
 		// search...
 		for(var p of pWikiPath.paths(path)){
-			if(p in this){
+			// XXX LEADING_SLASH
+			//if(p in this){
+			if(p in this 
+					// NOTE: all paths at this point and in store are 
+					// 		absolute, so we check both with the leading '/' 
+					// 		and without it to make things a bit more 
+					// 		relaxed...
+					|| (p[0] == '/' ?
+						p.slice(1) in this
+						: ('/'+ p) in store)){
 				return p } } },
 	// XXX should this call actions???
 	get: function(path){
