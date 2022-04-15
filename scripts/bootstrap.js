@@ -12,6 +12,15 @@ var glob = require('glob')
 
 var bootstrap = {}
 
+var BOOTSTRAP_TEMPLATE = 
+`// This file is generated automatically, all changes made here will be lost.
+
+var Bootstrap = $BOOTSTRAP 
+
+typeof(module) != "undefined"
+	&& (module.exports = Bootstrap)`
+
+
 // XXX add support for json...
 glob('bootstrap/**/*.@(tpl|md|css|html)')
 	.on('match', function(path){
@@ -43,13 +52,8 @@ glob('bootstrap/**/*.@(tpl|md|css|html)')
 					}<!-- @filter(text) -->`,
 			} }
 
-		var txt = '// This file is generated automatically, '
-			+'all changes made here will be lost.'
-			+'\n\n'
-			+'var Bootstrap = ' + JSON.stringify(bootstrap)
-			+'\n\n'
-			+'typeof(module) != "undefined" \n'
-			+'	&& (module.exports = Bootstrap)'
+		var txt = BOOTSTRAP_TEMPLATE
+			.replace(/\$BOOTSTRAP/g, JSON.stringify(bootstrap))
 
 		console.log('Writing:', 'bootstrap.js')
 		fs.writeFileSync('bootstrap.js', txt) })
