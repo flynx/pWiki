@@ -127,6 +127,7 @@ module.store = {
 	exists: function(path){
 		return pWikiPath.normalize(path, 'string') in this },
 
+	// NOTE: a path is any attribute that contains '/'...
 	paths: function(){
 		return Object.keys(this)
 			.filter(function(p){
@@ -139,26 +140,44 @@ module.store = {
 			.map(function(p){
 				return [p, that[p]] }) },
 
-	// XXX BUG: '/a*/' does not match '/a/b/...' -- need to replace 
-	// 		pattern + with * for partial patterns...
-	// XXX BUG: '*' and '**' seem to produce identical results...
-	match: function(path){
+	// 
+	// 	Resolve page for path
+	// 	.match(<path>)
+	// 		-> <path>
+	//
+	// 	Match paths (non-strict mode)
+	// 	.match(<pattern>)
+	// 	.match(<pattern>, false)
+	// 		-> [<path>, ...]
+	//
+	// 	Match pages (paths in strict mode)
+	// 	.match(<pattern>, true)
+	// 		-> [<path>, ...]
+	//
+	// In strict mode the trailing star in the pattern will only match 
+	// actual existing pages, while in non-strict mode the pattern will 
+	// match all sub-paths.
+	//
+	match: function(path, strict=false){
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
-			// XXX LEADING_SLASH
 			var pattern = new RegExp(`^\\/?${
 				pWikiPath.normalize(path, 'string')
-					.replace(/\//, '\\/')
-					.replace(/\*\*/, '.+')
-					.replace(/\*/, '[^\\/]+') }`)
-			return this.paths()
-				.filter(function(p){
-					return pattern.test(p)}) }
+					.replace(/\/$/g, '')
+					.replace(/\//g, '\\/')
+					.replace(/\*\*/g, '.+')
+					.replace(/\*/g, '[^\\/]+') }`)
+			return [...this.paths()
+				.reduce(function(res, p){
+					var m = p.match(pattern)
+					m
+						&& (!strict 
+							|| m[0] == p) 
+						&& res.add(m[0])
+					return res }, new Set())] }
 		// search...
 		for(var p of pWikiPath.paths(path)){
-			// XXX LEADING_SLASH
-			//if(p in this){
 			if(p in this 
 					// NOTE: all paths at this point and in store are 
 					// 		absolute, so we check both with the leading '/' 
@@ -168,34 +187,58 @@ module.store = {
 						p.slice(1) in this
 						: ('/'+ p) in store)){
 				return p } } },
+	// 
+	// 	Resolve page
+	// 	.get(<path>)
+	// 		-> <value>
+	//
+	// 	Resolve pages (non-strict mode)
+	// 	.get(<pattern>)
+	// 	.get(<pattern>, false)
+	// 		-> [<value>, .. ]
+	//
+	// 	Get pages (strict mode)
+	// 	.get(<pattern>, true)
+	// 		-> [<value>, .. ]
+	//
+	// In strict mode this will not try to resolve pages and will not 
+	// return pages at paths that do not explicitly exist.
+	//
 	// XXX should this call actions???
-	get: function(path){
+	get: function(path, strict=false){
 		var that = this
-		path = this.match(path)
+		path = this.match(path, strict)
 		return path instanceof Array ?
    			path.map(function(p){
-				return that[p] })	
+				return that[p] 
+					?? that[that.match(p)] })
 			: this[path] },
 
 	// NOTE: deleting and updating only applies to explicit matching 
 	// 		paths -- no page acquisition is performed...
+	//
 	// XXX should these return this or the data???
 	update: function(path, data, mode='update'){
-		path = pWikiPath.normalize(path, 'string')
+		path = pWikiPath.normalize('/'+ path, 'string')
 		path = path[path.length-1] == '/' ?
 			path.slice(0, -1)
 			: path
-		data = mode == 'update' ?
-			Object.assign(this[path] || {}, data)
-			: data
-		this[path] = data 
+		this[path] = 
+			mode == 'update' ?
+				Object.assign(
+					this[path] ?? {}, 
+					data)
+				: data
 		return this },
+	// XXX revise...
 	delete: function(path){
 		path = pWikiPath.normalize(path, 'string')
 		path = path[path.length-1] == '/' ?
 			path.slice(0, -1)
 			: path
+		// XXX revise...
 		delete this[path] 
+		delete this['/'+ path] 
 		return this },
 }
 
