@@ -1,6 +1,19 @@
 /**********************************************************************
 * 
 *
+* XXX might be a good idea to try signature based security:
+* 		- sign changes
+* 		- sign sync session
+* 		- refuse changes with wrong signatures
+* 		- public keys available on client and on server
+* 			- check signatures localy
+* 			- check signatures remotely
+* 		- private key available only with author
+* 		- keep both the last signed and superceding unsigned version
+* 		- on sync ask to overwrite unsigned with signed
+* 		- check if we can use the same mechanics as ssh...
+* 		- in this view a user in the system is simply a set of keys and 
+* 			a signature (a page =))
 *
 **********************************************************************/
 ((typeof define)[0]=='u'?function(f){module.exports=f(require)}:define)
