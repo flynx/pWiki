@@ -26,8 +26,8 @@
 
 
 // XXX might be a good idea to make this compatible with node's path API...
-var pWikiPath = 
-module.pWikiPath = {
+var path = 
+module.path = {
 
 	// The page returned when getting the '/' path...
 	ROOT_PAGE: 'WikiHome',
@@ -138,7 +138,7 @@ module.pWikiPath = {
 var store = 
 module.store = {
 	exists: function(path){
-		return pWikiPath.normalize(path, 'string') in this },
+		return module.path.normalize(path, 'string') in this },
 
 	// NOTE: a path is any attribute that contains '/'...
 	paths: function(){
@@ -176,7 +176,7 @@ module.store = {
 		if(path.includes('*') 
 				|| path.includes('**')){
 			var pattern = new RegExp(`^\\/?${
-				pWikiPath.normalize(path, 'string')
+				module.path.normalize(path, 'string')
 					.replace(/\/$/g, '')
 					.replace(/\//g, '\\/')
 					.replace(/\*\*/g, '.+')
@@ -190,7 +190,7 @@ module.store = {
 						&& res.add(m[0])
 					return res }, new Set())] }
 		// search...
-		for(var p of pWikiPath.paths(path)){
+		for(var p of module.path.paths(path)){
 			if(p in this 
 					// NOTE: all paths at this point and in store are 
 					// 		absolute, so we check both with the leading '/' 
@@ -232,7 +232,7 @@ module.store = {
 	//
 	// XXX should these return this or the data???
 	update: function(path, data, mode='update'){
-		path = pWikiPath.normalize('/'+ path, 'string')
+		path = module.path.normalize('/'+ path, 'string')
 		path = path[path.length-1] == '/' ?
 			path.slice(0, -1)
 			: path
@@ -245,7 +245,7 @@ module.store = {
 		return this },
 	// XXX revise...
 	delete: function(path){
-		path = pWikiPath.normalize(path, 'string')
+		path = module.path.normalize(path, 'string')
 		path = path[path.length-1] == '/' ?
 			path.slice(0, -1)
 			: path
@@ -275,7 +275,7 @@ var relProxy =
 function(name){
 	return function(path='.', ...args){
 		return this.store[name](
-			pWikiPath.relative(this.path, path), 
+			module.path.relative(this.path, path), 
 			...args) } } 
 
 // page interface...
@@ -297,7 +297,7 @@ module.page = {
 		if(arguments.length == 1){
 			data = path
 			path = '.' }
-		return this.store.update(pWikiPath.relative(this.path, path), data, mode) },
+		return this.store.update(module.path.relative(this.path, path), data, mode) },
 	delete: relProxy('delete'),
 
 	// XXX
