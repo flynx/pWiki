@@ -508,6 +508,7 @@ function*(str){
 	yield* group(lex(str)) }
 
 
+// XXX closure: macros
 var expand =
 module.expand =
 function(str){
@@ -519,7 +520,10 @@ function(str){
 		// text block...
 		if(typeof(elem) == 'string'){
 			yield elem }
-
+		// macro...
+		var {name, args, block} = elem
+		// XXX need context...
+		yield* macros[name](args, block)
 	}
 }
 
