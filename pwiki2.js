@@ -140,16 +140,11 @@ module.store = {
 	exists: function(path){
 		return module.path.normalize(path, 'string') in this },
 
-	// NOTE: a path is any attribute that contains '/'...
 	paths: function(){
-		return Object.keys(this)
-			.filter(function(p){
-				// XXX LEADING_SLASH
-				//return p[0] == '/'  }) },
-				return p.includes('/')  }) },
+		return Object.keys(this) },
 	pages: function(){
 		var that = this
-		this.paths()
+		return this.paths()
 			.map(function(p){
 				return [p, that[p]] }) },
 
