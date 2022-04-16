@@ -508,6 +508,22 @@ function*(str){
 	yield* group(lex(str)) }
 
 
+var expand =
+module.expand =
+function(str){
+	var parser = parse(str)
+	while(true){
+		var {elem, done} = parse.next()
+		if(done){
+			return }
+		// text block...
+		if(typeof(elem) == 'string'){
+			yield elem }
+
+	}
+}
+
+
 // XXX
 var expandPage = 
 module.expandPage =
