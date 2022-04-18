@@ -301,6 +301,39 @@ module.page = {
 }
 
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+var object = require('ig-object')
+
+var Page = object.Constructor('Page', {
+	store: undefined,
+
+	path: undefined,
+	referrer: undefined,
+
+	// store api...
+	// XXX
+
+	exists: relProxy('exists'), 
+	match: relProxy('match'), 
+	// XXX should this return page objects???
+	get: relProxy('get'), 
+	update: function(path='.', data, mode){
+		if(arguments.length == 1){
+			data = path
+			path = '.' }
+		return this.store.update(module.path.relative(this.path, path), data, mode) },
+	delete: relProxy('delete'),
+
+	// render api...
+	// XXX
+
+	__init__: function(path, referrer){
+		this.path = path
+		this.referrer = referrer },
+})
+
+
 
 //---------------------------------------------------------------------
 
@@ -452,7 +485,7 @@ function*(str){
 // 			type: 'inline'
 // 				| 'element'
 // 				| 'block',
-// 			block: [
+// 			body: [
 // 				<item>,
 // 				...
 // 			],
@@ -508,24 +541,33 @@ function*(str){
 	yield* group(lex(str)) }
 
 
+// XXX need context -- page/store...
+// XXX blocks are not handled correctly...
 // XXX closure: macros
 var expand =
 module.expand =
-function(str){
-	var parser = parse(str)
+function*(ast){
+	// XXX
+	var page
 	while(true){
-		var {elem, done} = parse.next()
+		var {value, done} = ast.next()
 		if(done){
 			return }
 		// text block...
-		if(typeof(elem) == 'string'){
-			yield elem }
+		if(typeof(value) == 'string'){
+			yield value 
+			continue }
 		// macro...
-		var {name, args, block} = elem
-		// XXX need context...
-		yield* macros[name](args, block)
-	}
-}
+		var {name, args, body, match} = value
+		var res = 
+			macros[name](page, args, body, match)
+			?? ''
+		// XXX test if iterable...
+		if(res instanceof Array){
+			// XXX recursively expand this...
+			yield* res
+		} else {
+			yield res } } }
 
 
 // XXX
@@ -552,7 +594,14 @@ var WIKIWORD_PATTERN =
 var filters = {
 }
 var macros = {
-	now: function(){},
+	// XXX remove this...
+	test: function(page, args, block, match){
+		console.log('test:', ...arguments)
+		return 'TEST' },
+
+	// XXX STUB
+	now: function(){
+		return [''+ Date.now()] },
 	filter: function(){},
 	include: function(){},
 	source: function(){},
