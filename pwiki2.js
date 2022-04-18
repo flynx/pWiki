@@ -496,7 +496,7 @@ function*(str){
 //
 //
 // NOTE: this internaly uses macros to check for propper nesting
-//
+// XXX should we use typrs.js???
 // XXX closure: macros
 // XXX normalize lex to be a generator (???)
 var group = 
