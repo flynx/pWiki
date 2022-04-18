@@ -301,40 +301,6 @@ module.page = {
 }
 
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
-var object = require('ig-object')
-
-var Page = object.Constructor('Page', {
-	store: undefined,
-
-	path: undefined,
-	referrer: undefined,
-
-	// store api...
-	// XXX
-
-	exists: relProxy('exists'), 
-	match: relProxy('match'), 
-	// XXX should this return page objects???
-	get: relProxy('get'), 
-	update: function(path='.', data, mode){
-		if(arguments.length == 1){
-			data = path
-			path = '.' }
-		return this.store.update(module.path.relative(this.path, path), data, mode) },
-	delete: relProxy('delete'),
-
-	// render api...
-	// XXX
-
-	__init__: function(path, referrer){
-		this.path = path
-		this.referrer = referrer },
-})
-
-
-
 //---------------------------------------------------------------------
 
 // XXX add escaping...
@@ -496,7 +462,7 @@ function*(str){
 //
 //
 // NOTE: this internaly uses macros to check for propper nesting
-// XXX should we use typrs.js???
+//
 // XXX closure: macros
 // XXX normalize lex to be a generator (???)
 var group = 
