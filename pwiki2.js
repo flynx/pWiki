@@ -508,12 +508,14 @@ function*(str){
 
 
 // XXX need context -- page/store...
-// XXX blocks are not handled correctly...
+// XXX need to make this recursive....
+// 		...might even be a good idea to make the above grouo(..) and friends
+// 		recursive too...
 // XXX closure: macros
 var expand =
 module.expand =
 function*(ast){
-	// XXX
+	// XXX PAGE...
 	var page
 	while(true){
 		var {value, done} = ast.next()
@@ -525,8 +527,9 @@ function*(ast){
 			continue }
 		// macro...
 		var {name, args, body, match} = value
+		// XXX PAGE...
 		var res = 
-			macros[name](page, args, body, match)
+			macros[name].call(page, args, body, match)
 			?? ''
 		// XXX test if iterable...
 		if(res instanceof Array){

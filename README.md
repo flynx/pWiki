@@ -21,13 +21,16 @@ are likely to change, the implementation / API **will definitely** change! ;)_
   A set of tools and API's to enable data synchronization between pWiki
   instances.
 
-- _Self-hosted_ and flexible user interface
+- _Self-hosted[*]_ and flexible user interface
 
   The pWiki interface is implemented as a set of pWiki pages and 
   templates within pWiki itself (see: [Templates] / [/bootstrap](bootstrap)), 
   this enables the user to customize the look feel and to some extent 
   the function of the interface from within pWiki, without touching the 
   code.
+
+  [*]: "Self-hosted" here is meant in the old-school meaning of the word, 
+  i.e. hosted on the client.
 
 - pWiki _portable app_
 

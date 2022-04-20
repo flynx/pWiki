@@ -1,9 +1,14 @@
 
 
+BOOTSTRAP_FILES := \
+	$(wildcard bootstrap/*) \
+	$(wildcard bootstrap/*/*) \
+	README.md
 
 
 
-bootstrap.js: scripts/bootstrap.js
+
+bootstrap.js: scripts/bootstrap.js $(BOOTSTRAP_FILES)
 	node $<
 
 
@@ -16,7 +21,6 @@ node_modules:
 	npm install
 
 
-# XXX is this a good idea???
 dev: node_modules
 	cp $</ig-object/object.js lib/
 	cp $</ig-actions/actions.js lib/
