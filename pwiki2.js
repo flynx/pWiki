@@ -312,39 +312,38 @@ object.Constructor('BasePage', {
 		return this.__location ?? '/' },
 	set location(path){
 		this.referrer = this.location
-		//* XXX HISTORY...
-		this.history.includes(this.__location)
-			&& this.history.splice(
-				this.history.indexOf(this.__location)+1, 
-				this.history.length)
-		this.history.push(
-			this.__location = 
-				module.path.relative(
-					this.location, 
-					path)) },
-		/*/
-		this.__location = 
+		var cur = this.__location = 
 			module.path.relative(
 				this.location, 
-				path) },
-		//*/
+				path)
+		//* XXX HISTORY...
+		if(this.history !== false){
+			this.history.includes(this.__location)
+				&& this.history.splice(
+					this.history.indexOf(this.__location)+1, 
+					this.history.length)
+			this.history.push(cur) } },
 	// referrer -- a previous page location...
 	referrer: undefined,
 
 	//* XXX HISTORY...
-	// XXX should these maintain .referrer ???
+	// NOTE: set this to false to disable history...
 	__history: undefined,
 	get history(){
+		if(this.__history === false){
+			return false }
 		if(!this.hasOwnProperty('__history')){
-			this.__history = [] }
+			//this.__history = [] }
+			this.__history = (this.__history ?? []).slice() }
 		return this.__history },
-	// XXX add offset argument...
 	back: function(offset=1){
 		var h = this.history
-		if(h.length <= 1){
+		if(h === false 
+				|| h.length <= 1){
 			return this }
 		// get position in history...
 		var p = h.indexOf(this.location)
+		// if outside of history go to last element...
 		p = p < 0 ? 
 			h.length
 			: p
