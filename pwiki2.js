@@ -65,12 +65,16 @@ module.path = {
 				path
 				// NOTE: this will also trim the path elements...
 				: path.split(/\s*[\\\/]+\s*/))
-			.reduce(function(res, e){
+			.reduce(function(res, e, i, L){
 				// special case: leading '..' / '.'
 				if(res.length == 0 
 						&& e == '..'){
 					return [e] }
-				e == '.' ?
+				;(e == '.' 
+						// keep explicit '/' only at start/end of path...
+						|| (e == '' 
+							&& i != 0 
+							&& i != L.length-1)) ?
 					undefined
 				: e == '..' 
 						|| res[res.length-1] == '>>' ?
@@ -291,27 +295,88 @@ function(name){
 			module.path.relative(this.path, path), 
 			...args) } } 
 
-// page interface...
+// XXX do we need history management??? 
 var BasePage =
 module.BasePage = 
 object.Constructor('BasePage', {
-	store: undefined,
+	// NOTE: this can be inherited...
+	//store: undefined,
+	
+	// root page used to clone new instances via the .clone(..) method...
+	//root: undefined,
 
-	path: undefined,
+	// page location...
+	//
+	__location: undefined,
+	get location(){
+		return this.__location ?? '/' },
+	set location(path){
+		this.referrer = this.location
+		//* XXX HISTORY...
+		this.history.includes(this.__location)
+			&& this.history.splice(
+				this.history.indexOf(this.__location)+1, 
+				this.history.length)
+		this.history.push(
+			this.__location = 
+				module.path.relative(
+					this.location, 
+					path)) },
+		/*/
+		this.__location = 
+			module.path.relative(
+				this.location, 
+				path) },
+		//*/
+	// referrer -- a previous page location...
 	referrer: undefined,
 
+	//* XXX HISTORY...
+	// XXX should these maintain .referrer ???
+	__history: undefined,
+	get history(){
+		if(!this.hasOwnProperty('__history')){
+			this.__history = [] }
+		return this.__history },
+	// XXX add offset argument...
+	back: function(offset=1){
+		var h = this.history
+		if(h.length <= 1){
+			return this }
+		// get position in history...
+		var p = h.indexOf(this.location)
+		p = p < 0 ? 
+			h.length
+			: p
+		p = Math.max(
+			Math.min(
+				h.length-1 
+					- p 
+					+ offset,
+				h.length-1), 
+			0)
+		this.referrer = this.location
+		this.__location = h[h.length-1 - p]
+		return this },
+	forward: function(offset=1){
+		return this.back(-offset) },
+	//*/
+	
+	// page data...
+	//
+	// XXX handle functions as pages...
 	get data(){
-		return this.store.get(this.path) },
+		return this.store.get(this.location) },
 	// XXX need to support pattern pages...
 	set data(value){
-		this.store.update(this.path, value) },
+		this.store.update(this.location, value) },
 	// shorthands...
 	// XXX need to support pattern pages...
 	get text(){
 		return this.data.text },
 	// XXX need to support pattern pages...
 	set text(value){
-		this.store.update(this.path, {text: value}) },
+		this.store.update(this.location, {text: value}) },
 
 	// relative proxies to store...
 	exists: relProxy('exists'), 
@@ -319,14 +384,11 @@ object.Constructor('BasePage', {
 	delete: relProxy('delete'),
 
 	get: function(path, referrer){
-		return this.constructor(
-			this.store, 
-			module.path.relative(
-				this.path,
-				path 
-					?? this.path), 
-			referrer 
-				?? this.path) },
+		return this.clone({
+				location: path, 
+				referrer: referrer 
+					?? this.location,
+			}) },
 
 	// XXX should this be an iterator???
 	each: function(path){
@@ -346,9 +408,48 @@ object.Constructor('BasePage', {
 	reduce: function(func, dfl){
 		return this.each().reduce(func, dfl) },
 
-	__init__: function(store, path, referrer){
-		this.store = store
-		this.path = path
+	//
+	// 	Clone a page optionally asigning data into it...
+	// 	.clone()
+	// 	.clone({ .. })
+	// 		-> <page>
+	//
+	// 	Fully clone a page optionally asigning data into it...
+	// 	.clone(true)
+	// 	.clone(true, { .. })
+	// 		-> <page>
+	//
+	//
+	// Normal cloning will inherit all the "clones" from the original 
+	// page overloading .location and .referrer
+	//
+	clone: function(data={}){
+		var full = data === true
+		data = full ? 
+			arguments[1] ?? {} 
+			: data
+		return Object.assign(
+			full ?
+				// full copy...
+				this.constructor(this.path, this.referrer, this.store)
+				// NOTE: this will restrict all the clones to the first 
+				// 		generation maintaining the original (.root) page as 
+				// 		the common root...
+				// 		this will make all the non-shadowed attrs set on the
+				// 		root visible to all sub-pages.
+				: Object.create(this.root ?? this),
+			{
+				root: this.root ?? this,
+				location: this.location, 
+				referrer: this.referrer,
+			},
+			data) },
+
+	__init__: function(path, referrer, store){
+		// NOTE: this will allow inheriting .store from the prototype
+		if(store){
+			this.store = store }
+		this.location = path
 		this.referrer = referrer },
 })
 
@@ -425,11 +526,10 @@ function(str){
 //
 // NOTE: this internally uses macros' keys to generate the lexing pattern.
 //
-// XXX closure: macros
 // XXX feels a bit ugly...
 var lex =
 module.lex = 
-function*(str){
+function*(str, macros){
 	// NOTE: we are doing a separate pass for comments to completely 
 	// 		decouple them from the base macro syntax, making them fully 
 	// 		transparent...
@@ -516,11 +616,10 @@ function*(str){
 //
 // NOTE: this internaly uses macros to check for propper nesting
 //
-// XXX closure: macros
 // XXX normalize lex to be a generator (???)
 var group = 
 module.group =
-function*(lex, to=false){
+function*(lex, to=false, macros){
 	// NOTE: we are not using for .. of .. here as it depletes the 
 	// 		generator even if the end is not reached...
 	while(true){
@@ -556,8 +655,10 @@ function*(lex, to=false){
 
 var parse = 
 module.parse =
-function*(str){
-	yield* group(lex(str)) }
+function*(str, macros){
+	yield* group(
+		lex(str, macros), 
+		macros) }
 
 
 // XXX need context -- page/store...
@@ -582,7 +683,7 @@ function*(page, ast, state={}){
 		var res = 
 			// XXX need to hav eaccess to expand(..) in the macro to be 
 			// 		able to uniformly parse the body...
-			macros[name].call(page, args, body, state)
+			page.macros[name].call(page, args, body, state)
 				?? ''
 		// XXX test if iterable...
 		if(res instanceof Array){
@@ -592,9 +693,27 @@ function*(page, ast, state={}){
 			yield res } } }
 
 
+// XXX macros and filters should be features for simpler plugin handlng (???)
 var Page =
 module.Page = 
 object.Constructor('Page', BasePage, {
+	filters: {
+	},
+	macros: {
+		// XXX STUB
+		now: function(){
+			return [''+ Date.now()] },
+		filter: function(){},
+		include: function(){},
+		source: function(){},
+		quote: function(){},
+		macro: function(){},
+		slot: function(){},
+
+		// nesting rules...
+		'else': ['macro'],
+	},
+
 	expand: function(state={}){
 		return expand(this, parse(this.text), state)
 			.join('') },
@@ -614,28 +733,6 @@ var WIKIWORD_PATTERN =
 
 
 //---------------------------------------------------------------------
-
-var filters = {
-}
-var macros = {
-	// XXX remove this...
-	test: function(page, args, block, match){
-		console.log('test:', ...arguments)
-		return 'TEST' },
-
-	// XXX STUB
-	now: function(){
-		return [''+ Date.now()] },
-	filter: function(){},
-	include: function(){},
-	source: function(){},
-	quote: function(){},
-	macro: function(){},
-	slot: function(){},
-
-	// nesting rules...
-	'else': ['macro'],
-}
 
 
 
