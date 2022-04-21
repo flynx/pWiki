@@ -1,10 +1,15 @@
 
 
+
 BOOTSTRAP_FILES := \
 	$(wildcard bootstrap/*) \
 	$(wildcard bootstrap/*/*) \
 	README.md
 
+LOCAL_MODULES := \
+	node_modules/ig-object/object.js \
+	node_modules/ig-actions/actions.js \
+	node_modules/ig-features/features.js
 
 
 
@@ -21,11 +26,8 @@ node_modules:
 	npm install
 
 
-dev: node_modules
-	cp $</ig-object/object.js lib/
-	cp $</ig-actions/actions.js lib/
-	cp $</ig-features/features.js lib/
-
+dev: node_modules $(LOCAL_MODULES)
+	cp $(LOCAL_MODULES) lib/
 
 
 clean:

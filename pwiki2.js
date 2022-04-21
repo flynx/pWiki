@@ -20,6 +20,10 @@
 (function(require){ var module={} // make module AMD/node compatible...
 /*********************************************************************/
 
+// XXX
+//var object = require('lib/object')
+var object = require('ig-object')
+
 
 
 /*********************************************************************/
@@ -138,7 +142,11 @@ module.path = {
 var store = 
 module.store = {
 	exists: function(path){
-		return module.path.normalize(path, 'string') in this },
+		path = module.path.normalize(path, 'string')
+		return path in this
+   			|| (path[0] == '/' ?
+   				path.slice(1) in this
+				: ('/'+ path) in this) },
 
 	paths: function(){
 		return Object.keys(this) },
@@ -268,7 +276,7 @@ module.actions = {
 	__proto__: store,
 
 	// base actions (virtual pages)...
-	'/System/raw': function(page, path){
+	'System/raw': function(page, path){
 		return { text: this.get(path +'/..') } },
 	// XXX ...
 }
@@ -284,31 +292,66 @@ function(name){
 			...args) } } 
 
 // page interface...
-var page =
-module.page = {
+var BasePage =
+module.BasePage = 
+object.Constructor('BasePage', {
 	store: undefined,
 
 	path: undefined,
 	referrer: undefined,
 
-	text: undefined,
+	get data(){
+		return this.store.get(this.path) },
+	// XXX need to support pattern pages...
+	set data(value){
+		this.store.update(this.path, value) },
+	// shorthands...
+	// XXX need to support pattern pages...
+	get text(){
+		return this.data.text },
+	// XXX need to support pattern pages...
+	set text(value){
+		this.store.update(this.path, {text: value}) },
 
 	// relative proxies to store...
 	exists: relProxy('exists'), 
 	match: relProxy('match'), 
-	// XXX should this return page objects???
-	get: relProxy('get'), 
-	update: function(path='.', data, mode){
-		if(arguments.length == 1){
-			data = path
-			path = '.' }
-		return this.store.update(module.path.relative(this.path, path), data, mode) },
 	delete: relProxy('delete'),
 
-	// XXX
-	clear: function(){
-	},
-}
+	get: function(path, referrer){
+		return this.constructor(
+			this.store, 
+			module.path.relative(
+				this.path,
+				path 
+					?? this.path), 
+			referrer 
+				?? this.path) },
+
+	// XXX should this be an iterator???
+	each: function(path){
+		var that = this
+		var paths = this.match(path)
+		paths = paths instanceof Array ? 
+			paths 
+			: [paths]
+		return paths
+			.map(function(path){
+				return that.get(path) }) },
+
+	map: function(func){
+		return this.each().map(func) },
+	filter: function(func){
+		return this.each().filter(func) },
+	reduce: function(func, dfl){
+		return this.each().reduce(func, dfl) },
+
+	__init__: function(store, path, referrer){
+		this.store = store
+		this.path = path
+		this.referrer = referrer },
+})
+
 
 
 //---------------------------------------------------------------------
@@ -524,9 +567,7 @@ function*(str){
 // XXX closure: macros
 var expand =
 module.expand =
-function*(ast, state={}){
-	// XXX PAGE...
-	var page
+function*(page, ast, state={}){
 	while(true){
 		var {value, done} = ast.next()
 		if(done){
@@ -542,7 +583,7 @@ function*(ast, state={}){
 			// XXX need to hav eaccess to expand(..) in the macro to be 
 			// 		able to uniformly parse the body...
 			macros[name].call(page, args, body, state)
-			?? ''
+				?? ''
 		// XXX test if iterable...
 		if(res instanceof Array){
 			// XXX recursively expand this...
@@ -551,11 +592,13 @@ function*(ast, state={}){
 			yield res } } }
 
 
-// XXX
-var expandPage = 
-module.expandPage =
-function(page){
-}
+var Page =
+module.Page = 
+object.Constructor('Page', BasePage, {
+	expand: function(state={}){
+		return expand(this, parse(this.text), state)
+			.join('') },
+})
 
 
 
