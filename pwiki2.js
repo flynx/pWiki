@@ -170,9 +170,11 @@ module.store = {
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
+			// NOTE: we are matching full paths only here so leading and 
+			// 		trainling '/' are optional...
 			var pattern = new RegExp(`^\\/?${
 				module.path.normalize(path, 'string')
-					.replace(/\/$/g, '')
+					.replace(/^\/|\/$/g, '')
 					.replace(/\//g, '\\/')
 					.replace(/\*\*/g, '.+')
 					.replace(/\*/g, '[^\\/]+') }`)
@@ -186,15 +188,18 @@ module.store = {
 					return res }, new Set())] }
 		// search...
 		for(var p of module.path.paths(path)){
-			if(p in this 
-					// NOTE: all paths at this point and in store are 
-					// 		absolute, so we check both with the leading '/' 
-					// 		and without it to make things a bit more 
-					// 		relaxed...
-					|| (p[0] == '/' ?
-						p.slice(1) in this
-						: ('/'+ p) in store)){
-				return p } } },
+			if(p in this){
+				return p }
+			// NOTE: all paths at this point and in store are absolute, 
+			// 		so we check both with the leading '/' and without 
+			// 		it to make things a bit more relaxed and return the 
+			// 		actual matching path...
+			if(p[0] == '/' 
+					&& p.slice(1) in this){
+				return p.slice(1) }
+			if(p[0] != '/'
+					&& ('/'+p) in this){
+				return '/'+p } } },
 	// 
 	// 	Resolve page
 	// 	.get(<path>)
@@ -213,11 +218,16 @@ module.store = {
 	// return pages at paths that do not explicitly exist.
 	//
 	// XXX should this call actions???
+	// XXX should this return a map for pattern matches???
 	get: function(path, strict=false){
 		var that = this
 		path = this.match(path, strict)
 		return path instanceof Array ?
+			// XXX should we return matched paths???
    			path.map(function(p){
+				// NOTE: p can match a non existing page at this point, 
+				// 		this can be the result of matching a/* in a a/b/c
+				// 		and returning a a/b which can be undefined...
 				return that[p] 
 					?? that[that.match(p)] })
 			: this[path] },
@@ -514,7 +524,7 @@ function*(str){
 // XXX closure: macros
 var expand =
 module.expand =
-function*(ast){
+function*(ast, state={}){
 	// XXX PAGE...
 	var page
 	while(true){
@@ -526,10 +536,12 @@ function*(ast){
 			yield value 
 			continue }
 		// macro...
-		var {name, args, body, match} = value
+		var {name, args, body} = value
 		// XXX PAGE...
 		var res = 
-			macros[name].call(page, args, body, match)
+			// XXX need to hav eaccess to expand(..) in the macro to be 
+			// 		able to uniformly parse the body...
+			macros[name].call(page, args, body, state)
 			?? ''
 		// XXX test if iterable...
 		if(res instanceof Array){
