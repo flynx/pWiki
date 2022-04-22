@@ -292,7 +292,7 @@ var relProxy =
 function(name){
 	return function(path='.', ...args){
 		return this.store[name](
-			module.path.relative(this.path, path), 
+			module.path.relative(this.location, path), 
 			...args) } } 
 
 // XXX do we need history management??? 
@@ -333,8 +333,8 @@ object.Constructor('BasePage', {
 		if(this.__history === false){
 			return false }
 		if(!this.hasOwnProperty('__history')){
-			//this.__history = [] }
-			this.__history = (this.__history ?? []).slice() }
+			this.__history = [] }
+			//this.__history = (this.__history ?? []).slice() }
 		return this.__history },
 	back: function(offset=1){
 		var h = this.history
@@ -398,7 +398,7 @@ object.Constructor('BasePage', {
 			: [paths]
 		return paths
 			.map(function(path){
-				return that.get(path) }) },
+				return that.get('/'+ path) }) },
 
 	map: function(func){
 		return this.each().map(func) },
@@ -410,22 +410,31 @@ object.Constructor('BasePage', {
 	//
 	// 	Clone a page optionally asigning data into it...
 	// 	.clone()
-	// 	.clone({ .. })
+	// 	.clone({ .. }[, <clone-history>])
 	// 		-> <page>
 	//
 	// 	Fully clone a page optionally asigning data into it...
-	// 	.clone(true)
-	// 	.clone(true, { .. })
+	// 	.clone(true[, <clone-history>])
+	// 	.clone(true, { .. }[, <clone-history>])
 	// 		-> <page>
 	//
 	//
 	// Normal cloning will inherit all the "clones" from the original 
 	// page overloading .location and .referrer
 	//
-	clone: function(data={}){
+	// NOTE: <clone-history> by default is false unless fully cloning
+	//
+	// XXX revise...
+	// XXX HISTORY should we clear history by default...
+	clone: function(data={}, history=false){
+		var [data, ...args] = [...arguments]
 		var full = data === true
+		history = 
+			typeof(args[args.length-1]) == 'boolean' ? 
+				args.pop() 
+				: full
 		data = full ? 
-			arguments[1] ?? {} 
+			args[0] ?? {} 
 			: data
 		return Object.assign(
 			full ?
@@ -442,6 +451,14 @@ object.Constructor('BasePage', {
 				location: this.location, 
 				referrer: this.referrer,
 			},
+			// XXX HISTORY...
+			this.__history !== false ?
+				{ __history: 
+					history ?
+						(this.__history ?? []).slice() 
+						: [] }
+				:{},
+			//*/
 			data) },
 
 	__init__: function(path, referrer, store){
@@ -713,6 +730,7 @@ object.Constructor('Page', BasePage, {
 		'else': ['macro'],
 	},
 
+	// XXX
 	expand: function(state={}){
 		return expand(this, parse(this.text), state)
 			.join('') },
@@ -732,7 +750,14 @@ var WIKIWORD_PATTERN =
 
 
 //---------------------------------------------------------------------
+// XXX experiments and testing...
 
+
+module.pwiki = 
+Page('/', '/', 
+	Object.assign(
+		Object.create(store), 
+		require('./bootstrap')))
 
 
 
