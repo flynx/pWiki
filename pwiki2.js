@@ -248,6 +248,7 @@ module.store = {
 	// 		paths -- no page acquisition is performed...
 	//
 	// XXX should these return this or the data???
+	// XXX FUNC handle functions as pages...
 	update: function(path, data, mode='update'){
 		path = module.path.normalize('/'+ path, 'string')
 		path = path[path.length-1] == '/' ?
