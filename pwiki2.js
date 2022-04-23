@@ -382,6 +382,7 @@ object.Constructor('BasePage', {
 	match: relProxy('match'), 
 	delete: relProxy('delete'),
 
+	// XXX how should this handle functions as values???
 	get: function(path, referrer){
 		return this.clone({
 				location: path, 
@@ -753,6 +754,8 @@ var WIKIWORD_PATTERN =
 // XXX experiments and testing...
 
 
+// NOTE: in general the root wiki api is simply a page instance.
+// XXX not yet sure how to organize the actual alient -- UI, hooks, .. etc
 module.pwiki = 
 Page('/', '/', 
 	Object.assign(
