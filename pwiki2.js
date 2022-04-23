@@ -298,6 +298,8 @@ function(name){
 
 // XXX HISTORY do we need history management??? 
 // XXX FUNC need to handle functions in store...
+// XXX EVENT add event triggers/handlers...
+// 		...event handlers must be local and not propogate to the root page.
 var BasePage =
 module.BasePage = 
 object.Constructor('BasePage', {
@@ -312,6 +314,7 @@ object.Constructor('BasePage', {
 	__location: undefined,
 	get location(){
 		return this.__location ?? '/' },
+	// XXX EVENT need to be able to trigger a callback/event on this...
 	set location(path){
 		this.referrer = this.location
 		var cur = this.__location = 
@@ -338,6 +341,7 @@ object.Constructor('BasePage', {
 			this.__history = [] }
 			//this.__history = (this.__history ?? []).slice() }
 		return this.__history },
+	// XXX EVENT trigger location change event..,
 	back: function(offset=1){
 		var h = this.history
 		if(h === false 
