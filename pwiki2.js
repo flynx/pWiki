@@ -140,6 +140,9 @@ module.path = {
 //
 // XXX LEADING_SLASH should this be strict about leading '/' in paths???
 // 		...this may lead to duplicate paths created -- '/a/b' and 'a/b'
+// XXX would be nice to be able to create sub-stores, i.e. an object that
+// 		would store multiple sub-pages for things like todo docs... (???)
+// 		...the question is how to separate the two from the wiki side...
 // XXX must support store stacks...
 // XXX path macros???
 // XXX should we support page symlinking???
