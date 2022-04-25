@@ -754,9 +754,7 @@ object.Constructor('Page', BasePage, {
 					// XXX might be a good idea to simply ref the parent 
 					// 		context here -- i.e. link filters into a chain...
 					parent_filters,
-					text: [...this.expand(body, state)]
-						.flat()
-						.join(''),
+					data: [...this.expand(body, state)],
 				}
 				// restore global filters...
 				state.filters = parent_filters
@@ -818,7 +816,9 @@ object.Constructor('Page', BasePage, {
 					// XXX also need to hanlde nested filters (no longer flat)...
 					// XXX merge this with .parent_filters...
 					filters = section.filters
-					section = section.text }
+					section = [...that.postProcess(section.data, state)]
+			   			.flat()
+						.join('') }
 				return (filters 
 						// if this.SKIP_FILTERS is set and used then all other 
 						// filters will be skipped...
