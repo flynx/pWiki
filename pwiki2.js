@@ -465,6 +465,9 @@ object.Constructor('BasePage', {
 			//*/
 			data) },
 
+	update: function(...data){
+		return Object.assign(this, ...data) },
+
 	__init__: function(path, referrer, store){
 		// NOTE: this will allow inheriting .store from the prototype
 		if(store){
@@ -673,12 +676,27 @@ function*(lex, to=false, macros){
 		yield value } } 
 
 
+// XXX PATH_VARS need to handle path variables...
 // XXX macros and filters should be features for simpler plugin handlng (???)
 var Page =
 module.Page = 
 object.Constructor('Page', BasePage, {
+	SKIP_FILTERS: 'nofilters',
+
+	// XXX might be a good idea to fix filter order...
 	filters: {
-		test: function(){},
+		// if this is used all other filters will be skipped (placeholder)
+		nofilters: function(source){ return source },
+
+		// XXX move to docs...
+		test: function(source){
+			return source 
+				.replace(/ test /g, ' TEST ') },
+
+		wikiword: function(source){
+			return source },
+		markdown: function(source){
+			return source },
 	},
 	macros: {
 		// XXX move to docs...
@@ -695,7 +713,6 @@ object.Constructor('Page', BasePage, {
 			} else {
 				yield '<test/>' } },
 
-		// XXX STUB
 		now: function(){
 			return ''+ Date.now() },
 		// XXX local filters???
@@ -706,38 +723,45 @@ object.Constructor('Page', BasePage, {
 		// 				...
 		// 				@filter(markdown)
 		// 			</filter>
+		// XXX need to nest filter namespaces -- currently parent_filters 
+		// 		does not see filters defined after the block...
 		filter: function*(args, body, state){
+			var filters = state.filters = 
+				state.filters ?? []
 			// local filter...
 			if(body){
-				throw new Error('Not implemented: local filters')
-				var global_filters = state.filters
-				state.filters = (state.filters ?? []).slice()
-				// parse the body...
-				// XXX should post-processing be done here or after...
-				var res = this.postProcess(
-					this.expand(body, state),
-					state)
-				state.filters = global_filters
-				// XXX need to prevent re-expansion of this....
-				yield* res
-
-			// global filter...
-			} else {
-				var filters = 
-				state.filters = 
-					state.filters 
-						?? []
-				Object.values(args)
-					.forEach(function(filter){
-						// '-<filter>' has precedence over '<filter>'
-						if(filter[0] == '-' 
-								&& filters.includes(filter.slice(1))){
-							filters.splice(filters.indexOf(filter.slice(1)), 1) }
-						// only add once...
-						!filters.includes(filter)
-							// XXX do we need to handle '--<filter>' here???
-							&& !filters.includes('-'+filter)
-							&& filters.push(filter) }) }},
+				var parent_filters = state.filters
+				filters = state.filters = 
+					[] }
+			// populate filters...
+			Object.values(args)
+				.forEach(function(filter){
+					// clear disabled filters...
+					// NOTE: '-<filter>' has precedence over '<filter>'...
+					if(filter[0] == '-' 
+							&& filters.includes(filter.slice(1))){
+						filters.splice(filters.indexOf(filter.slice(1)), 1) }
+					// only add once...
+					!filters.includes(filter)
+						&& (filter[0] == '-' 
+							|| !filters.includes('-'+filter))
+						&& filters.push(filter) }) 
+			// local filters...
+			if(body){
+				// serialize the block for later processing...
+				var res = {
+					filters: state.filters,
+					// XXX might be a good idea to simply ref the parent 
+					// 		context here -- i.e. link filters into a chain...
+					parent_filters,
+					text: [...this.expand(body, state)]
+						.flat()
+						.join(''),
+				}
+				// restore global filters...
+				state.filters = parent_filters
+				yield res } 
+			return },
 		include: function(){},
 		source: function(){},
 		quote: function(){},
@@ -782,13 +806,35 @@ object.Constructor('Page', BasePage, {
 				yield* res
 			} else {
 				yield res } } },
-	// XXX handle filters...
+	// XXX add a special filter to clear pending filters...
+	// XXX skip nested pre-filtered blocks...
 	postProcess: function(ast, state={}){
-		if(state.filters){
-			// XXX
-			console.log('### FILTERS:', state.filters)
-		}
-		return [...ast].join('') },
+		var that = this
+		return [...ast]
+			.map(function(section){
+				var filters = state.filters
+				// local filters...
+				if(typeof(section) != 'string'){
+					// XXX also need to hanlde nested filters (no longer flat)...
+					// XXX merge this with .parent_filters...
+					filters = section.filters
+					section = section.text }
+				return (filters 
+						// if this.SKIP_FILTERS is set and used then all other 
+						// filters will be skipped...
+						&& (!this.SKIP_FILTERS
+							|| !filters.inculdes(this.SKIP_FILTERS))) ?
+					// filter...
+					filters
+						.reduce(function(res, filter){
+							if(filter[0] == '-'){
+								return res }
+							if(that.filters[filter] == null){
+								throw new Error('.postProcess(..): unsupported filter: '+ filter) }
+							return that.filters[filter].call(that, res) }, section)
+					: section })
+			.flat()
+			.join('') },
 
 
 	// raw page text...
@@ -840,11 +886,30 @@ var WIKIWORD_PATTERN =
 
 // NOTE: in general the root wiki api is simply a page instance.
 // XXX not yet sure how to organize the actual alient -- UI, hooks, .. etc
+var pwiki =
 module.pwiki = 
 Page('/', '/', 
 	Object.assign(
 		Object.create(store), 
 		require('./bootstrap')))
+
+
+// XXX TEST...
+console.log('loading test page...')
+pwiki.update({
+	location: '/test',
+	text: `
+	Some test text...
+
+	@now()
+
+	<test>
+	some code...
+	</test>
+	
+	@filter(test)`,
+})
+
 
 
 
