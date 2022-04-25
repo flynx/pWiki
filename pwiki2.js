@@ -23,6 +23,7 @@
 // XXX
 //var object = require('lib/object')
 var object = require('ig-object')
+var types = require('ig-types')
 
 
 
@@ -378,17 +379,6 @@ object.Constructor('BasePage', {
 		return this.store.get(this.location) },
 	set data(value){
 		this.store.update(this.location, value) },
-	// shorthands...
-	// XXX FUNC handle functions as pages...
-	// XXX need to support pattern pages...
-	get text(){
-		var data = this.data
-		return data instanceof Function ?
-			// XXX FUNC not sure about this...
-			data.call(this, 'text')
-   			: data.text	},
-	set text(value){
-		this.store.update(this.location, {text: value}) },
 
 	// relative proxies to store...
 	exists: relProxy('exists'), 
@@ -670,7 +660,7 @@ function*(lex, to=false, macros){
 						: '')) }
 		// open block...
 		if(value.type == 'opening'){
-			value.body = [...group(lex, value.name)]
+			value.body = [...group(lex, value.name, macros)]
 			value.type = 'block'
 			yield value
 			continue
@@ -683,57 +673,71 @@ function*(lex, to=false, macros){
 		yield value } } 
 
 
-var parse = 
-module.parse =
-function*(str, macros){
-	yield* group(
-		lex(str, macros), 
-		macros) }
-
-
-// XXX need context -- page/store...
-// XXX need to make this recursive....
-// 		...might even be a good idea to make the above grouo(..) and friends
-// 		recursive too...
-// XXX closure: macros
-var expand =
-module.expand =
-function*(page, ast, state={}){
-	while(true){
-		var {value, done} = ast.next()
-		if(done){
-			return }
-		// text block...
-		if(typeof(value) == 'string'){
-			yield value 
-			continue }
-		// macro...
-		var {name, args, body} = value
-		// XXX PAGE...
-		var res = 
-			// XXX need to hav eaccess to expand(..) in the macro to be 
-			// 		able to uniformly parse the body...
-			page.macros[name].call(page, args, body, state)
-				?? ''
-		// XXX test if iterable...
-		if(res instanceof Array){
-			// XXX recursively expand this...
-			yield* res
-		} else {
-			yield res } } }
-
-
 // XXX macros and filters should be features for simpler plugin handlng (???)
 var Page =
 module.Page = 
 object.Constructor('Page', BasePage, {
 	filters: {
+		test: function(){},
 	},
 	macros: {
+		// XXX move to docs...
+		test: function*(args, body, state){
+			if(body){
+				state.testBlock = (state.testBlock ?? 0) + 1
+
+				yield '\n<test>\n\n'
+				yield* this.expand(body) 
+				yield '\n\n</test>\n'
+
+				--state.testBlock == 0
+					&& (delete state.testBlock)
+			} else {
+				yield '<test/>' } },
+
 		// XXX STUB
 		now: function(){
-			return [''+ Date.now()] },
-		filter: function(){},
+			return ''+ Date.now() },
+		// XXX local filters???
+		// 		Example 1:
+		// 			<filter markdown> ... </filter>
+		// 		Example 2:
+		// 			<filter>
+		// 				...
+		// 				@filter(markdown)
+		// 			</filter>
+		filter: function*(args, body, state){
+			// local filter...
+			if(body){
+				throw new Error('Not implemented: local filters')
+				var global_filters = state.filters
+				state.filters = (state.filters ?? []).slice()
+				// parse the body...
+				// XXX should post-processing be done here or after...
+				var res = this.postProcess(
+					this.expand(body, state),
+					state)
+				state.filters = global_filters
+				// XXX need to prevent re-expansion of this....
+				yield* res
+
+			// global filter...
+			} else {
+				var filters = 
+				state.filters = 
+					state.filters 
+						?? []
+				Object.values(args)
+					.forEach(function(filter){
+						// '-<filter>' has precedence over '<filter>'
+						if(filter[0] == '-' 
+								&& filters.includes(filter.slice(1))){
+							filters.splice(filters.indexOf(filter.slice(1)), 1) }
+						// only add once...
+						!filters.includes(filter)
+							// XXX do we need to handle '--<filter>' here???
+							&& !filters.includes('-'+filter)
+							&& filters.push(filter) }) }},
 		include: function(){},
 		source: function(){},
 		quote: function(){},
@@ -744,10 +748,77 @@ object.Constructor('Page', BasePage, {
 		'else': ['macro'],
 	},
 
-	// XXX
-	expand: function(state={}){
-		return expand(this, parse(this.text), state)
-			.join('') },
+	parse: function*(str){
+		yield* group(
+			lex(
+				str 
+					?? this.raw, 
+				this.macros), 
+			false,
+			this.macros) },
+	expand: function*(ast, state={}){
+		ast = ast 
+			?? this.parse()
+		ast = ast instanceof types.Generator ?
+			ast
+			: ast.iter()
+		while(true){
+			var {value, done} = ast.next()
+			if(done){
+				return }
+
+			// text block...
+			if(typeof(value) == 'string'){
+				yield value 
+				continue }
+
+			// macro...
+			var {name, args, body} = value
+			var res = 
+				this.macros[name].call(this, args, body, state)
+					?? ''
+			if(res instanceof Array 
+					|| this.macros[name] instanceof types.Generator){
+				yield* res
+			} else {
+				yield res } } },
+	// XXX handle filters...
+	postProcess: function(ast, state={}){
+		if(state.filters){
+			// XXX
+			console.log('### FILTERS:', state.filters)
+		}
+		return [...ast].join('') },
+
+
+	// raw page text...
+	//
+	// NOTE: writing to .raw is the same as writing to .text...
+	// XXX FUNC handle functions as pages...
+	// XXX need to support pattern pages...
+	get raw(){
+		var data = this.data
+		return data instanceof Function ?
+			// XXX FUNC not sure about this...
+			data.call(this, 'text')
+   			: data.text	},
+	set raw(value){
+		this.store.update(this.location, {text: value}) },
+
+	// expanded page text...
+	//
+	// NOTE: writing to .raw is the same as writing to .text...
+	// XXX FUNC handle functions as pages...
+	// XXX need to support pattern pages...
+	get text(){
+		var state = {}
+		return this.postProcess(
+			this.expand(null, state), 
+			state) },
+	set text(value){
+		this.store.update(this.location, {text: value}) },
+
+
 })
 
 
