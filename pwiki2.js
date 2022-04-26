@@ -480,200 +480,289 @@ object.Constructor('BasePage', {
 
 //---------------------------------------------------------------------
 
-// XXX add escaping...
-var MACRO_PATTERN_STR =
-	[[
-		// @macro(arg ..)
-		// XXX add support for '\)' in args...
-		'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>([^)])*)\\)',
-		// <macro ..> | <macro ../>
-		// XXX revise escaped > and />
-		'<\\s*(?<nameOpen>MACROS)(?<argsOpen>\\s+([^>/])*)?/?>',
-		// </macro>
-		'</\\s*(?<nameClose>MACROS)\\s*>',
-	].join('|'), 'smig']
-var MACRO_PATTERN
-var MACRO_PATTERN_GROUPS = 
-	'<MACROS>'.split(new RegExp(`(${ MACRO_PATTERN_STR })`)).length-2
-// XXX still buggy...
-var MACRO_ARGS_PATTERN = 
-	RegExp('('+[
-		// named args...
-		'(?<nameQuoted>[a-zA-Z-_]+)\\s*=([\'"])(?<valueQuoted>([^\\3]|\\\\3)*)\\3\\s*',
-		'(?<nameUnquoted>[a-zA-Z-_]+)\\s*=(?<valueUnquoted>[^\\s]*)',
-		// positional args...
-		'([\'"])(?<argQuoted>([^\\8]|\\\\8)*)\\8',
-		'(?<arg>[^\\s]+)',
-	].join('|') +')', 'smig')
-// XXX do we need basic inline and block commets a-la lisp???
-var COMMENT_PATTERN = 
-	RegExp('('+[
-		// <!--[pwiki[ .. ]]-->
-		'<!--\\[pwiki\\[(?<uncomment>.*)\\]\\]-->',
+var parser =
+module.parser = {
+	// NOTE: the actual macro pattern is not stored as it depends on 
+	// 		the macro name list which is page dependant...
+	// XXX add escaping...
+	MACRO_PATTERN_STR: [[
+			// @macro(arg ..)
+			// XXX add support for '\)' in args...
+			'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>([^)])*)\\)',
+			// <macro ..> | <macro ../>
+			// XXX revise escaped > and />
+			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>\\s+([^>/])*)?/?>',
+			// </macro>
+			'</\\s*(?<nameClose>MACROS)\\s*>',
+		].join('|'), 'smig'],
+	// NOTE: this depends on .MACRO_PATTERN_STR and thus is lazily generated...
+	__MACRO_PATTERN_GROUPS: undefined,
+	get MACRO_PATTERN_GROUPS(){
+		return this.__MACRO_PATTERN_GROUPS 
+			?? (this.__MACRO_PATTERN_GROUPS =
+				'<MACROS>'.split(new RegExp(`(${ this.MACRO_PATTERN_STR })`)).length-2) },
+	// XXX still buggy...
+	MACRO_ARGS_PATTERN: RegExp('('+[
+			// named args...
+			'(?<nameQuoted>[a-zA-Z-_]+)\\s*=([\'"])(?<valueQuoted>([^\\3]|\\\\3)*)\\3\\s*',
+			'(?<nameUnquoted>[a-zA-Z-_]+)\\s*=(?<valueUnquoted>[^\\s]*)',
+			// positional args...
+			'([\'"])(?<argQuoted>([^\\8]|\\\\8)*)\\8',
+			'(?<arg>[^\\s]+)',
+		].join('|') +')', 'smig'),
+	// XXX do we need basic inline and block commets a-la lisp???
+	COMMENT_PATTERN: RegExp('('+[
+			// <!--[pwiki[ .. ]]-->
+			'<!--\\[pwiki\\[(?<uncomment>.*)\\]\\]-->',
 
-		// <pwiki-comment> .. </pwiki-comment>
-		'<\\s*pwiki-comment[^>]*>.*<\\/\\s*pwiki-comment\\s*>',
-		// <pwiki-comment .. />
-		'<\\s*pwiki-comment[^\\/>]*\\/>',
-	].join('|') +')', 'smig')
-
-
-
-var clearComments = 
-module.clearComments =
-function(str){
-	return str
-		.replace(COMMENT_PATTERN, 
-			function(...a){
-				return a.pop().uncomment 
-					|| '' }) }
+			// <pwiki-comment> .. </pwiki-comment>
+			'<\\s*pwiki-comment[^>]*>.*<\\/\\s*pwiki-comment\\s*>',
+			// <pwiki-comment .. />
+			'<\\s*pwiki-comment[^\\/>]*\\/>',
+		].join('|') +')', 'smig'),
 
 
-// 
-// 	<item> ::=
-// 		<string>
-// 		| {
-// 			name: <string>,
-// 			type: 'inline'
-// 				| 'element'
-// 				| 'opening'
-// 				| 'closing',
-// 			args: {
-// 				<index>: <value>,
-// 				<key>: <value>,
-// 				...
-// 			}
-// 			match: <string>,
-// 		}
-//
-//
-// NOTE: this internally uses macros' keys to generate the lexing pattern.
-//
-// XXX feels a bit ugly...
-var lex =
-module.lex = 
-function*(str, macros){
-	// NOTE: we are doing a separate pass for comments to completely 
-	// 		decouple them from the base macro syntax, making them fully 
-	// 		transparent...
-	str = clearComments(str)
+	// General parser API...
+	//
 
-	var lst = str.split(
-		module.MACRO_PATTERN 
-			?? (MACRO_PATTERN = module.MACRO_PATTERN = 
-				new RegExp(
-					'('+ MACRO_PATTERN_STR[0]
-						.replace(/MACROS/g, 
-							Object.keys(macros).join('|')) +')',
-					MACRO_PATTERN_STR[1])))
+	clearComments: function(str){
+		return str
+			.replace(this.COMMENT_PATTERN, 
+				function(...a){
+					return a.pop().uncomment 
+						|| '' }) },
 
-	var macro = false
-	while(lst.length > 0){
-		if(macro){
-			var match = lst.splice(0, MACRO_PATTERN_GROUPS)[0]
-			// NOTE: we essentially are parsing the detected macro a 
-			// 		second time here, this gives us access to named groups
-			// 		avoiding maintaining match indexes with the .split(..) 
-			// 		output...
-			// XXX for some reason .match(..) here returns a list with a string...
-			var cur = [...match.matchAll(MACRO_PATTERN)][0].groups
-			// special case: escaped inline macro -> keep as text...
-			if(match.startsWith('\\@')){
-				yield match
-				macro = false 
-				continue }
-			// args...
-			var args = {}
-			var i = -1
-			for(var {groups} 
-					of (cur.argsInline ?? cur.argsOpen ?? '')
-						.matchAll(MACRO_ARGS_PATTERN)){
-				i++
-				args[groups.nameQuoted ?? groups.nameUnquoted ?? i] =
-					groups.valueQuoted 
-					?? groups.valueUnquoted 
-					?? groups.argQuoted 
-					?? groups.arg }
-			// macro-spec...
-			yield {
-				name: (cur.nameInline 
-						?? cur.nameOpen 
-						?? cur.nameClose)
-					.toLowerCase(),
-				type: match[0] == '@' ?
-						'inline'
-					: match[1] == '/' ?
-						'closing'
-					: match[match.length-2] == '/' ?
-						'element'
-					: 'opening',
-				args, 
-				match,
-			}
-			macro = false
-		// normal text...
-		} else {
-			var str = lst.shift()
-			// skip empty strings from output...
-			if(str != ''){
-				yield str }
-			macro = true } } }
+	// 
+	// 	<item> ::=
+	// 		<string>
+	// 		| {
+	// 			name: <string>,
+	// 			type: 'inline'
+	// 				| 'element'
+	// 				| 'opening'
+	// 				| 'closing',
+	// 			args: {
+	// 				<index>: <value>,
+	// 				<key>: <value>,
+	// 				...
+	// 			}
+	// 			match: <string>,
+	// 		}
+	//
+	//
+	// NOTE: this internally uses macros' keys to generate the lexing pattern.
+	//
+	// XXX feels a bit ugly...
+	lex: function*(page, str){
+		str = str 
+			?? page.raw
+		// NOTE: we are doing a separate pass for comments to completely 
+		// 		decouple them from the base macro syntax, making them fully 
+		// 		transparent...
+		str = this.clearComments(str)
 
+		// XXX should this be cached???
+		var MACRO_PATTERN = new RegExp(
+			'('+ this.MACRO_PATTERN_STR[0]
+				.replace(/MACROS/g, Object.keys(page.macros).join('|')) +')',
+			this.MACRO_PATTERN_STR[1]) 
 
-//
-// 	<item> ::=
-// 		<string>
-// 		| {
-// 			type: 'inline'
-// 				| 'element'
-// 				| 'block',
-// 			body: [
-// 				<item>,
-// 				...
-// 			],
-//
-//			// rest of items are the same as for lex(..)
-// 			...
-// 		}
-//
-//
-// NOTE: this internaly uses macros to check for propper nesting
-//
-// XXX normalize lex to be a generator (???)
-var group = 
-module.group =
-function*(lex, to=false, macros){
-	// NOTE: we are not using for .. of .. here as it depletes the 
-	// 		generator even if the end is not reached...
-	while(true){
-		var {value, done} = lex.next()
-		// check if unclosed blocks remaining...
-		if(done){
-			if(to){
+		var lst = str.split(MACRO_PATTERN)
+
+		var macro = false
+		while(lst.length > 0){
+			if(macro){
+				var match = lst.splice(0, this.MACRO_PATTERN_GROUPS)[0]
+				// NOTE: we essentially are parsing the detected macro a 
+				// 		second time here, this gives us access to named groups
+				// 		avoiding maintaining match indexes with the .split(..) 
+				// 		output...
+				// XXX for some reason .match(..) here returns a list with a string...
+				var cur = [...match.matchAll(MACRO_PATTERN)][0].groups
+				// special case: escaped inline macro -> keep as text...
+				if(match.startsWith('\\@')){
+					yield match
+					macro = false 
+					continue }
+				// args...
+				var args = {}
+				var i = -1
+				for(var {groups} 
+						of (cur.argsInline ?? cur.argsOpen ?? '')
+							.matchAll(this.MACRO_ARGS_PATTERN)){
+					i++
+					args[groups.nameQuoted ?? groups.nameUnquoted ?? i] =
+						groups.valueQuoted 
+						?? groups.valueUnquoted 
+						?? groups.argQuoted 
+						?? groups.arg }
+				// macro-spec...
+				yield {
+					name: (cur.nameInline 
+							?? cur.nameOpen 
+							?? cur.nameClose)
+						.toLowerCase(),
+					type: match[0] == '@' ?
+							'inline'
+						: match[1] == '/' ?
+							'closing'
+						: match[match.length-2] == '/' ?
+							'element'
+						: 'opening',
+					args, 
+					match,
+				}
+				macro = false
+			// normal text...
+			} else {
+				var str = lst.shift()
+				// skip empty strings from output...
+				if(str != ''){
+					yield str }
+				macro = true } } },
+
+	// Group block elements...
+	//
+	// 	<item> ::=
+	// 		<string>
+	// 		| {
+	// 			type: 'inline'
+	// 				| 'element'
+	// 				| 'block',
+	// 			body: [
+	// 				<item>,
+	// 				...
+	// 			],
+	//
+	//			// rest of items are the same as for lex(..)
+	// 			...
+	// 		}
+	//
+	//
+	// NOTE: this internaly uses macros to check for propper nesting
+	//
+	// XXX normalize lex to be a generator (???)
+	group: function*(page, lex, to=false){
+		lex = lex
+			?? this.lex(page) 
+		lex = typeof(lex) == 'string' ?
+			this.lex(page, lex)
+			: lex
+		// NOTE: we are not using for .. of .. here as it depletes the 
+		// 		generator even if the end is not reached...
+		while(true){
+			var {value, done} = lex.next()
+			// check if unclosed blocks remaining...
+			if(done){
+				if(to){
+					throw new Error(
+						'Premature end of unpit: Expected closing "'+ to +'"') }
+				return }
+			// assert nesting rules...
+			if(page.macros[value.name] instanceof Array
+					&& page.macros[value.name].includes(to)){
 				throw new Error(
-					'Premature end of unpit: Expected closing "'+ to +'"') }
-			return }
-		// assert nesting rules...
-		if(macros[value.name] instanceof Array
-				&& macros[value.name].includes(to)){
-			throw new Error(
-				'Unexpected "'+ value.name +'" macro' 
-					+(to ? 
-						' in "'+to+'"' 
-						: '')) }
-		// open block...
-		if(value.type == 'opening'){
-			value.body = [...group(lex, value.name, macros)]
-			value.type = 'block'
-			yield value
-			continue
-		// close block...
-		} else if(value.type == 'closing'){
-			if(value.name != to){
-				throw new Error('Unexpected closing "'+ value.name +'"') }
-			// NOTE: we are intentionally not yielding the value here...
-			return } 
-		yield value } } 
+					'Unexpected "'+ value.name +'" macro' 
+						+(to ? 
+							' in "'+to+'"' 
+							: '')) }
+			// open block...
+			if(value.type == 'opening'){
+				value.body = [...this.group(page, lex, value.name)]
+				value.type = 'block'
+				yield value
+				continue
+			// close block...
+			} else if(value.type == 'closing'){
+				if(value.name != to){
+					throw new Error('Unexpected closing "'+ value.name +'"') }
+				// NOTE: we are intentionally not yielding the value here...
+				return } 
+			yield value } }, 
+
+	// Expand macros...
+	//
+	expand: function*(page, ast, state={}){
+		ast = ast == null ?
+				this.group(page)
+			: typeof(ast) == 'string' ?
+				this.group(page, ast)
+			: ast instanceof types.Generator ?
+				ast
+			: ast.iter()
+
+		while(true){
+			var {value, done} = ast.next()
+			if(done){
+				return }
+
+			// text block...
+			if(typeof(value) == 'string'){
+				yield value 
+				continue }
+
+			// macro...
+			var {name, args, body} = value
+			var res = 
+				page.macros[name].call(page, args, body, state)
+					?? ''
+			if(res instanceof Array 
+					|| page.macros[name] instanceof types.Generator){
+				yield* res
+			} else {
+				yield res } } },
+
+	// Fully parse a page...
+	//
+	// This runs in two stages:
+	// 	- expand the page text
+	// 	- apply filters
+	//
+	// XXX add a special filter to clear pending filters... (???)
+	// XXX rename???
+	parse: function(page, ast, state={}){
+		var that = this
+		// XXX should we handle strings as input???
+		ast = ast 
+			?? this.expand(page, null, state)
+
+		var _normalize = function(filters){
+			var skip = new Set()
+			return filters
+				.flat()
+				.tailUnique()
+				.filter(function(filter){
+					filter[0] == '-'
+						&& skip.add(filter.slice(1))
+					return filter[0] != '-' }) 
+				.filter(function(filter){
+					return !skip.has(filter) })}
+
+		return [...ast]
+			.map(function(section){
+				var filters = state.filters
+				// nested filters...
+				if(typeof(section) != 'string'){
+					state.filters = _normalize(section.filters)
+					var res = [...that.parse(page, section.data, state)]
+			   			.flat()
+						.join('') 
+					state.filters = filters
+					return res
+				// local filters... 
+				} else {
+					return filters ?
+						_normalize(filters)
+							.reduce(function(res, filter){
+								if(page.filters[filter] == null){
+									throw new Error(
+										'.parse(..): unsupported filter: '+ filter) }
+								return page.filters[filter].call(page, res) 
+									?? res }, section)
+						: section } })
+			.flat()
+			.join('') },
+}
 
 
 // XXX PATH_VARS need to handle path variables...
@@ -770,7 +859,7 @@ object.Constructor('Page', BasePage, {
 				// serialize the block for later processing...
 				var res = {
 					filters: state.filters,
-					data: [...this.expand(body, state)],
+					data: [...this.parser.expand(this, body, state)],
 				}
 				// restore global filters...
 				state.filters = parent_filters
@@ -789,87 +878,9 @@ object.Constructor('Page', BasePage, {
 		'else': ['macro'],
 	},
 
-	parse: function*(str){
-		yield* group(
-			lex(
-				str 
-					?? this.raw, 
-				this.macros), 
-			false,
-			this.macros) },
-	expand: function*(ast, state={}){
-		ast = ast 
-			?? this.parse()
-		ast = ast instanceof types.Generator ?
-			ast
-			: ast.iter()
-		while(true){
-			var {value, done} = ast.next()
-			if(done){
-				return }
-
-			// text block...
-			if(typeof(value) == 'string'){
-				yield value 
-				continue }
-
-			// macro...
-			var {name, args, body} = value
-			var res = 
-				this.macros[name].call(this, args, body, state)
-					?? ''
-			if(res instanceof Array 
-					|| this.macros[name] instanceof types.Generator){
-				yield* res
-			} else {
-				yield res } } },
-	// XXX add a special filter to clear pending filters... (???)
-	// XXX rename and use this instead of render...
-	postProcess: function(ast, state={}){
-		var that = this
-		ast = ast 
-			?? this.expand(null, state)
-
-		var _normalize = function(filters){
-			var skip = new Set()
-			return filters
-				.flat()
-				.tailUnique()
-				.filter(function(filter){
-					filter[0] == '-'
-						&& skip.add(filter.slice(1))
-					return filter[0] != '-' }) 
-				.filter(function(filter){
-					return !skip.has(filter) })}
-
-		return [...ast]
-			.map(function(section){
-				var filters = state.filters
-				// nested filters...
-				if(typeof(section) != 'string'){
-					state.filters = _normalize(section.filters)
-					var res = [...that.postProcess(section.data, state)]
-			   			.flat()
-						.join('') 
-					state.filters = filters
-					return res
-				// local filters... 
-				} else {
-					return filters ?
-						_normalize(filters)
-							.reduce(function(res, filter){
-								if(that.filters[filter] == null){
-									throw new Error(
-										'.postProcess(..): unsupported filter: '+ filter) }
-								return that.filters[filter].call(that, res) 
-									?? res }, section)
-						: section } })
-			.flat()
-			.join('') },
-
-	// XXX do we need boht this and .postProcess(..) ???
-	render: function(state={}){
-		return this.postProcess(null, state) },
+	parser: module.parser,
+	parse: function(state={}){
+		return this.parser.parse(this, null, state) },
 
 
 	// raw page text...
@@ -892,7 +903,7 @@ object.Constructor('Page', BasePage, {
 	// XXX FUNC handle functions as pages...
 	// XXX need to support pattern pages...
 	get text(){
-		return this.render() },
+		return this.parse() },
 	set text(value){
 		this.store.update(this.location, {text: value}) },
 
