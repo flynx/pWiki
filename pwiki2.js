@@ -522,17 +522,17 @@ module.parser = {
 		].join('|') +')', 'smig'),
 
 
-	// General parser API...
+	// Strip comments...
 	//
-
-	clearComments: function(str){
+	stripComments: function(str){
 		return str
 			.replace(this.COMMENT_PATTERN, 
 				function(...a){
 					return a.pop().uncomment 
 						|| '' }) },
 
-	// 
+	// Lexically split the string...
+	//
 	// 	<item> ::=
 	// 		<string>
 	// 		| {
@@ -551,15 +551,13 @@ module.parser = {
 	//
 	//
 	// NOTE: this internally uses macros' keys to generate the lexing pattern.
-	//
-	// XXX feels a bit ugly...
 	lex: function*(page, str){
 		str = str 
 			?? page.raw
 		// NOTE: we are doing a separate pass for comments to completely 
 		// 		decouple them from the base macro syntax, making them fully 
 		// 		transparent...
-		str = this.clearComments(str)
+		str = this.stripComments(str)
 
 		// XXX should this be cached???
 		var MACRO_PATTERN = new RegExp(
@@ -638,10 +636,7 @@ module.parser = {
 	// 			...
 	// 		}
 	//
-	//
 	// NOTE: this internaly uses macros to check for propper nesting
-	//
-	// XXX normalize lex to be a generator (???)
 	group: function*(page, lex, to=false){
 		lex = lex
 			?? this.lex(page) 
@@ -682,6 +677,18 @@ module.parser = {
 
 	// Expand macros...
 	//
+	// 	<item> ::=
+	// 		<string>
+	// 		// returned by .macros.filter(..)
+	// 		| {
+	// 			filters: [
+	// 				'<filter>'
+	// 					| '-<filter>',
+	// 				...
+	// 			],
+	// 			data: [ <item>, .. ],
+	// 		}
+	//
 	expand: function*(page, ast, state={}){
 		ast = ast == null ?
 				this.group(page)
@@ -715,16 +722,21 @@ module.parser = {
 	// Fully parse a page...
 	//
 	// This runs in two stages:
-	// 	- expand the page text
+	// 	- expand the page
+	// 		- lex the page -- .lex(..)
+	// 		- group block elements -- .group(..)
+	// 		- expand macros -- .expand(..)
 	// 	- apply filters
 	//
 	// XXX add a special filter to clear pending filters... (???)
-	// XXX rename???
 	parse: function(page, ast, state={}){
 		var that = this
 		// XXX should we handle strings as input???
 		ast = ast 
 			?? this.expand(page, null, state)
+		ast = typeof(ast) == 'string' ?
+			this.expand(page, ast, state)
+			: ast
 
 		var _normalize = function(filters){
 			var skip = new Set()
@@ -859,28 +871,82 @@ object.Constructor('Page', BasePage, {
 				// serialize the block for later processing...
 				var res = {
 					filters: state.filters,
-					data: [...this.parser.expand(this, body, state)],
+					data: [...this.__parser__.expand(this, body, state)],
 				}
 				// restore global filters...
 				state.filters = parent_filters
 				yield res } 
 			return },
+		// XXX 'text' argument is changed to 'recursive'...
+		// XXX should we track recursion via the resolved (current) path 
+		// 		or the given path???
+		// XXX should this be lazy???
+		include: function(args, body, state, key='included', handler){
+			// positional args...
+			var src = args.src || args[0]
+			var recursive = args.recursive || body
+
+			if(!src){
+				return '' }
+
+			handler = handler 
+				?? function(){
+					return this.get(src)
+						.parse(
+							args.isolated ? 
+								{[key]: state[key]} 
+								: state) }
+
+			// handle recursion...
+			var parent_seen = state[key]
+			var seen = state[key] = 
+				(state[key] ?? [this.location]).slice()
+			var target = this.match(src)
+			target = target instanceof Array ?
+				target.join(',')
+				: target
+			// recursion detected...
+			if(this.match() == this.match(src)
+					|| seen.includes(target)){
+				if(!recursive){
+					throw new Error(
+						'include: include recursion detected: '
+							+ seen.concat([target]).join(' -> ')) }
+				// have the 'recursive' arg...
+				return this.__parser__.parse(this, recursive, state) }
+			seen.push(target)
+
+			// load the included page...
+			var res = handler.call(this)
+
+			// restore previous include chain...
+			if(parent_seen){
+				state[key] = parent_seen
+			} else {
+				delete state[key] }
+
+			return res },
 		source: function(args, body, state){
-			return args.src ?
-				this.get(src).render(state)
-				: '' },
-		include: function(){},
-		quote: function(){},
+			var src = args.src || args[0]
+			return this.macros.include.call(this, 
+				args, body, state, 'sources', 
+				function(){
+					return this.__parser__.parse(this, this.get(src).raw, state) }) },
 		macro: function(){},
 		slot: function(){},
+
+		// XXX quote what???
+		quote: function(){},
 
 		// nesting rules...
 		'else': ['macro'],
 	},
 
-	parser: module.parser,
+	// page parser...
+	//
+	__parser__: module.parser,
 	parse: function(state={}){
-		return this.parser.parse(this, null, state) },
+		return this.__parser__.parse(this, null, state) },
 
 
 	// raw page text...
@@ -939,19 +1005,35 @@ Page('/', '/',
 
 // XXX TEST...
 console.log('loading test page...')
-pwiki.update({
-	location: '/test',
-	text: `
-	Some test text...
-
-	@now()
-
-	<test>
-	some code...
-	</test>
-	
-	@filter(test)`,
-})
+pwiki
+	.update({
+		location: '/page',
+		text: 'PAGE\n'
+			+'\n'
+			// XXX BUG this is parsed incorrectly -- macro pattern...
+			//+'@include(/test recursive="Recursion type 2 (<now/>)")\n',
+			+'@include(/test recursive="Recursion type 2 <now/>")\n',
+	})
+	.update({
+		location: '/other',
+		text: 'OTHER',
+	})
+	.update({
+		location: '/test',
+		text: 'TEST\n'
+			+'Including /other #1: @include(/other)\n'
+			+'Including /other #2: @include(/other)\n'
+			+'\n'
+			// XXX BUG this is parsed incorrectly -- macro pattern...
+			//+'Including /test: @include(/test recursive="Recursion type 1 (<now/>)")\n'
+			+'Including /test: @include(/test recursive="Recursion type 1 <now/>")\n'
+			+'\n'
+			+'Including /page: @include(/page)\n'
+			+'\n'
+			+'Including /: \\@include(/)\n'
+			+'\n'
+			+'@filter(test)',
+	})
 
 
 
