@@ -684,20 +684,28 @@ object.Constructor('Page', BasePage, {
 	//NO_FILTERS: 'nofilters',
 	ISOLATED_FILTERS: 'isolated',
 
+	//
+	// 	<filter>(<source>)
+	// 		-> <result>
+	// 		-> undefined
+	//
 	// XXX might be a good idea to fix filter order...
 	filters: {
-		// if this is used all other filters will be skipped (placeholder)
-		nofilters: function(source){ return source },
-		isolated: function(source){ return source },
+		// placeholders...
+		nofilters: function(){},
+		isolated: function(){},
 
-		// XXX move to docs...
+		// XXX TESTING...
+		dummy: function(){},
 		test: function(source){
 			return source 
 				.replace(/ test /g, ' TEST ') },
 
 		wikiword: function(source){
+			// XXX
 			return source },
 		markdown: function(source){
+			// XXX
 			return source },
 	},
 
@@ -853,11 +861,13 @@ object.Constructor('Page', BasePage, {
 								if(that.filters[filter] == null){
 									throw new Error(
 										'.postProcess(..): unsupported filter: '+ filter) }
-								return that.filters[filter].call(that, res) }, section)
+								return that.filters[filter].call(that, res) 
+									?? res }, section)
 						: section } })
 			.flat()
 			.join('') },
 
+	// XXX do we need boht this and .postProcess(..) ???
 	render: function(state={}){
 		return this.postProcess(null, state) },
 
