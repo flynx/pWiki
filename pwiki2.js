@@ -681,12 +681,14 @@ function*(lex, to=false, macros){
 var Page =
 module.Page = 
 object.Constructor('Page', BasePage, {
-	SKIP_FILTERS: 'nofilters',
+	//NO_FILTERS: 'nofilters',
+	ISOLATED_FILTERS: 'isolated',
 
 	// XXX might be a good idea to fix filter order...
 	filters: {
 		// if this is used all other filters will be skipped (placeholder)
 		nofilters: function(source){ return source },
+		isolated: function(source){ return source },
 
 		// XXX move to docs...
 		test: function(source){
@@ -698,6 +700,7 @@ object.Constructor('Page', BasePage, {
 		markdown: function(source){
 			return source },
 	},
+
 	macros: {
 		// XXX move to docs...
 		test: function*(args, body, state){
@@ -715,24 +718,28 @@ object.Constructor('Page', BasePage, {
 
 		now: function(){
 			return ''+ Date.now() },
-		// XXX local filters???
-		// 		Example 1:
-		// 			<filter markdown> ... </filter>
-		// 		Example 2:
-		// 			<filter>
-		// 				...
-		// 				@filter(markdown)
-		// 			</filter>
-		// XXX need to nest filter namespaces -- currently parent_filters 
-		// 		does not see filters defined after the block...
+		//
+		// 	@filter(<filter-spec>)
+		// 	<filter <filter-spec>/>
+		//
+		// 	<filter <filter-spec>>
+		// 		...
+		// 	</filter>
+		//
+		// 	<filter-spec> ::=
+		// 		<filter> <filter-spec>
+		// 		| -<filter> <filter-spec>
+		//
+		// XXX support .NO_FILTERS ...
 		filter: function*(args, body, state){
 			var filters = state.filters = 
-				state.filters ?? []
-			// local filter...
+				state.filters 
+					?? []
+			// local filters...
 			if(body){
 				var parent_filters = state.filters
 				filters = state.filters = 
-					[] }
+					[parent_filters] }
 			// populate filters...
 			Object.values(args)
 				.forEach(function(filter){
@@ -748,20 +755,24 @@ object.Constructor('Page', BasePage, {
 						&& filters.push(filter) }) 
 			// local filters...
 			if(body){
+				// isolate from parent...
+				state.filters.includes(this.ISOLATED_FILTERS)
+					&& state.filters[0] instanceof Array
+					&& state.filters.shift()
 				// serialize the block for later processing...
 				var res = {
 					filters: state.filters,
-					// XXX might be a good idea to simply ref the parent 
-					// 		context here -- i.e. link filters into a chain...
-					parent_filters,
 					data: [...this.expand(body, state)],
 				}
 				// restore global filters...
 				state.filters = parent_filters
 				yield res } 
 			return },
+		source: function(args, body, state){
+			return args.src ?
+				this.get(src).render(state)
+				: '' },
 		include: function(){},
-		source: function(){},
 		quote: function(){},
 		macro: function(){},
 		slot: function(){},
@@ -804,37 +815,51 @@ object.Constructor('Page', BasePage, {
 				yield* res
 			} else {
 				yield res } } },
-	// XXX add a special filter to clear pending filters...
-	// XXX skip nested pre-filtered blocks...
+	// XXX add a special filter to clear pending filters... (???)
+	// XXX rename and use this instead of render...
 	postProcess: function(ast, state={}){
 		var that = this
+		ast = ast 
+			?? this.expand(null, state)
+
+		var _normalize = function(filters){
+			var skip = new Set()
+			return filters
+				.flat()
+				.tailUnique()
+				.filter(function(filter){
+					filter[0] == '-'
+						&& skip.add(filter.slice(1))
+					return filter[0] != '-' }) 
+				.filter(function(filter){
+					return !skip.has(filter) })}
+
 		return [...ast]
 			.map(function(section){
 				var filters = state.filters
-				// local filters...
+				// nested filters...
 				if(typeof(section) != 'string'){
-					// XXX also need to hanlde nested filters (no longer flat)...
-					// XXX merge this with .parent_filters...
-					filters = section.filters
-					section = [...that.postProcess(section.data, state)]
+					state.filters = _normalize(section.filters)
+					var res = [...that.postProcess(section.data, state)]
 			   			.flat()
-						.join('') }
-				return (filters 
-						// if this.SKIP_FILTERS is set and used then all other 
-						// filters will be skipped...
-						&& (!this.SKIP_FILTERS
-							|| !filters.inculdes(this.SKIP_FILTERS))) ?
-					// filter...
-					filters
-						.reduce(function(res, filter){
-							if(filter[0] == '-'){
-								return res }
-							if(that.filters[filter] == null){
-								throw new Error('.postProcess(..): unsupported filter: '+ filter) }
-							return that.filters[filter].call(that, res) }, section)
-					: section })
+						.join('') 
+					state.filters = filters
+					return res
+				// local filters... 
+				} else {
+					return filters ?
+						_normalize(filters)
+							.reduce(function(res, filter){
+								if(that.filters[filter] == null){
+									throw new Error(
+										'.postProcess(..): unsupported filter: '+ filter) }
+								return that.filters[filter].call(that, res) }, section)
+						: section } })
 			.flat()
 			.join('') },
+
+	render: function(state={}){
+		return this.postProcess(null, state) },
 
 
 	// raw page text...
@@ -857,10 +882,7 @@ object.Constructor('Page', BasePage, {
 	// XXX FUNC handle functions as pages...
 	// XXX need to support pattern pages...
 	get text(){
-		var state = {}
-		return this.postProcess(
-			this.expand(null, state), 
-			state) },
+		return this.render() },
 	set text(value){
 		this.store.update(this.location, {text: value}) },
 
