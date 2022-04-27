@@ -719,6 +719,17 @@ module.parser = {
 			} else {
 				yield res } } },
 
+	normalizeFilters: function(filters){
+		var skip = new Set()
+		return filters
+			.flat()
+			.tailUnique()
+			.filter(function(filter){
+				filter[0] == '-'
+					&& skip.add(filter.slice(1))
+				return filter[0] != '-' }) 
+			.filter(function(filter){
+				return !skip.has(filter) })},
 	// Fully parse a page...
 	//
 	// This runs in two stages:
@@ -738,33 +749,23 @@ module.parser = {
 			this.expand(page, ast, state)
 			: ast
 
-		var _normalize = function(filters){
-			var skip = new Set()
-			return filters
-				.flat()
-				.tailUnique()
-				.filter(function(filter){
-					filter[0] == '-'
-						&& skip.add(filter.slice(1))
-					return filter[0] != '-' }) 
-				.filter(function(filter){
-					return !skip.has(filter) })}
-
 		return [...ast]
+			// post macros...
 			.map(function(section){
-				var filters = state.filters
-				// nested filters...
+				return (typeof(section) != 'string' 
+						&& section.type in page.macros_finalize) ?
+					page.macros_finalize[section.type].call(page, section, state)
+					: section })
+			.flat()
+			// filters...
+			.map(function(section){
+				// expand section...
 				if(typeof(section) != 'string'){
-					state.filters = _normalize(section.filters)
-					var res = [...that.parse(page, section.data, state)]
-			   			.flat()
-						.join('') 
-					state.filters = filters
-					return res
-				// local filters... 
+					return section.data
+				// global filters... 
 				} else {
-					return filters ?
-						_normalize(filters)
+					return state.filters ?
+						that.normalizeFilters(state.filters)
 							.reduce(function(res, filter){
 								if(page.filters[filter] == null){
 									throw new Error(
@@ -870,6 +871,7 @@ object.Constructor('Page', BasePage, {
 					&& state.filters.shift()
 				// serialize the block for later processing...
 				var res = {
+					type: 'filter',
 					filters: state.filters,
 					data: [...this.__parser__.expand(this, body, state)],
 				}
@@ -877,6 +879,16 @@ object.Constructor('Page', BasePage, {
 				state.filters = parent_filters
 				yield res } 
 			return },
+		//
+		// 	@include(<path>)
+		//
+		// 	@include(<path> isolated recursive=<text>)
+		// 	@include(src=<path> isolated recursive=<text>)
+		//
+		// 	<include src=<path> .. >
+		// 		<text>
+		// 	</include>
+		//
 		// XXX 'text' argument is changed to 'recursive'...
 		// XXX should we track recursion via the resolved (current) path 
 		// 		or the given path???
@@ -932,14 +944,50 @@ object.Constructor('Page', BasePage, {
 				args, body, state, 'sources', 
 				function(){
 					return this.__parser__.parse(this, this.get(src).raw, state) }) },
-		macro: function(){},
-		slot: function(){},
 
-		// XXX quote what???
+		// XXX this will need to quote pWiki code...
+		// 		...not sure about anything else...
 		quote: function(){},
+
+		// XXX how do we handle a slot defined within a slot????
+		slot: function(args, body, state){
+			var name = args.name
+			var text = args.text ?? body
+
+			var slots = state.slots = 
+				state.slots 
+					?? {}
+			// NOTE: we only place text in slots that are defined first,
+			// 		all other instances will be omitted...
+			var res = 
+				name in slots ?
+					''
+					: {
+						type: 'slot',
+						name,
+					}
+
+			// XXX should this use .parse(..) or .expand(..) ???
+			slots[name] = [...this.__parser__.expand(this, text, state)]
+
+			return res }, 
+		macro: function(){},
 
 		// nesting rules...
 		'else': ['macro'],
+	},
+	// second stage macros...
+	macros_finalize: {
+		filter: function(section, state){
+			var filters = state.filters
+			state.filters = this.__parser__.normalizeFilters(section.filters)
+			var res = [...this.__parser__.parse(this, section.data, state)]
+				.flat()
+				.join('') 
+			state.filters = filters
+			return { data: res } },
+		slot: function(section, state){
+			return state.slots[section.name] },
 	},
 
 	// page parser...
@@ -1004,6 +1052,7 @@ Page('/', '/',
 
 
 // XXX TEST...
+// XXX add filter tests...
 console.log('loading test page...')
 pwiki
 	.update({
@@ -1012,7 +1061,9 @@ pwiki
 			+'\n'
 			// XXX BUG this is parsed incorrectly -- macro pattern...
 			//+'@include(/test recursive="Recursion type 2 (<now/>)")\n',
-			+'@include(/test recursive="Recursion type 2 <now/>")\n',
+			+'@include(/test recursive="Recursion type 2 <now/>")\n'
+			+'\n'
+			+'@slot(name=b text="filled slot")\n',
 	})
 	.update({
 		location: '/other',
@@ -1021,6 +1072,15 @@ pwiki
 	.update({
 		location: '/test',
 		text: 'TEST\n'
+			+'\n'
+			+'globally filtered test text...\n'
+			+'\n'
+			+'<filter -test>...unfiltered test text</filter>\n'
+			+'\n'
+			+'@slot(name=a text="non-filled slot")\n'
+			+'\n'
+			+'@slot(name=b text="non-filled slot")\n'
+			+'\n'
 			+'Including /other #1: @include(/other)\n'
 			+'Including /other #2: @include(/other)\n'
 			+'\n'
