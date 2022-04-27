@@ -750,21 +750,20 @@ module.parser = {
 			: ast
 
 		return [...ast]
-			// post macros...
+			// post handlers...
 			.map(function(section){
-				return (typeof(section) != 'string' 
-						&& section.type in page.macros_finalize) ?
-					page.macros_finalize[section.type].call(page, section, state)
+				return section instanceof Function ? 
+					section.call(page, state)
 					: section })
 			.flat()
 			// filters...
 			.map(function(section){
-				// expand section...
-				if(typeof(section) != 'string'){
-					return section.data
-				// global filters... 
-				} else {
-					return state.filters ?
+				return (
+					// expand section...
+					typeof(section) != 'string' ?
+						section.data
+					// global filters... 
+					: state.filters ?
 						that.normalizeFilters(state.filters)
 							.reduce(function(res, filter){
 								if(page.filters[filter] == null){
@@ -772,7 +771,8 @@ module.parser = {
 										'.parse(..): unsupported filter: '+ filter) }
 								return page.filters[filter].call(page, res) 
 									?? res }, section)
-						: section } })
+					// no global filters...
+					: section ) })
 			.flat()
 			.join('') },
 }
@@ -841,6 +841,7 @@ object.Constructor('Page', BasePage, {
 		// 		| -<filter> <filter-spec>
 		//
 		// XXX support .NO_FILTERS ...
+		// XXX not working on the test page...
 		filter: function*(args, body, state){
 			var filters = state.filters = 
 				state.filters 
@@ -869,15 +870,22 @@ object.Constructor('Page', BasePage, {
 				state.filters.includes(this.ISOLATED_FILTERS)
 					&& state.filters[0] instanceof Array
 					&& state.filters.shift()
+
 				// serialize the block for later processing...
-				var res = {
-					type: 'filter',
-					filters: state.filters,
-					data: [...this.__parser__.expand(this, body, state)],
-				}
+				var data = [...this.__parser__.expand(this, body, state)]
+				filters = state.filters
+
 				// restore global filters...
 				state.filters = parent_filters
-				yield res } 
+
+				// post handler...
+				yield function(state){
+					state.filters = this.__parser__.normalizeFilters(filters)
+					var res = [...this.__parser__.parse(this, data, state)]
+						.flat()
+						.join('') 
+					state.filters = filters
+					return { data: res } } }
 			return },
 		//
 		// 	@include(<path>)
@@ -959,35 +967,19 @@ object.Constructor('Page', BasePage, {
 					?? {}
 			// NOTE: we only place text in slots that are defined first,
 			// 		all other instances will be omitted...
-			var res = 
-				name in slots ?
-					''
-					: {
-						type: 'slot',
-						name,
-					}
+			var blank = name in slots
 
 			// XXX should this use .parse(..) or .expand(..) ???
 			slots[name] = [...this.__parser__.expand(this, text, state)]
 
-			return res }, 
+			return blank ?
+				''
+				: function(state){
+					return state.slots[name] } }, 
 		macro: function(){},
 
 		// nesting rules...
 		'else': ['macro'],
-	},
-	// second stage macros...
-	macros_finalize: {
-		filter: function(section, state){
-			var filters = state.filters
-			state.filters = this.__parser__.normalizeFilters(section.filters)
-			var res = [...this.__parser__.parse(this, section.data, state)]
-				.flat()
-				.join('') 
-			state.filters = filters
-			return { data: res } },
-		slot: function(section, state){
-			return state.slots[section.name] },
 	},
 
 	// page parser...
@@ -1076,6 +1068,8 @@ pwiki
 			+'globally filtered test text...\n'
 			+'\n'
 			+'<filter -test>...unfiltered test text</filter>\n'
+			+'\n'
+			//+'<filter test>locally filtered test text</filter>\n'
 			+'\n'
 			+'@slot(name=a text="non-filled slot")\n'
 			+'\n'
