@@ -841,29 +841,18 @@ object.Constructor('Page', BasePage, {
 		// 		| -<filter> <filter-spec>
 		//
 		// XXX support .NO_FILTERS ...
-		// XXX not working on the test page...
 		filter: function*(args, body, state){
 			var filters = state.filters = 
-				state.filters 
-					?? []
-			// local filters...
+				state.filters ?? []
+			// separate local filters...
 			if(body){
-				var parent_filters = state.filters
-				filters = state.filters = 
-					[parent_filters] }
-			// populate filters...
-			Object.values(args)
-				.forEach(function(filter){
-					// clear disabled filters...
-					// NOTE: '-<filter>' has precedence over '<filter>'...
-					if(filter[0] == '-' 
-							&& filters.includes(filter.slice(1))){
-						filters.splice(filters.indexOf(filter.slice(1)), 1) }
-					// only add once...
-					!filters.includes(filter)
-						&& (filter[0] == '-' 
-							|| !filters.includes('-'+filter))
-						&& filters.push(filter) }) 
+				var outer_filters = filters
+				filters = state.filters =
+					[outer_filters] }
+
+			// merge in new filters...
+			filters.splice(filters.length, 0, ...Object.values(args))
+
 			// local filters...
 			if(body){
 				// isolate from parent...
@@ -871,22 +860,21 @@ object.Constructor('Page', BasePage, {
 					&& state.filters[0] instanceof Array
 					&& state.filters.shift()
 
-				// serialize the block for later processing...
-				var data = [...this.__parser__.expand(this, body, state)]
+				// expand the body...
+				var ast = [...this.__parser__.expand(this, body, state)]
 				filters = state.filters
 
-				// restore global filters...
-				state.filters = parent_filters
+				state.filters = outer_filters
 
-				// post handler...
+				// parse the body after we are done expanding...
 				yield function(state){
+					var outer_filters = state.filters
 					state.filters = this.__parser__.normalizeFilters(filters)
-					var res = [...this.__parser__.parse(this, data, state)]
+					var res = [...this.__parser__.parse(this, ast, state)]
 						.flat()
 						.join('') 
-					state.filters = filters
-					return { data: res } } }
-			return },
+					state.filters = outer_filters
+					return { data: res } } } },
 		//
 		// 	@include(<path>)
 		//
