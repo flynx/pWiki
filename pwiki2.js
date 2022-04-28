@@ -982,25 +982,23 @@ object.Constructor('Page', BasePage, {
 		slot: function(args, body, state){
 			var name = args.name
 			var text = args.text ?? body
-			var pos = this.__parser__.getPositional(args)
 
 			var slots = state.slots = 
 				state.slots 
 					?? {}
 
+			//var hidden = name in slots
+			// XXX EXPERIMENTAL
+			var pos = this.__parser__.getPositional(args)
 			var hidden = 
-				// 'hidden' has priority...
+				// 'hidden' has priority... 
 				(pos.includes('hidden') || args.hidden)
-					// explicitly show...
+					// explicitly show... ()
 					|| ((pos.includes('shown') || args.shown) ?
 						false
 						// show first instance...
 						: name in slots)
 
-
-			console.log('---', hidden)
-
-			// XXX should this use .parse(..) or .expand(..) ???
 			slots[name] = [...this.__parser__.expand(this, text, state)]
 
 			return hidden ?
