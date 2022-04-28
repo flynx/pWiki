@@ -480,8 +480,11 @@ object.Constructor('BasePage', {
 
 //---------------------------------------------------------------------
 
+// XXX BUG? '<slot name=x text="moo <now/> foo">' is parsed semi-wrong...
 var parser =
 module.parser = {
+	// patterns...
+	//
 	// NOTE: the actual macro pattern is not stored as it depends on 
 	// 		the macro name list which is page dependant...
 	// XXX add escaping...
@@ -521,6 +524,25 @@ module.parser = {
 			'<\\s*pwiki-comment[^\\/>]*\\/>',
 		].join('|') +')', 'smig'),
 
+	// helpers...
+	//
+	getPositional: function(args){
+		return Object.entries(args)
+			.reduce(function(res, [key, value]){
+				/^[0-9]+$/.test(key)
+					&& (res[key*1] = value)
+				return res }, []) },
+	normalizeFilters: function(filters){
+		var skip = new Set()
+		return filters
+			.flat()
+			.tailUnique()
+			.filter(function(filter){
+				filter[0] == '-'
+					&& skip.add(filter.slice(1))
+				return filter[0] != '-' }) 
+			.filter(function(filter){
+				return !skip.has(filter) })},
 
 	// Strip comments...
 	//
@@ -719,17 +741,6 @@ module.parser = {
 			} else {
 				yield res } } },
 
-	normalizeFilters: function(filters){
-		var skip = new Set()
-		return filters
-			.flat()
-			.tailUnique()
-			.filter(function(filter){
-				filter[0] == '-'
-					&& skip.add(filter.slice(1))
-				return filter[0] != '-' }) 
-			.filter(function(filter){
-				return !skip.has(filter) })},
 	// Fully parse a page...
 	//
 	// This runs in two stages:
@@ -893,6 +904,7 @@ object.Constructor('Page', BasePage, {
 			// positional args...
 			var src = args.src || args[0]
 			var recursive = args.recursive || body
+			var isolated = this.__parser__.getPositional(args).includes('isolated')
 
 			if(!src){
 				return '' }
@@ -901,7 +913,7 @@ object.Constructor('Page', BasePage, {
 				?? function(){
 					return this.get(src)
 						.parse(
-							args.isolated ? 
+							isolated ? 
 								{[key]: state[key]} 
 								: state) }
 
@@ -945,22 +957,53 @@ object.Constructor('Page', BasePage, {
 		// 		...not sure about anything else...
 		quote: function(){},
 
+		//
+		//	<slot name=<name>/>
+		//
+		//	<slot name=<name> text=<text>/>
+		//
+		//	<slot name=<name>>
+		//		...
+		//	</slot>
+		//
+		//	Force show a slot...
+		//	<slot shown ... />
+		//
+		//	Force hide a slot...
+		//	<slot hidden ... />
+		//
+		//
+		// NOTE: by default only the first slot with <name> is visible, 
+		// 		all other slot with <name> will replace its content, unless
+		// 		explicit shown/hidden arguments are given.
+		// NOTE: hidden has precedence over shown if both are given.
+		//
 		// XXX how do we handle a slot defined within a slot????
 		slot: function(args, body, state){
 			var name = args.name
 			var text = args.text ?? body
+			var pos = this.__parser__.getPositional(args)
 
 			var slots = state.slots = 
 				state.slots 
 					?? {}
-			// NOTE: we only place text in slots that are defined first,
-			// 		all other instances will be omitted...
-			var blank = name in slots
+
+			var hidden = 
+				// 'hidden' has priority...
+				(pos.includes('hidden') || args.hidden)
+					// explicitly show...
+					|| ((pos.includes('shown') || args.shown) ?
+						false
+						// show first instance...
+						: name in slots)
+
+
+			console.log('---', hidden)
 
 			// XXX should this use .parse(..) or .expand(..) ???
 			slots[name] = [...this.__parser__.expand(this, text, state)]
 
-			return blank ?
+			return hidden ?
 				''
 				: function(state){
 					return state.slots[name] } }, 
