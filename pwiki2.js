@@ -979,6 +979,7 @@ object.Constructor('Page', BasePage, {
 		// NOTE: hidden has precedence over shown if both are given.
 		//
 		// XXX how do we handle a slot defined within a slot????
+		// 		...seems that we'll fall into recursion on definition...
 		slot: function(args, body, state){
 			var name = args.name
 			var text = args.text ?? body
