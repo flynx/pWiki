@@ -982,7 +982,11 @@ object.Constructor('Page', BasePage, {
 		// 		...seems that we'll fall into recursion on definition...
 		slot: function(args, body, state){
 			var name = args.name
-			var text = args.text ?? body
+			var text = args.text 
+				?? body 
+				// NOTE: this can't be undefined for .expand(..) to work 
+				// 		correctly...
+				?? []
 
 			var slots = state.slots = 
 				state.slots 
@@ -1000,7 +1004,7 @@ object.Constructor('Page', BasePage, {
 						// show first instance...
 						: name in slots)
 
-			slots[name] = [...this.__parser__.expand(this, text ?? [], state)]
+			slots[name] = [...this.__parser__.expand(this, text, state)]
 
 			return hidden ?
 				''
