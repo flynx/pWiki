@@ -380,6 +380,13 @@ object.Constructor('BasePage', {
 	set data(value){
 		this.store.update(this.location, value) },
 
+	// number of matching pages...
+	get length(){
+		var p = this.match(this.location)
+		return p instanceof Array ?
+			p.length
+			: 1 },
+
 	// relative proxies to store...
 	exists: relProxy('exists'), 
 	match: relProxy('match'), 
@@ -659,7 +666,8 @@ module.parser = {
 	// 		}
 	//
 	// NOTE: this internaly uses macros to check for propper nesting
-	group: function*(page, lex, to=false){
+	//group: function*(page, lex, to=false){
+	group: function*(page, lex, to=false, parent){
 		lex = lex
 			?? this.lex(page) 
 		lex = typeof(lex) == 'string' ?
@@ -676,8 +684,13 @@ module.parser = {
 						'Premature end of unpit: Expected closing "'+ to +'"') }
 				return }
 			// assert nesting rules...
+			// NOTE: we only check for direct nesting...
+			// XXX might be a good idea to link nested block to the parent...
 			if(page.macros[value.name] instanceof Array
-					&& page.macros[value.name].includes(to)){
+					&& !page.macros[value.name].includes(to)
+					// do not complain about closing nestable tags...
+					&& !(value.name == to 
+						&& value.type == 'closing')){
 				throw new Error(
 					'Unexpected "'+ value.name +'" macro' 
 						+(to ? 
@@ -685,7 +698,8 @@ module.parser = {
 							: '')) }
 			// open block...
 			if(value.type == 'opening'){
-				value.body = [...this.group(page, lex, value.name)]
+				//value.body = [...this.group(page, lex, value.name)]
+				value.body = [...this.group(page, lex, value.name, value)]
 				value.type = 'block'
 				yield value
 				continue
@@ -733,7 +747,7 @@ module.parser = {
 			// macro...
 			var {name, args, body} = value
 			var res = 
-				page.macros[name].call(page, args, body, state)
+				page.macros[name].call(page, args, body, state, value)
 					?? ''
 			if(res instanceof Array 
 					|| page.macros[name] instanceof types.Generator){
@@ -1010,7 +1024,61 @@ object.Constructor('Page', BasePage, {
 				''
 				: function(state){
 					return state.slots[name] } }, 
-		macro: function(){},
+
+		// XXX BUG: '<macro src="/moo/*"> <else> no moo!</else> </macro>' breaks...
+		// 		...seams to be a bug in the parser...
+		macro: function(args, body, state){
+			// XXX
+			//return
+
+			var name = args.name ?? args[0]
+			var src = args.src
+			var sort = (args.sort ?? '')
+				.split(/\s+/g)
+				.filter(function(e){ 
+					return e != '' })
+			var text = args.text 
+				?? body 
+				?? []
+
+			if(name){
+				// define new named macro...
+				if(text){
+					state.macros[name] = text
+				// use existing macro...
+				} else if(name in state.macros){
+					text = state.macros[name] } }
+
+			if(src){
+				var pages = this.get(src).each()
+				// no matching pages -> get the else block...
+				if(pages.length == 0 && text){
+					// XXX get the else block...
+					var else_block = (text ?? [])
+						.filter(function(e){ 
+							return typeof(e) != 'string' 
+								&& e.name == 'else' }) 
+					// XXX do we take the first or the last (now) block???
+					else_block = else_block.pop()
+					else_block = 
+						else_block.args.text 
+							?? else_block.body
+					console.log('---', else_block)
+					return else_block ?
+						this.__parser__.expand(this, else_block, state)
+						: '' }
+
+				// sort pages...
+				if(sort.length > 0){
+					// XXX
+					throw new Error('macro sort: not implemented')
+				}
+
+				// XXX apply macro text...
+				return pages
+					.map(function(page){
+						return this.__parser__.expand(page, text, state) })
+			} },
 
 		// nesting rules...
 		'else': ['macro'],
