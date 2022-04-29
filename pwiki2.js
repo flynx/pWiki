@@ -1000,7 +1000,7 @@ object.Constructor('Page', BasePage, {
 						// show first instance...
 						: name in slots)
 
-			slots[name] = [...this.__parser__.expand(this, text, state)]
+			slots[name] = [...this.__parser__.expand(this, text ?? [], state)]
 
 			return hidden ?
 				''
