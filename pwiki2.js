@@ -502,7 +502,7 @@ module.parser = {
 			// XXX add support for '\)' in args...
 			'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>([^)])*)\\)',
 			// <macro ..> | <macro ../>
-			// XXX revise escaped > and />
+			// XXX need to ignore ">" in quotes and "/" not before >...
 			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>\\s+([^>/])*)?/?>',
 			// </macro>
 			'</\\s*(?<nameClose>MACROS)\\s*>',
