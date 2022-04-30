@@ -253,6 +253,8 @@ module.store = {
 	//
 	// XXX should these return this or the data???
 	// XXX FUNC handle functions as pages...
+	// XXX BUG: for path '/' this adds an entry at '', but when getting 
+	// 		'/', the later is not found...
 	update: function(path, data, mode='update'){
 		path = module.path.normalize('/'+ path, 'string')
 		path = path[path.length-1] == '/' ?
@@ -1044,13 +1046,15 @@ object.Constructor('Page', BasePage, {
 			if(name){
 				// define new named macro...
 				if(text){
-					state.macros[name] = text
+					;(state.macros = state.macros ?? {})[name] = text
 				// use existing macro...
-				} else if(name in state.macros){
+				} else if(state.macros 
+						&& name in state.macros){
 					text = state.macros[name] } }
 
 			if(src){
 				var pages = this.get(src).each()
+				console.log('---', pages.length)
 				// no matching pages -> get the else block...
 				if(pages.length == 0 && text){
 					// XXX get the else block...
@@ -1058,15 +1062,16 @@ object.Constructor('Page', BasePage, {
 						.filter(function(e){ 
 							return typeof(e) != 'string' 
 								&& e.name == 'else' }) 
+					if(else_block.length == 0){
+						return }
 					// XXX do we take the first or the last (now) block???
 					else_block = else_block.pop()
 					else_block = 
 						else_block.args.text 
 							?? else_block.body
-					console.log('---', else_block)
 					return else_block ?
 						this.__parser__.expand(this, else_block, state)
-						: '' }
+						: undefined }
 
 				// sort pages...
 				if(sort.length > 0){
