@@ -492,18 +492,19 @@ object.Constructor('BasePage', {
 // XXX BUG? '<slot name=x text="moo <now/> foo">' is parsed semi-wrong...
 var parser =
 module.parser = {
-	// XXX
+	// XXX update a-la MACRO_ARGS...
 	MACRO_INLINE_ARGS: '[^)]*',
-	// XXX ugly...
+	// XXX need to update the arg pattern below too...
 	MACRO_ARGS: ['(',
-		// "arg" | 'arg'
-		'\\s+"[^"]"',
-		'|\\s+\'[^\']\'',
-		// arg
-		'|\\s+[^\\s\\/>\'"]+',
-		// arg='val' | arg="val" | arg=val
-		'|\\s+[a-z]+=(\'[^\']*\'|"[^"]*"|[^\\s"\']*)',
-	')*'].join(''),
+			// "arg" | 'arg'
+			// XXX add quote escaping??
+			'\\s+"[^"]*"',
+			"|\\s+'[^']*'",
+			// arg
+			'|\\s+[^\\s\\/>\'"]+',
+			// arg='val' | arg="val" | arg=val
+			'|\\s+[a-z]+=(\'[^\']*\'|"[^"]*"|[^\\s"\']*)',
+		')*'].join(''),
 	// patterns...
 	//
 	// NOTE: the actual macro pattern is not stored as it depends on 
@@ -531,7 +532,7 @@ module.parser = {
 							.replace(/MACRO_ARGS/g, this.MACRO_ARGS)
 							.replace(/MACRO_INLINE_ARGS/g, this.MACRO_INLINE_ARGS)
 					})`)).length-2) },
-	// XXX still buggy...
+	// XXX update using MACRO_ARGS...
 	MACRO_ARGS_PATTERN: RegExp('('+[
 			// named args...
 			'(?<nameQuoted>[a-zA-Z-_]+)\\s*=([\'"])(?<valueQuoted>([^\\3]|\\\\3)*)\\3\\s*',
