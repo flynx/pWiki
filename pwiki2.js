@@ -492,6 +492,18 @@ object.Constructor('BasePage', {
 // XXX BUG? '<slot name=x text="moo <now/> foo">' is parsed semi-wrong...
 var parser =
 module.parser = {
+	// XXX
+	MACRO_INLINE_ARGS: '[^)]*',
+	// XXX ugly...
+	MACRO_ARGS: ['(',
+		// "arg" | 'arg'
+		'\\s+"[^"]"',
+		'|\\s+\'[^\']\'',
+		// arg
+		'|\\s+[^\\s\\/>\'"]+',
+		// arg='val' | arg="val" | arg=val
+		'|\\s+[a-z]+=(\'[^\']*\'|"[^"]*"|[^\\s"\']*)',
+	')*'].join(''),
 	// patterns...
 	//
 	// NOTE: the actual macro pattern is not stored as it depends on 
@@ -500,10 +512,12 @@ module.parser = {
 	MACRO_PATTERN_STR: [[
 			// @macro(arg ..)
 			// XXX add support for '\)' in args...
-			'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>([^)])*)\\)',
+			//'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>([^)])*)\\)',
+			'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>MACRO_INLINE_ARGS)\\)',
 			// <macro ..> | <macro ../>
 			// XXX need to ignore ">" in quotes and "/" not before >...
-			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>\\s+([^>/])*)?/?>',
+			//'<\\s*(?<nameOpen>MACROS)(?<argsOpen>\\s+([^>/])*)?/?>',
+			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>MACRO_ARGS)?/?>',
 			// </macro>
 			'</\\s*(?<nameClose>MACROS)\\s*>',
 		].join('|'), 'smig'],
@@ -512,7 +526,11 @@ module.parser = {
 	get MACRO_PATTERN_GROUPS(){
 		return this.__MACRO_PATTERN_GROUPS 
 			?? (this.__MACRO_PATTERN_GROUPS =
-				'<MACROS>'.split(new RegExp(`(${ this.MACRO_PATTERN_STR })`)).length-2) },
+				'<MACROS>'.split(new RegExp(`(${ 
+						this.MACRO_PATTERN_STR[0] 
+							.replace(/MACRO_ARGS/g, this.MACRO_ARGS)
+							.replace(/MACRO_INLINE_ARGS/g, this.MACRO_INLINE_ARGS)
+					})`)).length-2) },
 	// XXX still buggy...
 	MACRO_ARGS_PATTERN: RegExp('('+[
 			// named args...
@@ -593,6 +611,8 @@ module.parser = {
 		// XXX should this be cached???
 		var MACRO_PATTERN = new RegExp(
 			'('+ this.MACRO_PATTERN_STR[0]
+				.replace(/MACRO_ARGS/g, this.MACRO_ARGS)
+				.replace(/MACRO_INLINE_ARGS/g, this.MACRO_INLINE_ARGS)
 				.replace(/MACROS/g, Object.keys(page.macros).join('|')) +')',
 			this.MACRO_PATTERN_STR[1]) 
 
