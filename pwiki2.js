@@ -488,38 +488,47 @@ object.Constructor('BasePage', {
 
 
 //---------------------------------------------------------------------
+// Parser...
 
 // needs:
 // 	STOP -- '\\>' or ')'
 // 	PREFIX -- 'inline' or 'elem'
+//
+// XXX quote escaping???
 var MACRO_ARGS =
 module.MACRO_ARGS =
 ['(',[
 		// arg='val' | arg="val" | arg=val
 		'\\s+(?<PREFIXArgName>[a-z]+)\\s*=\\s*(?<PREFIXArgValue>'+([
-			// XXX for some readon we are not getting anythinng 
-			// 		matching back from these...
-			// 		...but they seem to match correctly within
-			// 		the macro -- nestin issue???
+			// XXX CHROME/NODE BUG: this does not work yet...
+			//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
 			"'(?<PREFIXSingleQuotedValue>[^']*)'",
 			'"(?<PREFIXDoubleQuotedValue>[^"]*)"',
 			'(?<PREFIXValue>[^\\sSTOP\'"]+)',
 		].join('|'))+')',
 		// "arg" | 'arg'
-		// XXX quote escaping???
 		// XXX CHROME/NODE BUG: this does not work yet...
 		//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
 		'\\s+"(?<PREFIXDoubleQuotedArg>[^"]*)"',
 		"\\s+'(?<PREFIXSingleQuotedArg>[^']*)'",
 		// arg
+		// NOTE: this is last because it could eat up parts of the above 
+		// 		alternatives...
 		//'|\\s+[^\\s\\/>\'"]+',
 		'\\s+(?<PREFIXArg>[^\\sSTOP\'"]+)',
 	].join('|'),
 ')'].join('')
 
+//
+// 	buildArgsPattern(<prefix>[, <stop>[, <flags>]])
+// 		-> <pattern>
+//
+// 	buildArgsPattern(<prefix>[, <stop>[, false]])
+// 		-> <string>
+//
 var buildArgsPattern =
 module.buildArgsPattern =
-function(prefix, stop='', regexp='smig'){
+function(prefix='elem', stop='', regexp='smig'){
 	var pattern = module.MACRO_ARGS
 		.replace(/PREFIX/g, prefix)
 		.replace(/STOP/g, stop)
@@ -534,19 +543,25 @@ function(prefix, stop='', regexp='smig'){
 // 	ARGS -- MACRO_ARGS.replace(/STOP/, '\\/>') 
 var MACRO =
 module.MACRO =
-[
+'('+([
 	// @macro(arg ..)
 	'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>INLINE_ARGS)\\)',
 	// <macro ..> | <macro ../>
 	'<\\s*(?<nameOpen>MACROS)(?<argsOpen>ARGS)?\\s*/?>',
 	// </macro>
 	'</\\s*(?<nameClose>MACROS)\\s*>',
-].join('|')
+].join('|'))+')'
 
+//
+// 	buildMacroPattern(<macros>[, <flags>])
+// 		-> <pattern>
+//
+// 	buildMacroPattern(<macros>[, false])
+// 		-> <string>
+//
 var buildMacroPattern =
 module.buildMacroPattern =
-function(macros=['macro'], regexp='smig'){
-	console.log('---',macros)
+function(macros=['MACROS'], regexp='smig'){
 	var pattern = module.MACRO
 		.replace(/MACROS/g, macros.join('|'))
 		.replace(/INLINE_ARGS/g,
@@ -557,77 +572,24 @@ function(macros=['macro'], regexp='smig'){
 		new RegExp(pattern, regexp) 
 		: pattern }
 
+var countMacroPatternGroups =
+module.countMacroPatternGroups =
+function(){
+	// NOTE: the -2 here is to compensate for the leading and trailing ""'s...
+	return '<MACROS>'.split(module.buildMacroPattern()).length - 2) }
 
 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 
 // XXX BUG? '<slot name=x text="moo <now/> foo">' is parsed semi-wrong...
 var parser =
 module.parser = {
-	// XXX the pattern dance is getting a bit cumbersome, might be a 
-	// 		good idea to move the thing out of the parser into the module 
-	// 		root combine it there and reference the result from the parser 
-	// 		letting the user to override it if necessary without 
-	// 		overcomplicating things...
-	// XXX update a-la MACRO_ARGS...
-	MACRO_INLINE_ARGS: '[^)]*',
-	// XXX need to update the arg pattern below too...
-	MACRO_ARGS: ['(',
-			// "arg" | 'arg'
-			// XXX quote escaping???
-			// XXX CHROME/NODE BUG: this does not work yet...
-			//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
-			'\\s+"[^"]*"',
-			"|\\s+'[^']*'",
-			// arg
-			'|\\s+[^\\s\\/>\'"]+',
-			// arg='val' | arg="val" | arg=val
-			'|\\s+[a-z]+\\s*=\\s*(',[
-				"'[^']*'",
-				'"[^"]*"',
-				'[^\\s"\']*',
-			].join('|'),')',
-		')*'].join(''),
 	// patterns...
 	//
-	// NOTE: the actual macro pattern is not stored as it depends on 
-	// 		the macro name list which is page dependant...
-	// XXX add escaping...
-	MACRO_PATTERN_STR: [[
-			// @macro(arg ..)
-			// XXX add support for '\)' in args...
-			//'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>([^)])*)\\)',
-			'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>MACRO_INLINE_ARGS)\\)',
-			// <macro ..> | <macro ../>
-			// XXX need to ignore ">" in quotes and "/" not before >...
-			//'<\\s*(?<nameOpen>MACROS)(?<argsOpen>\\s+([^>/])*)?/?>',
-			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>MACRO_ARGS)?\\s*/?>',
-			// </macro>
-			'</\\s*(?<nameClose>MACROS)\\s*>',
-		].join('|'), 'smig'],
-	// NOTE: this depends on .MACRO_PATTERN_STR and thus is lazily generated...
-	__MACRO_PATTERN_GROUPS: undefined,
-	get MACRO_PATTERN_GROUPS(){
-		return this.__MACRO_PATTERN_GROUPS 
-			?? (this.__MACRO_PATTERN_GROUPS =
-				'<MACROS>'.split(new RegExp(`(${ 
-						this.MACRO_PATTERN_STR[0] 
-							.replace(/MACRO_ARGS/g, this.MACRO_ARGS)
-							.replace(/MACRO_INLINE_ARGS/g, this.MACRO_INLINE_ARGS)
-					})`)).length-2) },
-	/*/ XXX update using MACRO_ARGS...
-	MACRO_ARGS_PATTERN: RegExp('('+[
-		].join('|') +')', 'smig'),
-	/*/
-	MACRO_ARGS_PATTERN: RegExp('('+[
-			// named args...
-			'(?<nameQuoted>[a-zA-Z-_]+)\\s*=\\s*([\'"])(?<valueQuoted>([^\\3]|\\\\3)*)\\3\\s*',
-			'(?<nameUnquoted>[a-zA-Z-_]+)\\s*=\\s*(?<valueUnquoted>[^\\s]*)',
-			// positional args...
-			'([\'"])(?<argQuoted>([^\\8]|\\\\8)*)\\8',
-			'(?<arg>[^\\s]+)',
-		].join('|') +')', 'smig'),
-	//*/
+	// XXX should we cache MACRO_PATTERN and MACRO_PATTERN_GROUPS???
+	//
 	// XXX do we need basic inline and block commets a-la lisp???
 	COMMENT_PATTERN: RegExp('('+[
 			// <!--[pwiki[ .. ]]-->
@@ -638,6 +600,9 @@ module.parser = {
 			// <pwiki-comment .. />
 			'<\\s*pwiki-comment[^\\/>]*\\/>',
 		].join('|') +')', 'smig'),
+	// NOTE: we are caching this because it only depends on the actual 
+	// 		pattern...
+	MACRO_ARGS_PATTERN: module.buildArgsPattern(),
 
 	// helpers...
 	//
@@ -697,19 +662,15 @@ module.parser = {
 		str = this.stripComments(str)
 
 		// XXX should this be cached???
-		var MACRO_PATTERN = new RegExp(
-			'('+ this.MACRO_PATTERN_STR[0]
-				.replace(/MACRO_ARGS/g, this.MACRO_ARGS)
-				.replace(/MACRO_INLINE_ARGS/g, this.MACRO_INLINE_ARGS)
-				.replace(/MACROS/g, Object.keys(page.macros).join('|')) +')',
-			this.MACRO_PATTERN_STR[1]) 
+		var MACRO_PATTERN = module.buildMacroPattern(Object.keys(page.macros))
+		var MACRO_PATTERN_GROUPS = module.countMacroPatternGroups()
 
 		var lst = str.split(MACRO_PATTERN)
 
 		var macro = false
 		while(lst.length > 0){
 			if(macro){
-				var match = lst.splice(0, this.MACRO_PATTERN_GROUPS)[0]
+				var match = lst.splice(0, MACRO_PATTERN_GROUPS)[0]
 				// NOTE: we essentially are parsing the detected macro a 
 				// 		second time here, this gives us access to named groups
 				// 		avoiding maintaining match indexes with the .split(..) 
@@ -728,11 +689,14 @@ module.parser = {
 						of (cur.argsInline ?? cur.argsOpen ?? '')
 							.matchAll(this.MACRO_ARGS_PATTERN)){
 					i++
-					args[groups.nameQuoted ?? groups.nameUnquoted ?? i] =
-						groups.valueQuoted 
-						?? groups.valueUnquoted 
-						?? groups.argQuoted 
-						?? groups.arg }
+					args[groups.elemArgName ?? i] =
+						groups.elemSingleQuotedValue
+							?? groups.elemDoubleQuotedValue
+							?? groups.elemValue
+							?? groups.elemSingleQuotedArg
+							?? groups.elemDoubleQuotedArg
+							?? groups.elemArg }
+
 				// macro-spec...
 				yield {
 					name: (cur.nameInline 
