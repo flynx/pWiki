@@ -495,8 +495,8 @@ object.Constructor('BasePage', {
 // 		this will simply be ignored, i.e. passed trough the parser 
 // 		without change...
 
-var parser =
-module.parser = {
+var BaseParser =
+module.BaseParser = {
 	// patterns...
 	//
 
@@ -868,6 +868,11 @@ module.parser = {
 					: section ) })
 			.flat()
 			.join('') },
+}
+
+var parser =
+module.parser = {
+	__proto__: BaseParser,
 }
 
 
