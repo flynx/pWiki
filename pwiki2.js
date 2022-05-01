@@ -492,18 +492,25 @@ object.Constructor('BasePage', {
 // XXX BUG? '<slot name=x text="moo <now/> foo">' is parsed semi-wrong...
 var parser =
 module.parser = {
+	// XXX the pattern dance is getting a bit cumbersome, might be a 
+	// 		good idea to move the thing out of the parser into the module 
+	// 		root combine it there and reference the result from the parser 
+	// 		letting the user to override it if necessary without 
+	// 		overcomplicating things...
 	// XXX update a-la MACRO_ARGS...
 	MACRO_INLINE_ARGS: '[^)]*',
 	// XXX need to update the arg pattern below too...
 	MACRO_ARGS: ['(',
 			// "arg" | 'arg'
-			// XXX add quote escaping??
+			// XXX quote escaping???
+			// XXX CHROME/NODE BUG: this does not work yet...
+			//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
 			'\\s+"[^"]*"',
 			"|\\s+'[^']*'",
 			// arg
 			'|\\s+[^\\s\\/>\'"]+',
 			// arg='val' | arg="val" | arg=val
-			'|\\s+[a-z]+=(\'[^\']*\'|"[^"]*"|[^\\s"\']*)',
+			'|\\s+[a-z]+\\s*=\\s*(\'[^\']*\'|"[^"]*"|[^\\s"\']*)',
 		')*'].join(''),
 	// patterns...
 	//
@@ -518,7 +525,7 @@ module.parser = {
 			// <macro ..> | <macro ../>
 			// XXX need to ignore ">" in quotes and "/" not before >...
 			//'<\\s*(?<nameOpen>MACROS)(?<argsOpen>\\s+([^>/])*)?/?>',
-			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>MACRO_ARGS)?/?>',
+			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>MACRO_ARGS)?\\s*/?>',
 			// </macro>
 			'</\\s*(?<nameClose>MACROS)\\s*>',
 		].join('|'), 'smig'],
@@ -534,13 +541,17 @@ module.parser = {
 					})`)).length-2) },
 	// XXX update using MACRO_ARGS...
 	MACRO_ARGS_PATTERN: RegExp('('+[
+		].join('|') +')', 'smig'),
+	/*/
+	MACRO_ARGS_PATTERN: RegExp('('+[
 			// named args...
-			'(?<nameQuoted>[a-zA-Z-_]+)\\s*=([\'"])(?<valueQuoted>([^\\3]|\\\\3)*)\\3\\s*',
-			'(?<nameUnquoted>[a-zA-Z-_]+)\\s*=(?<valueUnquoted>[^\\s]*)',
+			'(?<nameQuoted>[a-zA-Z-_]+)\\s*=\\s*([\'"])(?<valueQuoted>([^\\3]|\\\\3)*)\\3\\s*',
+			'(?<nameUnquoted>[a-zA-Z-_]+)\\s*=\\s*(?<valueUnquoted>[^\\s]*)',
 			// positional args...
 			'([\'"])(?<argQuoted>([^\\8]|\\\\8)*)\\8',
 			'(?<arg>[^\\s]+)',
 		].join('|') +')', 'smig'),
+	//*/
 	// XXX do we need basic inline and block commets a-la lisp???
 	COMMENT_PATTERN: RegExp('('+[
 			// <!--[pwiki[ .. ]]-->
