@@ -490,99 +490,6 @@ object.Constructor('BasePage', {
 //---------------------------------------------------------------------
 // Parser...
 
-//
-// needs:
-// 	STOP -- '\\>' or ')'
-// 	PREFIX -- 'inline' or 'elem'
-//
-// XXX quote escaping???
-var MACRO_ARGS =
-module.MACRO_ARGS =
-['(',[
-		// arg='val' | arg="val" | arg=val
-		'\\s+(?<PREFIXArgName>[a-z]+)\\s*=\\s*(?<PREFIXArgValue>'+([
-			// XXX CHROME/NODE BUG: this does not work yet...
-			//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
-			"'(?<PREFIXSingleQuotedValue>[^']*)'",
-			'"(?<PREFIXDoubleQuotedValue>[^"]*)"',
-			'(?<PREFIXValue>[^\\sSTOP\'"]+)',
-		].join('|'))+')',
-		// "arg" | 'arg'
-		// XXX CHROME/NODE BUG: this does not work yet...
-		//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
-		'\\s+"(?<PREFIXDoubleQuotedArg>[^"]*)"',
-		"\\s+'(?<PREFIXSingleQuotedArg>[^']*)'",
-		// arg
-		// NOTE: this is last because it could eat up parts of the above 
-		// 		alternatives...
-		//'|\\s+[^\\s\\/>\'"]+',
-		'\\s+(?<PREFIXArg>[^\\sSTOP\'"]+)',
-	].join('|'),
-')'].join('')
-
-//
-// 	buildArgsPattern(<prefix>[, <stop>[, <flags>]])
-// 		-> <pattern>
-//
-// 	buildArgsPattern(<prefix>[, <stop>[, false]])
-// 		-> <string>
-//
-var buildArgsPattern =
-module.buildArgsPattern =
-function(prefix='elem', stop='', regexp='smig'){
-	var pattern = module.MACRO_ARGS
-		.replace(/PREFIX/g, prefix)
-		.replace(/STOP/g, stop)
-	return regexp ?
-		new RegExp(pattern, regexp) 
-		: pattern }
-
-
-//
-// needs:
-// 	MACROS
-// 	INLINE_ARGS -- MACRO_ARGS.replace(/STOP/, ')') 
-// 	ARGS -- MACRO_ARGS.replace(/STOP/, '\\/>') 
-var MACRO =
-module.MACRO =
-'('+([
-	// @macro(arg ..)
-	'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>INLINE_ARGS)\\)',
-	// <macro ..> | <macro ../>
-	'<\\s*(?<nameOpen>MACROS)(?<argsOpen>ARGS)?\\s*/?>',
-	// </macro>
-	'</\\s*(?<nameClose>MACROS)\\s*>',
-].join('|'))+')'
-
-//
-// 	buildMacroPattern(<macros>[, <flags>])
-// 		-> <pattern>
-//
-// 	buildMacroPattern(<macros>[, false])
-// 		-> <string>
-//
-var buildMacroPattern =
-module.buildMacroPattern =
-function(macros=['MACROS'], regexp='smig'){
-	var pattern = module.MACRO
-		.replace(/MACROS/g, macros.join('|'))
-		.replace(/INLINE_ARGS/g,
-			buildArgsPattern('inline', ')', false) +'*')
-		.replace(/ARGS/g, 
-			buildArgsPattern('elem', '\\/>', false) +'*')
-	return regexp ?
-		new RegExp(pattern, regexp) 
-		: pattern }
-
-var countMacroPatternGroups =
-module.countMacroPatternGroups =
-function(){
-	// NOTE: the -2 here is to compensate for the leading and trailing ""'s...
-	return '<MACROS>'.split(module.buildMacroPattern()).length - 2 }
-
-
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 // XXX should we warn about stuff like <macro src=/moo/> -- currently 
 // 		this will simply be ignored, i.e. passed trough the parser 
@@ -592,6 +499,88 @@ var parser =
 module.parser = {
 	// patterns...
 	//
+
+	//
+	// needs:
+	// 	STOP -- '\\>' or ')'
+	// 	PREFIX -- 'inline' or 'elem'
+	//
+	// XXX quote escaping???
+	MACRO_ARGS: ['(',[
+				// arg='val' | arg="val" | arg=val
+				'\\s+(?<PREFIXArgName>[a-z]+)\\s*=\\s*(?<PREFIXArgValue>'+([
+					// XXX CHROME/NODE BUG: this does not work yet...
+					//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
+					"'(?<PREFIXSingleQuotedValue>[^']*)'",
+					'"(?<PREFIXDoubleQuotedValue>[^"]*)"',
+					'(?<PREFIXValue>[^\\sSTOP\'"]+)',
+				].join('|'))+')',
+				// "arg" | 'arg'
+				// XXX CHROME/NODE BUG: this does not work yet...
+				//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
+				'\\s+"(?<PREFIXDoubleQuotedArg>[^"]*)"',
+				"\\s+'(?<PREFIXSingleQuotedArg>[^']*)'",
+				// arg
+				// NOTE: this is last because it could eat up parts of the above 
+				// 		alternatives...
+				//'|\\s+[^\\s\\/>\'"]+',
+				'\\s+(?<PREFIXArg>[^\\sSTOP\'"]+)',
+			].join('|'),
+		')'].join(''),
+	MACRO_ARGS_PATTERN: undefined,
+	//
+	// 	.buildArgsPattern(<prefix>[, <stop>[, <flags>]])
+	// 		-> <pattern>
+	//
+	// 	.buildArgsPattern(<prefix>[, <stop>[, false]])
+	// 		-> <string>
+	//
+	buildArgsPattern: function(prefix='elem', stop='', regexp='smig'){
+		var pattern = this.MACRO_ARGS
+			.replace(/PREFIX/g, prefix)
+			.replace(/STOP/g, stop)
+		return regexp ?
+			new RegExp(pattern, regexp) 
+			: pattern },
+
+	//
+	// needs:
+	// 	MACROS
+	// 	INLINE_ARGS -- MACRO_ARGS.replace(/STOP/, ')') 
+	// 	ARGS -- MACRO_ARGS.replace(/STOP/, '\\/>') 
+	MACRO: '('+([
+			// @macro(arg ..)
+			'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>INLINE_ARGS)\\)',
+			// <macro ..> | <macro ../>
+			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>ARGS)?\\s*/?>',
+			// </macro>
+			'</\\s*(?<nameClose>MACROS)\\s*>',
+		].join('|'))+')',
+	MACRO_PATTERN: undefined,
+	MACRO_PATTERN_GROUPS: undefined,
+	//
+	// 	.buildMacroPattern(<macros>[, <flags>])
+	// 		-> <pattern>
+	//
+	// 	.buildMacroPattern(<macros>[, false])
+	// 		-> <string>
+	//
+	buildMacroPattern: function(macros=['MACROS'], regexp='smig'){
+		var pattern = this.MACRO
+			.replace(/MACROS/g, macros.join('|'))
+			.replace(/INLINE_ARGS/g,
+				this.buildArgsPattern('inline', ')', false) +'*')
+			.replace(/ARGS/g, 
+				this.buildArgsPattern('elem', '\\/>', false) +'*')
+		return regexp ?
+			new RegExp(pattern, regexp) 
+			: pattern },
+	countMacroPatternGroups: function(){
+		// NOTE: the -2 here is to compensate for the leading and trailing ""'s...
+		return '<MACROS>'.split(this.buildMacroPattern()).length - 2 },
+
+
+
 	// XXX should we cache MACRO_PATTERN and MACRO_PATTERN_GROUPS???
 	//
 	// XXX do we need basic inline and block commets a-la lisp???
@@ -604,9 +593,6 @@ module.parser = {
 			// <pwiki-comment .. />
 			'<\\s*pwiki-comment[^\\/>]*\\/>',
 		].join('|') +')', 'smig'),
-	// NOTE: we are caching this because it only depends on the actual 
-	// 		pattern...
-	MACRO_ARGS_PATTERN: module.buildArgsPattern(),
 
 	// helpers...
 	//
@@ -666,21 +652,25 @@ module.parser = {
 		str = this.stripComments(str)
 
 		// XXX should this be cached???
-		var MACRO_PATTERN = module.buildMacroPattern(Object.keys(page.macros))
-		var MACRO_PATTERN_GROUPS = module.countMacroPatternGroups()
+		var macro_pattern = this.MACRO_PATTERN 
+			?? this.buildMacroPattern(Object.keys(page.macros))
+		var macro_pattern_groups = this.MACRO_PATTERN_GROUPS 
+			?? this.countMacroPatternGroups()
+		var macro_args_pattern = this.MACRO_ARGS_PATTERN 
+			?? this.buildArgsPattern()
 
-		var lst = str.split(MACRO_PATTERN)
+		var lst = str.split(macro_pattern)
 
 		var macro = false
 		while(lst.length > 0){
 			if(macro){
-				var match = lst.splice(0, MACRO_PATTERN_GROUPS)[0]
+				var match = lst.splice(0, macro_pattern_groups)[0]
 				// NOTE: we essentially are parsing the detected macro a 
 				// 		second time here, this gives us access to named groups
 				// 		avoiding maintaining match indexes with the .split(..) 
 				// 		output...
 				// XXX for some reason .match(..) here returns a list with a string...
-				var cur = [...match.matchAll(MACRO_PATTERN)][0].groups
+				var cur = [...match.matchAll(macro_pattern)][0].groups
 				// special case: escaped inline macro -> keep as text...
 				if(match.startsWith('\\@')){
 					yield match
@@ -691,7 +681,7 @@ module.parser = {
 				var i = -1
 				for(var {groups} 
 						of (cur.argsInline ?? cur.argsOpen ?? '')
-							.matchAll(this.MACRO_ARGS_PATTERN)){
+							.matchAll(macro_args_pattern)){
 					i++
 					args[groups.elemArgName ?? i] =
 						groups.elemSingleQuotedValue
