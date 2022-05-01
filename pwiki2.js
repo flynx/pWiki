@@ -489,6 +489,73 @@ object.Constructor('BasePage', {
 
 //---------------------------------------------------------------------
 
+// needs:
+// 	STOP -- '\\>' or ')'
+// 	PREFIX -- 'inline' or 'elem'
+var MACRO_ARGS =
+module.MACRO_ARGS =
+['(',
+	// arg='val' | arg="val" | arg=val
+	'|\\s+(?<PREFIXArgName>[a-z]+)\\s*=\\s*(',[
+		"'(?<PREFIXSingleQuotedValue>[^']*)'",
+		'"(?<PREFIXDoubleQuotedValue>[^"]*)"',
+		'(?<PREFIXValue>[^\\s"\']*)',
+	].join('|'),')',
+	// "arg" | 'arg'
+	// XXX quote escaping???
+	// XXX CHROME/NODE BUG: this does not work yet...
+	//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
+	'\\s+"(?<PREFIXDoubleQuotedArg>[^"]*)"',
+	"|\\s+'(?<PREFIXSingleQuotedArg>[^']*)'",
+	// arg
+	//'|\\s+[^\\s\\/>\'"]+',
+	'|\\s+(?<PREFIXArg>[^\\sSTOP\'"]+)',
+')'].join('')
+
+// needs:
+// 	MACROS
+// 	INLINE_ARGS -- MACRO_ARGS.replace(/STOP/, ')') 
+// 	ARGS -- MACRO_ARGS.replace(/STOP/, '\\/>') 
+var MACRO =
+module.MACRO =
+[
+	// @macro(arg ..)
+	'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>INLINE_ARGS)\\)',
+	// <macro ..> | <macro ../>
+	'<\\s*(?<nameOpen>MACROS)(?<argsOpen>ARGS)?\\s*/?>',
+	// </macro>
+	'</\\s*(?<nameClose>MACROS)\\s*>',
+].join('|')
+
+
+var buildArgsPattern =
+module.buildArgsPattern =
+function(prefix, stop='', regexp='smig'){
+	var pattern = module.MACRO_ARGS
+		.replace(/PREFIX/g, prefix)
+		.replace(/STOP/g, stop)
+	return regexp ?
+		new RegExp(pattern, regexp) 
+		: pattern }
+
+var buildMacroPattern =
+module.buildMacroPattern =
+function(macros=['macro'], regexp='smig'){
+	console.log('---',macros)
+	var pattern = module.MACRO
+		.replace(/MACROS/g, macros.join('|'))
+		.replace(/INLINE_ARGS/g,
+			buildArgsPattern('inline', ')', false) +'*')
+		.replace(/ARGS/g, 
+			buildArgsPattern('elem', '\\/>', false) +'*')
+	return regexp ?
+		new RegExp(pattern, regexp) 
+		: pattern }
+
+
+
+
+
 // XXX BUG? '<slot name=x text="moo <now/> foo">' is parsed semi-wrong...
 var parser =
 module.parser = {
@@ -510,7 +577,11 @@ module.parser = {
 			// arg
 			'|\\s+[^\\s\\/>\'"]+',
 			// arg='val' | arg="val" | arg=val
-			'|\\s+[a-z]+\\s*=\\s*(\'[^\']*\'|"[^"]*"|[^\\s"\']*)',
+			'|\\s+[a-z]+\\s*=\\s*(',[
+				"'[^']*'",
+				'"[^"]*"',
+				'[^\\s"\']*',
+			].join('|'),')',
 		')*'].join(''),
 	// patterns...
 	//
@@ -539,7 +610,7 @@ module.parser = {
 							.replace(/MACRO_ARGS/g, this.MACRO_ARGS)
 							.replace(/MACRO_INLINE_ARGS/g, this.MACRO_INLINE_ARGS)
 					})`)).length-2) },
-	// XXX update using MACRO_ARGS...
+	/*/ XXX update using MACRO_ARGS...
 	MACRO_ARGS_PATTERN: RegExp('('+[
 		].join('|') +')', 'smig'),
 	/*/
