@@ -490,6 +490,7 @@ object.Constructor('BasePage', {
 //---------------------------------------------------------------------
 // Parser...
 
+//
 // needs:
 // 	STOP -- '\\>' or ')'
 // 	PREFIX -- 'inline' or 'elem'
@@ -537,6 +538,7 @@ function(prefix='elem', stop='', regexp='smig'){
 		: pattern }
 
 
+//
 // needs:
 // 	MACROS
 // 	INLINE_ARGS -- MACRO_ARGS.replace(/STOP/, ')') 
@@ -576,14 +578,16 @@ var countMacroPatternGroups =
 module.countMacroPatternGroups =
 function(){
 	// NOTE: the -2 here is to compensate for the leading and trailing ""'s...
-	return '<MACROS>'.split(module.buildMacroPattern()).length - 2) }
+	return '<MACROS>'.split(module.buildMacroPattern()).length - 2 }
 
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+// XXX should we warn about stuff like <macro src=/moo/> -- currently 
+// 		this will simply be ignored, i.e. passed trough the parser 
+// 		without change...
 
-// XXX BUG? '<slot name=x text="moo <now/> foo">' is parsed semi-wrong...
 var parser =
 module.parser = {
 	// patterns...
