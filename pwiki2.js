@@ -494,23 +494,39 @@ object.Constructor('BasePage', {
 // 	PREFIX -- 'inline' or 'elem'
 var MACRO_ARGS =
 module.MACRO_ARGS =
-['(',
-	// arg='val' | arg="val" | arg=val
-	'|\\s+(?<PREFIXArgName>[a-z]+)\\s*=\\s*(',[
-		"'(?<PREFIXSingleQuotedValue>[^']*)'",
-		'"(?<PREFIXDoubleQuotedValue>[^"]*)"',
-		'(?<PREFIXValue>[^\\s"\']*)',
-	].join('|'),')',
-	// "arg" | 'arg'
-	// XXX quote escaping???
-	// XXX CHROME/NODE BUG: this does not work yet...
-	//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
-	'\\s+"(?<PREFIXDoubleQuotedArg>[^"]*)"',
-	"|\\s+'(?<PREFIXSingleQuotedArg>[^']*)'",
-	// arg
-	//'|\\s+[^\\s\\/>\'"]+',
-	'|\\s+(?<PREFIXArg>[^\\sSTOP\'"]+)',
+['(',[
+		// arg='val' | arg="val" | arg=val
+		'\\s+(?<PREFIXArgName>[a-z]+)\\s*=\\s*(?<PREFIXArgValue>'+([
+			// XXX for some readon we are not getting anythinng 
+			// 		matching back from these...
+			// 		...but they seem to match correctly within
+			// 		the macro -- nestin issue???
+			"'(?<PREFIXSingleQuotedValue>[^']*)'",
+			'"(?<PREFIXDoubleQuotedValue>[^"]*)"',
+			'(?<PREFIXValue>[^\\sSTOP\'"]+)',
+		].join('|'))+')',
+		// "arg" | 'arg'
+		// XXX quote escaping???
+		// XXX CHROME/NODE BUG: this does not work yet...
+		//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
+		'\\s+"(?<PREFIXDoubleQuotedArg>[^"]*)"',
+		"\\s+'(?<PREFIXSingleQuotedArg>[^']*)'",
+		// arg
+		//'|\\s+[^\\s\\/>\'"]+',
+		'\\s+(?<PREFIXArg>[^\\sSTOP\'"]+)',
+	].join('|'),
 ')'].join('')
+
+var buildArgsPattern =
+module.buildArgsPattern =
+function(prefix, stop='', regexp='smig'){
+	var pattern = module.MACRO_ARGS
+		.replace(/PREFIX/g, prefix)
+		.replace(/STOP/g, stop)
+	return regexp ?
+		new RegExp(pattern, regexp) 
+		: pattern }
+
 
 // needs:
 // 	MACROS
@@ -526,17 +542,6 @@ module.MACRO =
 	// </macro>
 	'</\\s*(?<nameClose>MACROS)\\s*>',
 ].join('|')
-
-
-var buildArgsPattern =
-module.buildArgsPattern =
-function(prefix, stop='', regexp='smig'){
-	var pattern = module.MACRO_ARGS
-		.replace(/PREFIX/g, prefix)
-		.replace(/STOP/g, stop)
-	return regexp ?
-		new RegExp(pattern, regexp) 
-		: pattern }
 
 var buildMacroPattern =
 module.buildMacroPattern =
