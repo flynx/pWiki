@@ -520,9 +520,9 @@ module.BaseParser = {
 	// 		/(?<quote>['"])(\\\k<quote>|[^\1])*\k<quote>/
 	// 		...this will work but we'll also need to remove the \ in the 
 	// 		final string...
-	MACRO_ARGS: ['(',[
+	MACRO_ARGS: ['(\\s*(',[
 				// arg='val' | arg="val" | arg=val
-				'\\s+(?<PREFIXArgName>[a-z]+)\\s*=\\s*(?<PREFIXArgValue>'+([
+				'(?<PREFIXArgName>[a-z]+)\\s*=\\s*(?<PREFIXArgValue>'+([
 					// XXX CHROME/NODE BUG: this does not work yet...
 					//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
 					"'(?<PREFIXSingleQuotedValue>[^']*)'",
@@ -532,15 +532,15 @@ module.BaseParser = {
 				// "arg" | 'arg'
 				// XXX CHROME/NODE BUG: this does not work yet...
 				//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
-				'\\s+"(?<PREFIXDoubleQuotedArg>[^"]*)"',
-				"\\s+'(?<PREFIXSingleQuotedArg>[^']*)'",
+				'"(?<PREFIXDoubleQuotedArg>[^"]*)"',
+				"'(?<PREFIXSingleQuotedArg>[^']*)'",
 				// arg
 				// NOTE: this is last because it could eat up parts of the above 
 				// 		alternatives...
 				//'|\\s+[^\\s\\/>\'"]+',
-				'\\s+(?<PREFIXArg>[^\\sSTOP\'"]+)',
+				'(?<PREFIXArg>[^\\sSTOP\'"]+)',
 			].join('|'),
-		')'].join(''),
+		'))'].join(''),
 	MACRO_ARGS_PATTERN: undefined,
 	//
 	// 	.buildArgsPattern(<prefix>[, <stop>[, <flags>]])
@@ -562,6 +562,10 @@ module.BaseParser = {
 	// 	MACROS
 	// 	INLINE_ARGS -- MACRO_ARGS.replace(/STOP/, ')') 
 	// 	ARGS -- MACRO_ARGS.replace(/STOP/, '\\/>') 
+	//
+	// XXX BUG: this fails to match inline macros with non-empty args @moo(a)
+	// 		...the problem seems to be with the lack of whitespace 
+	// 		between ( and the first arg -- @moo( a) is matched fine...
 	MACRO: '('+([
 			// @macro(arg ..)
 			'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>INLINE_ARGS)\\)',
@@ -986,6 +990,7 @@ object.Constructor('Page', BasePage, {
 		//
 		// XXX support .NO_FILTERS ...
 		filter: function*(args, body, state, expand=true){
+			var that = this
 			var filters = state.filters = 
 				state.filters ?? []
 			// separate local filters...
@@ -1009,6 +1014,8 @@ object.Constructor('Page', BasePage, {
 						[...this.__parser__.expand(this, body, state)]
 					: body instanceof Array ?
 						body
+					// NOTE: wrapping the body in an array effectively 
+					// 		escapes it from parsing...
 					: [body]
 				filters = state.filters
 
@@ -1018,11 +1025,10 @@ object.Constructor('Page', BasePage, {
 				yield function(state){
 					var outer_filters = state.filters
 					state.filters = this.__parser__.normalizeFilters(filters)
-					var res = (expand ?
-							[...this.__parser__.parse(this, ast, state)]
-							: ast)
-						.flat()
-						.join('') 
+					var res =
+						[...this.__parser__.parse(this, ast, state)]
+							.flat()
+							.join('') 
 					state.filters = outer_filters
 					return { data: res } } } },
 		//
@@ -1127,17 +1133,14 @@ object.Constructor('Page', BasePage, {
 				return }
 
 			var filters = args.filter 
-				&& args.filter
-					.trim()
-					.split(/\\s+/g)
+				&& Object.fromEntries(
+					Object.entries(
+						args.filter
+							.trim()
+							.split(/\s+/g))) 
 
 			return filters ?
-				[...this.macros.filter.call(this,
-					Object.fromEntries(
-						Object.entries(filters ?? [])), 
-					text, 
-					state,
-					false)]
+				[...this.macros.filter.call(this, filters, text, state, false)]
 				: text },
 		//
 		//	<slot name=<name>/>
