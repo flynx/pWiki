@@ -752,6 +752,11 @@ module.BaseParser = {
 		lex = typeof(lex) == 'string' ?
 			this.lex(page, lex)
 			: lex
+
+		var quoting = to 
+			&& page.QUOTING_MACROS.includes(to)
+			&& []
+
 		// NOTE: we are not using for .. of .. here as it depletes the 
 		// 		generator even if the end is not reached...
 		while(true){
@@ -760,8 +765,23 @@ module.BaseParser = {
 			if(done){
 				if(to){
 					throw new Error(
-						'Premature end of unpit: Expected closing "'+ to +'"') }
+						'Premature end of inpit: Expected closing "'+ to +'"') }
 				return }
+
+			// special case: quoting -> collect text...
+			// NOTE: we do not care about nesting here...
+			if(quoting !== false){
+				if(value.name == to 
+						&& value.type == 'closing'){
+					yield quoting.join('')
+					return
+				} else {
+					quoting.push(
+						typeof(value) == 'string' ?
+							value
+							: value.match ) }
+				continue }
+
 			// assert nesting rules...
 			// NOTE: we only check for direct nesting...
 			// XXX might be a good idea to link nested block to the parent...
@@ -780,14 +800,13 @@ module.BaseParser = {
 				//value.body = [...this.group(page, lex, value.name)]
 				value.body = [...this.group(page, lex, value.name, value)]
 				value.type = 'block'
-				yield value
-				continue
 			// close block...
 			} else if(value.type == 'closing'){
 				if(value.name != to){
 					throw new Error('Unexpected closing "'+ value.name +'"') }
 				// NOTE: we are intentionally not yielding the value here...
 				return } 
+			// normal value...
 			yield value } }, 
 
 	// Expand macros...
@@ -825,6 +844,9 @@ module.BaseParser = {
 
 			// macro...
 			var {name, args, body} = value
+			// nested macro -- skip...
+			if(!(page.macros[name] instanceof Function)){
+				continue }
 			var res = 
 				page.macros[name].call(page, args, body, state, value)
 					?? ''
@@ -894,6 +916,8 @@ module.Page =
 object.Constructor('Page', BasePage, {
 	//NO_FILTERS: 'nofilters',
 	ISOLATED_FILTERS: 'isolated',
+
+	QUOTING_MACROS: ['quote'],
 
 	//
 	// 	<filter>(<source>)
@@ -1051,9 +1075,42 @@ object.Constructor('Page', BasePage, {
 				function(){
 					return this.__parser__.parse(this, this.get(src).raw, state) }) },
 
-		// XXX this will need to quote pWiki code...
-		// 		...not sure about anything else...
-		quote: function(){},
+		//
+		// 	@quote(<src>)
+		//
+		// 	<quote src=<src>[ filter="<filter> ..."]/>
+		//
+		// 	<quote text=" .. "[ filter="<filter> ..."]/>
+		//
+		// 	<quote[ filter="<filter> ..."]>
+		// 		..
+		// 	</quote>
+		//
+		//
+		// NOTE: src ant text arguments are mutually exclusive, src takes 
+		// 		priority.
+		//
+		quote: function(args, body, state){
+			var that = this
+			var src = args.src 
+				?? args[0]
+			var filters = args.filter
+			var text = args.text 
+				?? body 
+				?? []
+			// source page...
+			if(src){
+				return filters ?
+					// apply filters...
+					this.__parser__.normalizeFilters(filters)
+						.reduce(
+							function(res, filter){
+								return that.filters[filter].call(that, res) }, 
+							this.get(src).raw)
+					: this.get(src).raw }
+			// body...
+			if(text){
+				return text.join('') } },
 
 		//
 		//	<slot name=<name>/>
@@ -1109,12 +1166,9 @@ object.Constructor('Page', BasePage, {
 				: function(state){
 					return state.slots[name] } }, 
 
-		// XXX BUG: '<macro src="/moo/*"> <else> no moo!</else> </macro>' breaks...
-		// 		...seams to be a bug in the parser...
+		// XXX sorting not implemented yet....
 		macro: function(args, body, state){
-			// XXX
-			//return
-
+			var that = this
 			var name = args.name ?? args[0]
 			var src = args.src
 			var sort = (args.sort ?? '')
@@ -1136,14 +1190,13 @@ object.Constructor('Page', BasePage, {
 
 			if(src){
 				var pages = this.get(src).each()
-				console.log('---', pages.length)
 				// no matching pages -> get the else block...
 				if(pages.length == 0 && text){
-					// XXX get the else block...
-					var else_block = (text ?? [])
-						.filter(function(e){ 
-							return typeof(e) != 'string' 
-								&& e.name == 'else' }) 
+					var else_block = 
+						(text ?? [])
+							.filter(function(e){ 
+								return typeof(e) != 'string' 
+									&& e.name == 'else' }) 
 					if(else_block.length == 0){
 						return }
 					// XXX do we take the first or the last (now) block???
@@ -1152,7 +1205,7 @@ object.Constructor('Page', BasePage, {
 						else_block.args.text 
 							?? else_block.body
 					return else_block ?
-						this.__parser__.expand(this, else_block, state)
+						[...this.__parser__.expand(this, else_block, state)]
 						: undefined }
 
 				// sort pages...
@@ -1161,10 +1214,12 @@ object.Constructor('Page', BasePage, {
 					throw new Error('macro sort: not implemented')
 				}
 
-				// XXX apply macro text...
+				// apply macro text...
+				// XXX not sure we should expand the whole thing directly here...
 				return pages
 					.map(function(page){
-						return this.__parser__.expand(page, text, state) })
+						return [...that.__parser__.expand(page, text, state)] })
+					.flat()
 			} },
 
 		// nesting rules...
