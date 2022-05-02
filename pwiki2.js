@@ -522,7 +522,7 @@ module.BaseParser = {
 	// 		final string...
 	MACRO_ARGS: ['(\\s*(',[
 				// arg='val' | arg="val" | arg=val
-				'(?<PREFIXArgName>[a-z]+)\\s*=\\s*(?<PREFIXArgValue>'+([
+				'(?<PREFIXArgName>[a-z-]+)\\s*=\\s*(?<PREFIXArgValue>'+([
 					// XXX CHROME/NODE BUG: this does not work yet...
 					//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
 					"'(?<PREFIXSingleQuotedValue>[^']*)'",
@@ -1115,6 +1115,7 @@ object.Constructor('Page', BasePage, {
 		// 		macro with one exception, when used in quote, the body is 
 		// 		not expanded...
 		//
+		// XXX can we set default quote filters???
 		// XXX need a way to escape macros...
 		quote: function(args, body, state){
 			var src = args.src //|| args[0]
