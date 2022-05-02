@@ -337,6 +337,13 @@ object.Constructor('BasePage', {
 	// referrer -- a previous page location...
 	referrer: undefined,
 
+	// .path is a proxy to .location
+	// XXX do we need this???
+	get path(){
+		return this.location },
+	set path(value){
+		this.location = value },
+
 	//* XXX HISTORY...
 	// NOTE: set this to false to disable history...
 	__history: undefined,
@@ -499,6 +506,9 @@ var BaseParser =
 module.BaseParser = {
 	// patterns...
 	//
+	// The way the patterns are organized might seem a bit overcomplicated
+	// and it has to be to be able to reuse the same pattern in different 
+	// contexts, e.g. the arguments pattern...
 
 	//
 	// needs:
@@ -506,6 +516,9 @@ module.BaseParser = {
 	// 	PREFIX -- 'inline' or 'elem'
 	//
 	// XXX quote escaping???
+	// 		/(?<quote>['"])(\\\k<quote>|[^\1])*\k<quote>/
+	// 		...this will work but we'll also need to remove the \ in the 
+	// 		final string...
 	MACRO_ARGS: ['(',[
 				// arg='val' | arg="val" | arg=val
 				'\\s+(?<PREFIXArgName>[a-z]+)\\s*=\\s*(?<PREFIXArgValue>'+([
@@ -579,10 +592,7 @@ module.BaseParser = {
 		// NOTE: the -2 here is to compensate for the leading and trailing ""'s...
 		return '<MACROS>'.split(this.buildMacroPattern()).length - 2 },
 
-
-
-	// XXX should we cache MACRO_PATTERN and MACRO_PATTERN_GROUPS???
-	//
+	// XXX should this be closer to .stripComments(..)
 	// XXX do we need basic inline and block commets a-la lisp???
 	COMMENT_PATTERN: RegExp('('+[
 			// <!--[pwiki[ .. ]]-->
@@ -593,6 +603,7 @@ module.BaseParser = {
 			// <pwiki-comment .. />
 			'<\\s*pwiki-comment[^\\/>]*\\/>',
 		].join('|') +')', 'smig'),
+
 
 	// helpers...
 	//
