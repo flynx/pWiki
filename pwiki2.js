@@ -934,7 +934,7 @@ object.Constructor('Page', BasePage, {
 		dummy: function(){},
 		test: function(source){
 			return source 
-				.replace(/ test /g, ' TEST ') },
+				.replace(/test/g, 'TEST') },
 
 		wikiword: function(source){
 			// XXX
@@ -1074,7 +1074,6 @@ object.Constructor('Page', BasePage, {
 				args, body, state, 'sources', 
 				function(){
 					return this.__parser__.parse(this, this.get(src).raw, state) }) },
-
 		//
 		// 	@quote(<src>)
 		//
@@ -1089,29 +1088,38 @@ object.Constructor('Page', BasePage, {
 		//
 		// NOTE: src ant text arguments are mutually exclusive, src takes 
 		// 		priority.
-		//
+		// XXX handle interactions with page filters....
 		quote: function(args, body, state){
 			var that = this
 			var src = args.src 
 				?? args[0]
-			var filters = args.filter
+			var filters = args.filter 
+				&& this.__parser__.normalizeFilters(
+					args.filter
+						.trim()
+						.split(/\\s+/g))
 			var text = args.text 
 				?? body 
 				?? []
-			// source page...
-			if(src){
-				return filters ?
+			text = src ?
+				// source page...
+				this.get(src).raw
+				// body/arg...
+				: text.join('')
+
+			return text ?
+				(filters ?
 					// apply filters...
-					this.__parser__.normalizeFilters(filters)
+					// XXX handle interactions with page filters....
+					filters
 						.reduce(
 							function(res, filter){
-								return that.filters[filter].call(that, res) }, 
-							this.get(src).raw)
-					: this.get(src).raw }
-			// body...
-			if(text){
-				return text.join('') } },
-
+								return that.filters[filter].call(that, res) 
+									?? res }, 
+							text)
+					: text)
+				// empty...
+	   			: '' },
 		//
 		//	<slot name=<name>/>
 		//
