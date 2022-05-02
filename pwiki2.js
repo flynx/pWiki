@@ -922,6 +922,16 @@ module.parser = {
 }
 
 
+// XXX revise...
+var Filter = 
+module.Filter =
+function(...args){
+	var func = args.pop()
+	args.length > 0
+		&& Object.assign(func, args.pop())
+	return func }
+
+
 // XXX PATH_VARS need to handle path variables...
 // XXX macros and filters should be features for simpler plugin handlng (???)
 var Page =
@@ -949,10 +959,20 @@ object.Constructor('Page', BasePage, {
 			return source 
 				.replace(/test/g, 'TEST') },
 
-		wikiword: function(source){
+		wikiword: Filter(
+			{quote: 'quote-wikiword'},
+			function(source){
+				// XXX
+				return source }),
+		'quote-wikiword': function(source){
 			// XXX
 			return source },
-		markdown: function(source){
+
+		markdown: Filter(
+			{quote: 'quote-markdown'},
+			function(source){
+				return source }),
+		'quote-markdown': function(source){
 			// XXX
 			return source },
 	},
@@ -989,7 +1009,7 @@ object.Constructor('Page', BasePage, {
 		// 		| -<filter> <filter-spec>
 		//
 		// XXX support .NO_FILTERS ...
-		filter: function*(args, body, state, expand=true){
+		filter: function(args, body, state, expand=true){
 			var that = this
 			var filters = state.filters = 
 				state.filters ?? []
@@ -1000,7 +1020,17 @@ object.Constructor('Page', BasePage, {
 					[outer_filters] }
 
 			// merge in new filters...
-			filters.splice(filters.length, 0, ...Object.values(args))
+			var local = Object.values(args)
+			filters.splice(filters.length, 0, ...local)
+
+			// trigger quote-filter...
+			var quote = local
+				.map(function(filter){
+					return that.filters[filter]['quote'] ?? [] })
+				.flat()
+			quote.length > 0
+				&& this.macros['quote-filter']
+					.call(this, Object.fromEntries(Object.entries(quote)), null, state)
 
 			// local filters...
 			if(body){
@@ -1022,7 +1052,7 @@ object.Constructor('Page', BasePage, {
 				state.filters = outer_filters
 
 				// parse the body after we are done expanding...
-				yield function(state){
+				return function(state){
 					var outer_filters = state.filters
 					state.filters = this.__parser__.normalizeFilters(filters)
 					var res =
@@ -1115,8 +1145,7 @@ object.Constructor('Page', BasePage, {
 		// 		macro with one exception, when used in quote, the body is 
 		// 		not expanded...
 		//
-		// XXX can we set default quote filters???
-		// XXX need a way to escape macros...
+		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: function(args, body, state){
 			var src = args.src //|| args[0]
 			var text = args.text 
@@ -1133,16 +1162,37 @@ object.Constructor('Page', BasePage, {
 			if(!text){
 				return }
 
-			var filters = args.filter 
-				&& Object.fromEntries(
-					Object.entries(
-						args.filter
-							.trim()
-							.split(/\s+/g))) 
+			var filters = 
+				args.filter 
+					&& args.filter
+						.trim()
+						.split(/\s+/g)
 
-			return filters ?
-				[...this.macros.filter.call(this, filters, text, state, false)]
-				: text },
+			// NOTE: we are delaying .quote_filters handling here to 
+			// 		make their semantics the same as general filters...
+			// 		...and since we are internally calling .filter(..)
+			// 		macro we need to dance around it's architecture too...
+			// NOTE: since the body of quote(..) only has filters applied 
+			// 		to it doing the first stage of .filter(..) as late 
+			// 		as the second stage here will have no ill effect...
+			return function(state){
+				// add global quote-filters...
+				filters =
+					(state.quote_filters 
+							&& !(filters ?? []).includes(this.ISOLATED_FILTERS)) ?
+						[...state.quote_filters, ...(filters ?? [])]
+						: filters
+				if(filters){
+					filters = Object.fromEntries(Object.entries(filters))
+					return this.macros.filter
+						.call(this, filters, text, state, false)
+						.call(this, state) }
+				return text } },
+		// very similar to @filter(..) but will affect @quote(..) filters...
+		'quote-filter': function(args, body, state){
+			var filters = state.quote_filters = 
+				state.quote_filters ?? []
+			filters.splice(filters.length, 0, ...Object.values(args)) },
 		//
 		//	<slot name=<name>/>
 		//
