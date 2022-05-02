@@ -515,6 +515,7 @@ module.BaseParser = {
 	// 	STOP -- '\\>' or ')'
 	// 	PREFIX -- 'inline' or 'elem'
 	//
+	// XXX BUG: @now(a) is not matched....
 	// XXX quote escaping???
 	// 		/(?<quote>['"])(\\\k<quote>|[^\1])*\k<quote>/
 	// 		...this will work but we'll also need to remove the \ in the 
@@ -694,13 +695,21 @@ module.BaseParser = {
 						of (cur.argsInline ?? cur.argsOpen ?? '')
 							.matchAll(macro_args_pattern)){
 					i++
-					args[groups.elemArgName ?? i] =
-						groups.elemSingleQuotedValue
+					args[groups.elemArgName 
+							?? groups.inlineArgName 
+							?? i] =
+						groups.elemSingleQuotedValue 
+							?? groups.inlineSingleQuotedValue
 							?? groups.elemDoubleQuotedValue
+							?? groups.inlineDoubleQuotedValue
 							?? groups.elemValue
+							?? groups.inlineValue
 							?? groups.elemSingleQuotedArg
+							?? groups.inlineSingleQuotedArg
 							?? groups.elemDoubleQuotedArg
-							?? groups.elemArg }
+							?? groups.inlineDoubleQuotedArg
+							?? groups.elemArg
+							?? groups.inlineArg }
 
 				// macro-spec...
 				yield {
@@ -765,7 +774,7 @@ module.BaseParser = {
 			if(done){
 				if(to){
 					throw new Error(
-						'Premature end of inpit: Expected closing "'+ to +'"') }
+						'Premature end of input: Expected closing "'+ to +'"') }
 				return }
 
 			// special case: quoting -> collect text...
@@ -944,6 +953,8 @@ object.Constructor('Page', BasePage, {
 			return source },
 	},
 
+	// XXX need a good way to get the first positional arg without 
+	// 		mixing it up with other args -- see src/name args below...
 	macros: {
 		// XXX move to docs...
 		test: function*(args, body, state){
@@ -974,7 +985,7 @@ object.Constructor('Page', BasePage, {
 		// 		| -<filter> <filter-spec>
 		//
 		// XXX support .NO_FILTERS ...
-		filter: function*(args, body, state){
+		filter: function*(args, body, state, expand=true){
 			var filters = state.filters = 
 				state.filters ?? []
 			// separate local filters...
@@ -994,7 +1005,11 @@ object.Constructor('Page', BasePage, {
 					&& state.filters.shift()
 
 				// expand the body...
-				var ast = [...this.__parser__.expand(this, body, state)]
+				var ast = expand ?
+						[...this.__parser__.expand(this, body, state)]
+					: body instanceof Array ?
+						body
+					: [body]
 				filters = state.filters
 
 				state.filters = outer_filters
@@ -1003,7 +1018,9 @@ object.Constructor('Page', BasePage, {
 				yield function(state){
 					var outer_filters = state.filters
 					state.filters = this.__parser__.normalizeFilters(filters)
-					var res = [...this.__parser__.parse(this, ast, state)]
+					var res = (expand ?
+							[...this.__parser__.parse(this, ast, state)]
+							: ast)
 						.flat()
 						.join('') 
 					state.filters = outer_filters
@@ -1024,7 +1041,7 @@ object.Constructor('Page', BasePage, {
 		// XXX should this be lazy???
 		include: function(args, body, state, key='included', handler){
 			// positional args...
-			var src = args.src || args[0]
+			var src = args.src //|| args[0]
 			var recursive = args.recursive || body
 			var isolated = this.__parser__.getPositional(args).includes('isolated')
 
@@ -1069,7 +1086,7 @@ object.Constructor('Page', BasePage, {
 
 			return res },
 		source: function(args, body, state){
-			var src = args.src || args[0]
+			var src = args.src //|| args[0]
 			return this.macros.include.call(this, 
 				args, body, state, 'sources', 
 				function(){
@@ -1088,38 +1105,40 @@ object.Constructor('Page', BasePage, {
 		//
 		// NOTE: src ant text arguments are mutually exclusive, src takes 
 		// 		priority.
-		// XXX handle interactions with page filters....
+		// NOTE: the filter argument has the same semantics as the filter 
+		// 		macro with one exception, when used in quote, the body is 
+		// 		not expanded...
+		//
+		// XXX need a way to escape macros...
 		quote: function(args, body, state){
-			var that = this
-			var src = args.src 
-				?? args[0]
-			var filters = args.filter 
-				&& this.__parser__.normalizeFilters(
-					args.filter
-						.trim()
-						.split(/\\s+/g))
+			var src = args.src //|| args[0]
 			var text = args.text 
 				?? body 
 				?? []
 			text = src ?
-				// source page...
-				this.get(src).raw
-				// body/arg...
-				: text.join('')
+					// source page...
+					this.get(src).raw
+				: text instanceof Array ?
+					text.join('')
+				: text
 
-			return text ?
-				(filters ?
-					// apply filters...
-					// XXX handle interactions with page filters....
-					filters
-						.reduce(
-							function(res, filter){
-								return that.filters[filter].call(that, res) 
-									?? res }, 
-							text)
-					: text)
-				// empty...
-	   			: '' },
+			// empty...
+			if(!text){
+				return }
+
+			var filters = args.filter 
+				&& args.filter
+					.trim()
+					.split(/\\s+/g)
+
+			return filters ?
+				[...this.macros.filter.call(this,
+					Object.fromEntries(
+						Object.entries(filters ?? [])), 
+					text, 
+					state,
+					false)]
+				: text },
 		//
 		//	<slot name=<name>/>
 		//
@@ -1177,7 +1196,7 @@ object.Constructor('Page', BasePage, {
 		// XXX sorting not implemented yet....
 		macro: function(args, body, state){
 			var that = this
-			var name = args.name ?? args[0]
+			var name = args.name //?? args[0]
 			var src = args.src
 			var sort = (args.sort ?? '')
 				.split(/\s+/g)
