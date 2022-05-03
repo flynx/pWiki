@@ -290,9 +290,14 @@ var store =
 module.store = {
 	__proto__: BaseStore,
 
-	// base actions (virtual pages)...
+	// metadata...
+	//
 	'System/path': function(page){
 		return this.get('..').path },
+	'System/location': function(page){
+		return this.get('..').path },
+	'System/resolved': function(page){
+		return this.get('..').match() },
 	'System/dir': function(page){
 		return this.get('..').dir },
 	'System/name': function(page){
@@ -303,10 +308,14 @@ module.store = {
 		return p.title 
 			?? p.name },
 
-
-	// XXX other things to do...
-	// 		- title
+	// actions...
 	//
+	// XXX System/subpaths
+	// XXX System/sort
+	// XXX System/reverse
+	// XXX System/delete
+	// XXX System/back
+	// XXX System/forward
 }
 
 
@@ -368,6 +377,8 @@ object.Constructor('BasePage', {
 	//set name(value){ },
 	get dir(){
 		return module.path.relative(this.location, '..') },
+	// XXX should writing to this move the page???
+	//set dir(value){ },
 
 	//* XXX HISTORY...
 	// NOTE: set this to false to disable history...
