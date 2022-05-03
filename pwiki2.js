@@ -131,6 +131,9 @@ module.path = {
 					if(tpl[0] == '/'){
 						break }
 					p.pop() } } } },
+
+	split: function(path){
+		return this.normalize(path, 'array') },
 }
 
 
@@ -139,6 +142,7 @@ module.path = {
 
 // NOTE: store keys must be normalized...
 //
+// XXX BUG: mixing up '/' and '' paths...
 // XXX LEADING_SLASH should this be strict about leading '/' in paths???
 // 		...this may lead to duplicate paths created -- '/a/b' and 'a/b'
 // XXX would be nice to be able to create sub-stores, i.e. an object that
@@ -147,8 +151,8 @@ module.path = {
 // XXX must support store stacks...
 // XXX path macros???
 // XXX should we support page symlinking???
-var store = 
-module.store = {
+var BaseStore = 
+module.BaseStore = {
 	exists: function(path){
 		path = module.path.normalize(path, 'string')
 		return path in this
@@ -282,15 +286,29 @@ module.store = {
 
 // XXX need to specify page format....
 // XXX need a way to set the page path...
-var actions = 
-module.actions = {
-	__proto__: store,
+var store = 
+module.store = {
+	__proto__: BaseStore,
 
 	// base actions (virtual pages)...
-	'System/raw': function(page, path){
-		return { text: this.get(path +'/..') } },
-	// XXX ...
+	'System/path': function(page){
+		return this.get('..').path },
+	'System/dir': function(page){
+		return this.get('..').dir },
+	'System/name': function(page){
+		return this.get('..').name },
+
+	'System/title': function(page){
+		var p = this.get('..')
+		return p.title 
+			?? p.name },
+
+
+	// XXX other things to do...
+	// 		- title
+	//
 }
+
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -343,6 +361,13 @@ object.Constructor('BasePage', {
 		return this.location },
 	set path(value){
 		this.location = value },
+
+	get name(){
+		return module.path.split(this.path).pop() },
+	// XXX should this rename or change path???
+	//set name(value){ },
+	get dir(){
+		return module.path.relative(this.location, '..') },
 
 	//* XXX HISTORY...
 	// NOTE: set this to false to disable history...
@@ -496,7 +521,6 @@ object.Constructor('BasePage', {
 
 //---------------------------------------------------------------------
 // Parser...
-
 
 // XXX should we warn about stuff like <macro src=/moo/> -- currently 
 // 		this will simply be ignored, i.e. passed trough the parser 
@@ -767,7 +791,7 @@ module.BaseParser = {
 			: lex
 
 		var quoting = to 
-			&& page.QUOTING_MACROS.includes(to)
+			&& (page.QUOTING_MACROS ?? []).includes(to)
 			&& []
 
 		// NOTE: we are not using for .. of .. here as it depletes the 
@@ -922,6 +946,8 @@ module.parser = {
 }
 
 
+// -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
 // XXX revise...
 var Filter = 
 module.Filter =
@@ -932,14 +958,17 @@ function(...args){
 	return func }
 
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
 // XXX PATH_VARS need to handle path variables...
 // XXX macros and filters should be features for simpler plugin handlng (???)
 var Page =
 module.Page = 
 object.Constructor('Page', BasePage, {
-	//NO_FILTERS: 'nofilters',
+	// Filter that will isolate the page/include/.. from parent filters...
 	ISOLATED_FILTERS: 'isolated',
 
+	// list of macros that will get raw text of their content...
 	QUOTING_MACROS: ['quote'],
 
 	//
@@ -977,6 +1006,15 @@ object.Constructor('Page', BasePage, {
 			return source },
 	},
 
+	//
+	// 	<macro>(<args>, <body>, <state>){ .. }
+	// 		-> undefined
+	// 		-> <text>
+	// 		-> <array>
+	// 		-> <iterator>
+	// 		-> <func>(<state>)
+	// 			-> ...
+	//
 	// XXX need a good way to get the first positional arg without 
 	// 		mixing it up with other args -- see src/name args below...
 	macros: {
@@ -1008,7 +1046,6 @@ object.Constructor('Page', BasePage, {
 		// 		<filter> <filter-spec>
 		// 		| -<filter> <filter-spec>
 		//
-		// XXX support .NO_FILTERS ...
 		filter: function(args, body, state, expand=true){
 			var that = this
 			var filters = state.filters = 
@@ -1026,7 +1063,7 @@ object.Constructor('Page', BasePage, {
 			// trigger quote-filter...
 			var quote = local
 				.map(function(filter){
-					return that.filters[filter]['quote'] ?? [] })
+					return (that.filters[filter] ?? {})['quote'] ?? [] })
 				.flat()
 			quote.length > 0
 				&& this.macros['quote-filter']
@@ -1311,7 +1348,9 @@ object.Constructor('Page', BasePage, {
 	//
 	__parser__: module.parser,
 	parse: function(state={}){
-		return this.__parser__.parse(this, null, state) },
+		// NOTE: we do not need to pass this.raw here but it is still 
+		// 		here for illustration...
+		return this.__parser__.parse(this, this.raw, state) },
 
 
 	// raw page text...
@@ -1323,7 +1362,7 @@ object.Constructor('Page', BasePage, {
 		var data = this.data
 		return data instanceof Function ?
 			// XXX FUNC not sure about this...
-			data.call(this, 'text')
+			data.call(this)
    			: data.text	},
 	set raw(value){
 		this.store.update(this.location, {text: value}) },
