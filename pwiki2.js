@@ -158,6 +158,16 @@ module.BaseStore = {
 
 	data: undefined,
 
+	// store chain actions...
+	//
+	// XXX need to think about this...
+	next: undefined,
+	push: function(store){
+	},
+
+
+
+
 	exists: function(path){
 		path = module.path.normalize(path, 'string')
 		var data = this.data
@@ -1440,7 +1450,7 @@ var WIKIWORD_PATTERN =
 store.load(require('./bootstrap'))
 
 // NOTE: in general the root wiki api is simply a page instance.
-// XXX not yet sure how to organize the actual alient -- UI, hooks, .. etc
+// XXX not yet sure how to organize the actual client -- UI, hooks, .. etc
 var pwiki =
 module.pwiki = 
 Page('/', '/', store)
