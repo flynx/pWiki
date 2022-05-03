@@ -134,6 +134,8 @@ module.path = {
 
 	split: function(path){
 		return this.normalize(path, 'array') },
+	join: function(path){
+		return this.normalize(path, 'string') },
 }
 
 
@@ -153,20 +155,24 @@ module.path = {
 // XXX should we support page symlinking???
 var BaseStore = 
 module.BaseStore = {
+
+	data: undefined,
+
 	exists: function(path){
 		path = module.path.normalize(path, 'string')
-		return path in this
+		var data = this.data
+		return path in data
    			|| (path[0] == '/' ?
-   				path.slice(1) in this
-				: ('/'+ path) in this) },
+   				path.slice(1) in data
+				: ('/'+ path) in data) },
 
 	paths: function(){
-		return Object.keys(this) },
+		return Object.keys(this.data) },
 	pages: function(){
 		var that = this
 		return this.paths()
 			.map(function(p){
-				return [p, that[p]] }) },
+				return [p, that.data[p]] }) },
 
 	// 
 	// 	Resolve page for path
@@ -187,6 +193,7 @@ module.BaseStore = {
 	// match all sub-paths.
 	//
 	match: function(path, strict=false){
+		var data = this.data
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
@@ -208,17 +215,17 @@ module.BaseStore = {
 					return res }, new Set())] }
 		// search...
 		for(var p of module.path.paths(path)){
-			if(p in this){
+			if(p in data){
 				return p }
 			// NOTE: all paths at this point and in store are absolute, 
 			// 		so we check both with the leading '/' and without 
 			// 		it to make things a bit more relaxed and return the 
 			// 		actual matching path...
 			if(p[0] == '/' 
-					&& p.slice(1) in this){
+					&& p.slice(1) in data){
 				return p.slice(1) }
 			if(p[0] != '/'
-					&& ('/'+p) in this){
+					&& ('/'+p) in data){
 				return '/'+p } } },
 	// 
 	// 	Resolve page
@@ -241,6 +248,7 @@ module.BaseStore = {
 	// XXX should this return a map for pattern matches???
 	get: function(path, strict=false){
 		var that = this
+		var data = this.data
 		path = this.match(path, strict)
 		return path instanceof Array ?
 			// XXX should we return matched paths???
@@ -248,9 +256,9 @@ module.BaseStore = {
 				// NOTE: p can match a non existing page at this point, 
 				// 		this can be the result of matching a/* in a a/b/c
 				// 		and returning a a/b which can be undefined...
-				return that[p] 
-					?? that[that.match(p)] })
-			: this[path] },
+				return data[p] 
+					?? data[that.match(p)] })
+			: data[path] },
 
 	// NOTE: deleting and updating only applies to explicit matching 
 	// 		paths -- no page acquisition is performed...
@@ -260,26 +268,34 @@ module.BaseStore = {
 	// XXX BUG: for path '/' this adds an entry at '', but when getting 
 	// 		'/', the later is not found...
 	update: function(path, data, mode='update'){
+		var d = this.data
 		path = module.path.normalize('/'+ path, 'string')
 		path = path[path.length-1] == '/' ?
 			path.slice(0, -1)
 			: path
-		this[path] = 
+		d[path] = 
 			mode == 'update' ?
 				Object.assign(
-					this[path] ?? {}, 
+					d[path] ?? {}, 
 					data)
 				: data
 		return this },
 	// XXX revise...
 	delete: function(path){
+		var data = this.data
 		path = module.path.normalize(path, 'string')
 		path = path[path.length-1] == '/' ?
 			path.slice(0, -1)
 			: path
 		// XXX revise...
-		delete this[path] 
-		delete this['/'+ path] 
+		delete data[path] 
+		delete data['/'+ path] 
+		return this },
+
+
+	// XXX do we need this???
+	load: function(...data){
+		Object.assign(this.data, ...data)
 		return this },
 }
 
@@ -290,32 +306,44 @@ var store =
 module.store = {
 	__proto__: BaseStore,
 
-	// metadata...
-	//
-	'System/path': function(page){
-		return this.get('..').path },
-	'System/location': function(page){
-		return this.get('..').path },
-	'System/resolved': function(page){
-		return this.get('..').match() },
-	'System/dir': function(page){
-		return this.get('..').dir },
-	'System/name': function(page){
-		return this.get('..').name },
+	// XXX need a way to integrate these better...
+	// 		...i.e. need a way to layer stores...
+	data: {
+		// metadata...
+		//
+		'System/path': function(){
+			return this.get('..').path },
+		'System/location': function(){
+			return this.get('..').path },
+		'System/resolved': function(){
+			return this.get('..').match() },
+		'System/dir': function(){
+			return this.get('..').dir },
+		'System/name': function(){
+			return this.get('..').name },
 
-	'System/title': function(page){
-		var p = this.get('..')
-		return p.title 
-			?? p.name },
+		'System/title': function(){
+			var p = this.get('..')
+			return p.title 
+				?? p.name },
 
-	// actions...
-	//
-	// XXX System/subpaths
-	// XXX System/sort
-	// XXX System/reverse
-	// XXX System/delete
-	// XXX System/back
-	// XXX System/forward
+
+		// utils...
+		//
+		// XXX System/subpaths
+
+
+		// actions...
+		//
+		'System/delete': function(){
+			this.location = '..'
+			this.delete()
+			return this.text },
+		// XXX System/back
+		// XXX System/forward
+		// XXX System/sort
+		// XXX System/reverse
+	},
 }
 
 
@@ -435,7 +463,9 @@ object.Constructor('BasePage', {
 	// relative proxies to store...
 	exists: relProxy('exists'), 
 	match: relProxy('match'), 
-	delete: relProxy('delete'),
+	delete: function(path='.'){
+		this.store.delete(module.path.relative(this.location, path))
+		return this },
 
 	// XXX how should this handle functions as values???
 	get: function(path, referrer){
@@ -1407,15 +1437,14 @@ var WIKIWORD_PATTERN =
 //---------------------------------------------------------------------
 // XXX experiments and testing...
 
+store.load(require('./bootstrap'))
 
 // NOTE: in general the root wiki api is simply a page instance.
 // XXX not yet sure how to organize the actual alient -- UI, hooks, .. etc
 var pwiki =
 module.pwiki = 
-Page('/', '/', 
-	Object.assign(
-		Object.create(store), 
-		require('./bootstrap')))
+Page('/', '/', store)
+
 
 
 // XXX TEST...
@@ -1463,6 +1492,7 @@ pwiki
 			+'\n'
 			+'@filter(test)',
 	})
+//*/
 
 
 
