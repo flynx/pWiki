@@ -421,29 +421,30 @@ module.localStorageStore = {
 			: undefined,
 	// XXX key to store data under...
 	// 		....if undefined then each page will be stored as a root path...
-	__path__: undefined,
+	__key__: 'pWiki-data',
 
 	__data: undefined,
 	get data(){
-		return this.__path__ ?
+		return this.__key__ ?
 			(this.__data = this.__data 
-				?? JSON.parse(this.__store__[this.__path__]))
+				?? JSON.parse(this.__store__[this.__key__]))
 			: this.__store__ },
 	
 	//__paths__: function(path){},
 	//__exists__: function(path){},
 	__get__: function(path){
-		return this.__path__ ?
+		return this.__key__ ?
 			this.data[path]
 			// XXX CACHE...
 			: JSON.parse(this.data[path]) },
 	// XXX *time...
 	__set__: function(path, data){
-		this.data[path] = this.__path__ ?
+		this.data[path] = this.__key__ ?
 			data
 			// XXX CACHE...
 			: JSON.stringify(data) },
 	__update__: function(){
+		// XXX
 	},
 	delete: function(){},
 
