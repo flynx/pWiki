@@ -156,33 +156,96 @@ module.path = {
 var BaseStore = 
 module.BaseStore = {
 
-	data: undefined,
+	// XXX need a way to integrate these better...
+	// 		...i.e. need a way to layer stores...
+	data: {
+		// metadata...
+		//
+		'System/path': function(){
+			return this.get('..').path },
+		'System/location': function(){
+			return this.get('..').path },
+		'System/resolved': function(){
+			return this.get('..').match() },
+		'System/dir': function(){
+			return this.get('..').dir },
+		'System/name': function(){
+			return this.get('..').name },
+
+		'System/title': function(){
+			var p = this.get('..')
+			return p.title 
+				?? p.name },
+
+
+		// utils...
+		//
+		// XXX System/subpaths
+
+
+		// actions...
+		//
+		'System/delete': function(){
+			this.location = '..'
+			this.delete()
+			return this.text },
+		// XXX System/back
+		// XXX System/forward
+		// XXX System/sort
+		// XXX System/reverse
+	},
 
 	// store chain actions...
 	//
-	// XXX need to think about this...
+	// XXX NEXT need to think about this...
 	next: undefined,
-	push: function(store){
-	},
+
+	// XXX NEXT EXPERIMENTAL...
+	nest: function(base){
+		return {
+			__proto__: base 
+				?? module.BaseStore,
+			next: this,
+			data: {}
+		} },
 
 
 
-
+	// XXX might be a good idea to cache this...
 	exists: function(path){
 		path = module.path.normalize(path, 'string')
 		var data = this.data
-		return path in data
+		return (path in data 
+				&& path)
+			// NOTE: all paths at this point and in store are absolute, 
+			// 		so we check both with the leading '/' and without 
+			// 		it to make things a bit more relaxed and return the 
+			// 		actual matching path...
    			|| (path[0] == '/' ?
-   				path.slice(1) in data
-				: ('/'+ path) in data) },
+   				(path.slice(1) in data 
+					&& path.slice(1))
+				: (('/'+ path) in data) 
+					&& '/'+path)
+			// delegate to .next...
+			// XXX NEXT
+			|| ((this.next || {}).exists 
+				&& this.next.exists(path)) },
 
-	paths: function(){
-		return Object.keys(this.data) },
+	paths: function(local=false){
+		return Object.keys(this.data)
+			// XXX NEXT
+			.concat((!local && (this.next || {}).paths) ? 
+				this.next.paths() 
+				: []) },
+	/*/ XXX do we actually need this???
+	// 		...this is the same as .get('**')
+	// XXX NEXT not sure how to implement .next protocol here...
 	pages: function(){
 		var that = this
 		return this.paths()
 			.map(function(p){
 				return [p, that.data[p]] }) },
+	//*/
 
 	// 
 	// 	Resolve page for path
@@ -225,18 +288,9 @@ module.BaseStore = {
 					return res }, new Set())] }
 		// search...
 		for(var p of module.path.paths(path)){
-			if(p in data){
-				return p }
-			// NOTE: all paths at this point and in store are absolute, 
-			// 		so we check both with the leading '/' and without 
-			// 		it to make things a bit more relaxed and return the 
-			// 		actual matching path...
-			if(p[0] == '/' 
-					&& p.slice(1) in data){
-				return p.slice(1) }
-			if(p[0] != '/'
-					&& ('/'+p) in data){
-				return '/'+p } } },
+			p = this.exists(p)
+			if(p){
+				return p } } },
 	// 
 	// 	Resolve page
 	// 	.get(<path>)
@@ -256,6 +310,11 @@ module.BaseStore = {
 	//
 	// XXX should this call actions???
 	// XXX should this return a map for pattern matches???
+	__get__: function(key){
+		return this.data[key]
+			// XXX NEXT
+			?? ((this.next || {}).__get__ 
+				&& this.next.__get__(key)) },
 	get: function(path, strict=false){
 		var that = this
 		var data = this.data
@@ -266,12 +325,12 @@ module.BaseStore = {
 				// NOTE: p can match a non existing page at this point, 
 				// 		this can be the result of matching a/* in a a/b/c
 				// 		and returning a a/b which can be undefined...
-				return data[p] 
-					?? data[that.match(p)] })
-			: data[path] },
+				return that.get(p) })
+			: this.__get__(path) },
 
 	// NOTE: deleting and updating only applies to explicit matching 
 	// 		paths -- no page acquisition is performed...
+	// NOTE: edit methods are local-only...
 	//
 	// XXX should these return this or the data???
 	// XXX FUNC handle functions as pages...
@@ -303,6 +362,10 @@ module.BaseStore = {
 		return this },
 
 
+	// XXX NEXT might be a good idea to have an API to move pages from 
+	// 		current store up the chain...
+
+
 	// XXX do we need this???
 	load: function(...data){
 		Object.assign(this.data, ...data)
@@ -313,48 +376,8 @@ module.BaseStore = {
 // XXX need to specify page format....
 // XXX need a way to set the page path...
 var store = 
-module.store = {
-	__proto__: BaseStore,
-
-	// XXX need a way to integrate these better...
-	// 		...i.e. need a way to layer stores...
-	data: {
-		// metadata...
-		//
-		'System/path': function(){
-			return this.get('..').path },
-		'System/location': function(){
-			return this.get('..').path },
-		'System/resolved': function(){
-			return this.get('..').match() },
-		'System/dir': function(){
-			return this.get('..').dir },
-		'System/name': function(){
-			return this.get('..').name },
-
-		'System/title': function(){
-			var p = this.get('..')
-			return p.title 
-				?? p.name },
-
-
-		// utils...
-		//
-		// XXX System/subpaths
-
-
-		// actions...
-		//
-		'System/delete': function(){
-			this.location = '..'
-			this.delete()
-			return this.text },
-		// XXX System/back
-		// XXX System/forward
-		// XXX System/sort
-		// XXX System/reverse
-	},
-}
+module.store = 
+	BaseStore.nest()
 
 
 
