@@ -142,6 +142,20 @@ module.path = {
 
 //---------------------------------------------------------------------
 
+//
+// To create a store adapter:
+// 		- inherit from BaseStore
+// 		- overload:
+// 			.exists(..)
+// 			.paths(..)
+// 			.__get__(..)
+// 		- optionally (for writable stores)
+// 			.__update__(..)
+// 			.__set__(..)
+// 			.delete(..)
+// 			.load(..)
+//
+//
 // NOTE: store keys must be normalized...
 //
 // XXX BUG: mixing up '/' and '' paths...
@@ -150,11 +164,13 @@ module.path = {
 // XXX would be nice to be able to create sub-stores, i.e. an object that
 // 		would store multiple sub-pages for things like todo docs... (???)
 // 		...the question is how to separate the two from the wiki side...
-// XXX must support store stacks...
 // XXX path macros???
 // XXX should we support page symlinking???
 var BaseStore = 
 module.BaseStore = {
+
+	// XXX NEXT need to think about this...
+	next: undefined,
 
 	// XXX need a way to integrate these better...
 	// 		...i.e. need a way to layer stores...
@@ -171,6 +187,10 @@ module.BaseStore = {
 			return this.get('..').dir },
 		'System/name': function(){
 			return this.get('..').name },
+		'System/ctime': function(){
+			return this.get('..').data.ctime },
+		'System/mtime': function(){
+			return this.get('..').data.mtime },
 
 		'System/title': function(){
 			var p = this.get('..')
@@ -194,21 +214,6 @@ module.BaseStore = {
 		// XXX System/sort
 		// XXX System/reverse
 	},
-
-	// store chain actions...
-	//
-	// XXX NEXT need to think about this...
-	next: undefined,
-
-	// XXX NEXT EXPERIMENTAL...
-	nest: function(base){
-		return {
-			__proto__: base 
-				?? module.BaseStore,
-			next: this,
-			data: {}
-		} },
-
 
 
 	// XXX might be a good idea to cache this...
@@ -336,18 +341,27 @@ module.BaseStore = {
 	// XXX FUNC handle functions as pages...
 	// XXX BUG: for path '/' this adds an entry at '', but when getting 
 	// 		'/', the later is not found...
+	__update__: function(key, data){
+		this.data[key] = Object.assign(
+			{ctime: Date.now()},
+			this.data[key] ?? {}, 
+			data,
+			{mtime: Date.now()})
+		return this },
+	__set__: function(key, data){
+		this.data[key] = Object.assign(
+			{ctime: Date.now()},
+			data,
+			{mtime: Date.now()})
+		return this },
 	update: function(path, data, mode='update'){
-		var d = this.data
 		path = module.path.normalize('/'+ path, 'string')
 		path = path[path.length-1] == '/' ?
 			path.slice(0, -1)
 			: path
-		d[path] = 
-			mode == 'update' ?
-				Object.assign(
-					d[path] ?? {}, 
-					data)
-				: data
+		mode == 'update' ?
+			this.__update__(path, data)
+			: this.__set__(path, data)
 		return this },
 	// XXX revise...
 	delete: function(path){
@@ -370,6 +384,16 @@ module.BaseStore = {
 	load: function(...data){
 		Object.assign(this.data, ...data)
 		return this },
+
+	// XXX NEXT EXPERIMENTAL...
+	nest: function(base){
+		return {
+			__proto__: base 
+				?? module.BaseStore,
+			next: this,
+			data: {}
+		} },
+
 }
 
 
@@ -379,6 +403,12 @@ var store =
 module.store = 
 	BaseStore.nest()
 
+
+// XXX EXPERIMENTAL
+var localStorageStore =
+module.localStorageStore = {
+	// XXX
+}
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -1237,7 +1267,7 @@ object.Constructor('Page', BasePage, {
 			return this.macros.include.call(this, 
 				args, body, state, 'sources', 
 				function(){
-					return this.__parser__.parse(this, this.get(src).raw, state) }) },
+					return this.__parser__.parse(this, this.get(src).raw +'', state) }) },
 		//
 		// 	@quote(<src>)
 		//
