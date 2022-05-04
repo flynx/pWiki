@@ -15,6 +15,8 @@
 * 		- in this view a user in the system is simply a set of keys and 
 * 			a signature (a page =))
 *
+*
+*
 **********************************************************************/
 ((typeof define)[0]=='u'?function(f){module.exports=f(require)}:define)
 (function(require){ var module={} // make module AMD/node compatible...
@@ -146,8 +148,8 @@ module.path = {
 // To create a store adapter:
 // 		- inherit from BaseStore
 // 		- overload:
-// 			.exists(..)
-// 			.paths(..)
+// 			.__paths__(..)
+// 			.__exists__(..)
 // 			.__get__(..)
 // 		- optionally (for writable stores)
 // 			.__update__(..)
@@ -216,9 +218,17 @@ module.BaseStore = {
 	},
 
 
+	__paths__: function(){
+		return Object.keys(this.data) },
+	paths: function(local=false){
+		return this.__paths__() 
+			// XXX NEXT
+			.concat((!local && (this.next || {}).paths) ? 
+				this.next.paths() 
+				: []) },
+
 	// XXX might be a good idea to cache this...
-	exists: function(path){
-		path = module.path.normalize(path, 'string')
+	__exists__: function(path){
 		var data = this.data
 		return (path in data 
 				&& path)
@@ -230,18 +240,14 @@ module.BaseStore = {
    				(path.slice(1) in data 
 					&& path.slice(1))
 				: (('/'+ path) in data) 
-					&& '/'+path)
+					&& '/'+path) },
+	exists: function(path){
+		return this.__exists__(module.path.normalize(path, 'string')) 
 			// delegate to .next...
 			// XXX NEXT
-			|| ((this.next || {}).exists 
-				&& this.next.exists(path)) },
+			|| ((this.next || {}).__exists__
+				&& this.next.__exists__(path)) },
 
-	paths: function(local=false){
-		return Object.keys(this.data)
-			// XXX NEXT
-			.concat((!local && (this.next || {}).paths) ? 
-				this.next.paths() 
-				: []) },
 	/*/ XXX do we actually need this???
 	// 		...this is the same as .get('**')
 	// XXX NEXT not sure how to implement .next protocol here...
@@ -316,10 +322,7 @@ module.BaseStore = {
 	// XXX should this call actions???
 	// XXX should this return a map for pattern matches???
 	__get__: function(key){
-		return this.data[key]
-			// XXX NEXT
-			?? ((this.next || {}).__get__ 
-				&& this.next.__get__(key)) },
+		return this.data[key] },
 	get: function(path, strict=false){
 		var that = this
 		var data = this.data
@@ -331,7 +334,10 @@ module.BaseStore = {
 				// 		this can be the result of matching a/* in a a/b/c
 				// 		and returning a a/b which can be undefined...
 				return that.get(p) })
-			: this.__get__(path) },
+			: (this.__get__(path) 
+				// XXX NEXT
+				?? ((this.next || {}).__get__ 
+					&& this.next.__get__(path))) },
 
 	// NOTE: deleting and updating only applies to explicit matching 
 	// 		paths -- no page acquisition is performed...
@@ -407,7 +413,41 @@ module.store =
 // XXX EXPERIMENTAL
 var localStorageStore =
 module.localStorageStore = {
+	__proto__: BaseParser,
 	// XXX
+	__store__: 
+		typeof(localStorage) != 'undefined' ?
+			localStorage
+			: undefined,
+	// XXX key to store data under...
+	// 		....if undefined then each page will be stored as a root path...
+	__path__: undefined,
+
+	__data: undefined,
+	get data(){
+		return this.__path__ ?
+			(this.__data = this.__data 
+				?? JSON.parse(this.__store__[this.__path__]))
+			: this.__store__ },
+	
+	//__paths__: function(path){},
+	//__exists__: function(path){},
+	__get__: function(path){
+		return this.__path__ ?
+			this.data[path]
+			// XXX CACHE...
+			: JSON.parse(this.data[path]) },
+	// XXX *time...
+	__set__: function(path, data){
+		this.data[path] = this.__path__ ?
+			data
+			// XXX CACHE...
+			: JSON.stringify(data) },
+	__update__: function(){
+	},
+	delete: function(){},
+
+	load: function(){},
 }
 
 
