@@ -410,6 +410,11 @@ module.store =
 	BaseStore.nest()
 
 
+// XXX stores to experiment with:
+// 		- cache
+// 		- fs
+// 		- PouchDB
+
 // XXX EXPERIMENTAL
 var localStorageStore =
 module.localStorageStore = {
@@ -441,11 +446,10 @@ module.localStorageStore = {
 	__set__: function(path, data){
 		this.data[path] = this.__key__ ?
 			data
-			// XXX CACHE...
 			: JSON.stringify(data) },
 	__update__: function(){
 		// XXX
-	},
+		return this },
 	delete: function(){},
 
 	load: function(){},
