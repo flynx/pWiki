@@ -148,9 +148,13 @@ module.path = {
 // To create a store adapter:
 // 		- inherit from BaseStore
 // 		- overload:
-// 			.__paths__(..)
+// 			.__paths__()
+// 				-> <keys>
 // 			.__exists__(..)
+// 				-> false
+// 				-> <path>
 // 			.__get__(..)
+// 				-> <data>
 // 		- optionally (for writable stores)
 // 			.__update__(..)
 // 			.__set__(..)
@@ -231,22 +235,26 @@ module.BaseStore = {
 	__exists__: function(path){
 		var data = this.data
 		return (path in data 
-				&& path)
-			// NOTE: all paths at this point and in store are absolute, 
-			// 		so we check both with the leading '/' and without 
-			// 		it to make things a bit more relaxed and return the 
-			// 		actual matching path...
-   			|| (path[0] == '/' ?
-   				(path.slice(1) in data 
-					&& path.slice(1))
-				: (('/'+ path) in data) 
-					&& '/'+path) },
+				&& path) },
 	exists: function(path){
-		return this.__exists__(module.path.normalize(path, 'string')) 
-			// delegate to .next...
+		path = module.path.normalize(path, 'string')
+		return this.__exists__(path, 'string') 
+			// NOTE: all paths at this point and in store are 
+			// 		absolute, so we check both with the leading 
+			// 		'/' and without it to make things a bit more 
+			// 		relaxed and return the actual matching path...
+			|| this.__exists__(
+				path[0] == '/' ? 
+					path.slice(1) 
+					: ('/'+ path))
 			// XXX NEXT
+			// delegate to .next...
 			|| ((this.next || {}).__exists__
-				&& this.next.__exists__(path)) },
+				&& (this.next.__exists__(path)
+					|| this.next.__exists__(
+						path[0] == '/' ?
+							path.slice(1)
+							: ('/'+ path)))) },
 
 	/*/ XXX do we actually need this???
 	// 		...this is the same as .get('**')
@@ -277,7 +285,6 @@ module.BaseStore = {
 	// match all sub-paths.
 	//
 	match: function(path, strict=false){
-		var data = this.data
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
@@ -325,7 +332,6 @@ module.BaseStore = {
 		return this.data[key] },
 	get: function(path, strict=false){
 		var that = this
-		var data = this.data
 		path = this.match(path, strict)
 		return path instanceof Array ?
 			// XXX should we return matched paths???
@@ -418,42 +424,78 @@ module.store =
 // XXX EXPERIMENTAL
 var localStorageStore =
 module.localStorageStore = {
-	__proto__: BaseParser,
-	// XXX
-	__store__: 
+	__proto__: BaseStore,
+	__prefix__: '--pwiki:',
+
+	// XXX add caching of unserialized data...
+	data:
 		typeof(localStorage) != 'undefined' ?
 			localStorage
 			: undefined,
-	// XXX key to store data under...
-	// 		....if undefined then each page will be stored as a root path...
-	__key__: 'pWiki-data',
-
-	__data: undefined,
-	get data(){
-		return this.__key__ ?
-			(this.__data = this.__data 
-				?? JSON.parse(this.__store__[this.__key__]))
-			: this.__store__ },
 	
-	//__paths__: function(path){},
-	//__exists__: function(path){},
+	__paths__: function(path){
+		var that = this
+		return Object.keys(this.data)
+			.map(function(k){ 
+				return k.startsWith(that.__prefix__) ?
+					k.slice((that.__prefix__ ?? '').length) 
+					: [] }) 
+			.flat() },
+	__exists__: function(path){
+		return ((this.__prefix__ ?? '')+ path) in this.data 
+			&& path },
 	__get__: function(path){
-		return this.__key__ ?
-			this.data[path]
-			// XXX CACHE...
-			: JSON.parse(this.data[path]) },
-	// XXX *time...
-	__set__: function(path, data){
-		this.data[path] = this.__key__ ?
-			data
-			: JSON.stringify(data) },
-	__update__: function(){
-		// XXX
+		path = (this.__prefix__ ?? '')+ path
+		return path in this.data ?
+			JSON.parse(this.data[path]) 
+			: undefined },
+	__set__: function(path, data={}){
+		path = (this.__prefix__ ?? '')+ path
+		var t = Date.now()
+		this.data[path] = 
+			JSON.stringify(
+				Object.assign(
+					{ctime: t},
+					data,
+					{mtime: t}))
 		return this },
-	delete: function(){},
+	// XXX for some magical reason this overwrites both ctime and mtime...
+	__update__: function(path, data={}){
+		path = (this.__prefix__ ?? '')+ path
+		var t = Date.now()
+		this.data[path] = 
+			JSON.stringify(
+				Object.assign(
+					{ctime: t},
+					this.__get__(path),
+					data,
+					{mtime: t}))
+		return this },
+	// XXX
+	delete: function(){
+	},
 
 	load: function(){},
 }
+
+var localStorageNestedStore =
+module.localStorageNestedStore = {
+	__proto__: BaseStore,
+	__data__: '__pwiki_data__',
+	__cache__: '__pwiki_cache__',
+
+	__data: undefined,
+	get data(){
+		return this.__data 
+			?? (this.__data =
+				Object.assign(
+					{ __proto__: JSON.parse(localStorage[this.__data__] || '{}') },
+					JSON.parse(localStorage[this.__cache__] || '{}') )) },
+
+	// XXX do partials saves -> cache + write cache...
+	// XXX on full save merge cache and save...
+}
+
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
