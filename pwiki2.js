@@ -157,8 +157,7 @@ module.path = {
 // 				-> <data>
 // 		- optionally (for writable stores)
 // 			.__update__(..)
-// 			.__set__(..)
-// 			.delete(..)
+// 			.__delete__(..)
 // 			.load(..)
 //
 //
@@ -354,37 +353,28 @@ module.BaseStore = {
 	// XXX BUG: for path '/' this adds an entry at '', but when getting 
 	// 		'/', the later is not found...
 	__update__: function(key, data){
-		this.data[key] = Object.assign(
-			{ctime: Date.now()},
-			this.data[key] ?? {}, 
-			data,
-			{mtime: Date.now()})
-		return this },
-	__set__: function(key, data){
-		this.data[key] = Object.assign(
-			{ctime: Date.now()},
-			data,
-			{mtime: Date.now()})
+		this.data[key] = data 
 		return this },
 	update: function(path, data, mode='update'){
-		path = module.path.normalize('/'+ path, 'string')
-		path = path[path.length-1] == '/' ?
-			path.slice(0, -1)
-			: path
-		mode == 'update' ?
-			this.__update__(path, data)
-			: this.__set__(path, data)
+		path = this.exists(path) 
+			|| module.path.normalize(path, 'string')
+		data = Object.assign(
+			{ctime: Date.now()},
+			mode == 'update' ?
+				this.get(path)
+				: {},
+			data,
+			{mtime: Date.now()})
+		this.__update__(path, data, mode)
 		return this },
-	// XXX revise...
+	__delete__: function(path){
+		delete this.data[path] 
+		return this },
 	delete: function(path){
 		var data = this.data
-		path = module.path.normalize(path, 'string')
-		path = path[path.length-1] == '/' ?
-			path.slice(0, -1)
-			: path
-		// XXX revise...
-		delete data[path] 
-		delete data['/'+ path] 
+		path = this.exists(path)
+		path
+			&& this.__delete__(path)
 		return this },
 
 
@@ -420,6 +410,10 @@ module.store =
 // 		- cache
 // 		- fs
 // 		- PouchDB
+// XXX need a way do load several stores at the same time on different 
+// 		paths..
+// 			- a router?
+// 			- substores?
 
 // XXX EXPERIMENTAL
 var localStorageStore =
@@ -449,33 +443,16 @@ module.localStorageStore = {
 		return path in this.data ?
 			JSON.parse(this.data[path]) 
 			: undefined },
-	__set__: function(path, data={}){
-		path = (this.__prefix__ ?? '')+ path
-		var t = Date.now()
-		this.data[path] = 
-			JSON.stringify(
-				Object.assign(
-					{ctime: t},
-					data,
-					{mtime: t}))
-		return this },
-	// XXX for some magical reason this overwrites both ctime and mtime...
 	__update__: function(path, data={}){
-		path = (this.__prefix__ ?? '')+ path
-		var t = Date.now()
-		this.data[path] = 
-			JSON.stringify(
-				Object.assign(
-					{ctime: t},
-					this.__get__(path),
-					data,
-					{mtime: t}))
+		this.data[(this.__prefix__ ?? '')+ path] = 
+			JSON.stringify(data)
 		return this },
-	// XXX
-	delete: function(){
-	},
+	__delete__: function(path){
+		delete this.data[(this.__prefix__ ?? '')+ path]
+		return this },
 
-	load: function(){},
+	load: function(){
+	},
 }
 
 var localStorageNestedStore =
