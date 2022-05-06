@@ -232,8 +232,7 @@ module.BaseStore = {
 
 	// XXX might be a good idea to cache this...
 	__exists__: function(path){
-		var data = this.data
-		return (path in data 
+		return (path in this.data 
 				&& path) },
 	exists: function(path){
 		path = module.path.normalize(path, 'string')
@@ -348,11 +347,10 @@ module.BaseStore = {
 	// 		paths -- no page acquisition is performed...
 	// NOTE: edit methods are local-only...
 	//
-	// XXX should these return this or the data???
 	// XXX FUNC handle functions as pages...
 	// XXX BUG: for path '/' this adds an entry at '', but when getting 
 	// 		'/', the later is not found...
-	__update__: function(key, data){
+	__update__: function(key, data, mode='update'){
 		this.data[key] = data 
 		return this },
 	update: function(path, data, mode='update'){
@@ -415,19 +413,81 @@ module.store =
 // 			- a router?
 // 			- substores?
 
-// XXX EXPERIMENTAL
+// XXX should this be a mixin???
+// XXX TEST...
+var MetaStore =
+module.MetaStore = {
+	__proto__: BaseStore,
+
+	//data: undefined,
+	data: {},
+
+	__substores: undefined,
+	get substores(){
+		return this.__substores 
+			?? (this.__substores = Object.entries(this.data)
+				.filter(function([path, value]){
+					return value instanceof BaseStore })
+				.map(function([path, _]){
+					return path })) },
+	substore: function(path){
+		path = module.path.normalize(path, 'string')
+		var stpre = this.substores
+			.filter(function(p){
+				return path.startsWith(p) })
+			.sort(function(a, b){
+				return a.length - b.length })
+			.pop() 
+		return store == path ?
+			// the actual store is not stored within itself...
+			undefined
+			: store },
+	
+	__paths__: function(){
+		var that = this
+		var data = this.data
+		Object.keys(data)
+			.map(function(path){
+				return data[path] instanceof BaseStore ?
+					data[path].paths()
+					: data[path] })
+			.flat() },
+	__exists__: function(path){
+		var store = this.substore(path)
+		return store == null ?
+			(path in this.data 
+				?? path)
+			: this.data[store].exists(path.slice(store.length)) },
+	__get__: function(path){
+		var store = this.substore(path)
+		return store == null ?
+			BaseStore.__get__.call(this, path)
+			: this.__get__(store).get(path.slice(store.length)) },
+	__update__: function(path, data={}, mode){
+		var store = this.substore(path)
+		store == null ?
+			BaseStore.__update__.call(this, path, data, mode)
+			: this.data[store].update(path.slice(store.length), data, mode) },
+	__delete__: function(path){
+		var store = this.substore(path)
+		// XXX
+	},
+	
+}
+
+// XXX EXPERIMENTAL, needs testing in browser...
 var localStorageStore =
 module.localStorageStore = {
 	__proto__: BaseStore,
 	__prefix__: '--pwiki:',
 
-	// XXX add caching of unserialized data...
+	// XXX add caching of unserialized data???
 	data:
 		typeof(localStorage) != 'undefined' ?
 			localStorage
 			: undefined,
 	
-	__paths__: function(path){
+	__paths__: function(){
 		var that = this
 		return Object.keys(this.data)
 			.map(function(k){ 
@@ -451,9 +511,11 @@ module.localStorageStore = {
 		delete this.data[(this.__prefix__ ?? '')+ path]
 		return this },
 
+	// XXX 
 	load: function(){
 	},
 }
+
 
 var localStorageNestedStore =
 module.localStorageNestedStore = {
@@ -473,6 +535,22 @@ module.localStorageNestedStore = {
 	// XXX on full save merge cache and save...
 }
 
+
+var FileStore =
+module.FileStore = {
+	__proto__: BaseStore,
+	__path__: '',
+
+	// XXX
+}
+
+
+var PouchDBStore =
+module.PouchDBStore = {
+	__proto__: BaseStore,
+
+	// XXX
+}
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
