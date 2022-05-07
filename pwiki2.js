@@ -413,6 +413,18 @@ module.store =
 // 			- a router?
 // 			- substores?
 
+// XXX use super...
+var metaProxy = 
+function(meth){
+	return function(path, ...args){
+		var store = this.substore(path)
+		return store != null ?
+			//BaseStore[meth].call(this, path, ...args)
+			object.parentCall(MetaStore, meth, this, path, ...args)
+			: this.data[store][meth](path.slice(store.length), ...args) } }
+
+// XXX STORETEST for this to work need a way to test if something is a store -- i.e.
+// 		either make things Constructor's or some other test...
 // XXX should this be a mixin???
 // XXX TEST...
 var MetaStore =
@@ -422,17 +434,18 @@ module.MetaStore = {
 	//data: undefined,
 	data: {},
 
+	// XXX STORETEST revise store test....
 	__substores: undefined,
 	get substores(){
 		return this.__substores 
 			?? (this.__substores = Object.entries(this.data)
 				.filter(function([path, value]){
-					return value instanceof BaseStore })
+					return object.childOf(value, BaseStore) })
 				.map(function([path, _]){
 					return path })) },
 	substore: function(path){
 		path = module.path.normalize(path, 'string')
-		var stpre = this.substores
+		var store = this.substores
 			.filter(function(p){
 				return path.startsWith(p) })
 			.sort(function(a, b){
@@ -443,36 +456,23 @@ module.MetaStore = {
 			undefined
 			: store },
 	
+	// XXX STORETEST revise store test....
 	__paths__: function(){
 		var that = this
 		var data = this.data
 		Object.keys(data)
 			.map(function(path){
-				return data[path] instanceof BaseStore ?
+				return object.childOf(data[path], BaseStore) ?
 					data[path].paths()
 					: data[path] })
 			.flat() },
-	__exists__: function(path){
-		var store = this.substore(path)
-		return store == null ?
-			(path in this.data 
-				?? path)
-			: this.data[store].exists(path.slice(store.length)) },
-	__get__: function(path){
-		var store = this.substore(path)
-		return store == null ?
-			BaseStore.__get__.call(this, path)
-			: this.__get__(store).get(path.slice(store.length)) },
-	__update__: function(path, data={}, mode){
-		var store = this.substore(path)
-		store == null ?
-			BaseStore.__update__.call(this, path, data, mode)
-			: this.data[store].update(path.slice(store.length), data, mode) },
-	__delete__: function(path){
-		var store = this.substore(path)
-		// XXX
-	},
-	
+
+	__exists__: metaProxy('__exists__'),
+	__get__: metaProxy('__get__'),
+	__delete__: metaProxy('__delete__'),
+	// XXX need to write a store as-is...
+	__update__: metaProxy('__update__'),
+
 }
 
 // XXX EXPERIMENTAL, needs testing in browser...
