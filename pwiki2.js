@@ -413,13 +413,19 @@ module.store =
 // 			- a router?
 // 			- substores?
 
-// XXX use super...
+// XXX might be a good idea to normalize args...
 var metaProxy = 
-function(meth){
+function(meth, drop_cache=false, pre){
 	return function(path, ...args){
+		if(drop_cache){
+			delete this.__substores }
+		if(pre){
+			var res = pre.call(this, path, ...args)
+			if(res === false){
+				return }}
 		var store = this.substore(path)
-		return store != null ?
-			//BaseStore[meth].call(this, path, ...args)
+		return store == null ?
+			// XXX this breaks for some reason...
 			object.parentCall(MetaStore, meth, this, path, ...args)
 			: this.data[store][meth](path.slice(store.length), ...args) } }
 
@@ -440,7 +446,7 @@ module.MetaStore = {
 		return this.__substores 
 			?? (this.__substores = Object.entries(this.data)
 				.filter(function([path, value]){
-					return object.childOf(value, BaseStore) })
+					return object.childOf(value, module.BaseStore) })
 				.map(function([path, _]){
 					return path })) },
 	substore: function(path){
@@ -462,16 +468,19 @@ module.MetaStore = {
 		var data = this.data
 		Object.keys(data)
 			.map(function(path){
-				return object.childOf(data[path], BaseStore) ?
+				return object.childOf(data[path], module.BaseStore) ?
 					data[path].paths()
 					: data[path] })
 			.flat() },
 
 	__exists__: metaProxy('__exists__'),
 	__get__: metaProxy('__get__'),
-	__delete__: metaProxy('__delete__'),
-	// XXX need to write a store as-is...
-	__update__: metaProxy('__update__'),
+	__delete__: metaProxy('__delete__', true),
+	__update__: metaProxy('__update__', true, 
+		function(path, data, mode){
+			if(object.childOf(data, module.module.BaseStore)){
+				this.data[path] = data
+				return false } }),
 
 }
 
