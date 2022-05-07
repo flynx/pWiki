@@ -136,8 +136,8 @@ module.path = {
 
 	split: function(path){
 		return this.normalize(path, 'array') },
-	join: function(path){
-		return this.normalize(path, 'string') },
+	join: function(...parts){
+		return this.normalize(parts.join('/'), 'string') },
 }
 
 
