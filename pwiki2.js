@@ -483,11 +483,14 @@ module.MetaStore = {
 	__paths__: function(){
 		var that = this
 		var data = this.data
-		Object.keys(data)
+		return Object.keys(data)
 			.map(function(path){
 				return object.childOf(data[path], module.BaseStore) ?
-					data[path].paths()
-					: data[path] })
+					data[path]
+						.paths()
+						.map(function(s){
+							return module.path.join(path, s) })
+					: path })
 			.flat() },
 
 	// XXX revise...
