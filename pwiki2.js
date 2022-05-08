@@ -418,6 +418,8 @@ module.store =
 	BaseStore.nest()
 
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
 // XXX stores to experiment with:
 // 		- cache
 // 		- fs
@@ -429,24 +431,25 @@ module.store =
 
 // XXX might be a good idea to normalize args...
 var metaProxy = 
-function(meth, drop_cache=false, pre){
+function(meth, drop_cache=false, post){
+	var target = meth.replace(/__/g, '')
 	if(drop_cache instanceof Function){
-		pre = drop_cache
+		post = drop_cache
 		drop_cache = false }
 	return function(path, ...args){
-		if(pre 
-			&& pre.call(this, path, ...args) === false){
-				return }
 		var store = this.substore(path)
 		var res = store == null ?
 			object.parentCall(MetaStore, meth, this, path, ...args)
-			: this.data[store][meth](path.slice(store.length), ...args) 
+			//: this.data[store][meth](path.slice(store.length), ...args) 
+			: this.data[store][target](path.slice(store.length), ...args) 
+		//console.log('---', path, target, '(', store, ...args, ') ->', res)
 		if(drop_cache){
 			delete this.__substores }
+		post 
+			&& (res = post.call(this, res, store, path, ...args))
 		return res} }
 
-// XXX STORETEST for this to work need a way to test if something is a store -- i.e.
-// 		either make things Constructor's or some other test...
+
 // XXX should this be a mixin???
 // XXX TEST...
 var MetaStore =
@@ -456,7 +459,6 @@ module.MetaStore = {
 	//data: undefined,
 	data: {},
 
-	// XXX STORETEST revise store test....
 	__substores: undefined,
 	get substores(){
 		return this.__substores 
@@ -478,7 +480,6 @@ module.MetaStore = {
 			undefined
 			: store },
 	
-	// XXX STORETEST revise store test....
 	__paths__: function(){
 		var that = this
 		var data = this.data
@@ -489,12 +490,22 @@ module.MetaStore = {
 					: data[path] })
 			.flat() },
 
-	__exists__: metaProxy('__exists__'),
+	// XXX revise...
+	__exists__: metaProxy('__exists__', 
+		function(res, store, path){
+			return store ?
+				// XXX which way should we go???
+				//module.path.join(store, res)
+				path
+	   			: res }),
 	__get__: metaProxy('__get__'),
 	__delete__: metaProxy('__delete__', true),
 	__update__: metaProxy('__update__', true),
 
 }
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 // XXX EXPERIMENTAL, needs testing in browser...
 var localStorageStore =
@@ -538,6 +549,8 @@ module.localStorageStore = {
 }
 
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
 var localStorageNestedStore =
 module.localStorageNestedStore = {
 	__proto__: BaseStore,
@@ -557,6 +570,8 @@ module.localStorageNestedStore = {
 }
 
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
 var FileStore =
 module.FileStore = {
 	__proto__: BaseStore,
@@ -566,6 +581,8 @@ module.FileStore = {
 }
 
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
 var PouchDBStore =
 module.PouchDBStore = {
 	__proto__: BaseStore,
@@ -574,7 +591,7 @@ module.PouchDBStore = {
 }
 
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//---------------------------------------------------------------------
 
 var relProxy = 
 function(name){
