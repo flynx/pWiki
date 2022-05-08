@@ -359,6 +359,7 @@ module.BaseStore = {
 	// 		paths -- no page acquisition is performed...
 	// NOTE: edit methods are local-only...
 	//
+	// XXX do we copy the data here or modify it????
 	// XXX FUNC handle functions as pages...
 	// XXX BUG: for path '/' this adds an entry at '', but when getting 
 	// 		'/', the later is not found...
@@ -450,6 +451,7 @@ function(meth, drop_cache=false, post){
 		return res} }
 
 
+// XXX not sure about the name...
 // XXX should this be a mixin???
 // XXX TEST...
 var MetaStore =
@@ -490,9 +492,8 @@ module.MetaStore = {
 						.paths()
 						.map(function(s){
 							return module.path.join(path, s) })
-					: path })
+				: path })
 			.flat() },
-
 	// XXX revise...
 	__exists__: metaProxy('__exists__', 
 		function(res, store, path){
@@ -504,7 +505,6 @@ module.MetaStore = {
 	__get__: metaProxy('__get__'),
 	__delete__: metaProxy('__delete__', true),
 	__update__: metaProxy('__update__', true),
-
 }
 
 
