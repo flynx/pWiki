@@ -137,7 +137,12 @@ module.path = {
 	split: function(path){
 		return this.normalize(path, 'array') },
 	join: function(...parts){
-		return this.normalize(parts.join('/'), 'string') },
+		return this.normalize(
+			(parts[0] instanceof Array ?
+					parts[0]
+					: parts)
+				.join('/'), 
+			'string') },
 }
 
 
@@ -230,6 +235,11 @@ module.BaseStore = {
 				this.next.paths() 
 				: []) },
 
+	//
+	// 	.exists(<path>)
+	// 		-> <normalized-path>
+	// 		-> false
+	//
 	// XXX might be a good idea to cache this...
 	__exists__: function(path){
 		return (path in this.data 
@@ -252,7 +262,9 @@ module.BaseStore = {
 					|| this.next.__exists__(
 						path[0] == '/' ?
 							path.slice(1)
-							: ('/'+ path)))) },
+							: ('/'+ path)))) 
+			// normalize the output...
+			|| false },
 
 	/*/ XXX do we actually need this???
 	// 		...this is the same as .get('**')
@@ -357,6 +369,8 @@ module.BaseStore = {
 		path = this.exists(path) 
 			|| module.path.normalize(path, 'string')
 		data = Object.assign(
+			// XXX do we need to isolate/clone data here???
+			data,
 			{ctime: Date.now()},
 			mode == 'update' ?
 				this.get(path)
@@ -416,18 +430,20 @@ module.store =
 // XXX might be a good idea to normalize args...
 var metaProxy = 
 function(meth, drop_cache=false, pre){
+	if(drop_cache instanceof Function){
+		pre = drop_cache
+		drop_cache = false }
 	return function(path, ...args){
+		if(pre 
+			&& pre.call(this, path, ...args) === false){
+				return }
+		var store = this.substore(path)
+		var res = store == null ?
+			object.parentCall(MetaStore, meth, this, path, ...args)
+			: this.data[store][meth](path.slice(store.length), ...args) 
 		if(drop_cache){
 			delete this.__substores }
-		if(pre){
-			var res = pre.call(this, path, ...args)
-			if(res === false){
-				return }}
-		var store = this.substore(path)
-		return store == null ?
-			// XXX this breaks for some reason...
-			object.parentCall(MetaStore, meth, this, path, ...args)
-			: this.data[store][meth](path.slice(store.length), ...args) } }
+		return res} }
 
 // XXX STORETEST for this to work need a way to test if something is a store -- i.e.
 // 		either make things Constructor's or some other test...
@@ -476,11 +492,7 @@ module.MetaStore = {
 	__exists__: metaProxy('__exists__'),
 	__get__: metaProxy('__get__'),
 	__delete__: metaProxy('__delete__', true),
-	__update__: metaProxy('__update__', true, 
-		function(path, data, mode){
-			if(object.childOf(data, module.module.BaseStore)){
-				this.data[path] = data
-				return false } }),
+	__update__: metaProxy('__update__', true),
 
 }
 
