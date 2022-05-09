@@ -420,15 +420,18 @@ module.store =
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
+//
 // XXX stores to experiment with:
 // 		- cache
 // 		- fs
 // 		- PouchDB
-// XXX need a way do load several stores at the same time on different 
-// 		paths..
-// 			- a router?
-// 			- substores?
+//
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+// Meta-Store
+//
+// Extends BaseStore to handle other stores as pages. i.e. sub-paths can 
+// be handled by nested stores.
+//
 
 // XXX might be a good idea to normalize args...
 var metaProxy = 
