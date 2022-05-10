@@ -224,6 +224,9 @@ module.BaseStore = {
 		// XXX System/sort
 		// XXX System/reverse
 	},
+	/*/
+	data: {},
+	//*/
 
 
 	__paths__: function(){
@@ -366,14 +369,17 @@ module.BaseStore = {
 	__update__: function(key, data, mode='update'){
 		this.data[key] = data 
 		return this },
+	// XXX don't like this -- revise...
 	update: function(path, data, mode='update'){
-		path = this.exists(path) 
+		var exists = this.exists(path) 
+		path = exists
 			|| module.path.normalize(path, 'string')
 		data = Object.assign(
+			{},
 			// XXX do we need to isolate/clone data here???
 			data,
 			{ctime: Date.now()},
-			mode == 'update' ?
+			(mode == 'update' && exists) ?
 				this.get(path)
 				: {},
 			data,
@@ -412,12 +418,6 @@ module.BaseStore = {
 }
 
 
-// XXX need to specify page format....
-// XXX need a way to set the page path...
-var store = 
-module.store = 
-	BaseStore.nest()
-
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 //
@@ -442,10 +442,12 @@ function(meth, drop_cache=false, post){
 		drop_cache = false }
 	return function(path, ...args){
 		var store = this.substore(path)
+
 		var res = store == null ?
 			object.parentCall(MetaStore, meth, this, path, ...args)
 			//: this.data[store][meth](path.slice(store.length), ...args) 
 			: this.data[store][target](path.slice(store.length), ...args) 
+
 		//console.log('---', path, target, '(', store, ...args, ') ->', res)
 		if(drop_cache){
 			delete this.__substores }
@@ -1685,6 +1687,61 @@ var WIKIWORD_PATTERN =
 
 //---------------------------------------------------------------------
 // XXX experiments and testing...
+
+// XXX need to specify page format....
+// XXX need a way to set the page path...
+var store = 
+module.store = 
+	BaseStore.nest()
+
+/*/
+var store = 
+module.store = 
+	BaseStore.nest(MetaStore)
+
+var System = {
+	// metadata...
+	//
+	path: function(){
+		return this.get('..').path },
+	location: function(){
+		return this.get('..').path },
+	resolved: function(){
+		return this.get('..').match() },
+	dir: function(){
+		return this.get('..').dir },
+	name: function(){
+		return this.get('..').name },
+	ctime: function(){
+		return this.get('..').data.ctime },
+	mtime: function(){
+		return this.get('..').data.mtime },
+
+	title: function(){
+		var p = this.get('..')
+		return p.title 
+			?? p.name },
+
+
+	// utils...
+	//
+	// XXX System/subpaths
+
+
+	// actions...
+	//
+	delete: function(){
+		this.location = '..'
+		this.delete()
+		return this.text },
+	// XXX System/back
+	// XXX System/forward
+	// XXX System/sort
+	// XXX System/reverse
+}
+store.update('System', System)
+//*/
+
 
 store.load(require('./bootstrap'))
 
