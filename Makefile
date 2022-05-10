@@ -26,7 +26,7 @@ node_modules:
 	npm install
 
 
-dev: node_modules $(LOCAL_MODULES)
+dev: node_modules $(LOCAL_MODULES) bootstrap
 	cp $(LOCAL_MODULES) lib/
 
 
