@@ -1648,7 +1648,16 @@ var WIKIWORD_PATTERN =
 
 
 //---------------------------------------------------------------------
-// XXX experiments and testing...
+// Basic setup...
+//
+//
+// Store popology:
+// 		
+// 		root (BaseStore) ---next--- main (MetaStore)
+// 										|
+// 										+-- System/... (BaseStore)
+//
+//
 
 var store = 
 module.store = 
@@ -1705,18 +1714,14 @@ var System = {
 // XXX nested system store...
 store.update('System', Object.create(BaseStore).load(System))
 /*/ // XXX chained system store...
-// Create a new system action-set with paths starting with 'System/'
-var RootSystem = 
+store.next.load(
+	// Create a new system action-set with paths starting with 'System/'
 	Object.entries(System)
 		.reduce(function(res, [key, func]){
 			res[module.path.join('System', key)] = func
-			return res }, {})
-
-store.next.load(RootSystem)
+			return res }, {}))
 //*/
 
-
-store.load(require('./bootstrap'))
 
 // NOTE: in general the root wiki api is simply a page instance.
 // XXX not yet sure how to organize the actual client -- UI, hooks, .. etc
@@ -1724,6 +1729,12 @@ var pwiki =
 module.pwiki = 
 Page('/', '/', store)
 
+
+
+//---------------------------------------------------------------------
+// XXX experiments and testing...
+
+store.load(require('./bootstrap'))
 
 
 // XXX TEST...
