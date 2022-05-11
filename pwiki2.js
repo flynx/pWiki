@@ -182,51 +182,14 @@ module.BaseStore = {
 	// XXX NEXT need to think about this...
 	next: undefined,
 
-	// XXX need a way to integrate these better...
-	// 		...i.e. need a way to layer stores...
-	data: {
-		// metadata...
-		//
-		'System/path': function(){
-			return this.get('..').path },
-		'System/location': function(){
-			return this.get('..').path },
-		'System/resolved': function(){
-			return this.get('..').match() },
-		'System/dir': function(){
-			return this.get('..').dir },
-		'System/name': function(){
-			return this.get('..').name },
-		'System/ctime': function(){
-			return this.get('..').data.ctime },
-		'System/mtime': function(){
-			return this.get('..').data.mtime },
-
-		'System/title': function(){
-			var p = this.get('..')
-			return p.title 
-				?? p.name },
-
-
-		// utils...
-		//
-		// XXX System/subpaths
-
-
-		// actions...
-		//
-		'System/delete': function(){
-			this.location = '..'
-			this.delete()
-			return this.text },
-		// XXX System/back
-		// XXX System/forward
-		// XXX System/sort
-		// XXX System/reverse
-	},
-	/*/
-	data: {},
-	//*/
+	// XXX should this be a prop???
+	// 		...if yes then remove unnecessary "this.data ?? {}" checks...
+	__data: undefined,
+	get data(){
+		return this.__data 
+			?? (this.__data = {}) },
+	set data(value){
+		this.__data = value },
 
 
 	__paths__: function(){
@@ -245,8 +208,8 @@ module.BaseStore = {
 	//
 	// XXX might be a good idea to cache this...
 	__exists__: function(path){
-		return (path in this.data 
-				&& path) },
+		return path in this.data
+				&& path },
 	exists: function(path){
 		path = module.path.normalize(path, 'string')
 		return this.__exists__(path, 'string') 
@@ -363,34 +326,34 @@ module.BaseStore = {
 	// NOTE: edit methods are local-only...
 	//
 	// XXX do we copy the data here or modify it????
-	// XXX FUNC handle functions as pages...
 	// XXX BUG: for path '/' this adds an entry at '', but when getting 
 	// 		'/', the later is not found...
 	__update__: function(key, data, mode='update'){
 		this.data[key] = data 
 		return this },
-	// XXX don't like this -- revise...
 	update: function(path, data, mode='update'){
 		var exists = this.exists(path) 
 		path = exists
 			|| module.path.normalize(path, 'string')
-		data = Object.assign(
-			{},
-			// XXX do we need to isolate/clone data here???
-			data,
-			{ctime: Date.now()},
-			(mode == 'update' && exists) ?
-				this.get(path)
-				: {},
-			data,
-			{mtime: Date.now()})
+		data = 
+			data instanceof Function ?
+				data
+				: Object.assign(
+					{
+						__proto__: data.__proto__,
+						ctime: Date.now(),
+					},
+					(mode == 'update' && exists) ?
+						this.get(path)
+						: {},
+					data,
+					{mtime: Date.now()})
 		this.__update__(path, data, mode)
 		return this },
 	__delete__: function(path){
 		delete this.data[path] 
 		return this },
 	delete: function(path){
-		var data = this.data
 		path = this.exists(path)
 		path
 			&& this.__delete__(path)
@@ -403,7 +366,7 @@ module.BaseStore = {
 
 	// XXX do we need this???
 	load: function(...data){
-		Object.assign(this.data, ...data)
+		this.data = Object.assign(this.data, ...data)
 		return this },
 
 	// XXX NEXT EXPERIMENTAL...
@@ -464,7 +427,6 @@ module.MetaStore = {
 	__proto__: BaseStore,
 
 	//data: undefined,
-	data: {},
 
 	__substores: undefined,
 	get substores(){
@@ -1688,16 +1650,11 @@ var WIKIWORD_PATTERN =
 //---------------------------------------------------------------------
 // XXX experiments and testing...
 
-// XXX need to specify page format....
-// XXX need a way to set the page path...
 var store = 
 module.store = 
-	BaseStore.nest()
-
-/*/
-var store = 
-module.store = 
+	//BaseStore.nest()
 	BaseStore.nest(MetaStore)
+
 
 var System = {
 	// metadata...
@@ -1739,7 +1696,23 @@ var System = {
 	// XXX System/sort
 	// XXX System/reverse
 }
-store.update('System', System)
+
+
+// XXX note sure how to organize the system actions -- there can be two 
+// 		options:
+// 			- a root ram store with all the static stuff and nest the rest
+// 			- a nested store (as is the case here)
+// XXX nested system store...
+store.update('System', Object.create(BaseStore).load(System))
+/*/ // XXX chained system store...
+// Create a new system action-set with paths starting with 'System/'
+var RootSystem = 
+	Object.entries(System)
+		.reduce(function(res, [key, func]){
+			res[module.path.join('System', key)] = func
+			return res }, {})
+
+store.next.load(RootSystem)
 //*/
 
 
