@@ -583,8 +583,47 @@ object.Constructor('BasePage', {
 	// root page used to clone new instances via the .clone(..) method...
 	//root: undefined,
 
+	// Path variables...
+	//
+	// XXX should these be here???
+	// 		other places path variables can be resolved:
+	// 			- navigation (below)
+	// 			- macro expansion...
+	// XXX
+	path_vars: {
+		NOW: function(){
+			return Date.now() },
+		PATH: function(){
+			return this.path },
+		NAME: function(){
+			return this.name },
+		DIR: function(){
+			return this.dir },
+		//TITLE: function(){
+		//	return this.title },
+
+		/*/ XXX this needs:
+		// 		- macro context...
+		// 		- sort order...
+		INDEX: function(context){
+			return context.index },
+		//*/
+	},
+
+	resolvePathVars: function(path, context={}){
+		var that = this
+		return Object.entries(this.path_vars)
+			.reduce(function(res, [key, func]){
+				return res
+					.replace(
+						new RegExp('(\\${'+key+'}|\\$'+key+')', 'g'), 
+						func.call(that, context))
+			}, path) },
+
 	// page location...
 	//
+	// NOTE: path variables are resolved relative to the page BEFORE 
+	// 		navigation...
 	__location: undefined,
 	get location(){
 		return this.__location ?? '/' },
@@ -592,9 +631,10 @@ object.Constructor('BasePage', {
 	set location(path){
 		this.referrer = this.location
 		var cur = this.__location = 
-			module.path.relative(
-				this.location, 
-				path)
+			this.resolvePathVars(
+				module.path.relative(
+					this.location, 
+					path))
 		//* XXX HISTORY...
 		if(this.history !== false){
 			this.history.includes(this.__location)
@@ -1631,6 +1671,10 @@ object.Constructor('Page', BasePage, {
 	set text(value){
 		this.store.update(this.location, {text: value}) },
 
+	/*/ XXX
+	get index(){},
+	set index(value){},
+	//*/
 
 })
 
