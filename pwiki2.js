@@ -1761,7 +1761,8 @@ var System = {
 // 			- a root ram store with all the static stuff and nest the rest
 // 			- a nested store (as is the case here)
 // XXX nested system store...
-store.update('System', Object.create(BaseStore).load(System))
+store.update('System', 
+	Object.create(BaseStore).load(System))
 /*/ // XXX chained system store...
 store.next.load(
 	// Create a new system action-set with paths starting with 'System/'
