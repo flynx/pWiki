@@ -1695,11 +1695,16 @@ var WIKIWORD_PATTERN =
 // Basic setup...
 //
 //
-// Store popology:
+// Store topology:
 // 		
 // 		root (BaseStore) ---next--- main (MetaStore)
 // 										|
 // 										+-- System/... (BaseStore)
+//
+// Alternative store topology:
+//
+// 		root (BaseStore) ---next--- main (MetaStore)
+// 			System/... (static)
 //
 //
 
