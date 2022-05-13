@@ -32,7 +32,7 @@ var types = require('ig-types')
 /*********************************************************************/
 
 
-// XXX might be a good idea to make this compatible with node's path API...
+// XXX make this compatible with node's path API...
 var path = 
 module.path = {
 
