@@ -1780,6 +1780,46 @@ module.pwiki =
 Page('/', '/', store)
 
 
+var parseArgs = function(spec, args){
+	// spec...
+	var order = spec.slice()
+	var bools = new Set(
+		order[order.length-1] instanceof Array ?
+			order.pop()
+			: [])
+	order = order
+		.filter(function(k){
+			return !(k in args) })
+
+	var res = {}
+	var pos = Object.entries(args)
+		// stage 1: populate res with explicit data and place the rest in pos...
+		.reduce(function(pos, [key, value]){
+			/^[0-9]+$/.test(key) ?
+				(bools.has(value) ?
+					// bool...
+					(res[value] = true)
+					// positional...
+					: (pos[key*1] = value))
+				// keyword...
+				: (res[key] = value)
+			return pos }, [])
+		// stage 2: populate implicit values from pos...
+		.forEach(function(e, i){
+			order.length == 0 ?
+				(res[e] = true)
+				: (res[order.shift()] = e) })
+	return res }
+
+console.log('---',
+	parseArgs(
+		['src', 'bam', ['first', 'second']],
+		{1: 'first', 2: '..', src2: 'second', moo: 'third'}))
+
+
+
+
+
 
 //---------------------------------------------------------------------
 // XXX experiments and testing...
