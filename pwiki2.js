@@ -32,6 +32,9 @@ var types = require('ig-types')
 /*********************************************************************/
 
 
+//---------------------------------------------------------------------
+// Path...
+
 // XXX make this compatible with node's path API...
 var path = 
 module.path = {
@@ -148,6 +151,7 @@ module.path = {
 
 
 //---------------------------------------------------------------------
+// Store...
 
 //
 // To create a store adapter:
@@ -570,6 +574,7 @@ function(name){
 			module.path.relative(this.location, path), 
 			...args) } } 
 
+// XXX PATH_VARS
 // XXX HISTORY do we need history management??? 
 // XXX FUNC need to handle functions in store...
 // XXX EVENT add event triggers/handlers...
@@ -585,11 +590,11 @@ object.Constructor('BasePage', {
 
 	// Path variables...
 	//
-	// XXX should these be here???
+	// XXX PATH_VARS should these be here???
 	// 		other places path variables can be resolved:
 	// 			- navigation (below)
 	// 			- macro expansion...
-	// XXX
+	// XXX EXPERIMENTAL...
 	path_vars: {
 		NOW: function(){
 			return Date.now() },
@@ -661,6 +666,8 @@ object.Constructor('BasePage', {
 	// XXX should writing to this move the page???
 	//set dir(value){ },
 
+	// history...
+	//
 	//* XXX HISTORY...
 	// NOTE: set this to false to disable history...
 	__history: undefined,
@@ -930,12 +937,6 @@ module.BaseParser = {
 
 	// helpers...
 	//
-	getPositional: function(args){
-		return Object.entries(args)
-			.reduce(function(res, [key, value]){
-				/^[0-9]+$/.test(key)
-					&& (res[key*1] = value)
-				return res }, []) },
 	normalizeFilters: function(filters){
 		var skip = new Set()
 		return filters
@@ -947,6 +948,25 @@ module.BaseParser = {
 				return filter[0] != '-' }) 
 			.filter(function(filter){
 				return !skip.has(filter) })},
+	posArgs: function(args){
+		return Object.entries(args)
+			.reduce(function(res, [key, value]){
+				/^[0-9]+$/.test(key)
+					&& (res[key*1] = value)
+				return res }, []) },
+	//
+	// Spec format:
+	// 	[<orderd>, ... [<keyword>, ...]]
+	//
+	parseArgs: function(spec, args){
+		var ordered = spec.slice()
+		var bool = new Set(
+			ordered[ordered.length-1] instanceof Array ?
+				ordered.pop()
+				: [])
+
+
+	},
 
 	// Strip comments...
 	//
@@ -1410,7 +1430,7 @@ object.Constructor('Page', BasePage, {
 			// positional args...
 			var src = args.src //|| args[0]
 			var recursive = args.recursive || body
-			var isolated = this.__parser__.getPositional(args).includes('isolated')
+			var isolated = this.__parser__.posArgs(args).includes('isolated')
 
 			if(!src){
 				return '' }
@@ -1561,7 +1581,7 @@ object.Constructor('Page', BasePage, {
 
 			//var hidden = name in slots
 			// XXX EXPERIMENTAL
-			var pos = this.__parser__.getPositional(args)
+			var pos = this.__parser__.posArgs(args)
 			var hidden = 
 				// 'hidden' has priority... 
 				(pos.includes('hidden') || args.hidden)
