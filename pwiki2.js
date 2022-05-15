@@ -1800,6 +1800,11 @@ module.pwiki =
 Page('/', '/', store)
 
 
+// XXX should we also convert values??
+// 		...like:
+// 			"true" -> true
+// 			"123" -> 123
+// 			...
 var parseArgs = function(spec, args){
 	// spec...
 	var order = spec.slice()
