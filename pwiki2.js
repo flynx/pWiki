@@ -106,7 +106,6 @@ module.path = {
 		parent = this.normalize(parent, 'array')
 		return this.normalize(parent.concat(path), format) },
 
-	//paths: function*(path='/', leading_slash=true){
 	paths: function*(path='/'){
 		path = this.normalize(path, 'array')
 		// handle '', '.', and '/' paths...
@@ -146,6 +145,10 @@ module.path = {
 					: parts)
 				.join('/'), 
 			'string') },
+	basename: function(path){
+		return this.split(path).pop() },
+	dirname: function(path){
+		return this.relative(path, '..', 'string') },
 }
 
 
@@ -948,14 +951,6 @@ module.BaseParser = {
 				return filter[0] != '-' }) 
 			.filter(function(filter){
 				return !skip.has(filter) })},
-	/*/ XXX is this still used???
-	posArgs: function(args){
-		return Object.entries(args)
-			.reduce(function(res, [key, value]){
-				/^[0-9]+$/.test(key)
-					&& (res[key*1] = value)
-				return res }, []) },
-	//*/
 	//
 	// Spec format:
 	// 	[<orderd>, ... [<keyword>, ...]]
@@ -1295,6 +1290,7 @@ module.parser = {
 
 
 // -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+// XXX should these be something more generic like Object.assign(..) ???
 
 // XXX revise...
 var Filter = 
@@ -1303,6 +1299,19 @@ function(...args){
 	var func = args.pop()
 	args.length > 0
 		&& Object.assign(func, args.pop())
+	return func }
+
+// XXX do we need anything else like .doc, attrs???
+var Macro =
+module.Macro = 
+function(spec, func){
+	var args = [...arguments]
+	// function...
+	func = args.pop()
+	// arg sepc...
+	;(args.length > 0 && args[args.length-1] instanceof Array)
+		&& (func.arg_spec = args.pop())
+	// XXX do we need anything else like .doc, attrs???
 	return func }
 
 
@@ -1405,7 +1414,7 @@ object.Constructor('Page', BasePage, {
 					[outer_filters] }
 
 			// merge in new filters...
-			var local = Object.values(args)
+			var local = Object.keys(args)
 			filters.splice(filters.length, 0, ...local)
 
 			// trigger quote-filter...
@@ -1460,59 +1469,63 @@ object.Constructor('Page', BasePage, {
 		// XXX should we track recursion via the resolved (current) path 
 		// 		or the given path???
 		// XXX should this be lazy???
-		include: function(args, body, state, key='included', handler){
-			// positional args...
-			var src = args.src //|| args[0]
-			var recursive = args.recursive || body
-			var isolated = this.__parser__.posArgs(args).includes('isolated')
+		include: Macro(
+			['src', 'recursive', ['isolated']],
+			function(args, body, state, key='included', handler){
+				// positional args...
+				var src = args.src
+				var recursive = args.recursive || body
+				var isolated = args.isolated 
 
-			if(!src){
-				return '' }
+				if(!src){
+					return '' }
 
-			handler = handler 
-				?? function(){
-					return this.get(src)
-						.parse(
-							isolated ? 
-								{[key]: state[key]} 
-								: state) }
+				handler = handler 
+					?? function(){
+						return this.get(src)
+							.parse(
+								isolated ? 
+									{[key]: state[key]} 
+									: state) }
 
-			// handle recursion...
-			var parent_seen = state[key]
-			var seen = state[key] = 
-				(state[key] ?? [this.location]).slice()
-			var target = this.match(src)
-			target = target instanceof Array ?
-				target.join(',')
-				: target
-			// recursion detected...
-			if(this.match() == this.match(src)
-					|| seen.includes(target)){
-				if(!recursive){
-					throw new Error(
-						'include: include recursion detected: '
-							+ seen.concat([target]).join(' -> ')) }
-				// have the 'recursive' arg...
-				return this.__parser__.parse(this, recursive, state) }
-			seen.push(target)
+				// handle recursion...
+				var parent_seen = state[key]
+				var seen = state[key] = 
+					(state[key] ?? [this.location]).slice()
+				var target = this.match(src)
+				target = target instanceof Array ?
+					target.join(',')
+					: target
+				// recursion detected...
+				if(this.match() == this.match(src)
+						|| seen.includes(target)){
+					if(!recursive){
+						throw new Error(
+							'include: include recursion detected: '
+								+ seen.concat([target]).join(' -> ')) }
+					// have the 'recursive' arg...
+					return this.__parser__.parse(this, recursive, state) }
+				seen.push(target)
 
-			// load the included page...
-			var res = handler.call(this)
+				// load the included page...
+				var res = handler.call(this)
 
-			// restore previous include chain...
-			if(parent_seen){
-				state[key] = parent_seen
-			} else {
-				delete state[key] }
+				// restore previous include chain...
+				if(parent_seen){
+					state[key] = parent_seen
+				} else {
+					delete state[key] }
 
-			return res },
-		source: function(args, body, state){
-			var src = args.src //|| args[0]
-			return this.macros.include.call(this, 
-				args, body, state, 'sources', 
-				function(){
-					return this.__parser__.parse(this, this.get(src).raw +'', state) }) },
-		//
+				return res }),
+		source: Macro(
+			['src'],
+			function(args, body, state){
+				var src = args.src
+				return this.macros.include.call(this, 
+					args, body, state, 'sources', 
+					function(){
+						return this.__parser__.parse(this, this.get(src).raw +'', state) }) }),
+			//
 		// 	@quote(<src>)
 		//
 		// 	<quote src=<src>[ filter="<filter> ..."]/>
@@ -1531,53 +1544,55 @@ object.Constructor('Page', BasePage, {
 		// 		not expanded...
 		//
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
-		quote: function(args, body, state){
-			var src = args.src //|| args[0]
-			var text = args.text 
-				?? body 
-				?? []
-			text = src ?
-					// source page...
-					this.get(src).raw
-				: text instanceof Array ?
-					text.join('')
-				: text
+		quote: Macro(
+			['src', 'filter', 'text'],
+			function(args, body, state){
+				var src = args.src //|| args[0]
+				var text = args.text 
+					?? body 
+					?? []
+				text = src ?
+						// source page...
+						this.get(src).raw
+					: text instanceof Array ?
+						text.join('')
+					: text
 
-			// empty...
-			if(!text){
-				return }
+				// empty...
+				if(!text){
+					return }
 
-			var filters = 
-				args.filter 
-					&& args.filter
-						.trim()
-						.split(/\s+/g)
+				var filters = 
+					args.filter 
+						&& args.filter
+							.trim()
+							.split(/\s+/g)
 
-			// NOTE: we are delaying .quote_filters handling here to 
-			// 		make their semantics the same as general filters...
-			// 		...and since we are internally calling .filter(..)
-			// 		macro we need to dance around it's architecture too...
-			// NOTE: since the body of quote(..) only has filters applied 
-			// 		to it doing the first stage of .filter(..) as late 
-			// 		as the second stage here will have no ill effect...
-			return function(state){
-				// add global quote-filters...
-				filters =
-					(state.quote_filters 
-							&& !(filters ?? []).includes(this.ISOLATED_FILTERS)) ?
-						[...state.quote_filters, ...(filters ?? [])]
-						: filters
-				if(filters){
-					filters = Object.fromEntries(Object.entries(filters))
-					return this.macros.filter
-						.call(this, filters, text, state, false)
-						.call(this, state) }
-				return text } },
+				// NOTE: we are delaying .quote_filters handling here to 
+				// 		make their semantics the same as general filters...
+				// 		...and since we are internally calling .filter(..)
+				// 		macro we need to dance around it's architecture too...
+				// NOTE: since the body of quote(..) only has filters applied 
+				// 		to it doing the first stage of .filter(..) as late 
+				// 		as the second stage here will have no ill effect...
+				return function(state){
+					// add global quote-filters...
+					filters =
+						(state.quote_filters 
+								&& !(filters ?? []).includes(this.ISOLATED_FILTERS)) ?
+							[...state.quote_filters, ...(filters ?? [])]
+							: filters
+					if(filters){
+						filters = Object.fromEntries(Object.entries(filters))
+						return this.macros.filter
+							.call(this, filters, text, state, false)
+							.call(this, state) }
+					return text } }),
 		// very similar to @filter(..) but will affect @quote(..) filters...
 		'quote-filter': function(args, body, state){
 			var filters = state.quote_filters = 
 				state.quote_filters ?? []
-			filters.splice(filters.length, 0, ...Object.values(args)) },
+			filters.splice(filters.length, 0, ...Object.keys(args)) },
 		//
 		//	<slot name=<name>/>
 		//
@@ -1601,92 +1616,94 @@ object.Constructor('Page', BasePage, {
 		//
 		// XXX how do we handle a slot defined within a slot????
 		// 		...seems that we'll fall into recursion on definition...
-		slot: function(args, body, state){
-			var name = args.name
-			var text = args.text 
-				?? body 
-				// NOTE: this can't be undefined for .expand(..) to work 
-				// 		correctly...
-				?? []
+		slot: Macro(
+			['name', 'text', ['shown', 'hidden']],
+			function(args, body, state){
+				var name = args.name
+				var text = args.text 
+					?? body 
+					// NOTE: this can't be undefined for .expand(..) to work 
+					// 		correctly...
+					?? []
 
-			var slots = state.slots = 
-				state.slots 
-					?? {}
+				var slots = state.slots = 
+					state.slots 
+						?? {}
 
-			//var hidden = name in slots
-			// XXX EXPERIMENTAL
-			var pos = this.__parser__.posArgs(args)
-			var hidden = 
-				// 'hidden' has priority... 
-				(pos.includes('hidden') || args.hidden)
-					// explicitly show... ()
-					|| ((pos.includes('shown') || args.shown) ?
-						false
-						// show first instance...
-						: name in slots)
+				//var hidden = name in slots
+				// XXX EXPERIMENTAL
+				var hidden = 
+					// 'hidden' has priority... 
+					args.hidden
+						// explicitly show... ()
+						|| (args.shown ?
+							false
+							// show first instance...
+							: name in slots)
 
-			slots[name] = [...this.__parser__.expand(this, text, state)]
+				slots[name] = [...this.__parser__.expand(this, text, state)]
 
-			return hidden ?
-				''
-				: function(state){
-					return state.slots[name] } }, 
+				return hidden ?
+					''
+					: function(state){
+						return state.slots[name] } }), 
 
 		// XXX sorting not implemented yet....
-		macro: function(args, body, state){
-			var that = this
-			var name = args.name //?? args[0]
-			var src = args.src
-			var sort = (args.sort ?? '')
-				.split(/\s+/g)
-				.filter(function(e){ 
-					return e != '' })
-			var text = args.text 
-				?? body 
-				?? []
+		macro: Macro(
+			['name', 'src', 'sort', 'text'],
+			function(args, body, state){
+				var that = this
+				var name = args.name //?? args[0]
+				var src = args.src
+				var sort = (args.sort ?? '')
+					.split(/\s+/g)
+					.filter(function(e){ 
+						return e != '' })
+				var text = args.text 
+					?? body 
+					?? []
 
-			if(name){
-				// define new named macro...
-				if(text){
-					;(state.macros = state.macros ?? {})[name] = text
-				// use existing macro...
-				} else if(state.macros 
-						&& name in state.macros){
-					text = state.macros[name] } }
+				if(name){
+					// define new named macro...
+					if(text){
+						;(state.macros = state.macros ?? {})[name] = text
+					// use existing macro...
+					} else if(state.macros 
+							&& name in state.macros){
+						text = state.macros[name] } }
 
-			if(src){
-				var pages = this.get(src).each()
-				// no matching pages -> get the else block...
-				if(pages.length == 0 && text){
-					var else_block = 
-						(text ?? [])
-							.filter(function(e){ 
-								return typeof(e) != 'string' 
-									&& e.name == 'else' }) 
-					if(else_block.length == 0){
-						return }
-					// XXX do we take the first or the last (now) block???
-					else_block = else_block.pop()
-					else_block = 
-						else_block.args.text 
-							?? else_block.body
-					return else_block ?
-						[...this.__parser__.expand(this, else_block, state)]
-						: undefined }
+				if(src){
+					var pages = this.get(src).each()
+					// no matching pages -> get the else block...
+					if(pages.length == 0 && text){
+						var else_block = 
+							(text ?? [])
+								.filter(function(e){ 
+									return typeof(e) != 'string' 
+										&& e.name == 'else' }) 
+						if(else_block.length == 0){
+							return }
+						// XXX do we take the first or the last (now) block???
+						else_block = else_block.pop()
+						else_block = 
+							else_block.args.text 
+								?? else_block.body
+						return else_block ?
+							[...this.__parser__.expand(this, else_block, state)]
+							: undefined }
 
-				// sort pages...
-				if(sort.length > 0){
-					// XXX
-					throw new Error('macro sort: not implemented')
-				}
+					// sort pages...
+					if(sort.length > 0){
+						// XXX
+						throw new Error('macro sort: not implemented')
+					}
 
-				// apply macro text...
-				// XXX not sure we should expand the whole thing directly here...
-				return pages
-					.map(function(page){
-						return [...that.__parser__.expand(page, text, state)] })
-					.flat()
-			} },
+					// apply macro text...
+					// XXX not sure we should expand the whole thing directly here...
+					return pages
+						.map(function(page){
+							return [...that.__parser__.expand(page, text, state)] })
+						.flat() } }),
 
 		// nesting rules...
 		'else': ['macro'],
@@ -1832,51 +1849,6 @@ store.next.load(
 var pwiki =
 module.pwiki = 
 Page('/', '/', store)
-
-
-// XXX should we also convert values??
-// 		...like:
-// 			"true" -> true
-// 			"123" -> 123
-// 			...
-var parseArgs = function(spec, args){
-	// spec...
-	var order = spec.slice()
-	var bools = new Set(
-		order[order.length-1] instanceof Array ?
-			order.pop()
-			: [])
-	order = order
-		.filter(function(k){
-			return !(k in args) })
-
-	var res = {}
-	var pos = Object.entries(args)
-		// stage 1: populate res with explicit data and place the rest in pos...
-		.reduce(function(pos, [key, value]){
-			/^[0-9]+$/.test(key) ?
-				(bools.has(value) ?
-					// bool...
-					(res[value] = true)
-					// positional...
-					: (pos[key*1] = value))
-				// keyword...
-				: (res[key] = value)
-			return pos }, [])
-		// stage 2: populate implicit values from pos...
-		.forEach(function(e, i){
-			order.length == 0 ?
-				(res[e] = true)
-				: (res[order.shift()] = e) })
-	return res }
-
-console.log('---',
-	parseArgs(
-		['src', 'bam', ['first', 'second']],
-		{1: 'first', 2: '..', src2: 'second', moo: 'third'}))
-
-
-
 
 
 
