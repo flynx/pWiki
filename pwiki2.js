@@ -15,6 +15,30 @@
 * 		- in this view a user in the system is simply a set of keys and 
 * 			a signature (a page =))
 *
+* XXX split this into modules...
+* 		pwiki.js
+* 		pwiki/page.js
+* 		pwiki/store.js
+* 		plugin/markdown.js
+* 		plugin/pouchdb.js
+*
+* XXX add action to reset overloaded (bootstrap) pages...
+* 		- per page
+* 		- global
+*
+* XXX might be a good idea to add defaults (non-page) for the basic 
+* 		pages -- NotFound
+*
+* XXX need to think about search...
+*
+* XXX might need to get all the links (macro-level) from a page...
+* 		...would be useful for caching...
+*
+* XXX add page events:
+* 		locationChange
+* 		renderDone
+* 		...
+*
 *
 *
 **********************************************************************/
@@ -163,8 +187,8 @@ module.path = {
 // 			.__paths__()
 // 				-> <keys>
 // 			.__exists__(..)
-// 				-> false
 // 				-> <path>
+// 				-> false
 // 			.__get__(..)
 // 				-> <data>
 // 		- optionally (for writable stores)
@@ -178,9 +202,6 @@ module.path = {
 // XXX BUG: mixing up '/' and '' paths...
 // XXX LEADING_SLASH should this be strict about leading '/' in paths???
 // 		...this may lead to duplicate paths created -- '/a/b' and 'a/b'
-// XXX would be nice to be able to create sub-stores, i.e. an object that
-// 		would store multiple sub-pages for things like todo docs... (???)
-// 		...the question is how to separate the two from the wiki side...
 // XXX path macros???
 // XXX should we support page symlinking???
 var BaseStore = 
@@ -810,6 +831,8 @@ object.Constructor('BasePage', {
 			//*/
 			data) },
 
+	// XXX should this be update or assign???
+	// XXX how should this work on multiple pages...
 	update: function(...data){
 		return Object.assign(this, ...data) },
 
@@ -1722,12 +1745,24 @@ object.Constructor('Page', BasePage, {
 	//
 	// NOTE: writing to .raw is the same as writing to .text...
 	// XXX FUNC handle functions as pages...
-	// XXX need to support pattern pages...
+	// XXX for multiple pages matching, should this get one of the pages 
+	// 		or all (current) of the pages???
 	get raw(){
+		var that = this
 		var data = this.data
 		return data instanceof Function ?
-			// XXX FUNC not sure about this...
-			data.call(this)
+				// XXX FUNC not sure about this...
+				data.call(this)
+			// multiple matches...
+			// XXX should this get one of the pages or all of the pages???
+			// XXX should we use a special template to render???
+			: data instanceof Array ?
+				data
+					.map(function(d){
+						return d instanceof Function ?
+							d.call(that)
+							: d.text })
+					.join('\n')
    			: data.text	},
 	set raw(value){
 		this.store.update(this.location, {text: value}) },
@@ -1827,7 +1862,7 @@ var System = {
 }
 
 
-// XXX note sure how to organize the system actions -- there can be two 
+/*/ XXX note sure how to organize the system actions -- there can be two 
 // 		options:
 // 			- a root ram store with all the static stuff and nest the rest
 // 			- a nested store (as is the case here)
