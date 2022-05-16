@@ -948,25 +948,52 @@ module.BaseParser = {
 				return filter[0] != '-' }) 
 			.filter(function(filter){
 				return !skip.has(filter) })},
+	/*/ XXX is this still used???
 	posArgs: function(args){
 		return Object.entries(args)
 			.reduce(function(res, [key, value]){
 				/^[0-9]+$/.test(key)
 					&& (res[key*1] = value)
 				return res }, []) },
+	//*/
 	//
 	// Spec format:
 	// 	[<orderd>, ... [<keyword>, ...]]
 	//
+	// NOTE: the input to this is formatted by .lex(..)
+	// NOTE: arg pre-parsing is dome by .lex(..) but at that stage we do not
+	// 		yet touch the actual macros (we need them to get the .arg_spec)
+	// 		so the actual parsing is done in .expand(..)
 	parseArgs: function(spec, args){
-		var ordered = spec.slice()
-		var bool = new Set(
-			ordered[ordered.length-1] instanceof Array ?
-				ordered.pop()
+		// spec...
+		var order = spec.slice()
+		var bools = new Set(
+			order[order.length-1] instanceof Array ?
+				order.pop()
 				: [])
+		order = order
+			.filter(function(k){
+				return !(k in args) })
 
-
-	},
+		var res = {}
+		var pos = Object.entries(args)
+			// stage 1: populate res with explicit data and place the rest in pos...
+			.reduce(function(pos, [key, value]){
+				/^[0-9]+$/.test(key) ?
+					(bools.has(value) ?
+						// bool...
+						(res[value] = true)
+						// positional...
+						: (pos[key*1] = value))
+					// keyword...
+					: (res[key] = value)
+				return pos }, [])
+			// stage 2: populate implicit values from pos...
+			.forEach(function(e, i){
+				order.length == 0 ?
+					(res[e] = true)
+					: (res[order.shift()] = e) })
+		return res },
 
 	// Strip comments...
 	//
@@ -1198,9 +1225,16 @@ module.BaseParser = {
 			// nested macro -- skip...
 			if(!(page.macros[name] instanceof Function)){
 				continue }
+			// args...
+			args = this.parseArgs.call(page,
+				page.macros[name].arg_spec 
+					?? [], 
+				args)
+			// call...
 			var res = 
 				page.macros[name].call(page, args, body, state, value)
 					?? ''
+			// result...
 			if(res instanceof Array 
 					|| page.macros[name] instanceof types.Generator){
 				yield* res
