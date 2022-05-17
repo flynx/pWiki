@@ -1756,6 +1756,7 @@ object.Constructor('Page', BasePage, {
 			// multiple matches...
 			// XXX should this get one of the pages or all of the pages???
 			// XXX should we use a special template to render???
+			// XXX should this return an array???
 			: data instanceof Array ?
 				data
 					.map(function(d){
