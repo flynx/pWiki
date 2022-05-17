@@ -1340,6 +1340,8 @@ function(spec, func){
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+module.PAGE_NOT_FOUND = '404: PAGE NOT FOUND: $PATH'
+
 // XXX PATH_VARS need to handle path variables...
 // XXX macros and filters should be features for simpler plugin handlng (???)
 var Page =
@@ -1353,8 +1355,11 @@ object.Constructor('Page', BasePage, {
 
 	// NOTE: comment this out to make the system fail when nothing is 
 	// 		resolved, not even the System/NotFound page...
-	// XXX should this get returned or should the system fail??
-	PAGE_NOT_FOUND: '404 PAGE NOT FOUND',
+	// NOTE: we can't use any of the page actions here (like @source(./path)) 
+	// 		as if we reach this it's likely all the bootstrap is either also
+	// 		not present or broken.
+	// NOTE: to force the system to fail set this to undefined.
+	PAGE_NOT_FOUND: module.PAGE_NOT_FOUND,
 
 	//
 	// 	<filter>(<source>)
@@ -1768,12 +1773,23 @@ object.Constructor('Page', BasePage, {
 	// raw page text...
 	//
 	// NOTE: writing to .raw is the same as writing to .text...
-	// XXX FUNC handle functions as pages...
 	// XXX for multiple pages matching, should this get one of the pages 
 	// 		or all (current) of the pages???
 	get raw(){
 		var that = this
 		var data = this.data
+		// no data...
+		// NOTE: if we hit this it means that nothing was resolved, 
+		// 		not even the System/NotFound page, i.e. something 
+		// 		went really wrong...
+		if(data == null){
+			var msg = (this.PAGE_NOT_FOUND 
+					|| module.PAGE_NOT_FOUND)
+				.replace(/\$PATH/, this.path)
+			if(this.PAGE_NOT_FOUND){
+				return msg }
+			throw new Error(msg) }
+		// get the data...
 		return data instanceof Function ?
 				// XXX FUNC not sure about this...
 				data.call(this)
@@ -1788,12 +1804,6 @@ object.Constructor('Page', BasePage, {
 							d.call(that)
 							: d.text })
 					.join('\n')
-			// no data...
-			// NOTE: if you hit this it means that nothing was resolved, 
-			// 		not even the System/NotFound page, i.e. something 
-			// 		went really wrong...
-			: data == null ?
-				this.PAGE_NOT_FOUND
    			: data.text },
 	set raw(value){
 		this.store.update(this.location, {text: value}) },
