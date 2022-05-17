@@ -202,7 +202,7 @@ module.path = {
 // XXX BUG: mixing up '/' and '' paths...
 // XXX LEADING_SLASH should this be strict about leading '/' in paths???
 // 		...this may lead to duplicate paths created -- '/a/b' and 'a/b'
-// XXX path macros???
+// XXX need to ensure that that at least NotFound page is resoled...
 // XXX should we support page symlinking???
 var BaseStore = 
 module.BaseStore = {
@@ -1351,6 +1351,8 @@ object.Constructor('Page', BasePage, {
 	// list of macros that will get raw text of their content...
 	QUOTING_MACROS: ['quote'],
 
+	//PAGE_NOT_FOUND: 'PAGE NOT FOUND',
+
 	//
 	// 	<filter>(<source>)
 	// 		-> <result>
@@ -1764,7 +1766,9 @@ object.Constructor('Page', BasePage, {
 							d.call(that)
 							: d.text })
 					.join('\n')
-   			: data.text	},
+			: data == null ?
+				this.PAGE_NOT_FOUND
+   			: data.text },
 	set raw(value){
 		this.store.update(this.location, {text: value}) },
 
