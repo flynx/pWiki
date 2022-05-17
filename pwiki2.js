@@ -1351,7 +1351,10 @@ object.Constructor('Page', BasePage, {
 	// list of macros that will get raw text of their content...
 	QUOTING_MACROS: ['quote'],
 
-	//PAGE_NOT_FOUND: 'PAGE NOT FOUND',
+	// NOTE: comment this out to make the system fail when nothing is 
+	// 		resolved, not even the System/NotFound page...
+	// XXX should this get returned or should the system fail??
+	PAGE_NOT_FOUND: '404 PAGE NOT FOUND',
 
 	//
 	// 	<filter>(<source>)
@@ -1382,6 +1385,7 @@ object.Constructor('Page', BasePage, {
 		markdown: Filter(
 			{quote: 'quote-markdown'},
 			function(source){
+				// XXX
 				return source }),
 		'quote-markdown': function(source){
 			// XXX
@@ -1397,23 +1401,11 @@ object.Constructor('Page', BasePage, {
 	// 		-> <func>(<state>)
 	// 			-> ...
 	//
-	// XXX need a good way to get the first positional arg without 
-	// 		mixing it up with other args -- see src/name args below...
+	// XXX ASYNC make these support async page getters...
 	macros: {
-		// XXX move to docs...
-		test: function*(args, body, state){
-			if(body){
-				state.testBlock = (state.testBlock ?? 0) + 1
-
-				yield '\n<test>\n\n'
-				yield* this.expand(body) 
-				yield '\n\n</test>\n'
-
-				--state.testBlock == 0
-					&& (delete state.testBlock)
-			} else {
-				yield '<test/>' } },
-
+		// 
+		// 	<now/>
+		//
 		now: function(){
 			return ''+ Date.now() },
 		//
@@ -1550,7 +1542,7 @@ object.Constructor('Page', BasePage, {
 					args, body, state, 'sources', 
 					function(){
 						return this.__parser__.parse(this, this.get(src).raw +'', state) }) }),
-			//
+		//
 		// 	@quote(<src>)
 		//
 		// 	<quote src=<src>[ filter="<filter> ..."]/>
@@ -1673,9 +1665,28 @@ object.Constructor('Page', BasePage, {
 					: function(state){
 						return state.slots[name] } }), 
 
-		// XXX sorting not implemented yet....
+		// 	
+		// 	<macro src=<url>> .. </macro>
+		//
+		// 	<macro name=<name> src=<url> sort=<sort-spec>> .. </macro>
+		//
+		// 	<macro ...> ... </macro>
+		// 	<macro ... text=<text>/>
+		//
+		// 	<macro ... else=<text>> ... </macro>
+		// 	<macro ...>
+		// 		...
+		//
+		// 		<else>
+		// 			...
+		// 		</else>
+		// 	</macro>
+		//
+		// XXX ELSE_PRIO should else attr take priority over the <else> tag???
+		// 		...currently as with text=... the attr takes priority...
+		// XXX SORT sorting not implemented yet....
 		macro: Macro(
-			['name', 'src', 'sort', 'text'],
+			['name', 'src', 'sort', 'text', 'else'],
 			function(args, body, state){
 				var that = this
 				var name = args.name //?? args[0]
@@ -1684,9 +1695,13 @@ object.Constructor('Page', BasePage, {
 					.split(/\s+/g)
 					.filter(function(e){ 
 						return e != '' })
+				// NOTE: args.text will need parsing...
 				var text = args.text 
 					?? body 
 					?? []
+				text = typeof(text) == 'string' ?
+					[...this.__parser__.group(this, text+'</macro>', 'macro')]
+					: text
 
 				if(name){
 					// define new named macro...
@@ -1700,15 +1715,23 @@ object.Constructor('Page', BasePage, {
 				if(src){
 					var pages = this.get(src).each()
 					// no matching pages -> get the else block...
-					if(pages.length == 0 && text){
+					if(pages.length == 0 
+							&& (text || args['else'])){
+						// XXX ELSE_PRIO
 						var else_block = 
-							(text ?? [])
-								.filter(function(e){ 
-									return typeof(e) != 'string' 
-										&& e.name == 'else' }) 
+							args['else'] ?
+								[{
+									args: {},
+									body: args['else'],
+								}] 
+								: (text ?? [])
+									.filter(function(e){ 
+										return typeof(e) != 'string' 
+											&& e.name == 'else' })
 						if(else_block.length == 0){
 							return }
-						// XXX do we take the first or the last (now) block???
+						// NOTE: when multiple <else> tags are present 
+						// 		the last one is used...
 						else_block = else_block.pop()
 						else_block = 
 							else_block.args.text 
@@ -1719,12 +1742,11 @@ object.Constructor('Page', BasePage, {
 
 					// sort pages...
 					if(sort.length > 0){
-						// XXX
+						// XXX SORT
 						throw new Error('macro sort: not implemented')
 					}
 
 					// apply macro text...
-					// XXX not sure we should expand the whole thing directly here...
 					return pages
 						.map(function(page){
 							return [...that.__parser__.expand(page, text, state)] })
@@ -1766,6 +1788,10 @@ object.Constructor('Page', BasePage, {
 							d.call(that)
 							: d.text })
 					.join('\n')
+			// no data...
+			// NOTE: if you hit this it means that nothing was resolved, 
+			// 		not even the System/NotFound page, i.e. something 
+			// 		went really wrong...
 			: data == null ?
 				this.PAGE_NOT_FOUND
    			: data.text },
