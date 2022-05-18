@@ -22,11 +22,11 @@ typeof(module) != "undefined"
 
 
 // XXX add support for json...
-glob('bootstrap/**/*.@(tpl|md|css|html)')
+glob('bootstrap/**/*.@(tpl|md|css|html|txt)')
 	.on('match', function(path){
 		var p = path
 			.replace('bootstrap/', '')
-			.replace(/\.(json|txt|md|css|html)/, '')
+			.replace(/\.(json|txt|md|css|html|txt)/, '')
 		console.log('Found:', p)
 		bootstrap[p] = {
 			text: fs.readFileSync(path).toString(),

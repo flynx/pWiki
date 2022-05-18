@@ -79,6 +79,7 @@ module.path = {
 	],
 
 	SEARCH_PATHS: [
+		'./Theme/CLI',
 		'./Templates',
 		'/System',
 	],
@@ -982,7 +983,8 @@ module.BaseParser = {
 	// NOTE: arg pre-parsing is dome by .lex(..) but at that stage we do not
 	// 		yet touch the actual macros (we need them to get the .arg_spec)
 	// 		so the actual parsing is done in .expand(..)
-	parseArgs: function(spec, args){
+	parseArgs: function(spec, args, state){
+		var that = this
 		// spec...
 		var order = spec.slice()
 		var bools = new Set(
@@ -997,7 +999,7 @@ module.BaseParser = {
 		var pos = Object.entries(args)
 			// stage 1: populate res with explicit data and place the rest in pos...
 			.reduce(function(pos, [key, value]){
-				/^[0-9]+$/.test(key) ?
+				;/^[0-9]+$/.test(key) ?
 					(bools.has(value) ?
 						// bool...
 						(res[value] = true)
@@ -1247,7 +1249,8 @@ module.BaseParser = {
 			args = this.parseArgs.call(page,
 				page.macros[name].arg_spec 
 					?? [], 
-				args)
+				args,
+				state)
 			// call...
 			var res = 
 				page.macros[name].call(page, args, body, state, value)
@@ -1472,7 +1475,7 @@ object.Constructor('Page', BasePage, {
 					var outer_filters = state.filters
 					state.filters = this.__parser__.normalizeFilters(filters)
 					var res =
-						[...this.__parser__.parse(this, ast, state)]
+						[...this.parse(ast, state)]
 							.flat()
 							.join('') 
 					state.filters = outer_filters
@@ -1488,8 +1491,7 @@ object.Constructor('Page', BasePage, {
 		// 	</include>
 		//
 		// XXX 'text' argument is changed to 'recursive'...
-		// XXX should we track recursion via the resolved (current) path 
-		// 		or the given path???
+		// XXX revise recursion checks.... 
 		// XXX should this be lazy???
 		include: Macro(
 			['src', 'recursive', ['isolated']],
@@ -1500,7 +1502,9 @@ object.Constructor('Page', BasePage, {
 				var isolated = args.isolated 
 
 				if(!src){
-					return '' }
+					return }
+				// parse arg values...
+				src = this.parse(src, state)
 
 				handler = handler 
 					?? function(){
@@ -1520,14 +1524,16 @@ object.Constructor('Page', BasePage, {
 					: target
 				// recursion detected...
 				if(this.match() == this.match(src)
-						|| seen.includes(target)){
+						|| seen.includes(src)){
+					//* XXX this prevents recursion...
 					if(!recursive){
 						throw new Error(
 							'include: include recursion detected: '
-								+ seen.concat([target]).join(' -> ')) }
+								+ seen.concat([src]).join(' -> ')) }
+					//*/
 					// have the 'recursive' arg...
-					return this.__parser__.parse(this, recursive, state) }
-				seen.push(target)
+					return this.parse(recursive, state) }
+				seen.push(src)
 
 				// load the included page...
 				var res = handler.call(this)
@@ -1543,10 +1549,14 @@ object.Constructor('Page', BasePage, {
 			['src'],
 			function(args, body, state){
 				var src = args.src
+				// parse arg values...
+				src = src ? 
+					this.parse(src, state) 
+					: src
 				return this.macros.include.call(this, 
 					args, body, state, 'sources', 
 					function(){
-						return this.__parser__.parse(this, this.get(src).raw +'', state) }) }),
+						return this.parse(this.get(src).raw +'', state) }) }),
 		//
 		// 	@quote(<src>)
 		//
@@ -1573,6 +1583,10 @@ object.Constructor('Page', BasePage, {
 				var text = args.text 
 					?? body 
 					?? []
+				// parse arg values...
+				src = src ? 
+					this.parse(src, state)
+					: src
 				text = src ?
 						// source page...
 						this.get(src).raw
@@ -1652,6 +1666,11 @@ object.Constructor('Page', BasePage, {
 					state.slots 
 						?? {}
 
+				// parse arg values...
+				name = name ?
+					this.parse(name, state)
+					: name
+
 				//var hidden = name in slots
 				// XXX EXPERIMENTAL
 				var hidden = 
@@ -1709,6 +1728,7 @@ object.Constructor('Page', BasePage, {
 					: text
 
 				if(name){
+					name = this.parse(name, state)
 					// define new named macro...
 					if(text){
 						;(state.macros = state.macros ?? {})[name] = text
@@ -1718,6 +1738,7 @@ object.Constructor('Page', BasePage, {
 						text = state.macros[name] } }
 
 				if(src){
+					src = this.parse(src, state)
 					var pages = this.get(src).each()
 					// no matching pages -> get the else block...
 					if(pages.length == 0 
@@ -1764,10 +1785,18 @@ object.Constructor('Page', BasePage, {
 	// page parser...
 	//
 	__parser__: module.parser,
-	parse: function(state={}){
+	parse: function(text, state){
+		// .parser(<state>)
+		if(arguments.length == 1 
+				&& text instanceof Object
+				&& !(text instanceof Array)){
+			state = text
+			text = null }
 		// NOTE: we do not need to pass this.raw here but it is still 
 		// 		here for illustration...
-		return this.__parser__.parse(this, this.raw, state) },
+		return this.__parser__.parse(this, 
+			text ?? this.raw, 
+			state ?? {}) },
 
 
 	// raw page text...
@@ -1978,6 +2007,26 @@ pwiki
 			+'Including /: \\@include(/)\n'
 			+'\n'
 			+'@filter(test)',
+	})
+	.update({
+		location: '/test/a',
+		text: 'a',
+	})
+	.update({
+		location: '/test/b',
+		text: 'b',
+	})
+	.update({
+		location: '/test/c',
+		text: 'c',
+	})
+	.update({
+		location: '/test/c/x',
+		text: 'x',
+	})
+	.update({
+		location: '/test/c/y',
+		text: 'y',
 	})
 //*/
 
