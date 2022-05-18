@@ -293,6 +293,7 @@ module.BaseStore = {
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
+			var order = (this.metadata(path) || {}).order || []
 			// NOTE: we are matching full paths only here so leading and 
 			// 		trainling '/' are optional...
 			var pattern = new RegExp(`^\\/?${
@@ -302,13 +303,17 @@ module.BaseStore = {
 					.replace(/\*\*/g, '.+')
 					.replace(/\*/g, '[^\\/]+') }`)
 			return [...this.paths()
-				.reduce(function(res, p){
-					var m = p.match(pattern)
-					m
-						&& (!strict 
-							|| m[0] == p) 
-						&& res.add(m[0])
-					return res }, new Set())] }
+					.reduce(function(res, p){
+						// skip metadata paths...
+						if(p.includes('*')){
+							return res }
+						var m = p.match(pattern)
+						m
+							&& (!strict 
+								|| m[0] == p) 
+							&& res.add(m[0])
+						return res }, new Set())]
+			   .sortAs(order) }
 		// search...
 		for(var p of module.path.paths(path)){
 			p = this.exists(p)
@@ -350,6 +355,12 @@ module.BaseStore = {
 				?? ((this.next || {}).__get__ 
 					&& this.next.__get__(path))) },
 
+	// NOTE: setting metadata is done via .update(..)
+	metadata: function(path){
+		path = this.exists(path)
+		return path 
+			&& this.__get__(path) },
+
 	// NOTE: deleting and updating only applies to explicit matching 
 	// 		paths -- no page acquisition is performed...
 	// NOTE: edit methods are local-only...
@@ -357,6 +368,7 @@ module.BaseStore = {
 	// XXX do we copy the data here or modify it????
 	// XXX BUG: for path '/' this adds an entry at '', but when getting 
 	// 		'/', the later is not found...
+	// XXX BUG: updating a pattern path will result in a broken store...
 	__update__: function(key, data, mode='update'){
 		this.data[key] = data 
 		return this },
@@ -691,6 +703,7 @@ object.Constructor('BasePage', {
 	// XXX should writing to this move the page???
 	//set dir(value){ },
 
+
 	// history...
 	//
 	//* XXX HISTORY...
@@ -738,6 +751,15 @@ object.Constructor('BasePage', {
 	set data(value){
 		this.store.update(this.location, value) },
 
+	// metadata...
+	//
+	// NOTE: in the general case this is the same as .data but in also allows
+	// 		storing of data (metadata) for pattern paths...
+	get metadata(){
+		return this.store.metadata(this.location) },
+	set metadata(value){
+		this.store.update(this.location, value) },
+
 	// number of matching pages...
 	get length(){
 		var p = this.match(this.location)
@@ -777,6 +799,26 @@ object.Constructor('BasePage', {
 		return this.each().filter(func) },
 	reduce: function(func, dfl){
 		return this.each().reduce(func, dfl) },
+
+	// sorting...
+	//
+	sort: function(cmp){
+		// not sorting single pages...
+		if(this.length <= 1){
+			return this }
+		// sort...
+		this.metadata = 
+			{ order: this.each()
+				.sort(...arguments)
+				.map(function(p){
+					return p.path }) }
+		return this },
+	reverse: function(){
+		// not sorting single pages...
+		if(this.length <= 1){
+			return this }
+		this.metadata = { order: this.match().reverse() }
+		return this },
 
 	//
 	// 	Clone a page optionally asigning data into it...
@@ -1784,6 +1826,14 @@ object.Constructor('Page', BasePage, {
 
 	// page parser...
 	//
+	/* XXX do we actually need this???
+	__macroParseArgs: function(args, skip, state){
+		for(var [key, value] of Object.entries(args)){
+			if(skip.includes(skip)){
+				continue }
+			typeof(value) == 'string'
+				&& args[key] = this.parse(value, state) } },
+	//*/
 	__parser__: module.parser,
 	parse: function(text, state){
 		// .parser(<state>)
@@ -2027,6 +2077,10 @@ pwiki
 	.update({
 		location: '/test/c/y',
 		text: 'y',
+	})
+	.update({
+		location: '/test/d/z',
+		text: 'z',
 	})
 //*/
 
