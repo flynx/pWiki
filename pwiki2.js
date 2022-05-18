@@ -221,6 +221,7 @@ module.BaseStore = {
 		this.__data = value },
 
 
+	// XXX might be a good idea to cache this...
 	__paths__: function(){
 		return Object.keys(this.data) },
 	paths: function(local=false){
@@ -261,16 +262,6 @@ module.BaseStore = {
 			// normalize the output...
 			|| false },
 
-	/*/ XXX do we actually need this???
-	// 		...this is the same as .get('**')
-	// XXX NEXT not sure how to implement .next protocol here...
-	pages: function(){
-		var that = this
-		return this.paths()
-			.map(function(p){
-				return [p, that.data[p]] }) },
-	//*/
-
 	// 
 	// 	Resolve page for path
 	// 	.match(<path>)
@@ -293,7 +284,7 @@ module.BaseStore = {
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
-			var order = (this.metadata(path) || {}).order || []
+			var order = (this.metadata(path) ?? {}).order || []
 			// NOTE: we are matching full paths only here so leading and 
 			// 		trainling '/' are optional...
 			var pattern = new RegExp(`^\\/?${
@@ -355,11 +346,32 @@ module.BaseStore = {
 				?? ((this.next || {}).__get__ 
 					&& this.next.__get__(path))) },
 
-	// NOTE: setting metadata is done via .update(..)
-	metadata: function(path){
+	//
+	// 	Get metadata...
+	// 	.metadata(<path>)
+	// 		-> <metadata>
+	// 		-> undefined 
+	//
+	//	Set metadata...
+	//	.metadata(<path>, <data>[, <mode>])
+	//	.update(<path>, <data>[, <mode>])
+	//
+	//	Delete metadata...
+	//	.delete(<path>)
+	//
+	// NOTE: .metadata(..) is the same as .data but supports pattern paths 
+	// 		and does not try to acquire a target page.
+	// NOTE: setting/removing metadata is done via .update(..) / .delete(..)
+	// NOTE: this uses .__get__(..) internally...
+	metadata: function(path, ...args){
+		// set...
+		if(args.length > 0){
+			return this.update(path, ...args) }
+		// get...
 		path = this.exists(path)
 		return path 
-			&& this.__get__(path) },
+			&& this.__get__(path) 
+			|| undefined },
 
 	// NOTE: deleting and updating only applies to explicit matching 
 	// 		paths -- no page acquisition is performed...
@@ -802,6 +814,7 @@ object.Constructor('BasePage', {
 
 	// sorting...
 	//
+	// XXX should this be page-level (current) store level???
 	sort: function(cmp){
 		// not sorting single pages...
 		if(this.length <= 1){
@@ -1852,6 +1865,7 @@ object.Constructor('Page', BasePage, {
 	// raw page text...
 	//
 	// NOTE: writing to .raw is the same as writing to .text...
+	//
 	// XXX for multiple pages matching, should this get one of the pages 
 	// 		or all (current) of the pages???
 	get raw(){
@@ -1890,6 +1904,7 @@ object.Constructor('Page', BasePage, {
 	// expanded page text...
 	//
 	// NOTE: writing to .raw is the same as writing to .text...
+	//
 	// XXX FUNC handle functions as pages...
 	// XXX need to support pattern pages...
 	get text(){
