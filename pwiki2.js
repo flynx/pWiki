@@ -26,9 +26,6 @@
 * 		- per page
 * 		- global
 *
-* XXX might be a good idea to add defaults (non-page) for the basic 
-* 		pages -- NotFound
-*
 * XXX need to think about search -- page function argument syntax???
 *
 * XXX might need to get all the links (macro-level) from a page...
@@ -215,7 +212,6 @@ module.path = {
 // XXX BUG: mixing up '/' and '' paths...
 // XXX LEADING_SLASH should this be strict about leading '/' in paths???
 // 		...this may lead to duplicate paths created -- '/a/b' and 'a/b'
-// XXX need to ensure that that at least NotFound page is resoled...
 // XXX should we support page symlinking???
 var BaseStore = 
 module.BaseStore = {
@@ -1883,6 +1879,7 @@ object.Constructor('Page', BasePage, {
 	get raw(){
 		var that = this
 		var data = this.data
+
 		// no data...
 		// NOTE: if we hit this it means that nothing was resolved, 
 		// 		not even the System/NotFound page, i.e. something 
