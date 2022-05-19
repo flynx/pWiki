@@ -109,12 +109,17 @@ module.path = {
 					undefined
 				: e == '..' 
 						|| res[res.length-1] == '>>' ?
-					res.pop()
+					((res.length > 1 
+							|| res[0] != '')
+						&& res.pop())
 				// NOTE: the last '>>' will be retained...
 				: res.push(e)
 				return res }, []) 
 		return format == 'string' ?
-			path.join('/') 
+			// special case: [''] -> '/'
+			((path.length == 1 && path[0] == '') ?
+				('/'+ path.join('/'))
+				: path.join('/'))
 			: path },
 	relative: function(parent, path, format='auto'){
 		format = format == 'auto' ?
