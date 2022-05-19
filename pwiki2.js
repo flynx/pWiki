@@ -219,8 +219,8 @@ module.BaseStore = {
 	// XXX NEXT need to think about this...
 	next: undefined,
 
-	// XXX should this be a prop???
-	// 		...if yes then remove unnecessary "this.data ?? {}" checks...
+	// NOTE: .data is not part of the spec and can be implementation-specific,
+	// 		only .__<name>__(..) use it internally... (XXX check this)
 	__data: undefined,
 	get data(){
 		return this.__data 
