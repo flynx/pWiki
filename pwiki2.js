@@ -92,6 +92,8 @@ module.path = {
 				'array'
 				: 'string')
 			: format
+		var root = path[0] == '' 
+			|| path[0] == '/'
 		path = (path instanceof Array ?
 				path
 				// NOTE: this will also trim the path elements...
@@ -116,8 +118,10 @@ module.path = {
 				: res.push(e)
 				return res }, []) 
 		return format == 'string' ?
-			// special case: [''] -> '/'
-			((path.length == 1 && path[0] == '') ?
+			// special case: root -> keep '/'
+			((root 
+					&& path.length == 1 
+					&& path[0] == '') ?
 				('/'+ path.join('/'))
 				: path.join('/'))
 			: path },
@@ -127,14 +131,17 @@ module.path = {
 				'array'
 				: 'string')
 			: format
-		path = this.normalize(path, 'array')
 		// root path...
-		if(path[0] == ''){
-			return format == 'string' ? 
-				path.join('/')
-				: path }
-		parent = this.normalize(parent, 'array')
-		return this.normalize(parent.concat(path), format) },
+		if(path[0] == '' || path[0] == '/'){
+			return this.normalize(path, format) }
+		// unify parent/path types...
+		parent = parent instanceof Array ?
+			parent
+			: parent.split(/\s*[\\\/]+\s*/)
+		path = path instanceof Array ?
+			path
+			: path.split(/\s*[\\\/]+\s*/)
+		return this.normalize([...parent, ...path], format) },
 
 	paths: function*(path='/'){
 		path = this.normalize(path, 'array')
