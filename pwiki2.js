@@ -60,23 +60,26 @@ var types = require('ig-types')
 var path = 
 module.path = {
 
-	// The page returned when getting the '/' path...
-	ROOT_PAGE: 'WikiHome',
-
 	// The page returned when listing a path ending with '/'...
 	//
 	// If set to false treat dirs the same as pages (default)
-	// XXX revise...
-	//DEFAULT_DIR: 'pages',
-	DEFAULT_DIR: false,
+	//INDEX_PAGE: 'index',
+	INDEX_PAGE: false,
+
+	// The page returned when getting the '/' path...
+	//
+	// NOTE: this is the same as .INDEX_PAGE but only for '/'
+	ROOT_PAGE: 'WikiHome',
 
 	ALTERNATIVE_PAGES: [
 		'EmptyPage',
 		'NotFound',
 	],
 
+	// NOTE: if a path here is relative it is also searched relative to 
+	// 		the target path.
 	SEARCH_PATHS: [
-		'./Theme/CLI',
+		//'./Theme/CLI',
 		'./Templates',
 		'/System',
 	],
@@ -122,6 +125,20 @@ module.path = {
 				('/'+ path.join('/'))
 				: path.join('/'))
 			: path },
+	split: function(path){
+		return this.normalize(path, 'array') },
+	join: function(...parts){
+		return this.normalize(
+			(parts[0] instanceof Array ?
+					parts[0]
+					: parts)
+				.join('/'), 
+			'string') },
+	basename: function(path){
+		return this.split(path).pop() },
+	dirname: function(path){
+		return this.relative(path, '..', 'string') },
+
 	relative: function(parent, path, format='auto'){
 		format = format == 'auto' ?
 			(path instanceof Array ?
@@ -140,49 +157,54 @@ module.path = {
 			: path.split(/\s*[\\\/]+\s*/)
 		return this.normalize([...parent, ...path], format) },
 
-	paths: function*(path='/'){
-		path = this.normalize(path, 'array')
-		// handle '', '.', and '/' paths...
-		if(path.length == 0 
-				|| (path.length == 1 && path[0] == '')
-				|| (path.length == 2 && path[0] == '' && path[1] == '')){
-			path = [this.ROOT_PAGE] }
+	// Build alternative paths for page acquisition...
+	//
+	// NOTE: if seen is given (when called recursively) this will not 
+	// 		search for .ALTERNATIVE_PAGES...
+	// XXX should we normalize '' to '/' here???
+	paths: function*(path='/', seen){
+		var alt_pages = !seen
+		seen = seen 
+			?? new Set()
+		path = this.normalize(path, 'string')
+		// special case: root...
+		if(path == '/' || path == ''){
+			// XXX should we normalize '' to '/' here???
+			//path = '/'
+			// as-is...
+			seen.add(path)
+			yield path
+			// special case: root page...
+			if(this.ROOT_PAGE){
+				yield* this.paths(this.normalize('/'+ this.ROOT_PAGE, 'string'), seen) }}
+		// NOTE: since path is already normalized we can trust the delimiter...
+		path = path.split(/\//g)
 		// normalize relative paths to root...
 		path[0] != ''
 			&& path.unshift('')
 		// paths ending in '/' -- dir lister...
 		if(path[path.length-1] == ''){
 			path.pop()
-			this.DEFAULT_DIR
-				&& path.push(this.DEFAULT_DIR) }
-		// generate path candidates...
-		for(var page of [path.pop(), ...this.ALTERNATIVE_PAGES]){
-			for(var tpl of ['.', ...this.SEARCH_PATHS]){
-				// search for page up the path...
-				var p = path.slice()
-				while(p.length > 0){
-					yield this.relative(p, tpl +'/'+ page, 'string')
-					//yield leading_slash ? 
-					//	this.relative(p, tpl +'/'+ page, 'string')
-					//	: this.relative(p, tpl +'/'+ page, 'string').slice(1)
-					// special case: non-relative template/page path...
-					if(tpl[0] == '/'){
-						break }
-					p.pop() } } } },
-
-	split: function(path){
-		return this.normalize(path, 'array') },
-	join: function(...parts){
-		return this.normalize(
-			(parts[0] instanceof Array ?
-					parts[0]
-					: parts)
-				.join('/'), 
-			'string') },
-	basename: function(path){
-		return this.split(path).pop() },
-	dirname: function(path){
-		return this.relative(path, '..', 'string') },
+			this.INDEX_PAGE
+				&& path.push(this.INDEX_PAGE) }
+		// search for page...
+		var page = path.pop()
+		for(var tpl of ['.', ...this.SEARCH_PATHS]){
+			// search for page up the path...
+			var p = path.slice()
+			while(p.length > 0){
+				var cur = this.relative(p, tpl +'/'+ page, 'string')
+				if(!seen.has(cur)){
+					seen.add(cur)
+					yield cur }
+				// special case: non-relative template/page path...
+				if(tpl[0] == '/'){
+					break }
+				p.pop() } }
+		// alternative pages...
+		if(alt_pages){
+			for(var page of [...this.ALTERNATIVE_PAGES]){
+				yield* this.paths(path.concat(page), seen) }} },
 }
 
 
