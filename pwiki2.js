@@ -1806,6 +1806,10 @@ object.Constructor('Page', BasePage, {
 		// XXX ELSE_PRIO should else attr take priority over the <else> tag???
 		// 		...currently as with text=... the attr takes priority...
 		// XXX SORT sorting not implemented yet....
+		// XXX should support arrays...
+		// 		e.g. 
+		// 			<macro src="/test/*/resolved"> ... </macro>
+		// 		...does not work yet...
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'else', ['strict', 'nonstrict']],
 			function(args, body, state){
@@ -1866,9 +1870,8 @@ object.Constructor('Page', BasePage, {
 							: undefined }
 
 					// sort pages...
+					// XXX SORT
 					if(sort.length > 0){
-						// XXX SORT
-						//throw new Error('macro sort: not implemented')
 						console.log('XXX: macro sort: not implemented')
 					}
 
@@ -1884,14 +1887,6 @@ object.Constructor('Page', BasePage, {
 
 	// page parser...
 	//
-	/* XXX do we actually need this???
-	__macroParseArgs: function(args, skip, state){
-		for(var [key, value] of Object.entries(args)){
-			if(skip.includes(skip)){
-				continue }
-			typeof(value) == 'string'
-				&& args[key] = this.parse(value, state) } },
-	//*/
 	__parser__: module.parser,
 	parse: function(text, state){
 		// .parser(<state>)
@@ -1953,12 +1948,6 @@ object.Constructor('Page', BasePage, {
 			.join('\n') },
 	set text(value){
 		this.store.update(this.location, {text: value}) },
-
-	/*/ XXX
-	get index(){},
-	set index(value){},
-	//*/
-
 })
 
 
