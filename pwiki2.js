@@ -56,11 +56,11 @@ var types = require('ig-types')
 //---------------------------------------------------------------------
 // Path...
 
-// XXX make this compatible with node's path API...
+// XXX still some questions...
 var path = 
 module.path = {
 
-	// The page returned when listing a path ending with '/'...
+	// Page returned when listing a path ending with '/'...
 	//
 	// If set to false treat dirs the same as pages (default)
 	//INDEX_PAGE: 'index',
@@ -161,7 +161,8 @@ module.path = {
 	//
 	// NOTE: if seen is given (when called recursively) this will not 
 	// 		search for .ALTERNATIVE_PAGES...
-	// XXX should we normalize '' to '/' here???
+	// XXX should we normalize input '' to '/' or return it as-is???
+	// XXX should we keep the trailing '/'???
 	paths: function*(path='/', seen){
 		var alt_pages = !seen
 		seen = seen 
@@ -169,8 +170,8 @@ module.path = {
 		path = this.normalize(path, 'string')
 		// special case: root...
 		if(path == '/' || path == ''){
-			// XXX should we normalize '' to '/' here???
-			//path = '/'
+			// normalize...
+			path = '/'
 			// as-is...
 			seen.add(path)
 			yield path
@@ -182,7 +183,7 @@ module.path = {
 		// normalize relative paths to root...
 		path[0] != ''
 			&& path.unshift('')
-		// paths ending in '/' -- dir lister...
+		// paths ending in '/'...
 		if(path[path.length-1] == ''){
 			path.pop()
 			this.INDEX_PAGE
@@ -231,7 +232,6 @@ module.path = {
 //
 // NOTE: store keys must be normalized...
 //
-// XXX BUG: mixing up '/' and '' paths...
 // XXX LEADING_SLASH should this be strict about leading '/' in paths???
 // 		...this may lead to duplicate paths created -- '/a/b' and 'a/b'
 // XXX should we support page symlinking???
@@ -408,9 +408,6 @@ module.BaseStore = {
 	// NOTE: edit methods are local-only...
 	//
 	// XXX do we copy the data here or modify it????
-	// XXX BUG: for path '/' this adds an entry at '', but when getting 
-	// 		'/', the later is not found...
-	// XXX BUG: updating a pattern path will result in a broken store...
 	__update__: function(key, data, mode='update'){
 		this.data[key] = data 
 		return this },
@@ -786,10 +783,9 @@ object.Constructor('BasePage', {
 	
 	// page data...
 	//
-	// XXX FUNC handle functions as pages...
-	// XXX need to support pattern pages...
+	strict: undefined,
 	get data(){
-		return this.store.get(this.location) },
+		return this.store.get(this.location, !!this.strict) },
 	set data(value){
 		this.store.update(this.location, value) },
 
@@ -811,17 +807,32 @@ object.Constructor('BasePage', {
 
 	// relative proxies to store...
 	exists: relProxy('exists'), 
-	match: relProxy('match'), 
+	match: function(path='.', strict=this.strict){
+		if(path === true || path === false){
+			strict = path
+			path = '.' }
+		return this.store.match(
+			module.path.relative(this.location, path), 
+			strict) },
 	delete: function(path='.'){
 		this.store.delete(module.path.relative(this.location, path))
 		return this },
 
-	// XXX how should this handle functions as values???
-	get: function(path, referrer){
+	//
+	// 	.get(<path>[, <data>])
+	// 	.get(<path>, <strict>[, <data>])
+	// 		-> <page>
+	//
+	get: function(path, strict, data={}){
+		if(strict instanceof Object){
+			data = strict
+			strict = undefined }
 		return this.clone({
 				location: path, 
-				referrer: referrer 
+				...data,
+				referrer: data.referrer 
 					?? this.location,
+				strict,
 			}) },
 
 	// XXX should this be an iterator???
@@ -952,7 +963,6 @@ module.BaseParser = {
 	// 	STOP -- '\\>' or ')'
 	// 	PREFIX -- 'inline' or 'elem'
 	//
-	// XXX BUG: @now(a) is not matched....
 	// XXX quote escaping???
 	// 		/(?<quote>['"])(\\\k<quote>|[^\1])*\k<quote>/
 	// 		...this will work but we'll also need to remove the \ in the 
@@ -1791,11 +1801,13 @@ object.Constructor('Page', BasePage, {
 		// 		</else>
 		// 	</macro>
 		//
+		// NOTE: if both strict and nonstrict are given the later takes 
+		// 		precedence.
 		// XXX ELSE_PRIO should else attr take priority over the <else> tag???
 		// 		...currently as with text=... the attr takes priority...
 		// XXX SORT sorting not implemented yet....
 		macro: Macro(
-			['name', 'src', 'sort', 'text', 'else'],
+			['name', 'src', 'sort', 'text', 'else', ['strict', 'nonstrict']],
 			function(args, body, state){
 				var that = this
 				var name = args.name //?? args[0]
@@ -1811,6 +1823,8 @@ object.Constructor('Page', BasePage, {
 				text = typeof(text) == 'string' ?
 					[...this.__parser__.group(this, text+'</macro>', 'macro')]
 					: text
+				var strict = args.strict
+					&& !args.nonstrict
 
 				if(name){
 					name = this.parse(name, state)
@@ -1824,7 +1838,7 @@ object.Constructor('Page', BasePage, {
 
 				if(src){
 					src = this.parse(src, state)
-					var pages = this.get(src).each()
+					var pages = this.get(src, strict).each()
 					// no matching pages -> get the else block...
 					if(pages.length == 0 
 							&& (text || args['else'])){
@@ -1854,7 +1868,8 @@ object.Constructor('Page', BasePage, {
 					// sort pages...
 					if(sort.length > 0){
 						// XXX SORT
-						throw new Error('macro sort: not implemented')
+						//throw new Error('macro sort: not implemented')
+						console.log('XXX: macro sort: not implemented')
 					}
 
 					// apply macro text...
@@ -1885,23 +1900,21 @@ object.Constructor('Page', BasePage, {
 				&& !(text instanceof Array)){
 			state = text
 			text = null }
-		// NOTE: we do not need to pass this.raw here but it is still 
-		// 		here for illustration...
-		return this.__parser__.parse(this, 
-			text ?? this.raw, 
-			state ?? {}) },
+		state = state ?? {}
+		text = text ?? this.raw
+		if(text instanceof Array){
+			return text.map(function(text){
+				return this.__parser__.parse(this, text, state) }.bind(this)) }
+		return this.__parser__.parse(this, text, state) },
 
 
 	// raw page text...
 	//
 	// NOTE: writing to .raw is the same as writing to .text...
-	//
-	// XXX for multiple pages matching, should this get one of the pages 
-	// 		or all (current) of the pages???
+	// NOTE: when matching multiple pages this will return a list...
 	get raw(){
 		var that = this
 		var data = this.data
-
 		// no data...
 		// NOTE: if we hit this it means that nothing was resolved, 
 		// 		not even the System/NotFound page, i.e. something 
@@ -1920,14 +1933,13 @@ object.Constructor('Page', BasePage, {
 			// multiple matches...
 			// XXX should this get one of the pages or all of the pages???
 			// XXX should we use a special template to render???
-			// XXX should this return an array???
 			: data instanceof Array ?
 				data
 					.map(function(d){
 						return d instanceof Function ?
 							d.call(that)
 							: d.text })
-					.join('\n')
+					.flat()
    			: data.text },
 	set raw(value){
 		this.store.update(this.location, {text: value}) },
@@ -1935,11 +1947,10 @@ object.Constructor('Page', BasePage, {
 	// expanded page text...
 	//
 	// NOTE: writing to .raw is the same as writing to .text...
-	//
-	// XXX FUNC handle functions as pages...
-	// XXX need to support pattern pages...
 	get text(){
-		return this.parse() },
+		return [this.parse()]
+			.flat()
+			.join('\n') },
 	set text(value){
 		this.store.update(this.location, {text: value}) },
 
@@ -1993,8 +2004,6 @@ var System = {
 		return this.get('..').path },
 	location: function(){
 		return this.get('..').path },
-	resolved: function(){
-		return this.get('..').match() },
 	dir: function(){
 		return this.get('..').dir },
 	name: function(){
@@ -2003,6 +2012,10 @@ var System = {
 		return this.get('..').data.ctime },
 	mtime: function(){
 		return this.get('..').data.mtime },
+
+	// XXX this can be a list for pattern paths...
+	resolved: function(){
+		return this.get('..').match() },
 
 	title: function(){
 		var p = this.get('..')
@@ -2064,12 +2077,34 @@ store.load(require('./bootstrap'))
 console.log('loading test page...')
 pwiki
 	.update({
+		location: '/test/a',
+		text: 'a',
+	})
+	.update({
+		location: '/test/b',
+		text: 'b',
+	})
+	.update({
+		location: '/test/c',
+		text: 'c',
+	})
+	.update({
+		location: '/test/c/x',
+		text: 'x',
+	})
+	.update({
+		location: '/test/c/y',
+		text: 'y',
+	})
+	.update({
+		location: '/test/d/z',
+		text: 'z',
+	})
+	.update({
 		location: '/page',
 		text: 'PAGE\n'
 			+'\n'
-			// XXX BUG this is parsed incorrectly -- macro pattern...
-			//+'@include(/test recursive="Recursion type 2 (<now/>)")\n',
-			+'@include(/test recursive="Recursion type 2 <now/>")\n'
+			+'@include(/test recursive="Recursion type 2 (<now/>)")\n'
 			+'\n'
 			+'@slot(name=b text="filled slot")\n',
 	})
@@ -2094,39 +2129,13 @@ pwiki
 			+'Including /other #1: @include(/other)\n'
 			+'Including /other #2: @include(/other)\n'
 			+'\n'
-			// XXX BUG this is parsed incorrectly -- macro pattern...
-			//+'Including /test: @include(/test recursive="Recursion type 1 (<now/>)")\n'
-			+'Including /test: @include(/test recursive="Recursion type 1 <now/>")\n'
+			+'Including /test: @include(/test recursive="Recursion type 1 (<now/>)")\n'
 			+'\n'
-			+'Including /page: @include(/page)\n'
+			+'Including /page: @include(/page recursive="...")\n'
 			+'\n'
 			+'Including /: \\@include(/)\n'
 			+'\n'
 			+'@filter(test)',
-	})
-	.update({
-		location: '/test/a',
-		text: 'a',
-	})
-	.update({
-		location: '/test/b',
-		text: 'b',
-	})
-	.update({
-		location: '/test/c',
-		text: 'c',
-	})
-	.update({
-		location: '/test/c/x',
-		text: 'x',
-	})
-	.update({
-		location: '/test/c/y',
-		text: 'y',
-	})
-	.update({
-		location: '/test/d/z',
-		text: 'z',
 	})
 //*/
 
