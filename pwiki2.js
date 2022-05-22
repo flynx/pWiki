@@ -362,7 +362,7 @@ module.BaseStore = {
 	//
 	// XXX should this be used by .get(..) instead of .match(..)???
 	// XXX EXPERIMENTAL 
-	resolve: function(path){
+	resolve: function(path, strict){
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
@@ -374,11 +374,11 @@ module.BaseStore = {
 					&& !name.includes('*')){
 				path.pop()
 				path.push('')
-				return this.match(path.join('/'), true)
+				return this.match(path.join('/'), strict)
 					.map(function(p){
 						return module.path.join(p, name) }) } }
 		// direct...
-		return this.match(path) },
+		return this.match(path, strict) },
 	// 
 	// 	Resolve page
 	// 	.get(<path>)
@@ -402,7 +402,8 @@ module.BaseStore = {
 		return this.data[key] },
 	get: function(path, strict=false){
 		var that = this
-		path = this.match(path, strict)
+		//path = this.match(path, strict)
+		path = this.resolve(path, strict)
 		return path instanceof Array ?
 			// XXX should we return matched paths???
    			path.map(function(p){
@@ -455,7 +456,7 @@ module.BaseStore = {
 		path = exists
 			|| module.path.normalize(path, 'string')
 		data = 
-			data instanceof Function ?
+			typeof(data) == 'function' ?
 				data
 				: Object.assign(
 					{
@@ -519,7 +520,7 @@ module.BaseStore = {
 var metaProxy = 
 function(meth, drop_cache=false, post){
 	var target = meth.replace(/__/g, '')
-	if(drop_cache instanceof Function){
+	if(typeof(drop_cache) == 'function'){
 		post = drop_cache
 		drop_cache = false }
 	return function(path, ...args){
@@ -688,6 +689,15 @@ function(name){
 		return this.store[name](
 			module.path.relative(this.location, path), 
 			...args) } } 
+var relMatchProxy = 
+function(name){
+	return function(path='.', strict=this.strict){
+		if(path === true || path === false){
+			strict = path
+			path = '.' }
+		return this.store[name](
+			module.path.relative(this.location, path), 
+			strict) } }
 
 // XXX PATH_VARS
 // XXX HISTORY do we need history management??? 
@@ -780,6 +790,8 @@ object.Constructor('BasePage', {
 		return module.path.relative(this.location, '..') },
 	// XXX should writing to this move the page???
 	//set dir(value){ },
+	get isPattern(){
+		return this.location.includes('*') },
 
 
 	// history...
@@ -824,7 +836,18 @@ object.Constructor('BasePage', {
 	//
 	strict: undefined,
 	get data(){
-		return this.store.get(this.location, !!this.strict) },
+		// NOTE: we need to make sure each page gets the chance to handle 
+		// 		its context....
+		if(this.isPattern){
+			return this
+				.map(function(page){
+					return page.data }) }
+		// single page...
+		var res = this.store.get(this.location, !!this.strict)
+		return typeof(res) == 'function' ?
+			res.bind(this)
+			: res },
+		//return this.store.get(this.location, !!this.strict) },
 	set data(value){
 		this.store.update(this.location, value) },
 
@@ -839,20 +862,15 @@ object.Constructor('BasePage', {
 
 	// number of matching pages...
 	get length(){
-		var p = this.match(this.location)
+		var p = this.resolve(this.location)
 		return p instanceof Array ?
 			p.length
 			: 1 },
 
 	// relative proxies to store...
 	exists: relProxy('exists'), 
-	match: function(path='.', strict=this.strict){
-		if(path === true || path === false){
-			strict = path
-			path = '.' }
-		return this.store.match(
-			module.path.relative(this.location, path), 
-			strict) },
+	match: relMatchProxy('match'), 
+	resolve: relMatchProxy('resolve'),
 	delete: function(path='.'){
 		this.store.delete(module.path.relative(this.location, path))
 		return this },
@@ -877,7 +895,8 @@ object.Constructor('BasePage', {
 	// XXX should this be an iterator???
 	each: function(path){
 		var that = this
-		var paths = this.match(path)
+		//var paths = this.match(path)
+		var paths = this.resolve(path)
 		paths = paths instanceof Array ? 
 			paths 
 			: [paths]
@@ -1377,7 +1396,7 @@ module.BaseParser = {
 			// macro...
 			var {name, args, body} = value
 			// nested macro -- skip...
-			if(!(page.macros[name] instanceof Function)){
+			if(typeof(page.macros[name]) != 'function'){
 				continue }
 			// args...
 			args = this.parseArgs.call(page,
@@ -1418,7 +1437,7 @@ module.BaseParser = {
 		return [...ast]
 			// post handlers...
 			.map(function(section){
-				return section instanceof Function ? 
+				return typeof(section) == 'function' ? 
 					section.call(page, state)
 					: section })
 			.flat()
@@ -1961,7 +1980,7 @@ object.Constructor('Page', BasePage, {
 				return msg }
 			throw new Error(msg) }
 		// get the data...
-		return data instanceof Function ?
+		return typeof(data) == 'function' ?
 				// XXX FUNC not sure about this...
 				data.call(this)
 			// multiple matches...
@@ -1970,7 +1989,7 @@ object.Constructor('Page', BasePage, {
 			: data instanceof Array ?
 				data
 					.map(function(d){
-						return d instanceof Function ?
+						return typeof(d) == 'function'?
 							d.call(that)
 							: d.text })
 					.flat()
