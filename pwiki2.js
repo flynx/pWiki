@@ -350,12 +350,11 @@ module.BaseStore = {
 	// 		a non-pattern then match the basedir and then add the basename
 	// 		to each resulting path...
 	// XXX EXPERIMENTAL 
-	match2: function(path, strict=false){
+	resolve: function(path){
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
 			path = module.path.split(path)
-
 			// match basedir and addon basename to the result...
 			var name = path[path.length-1]
 			if(name 
@@ -363,42 +362,11 @@ module.BaseStore = {
 					&& !name.includes('*')){
 				path.pop()
 				path.push('')
-				return this.match2(path.join('/'), strict)
+				return this.match(path.join('/'), false)
 					.map(function(p){
-						return module.path.join(p, name) }) }
-
-			var order = (this.metadata(path) ?? {}).order || []
-			// NOTE: we are matching full paths only here so leading and 
-			// 		trainling '/' are optional...
-			// NOTE: we ensure that we match full names and always split 
-			// 		at '/' only...
-			var pattern = new RegExp(`^\\/?${
-					module.path.normalize(path, 'string')
-						.replace(/^\/|\/$/g, '')
-						.replace(/\//g, '\\/')
-						.replace(/\*\*/g, '.+')
-						.replace(/\*/g, '[^\\/]+') 
-				}(?=[\\\\\/]|$)`)
-			return [...this.paths()
-					// NOTE: we are not using .filter(..) here as wee 
-					// 		need to keep parts of the path only and not 
-					// 		return the whole thing...
-					.reduce(function(res, p){
-						// skip metadata paths...
-						if(p.includes('*')){
-							return res }
-						var m = p.match(pattern)
-						m
-							&& (!strict 
-								|| m[0] == p) 
-							&& res.add(m[0])
-						return res }, new Set())]
-			   .sortAs(order) }
+						return module.path.join(p, name) }) } }
 		// direct...
-		for(var p of module.path.paths(path)){
-			p = this.exists(p)
-			if(p){
-				return p } } },
+		return this.match(path, false) },
 	// 
 	// 	Resolve page
 	// 	.get(<path>)
