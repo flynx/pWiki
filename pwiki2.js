@@ -1671,12 +1671,14 @@ object.Constructor('Page', BasePage, {
 				var parent_seen = state[key]
 				var seen = state[key] = 
 					(state[key] ?? [this.location]).slice()
-				var target = this.match(src)
+				//var target = this.match(src)
+				var target = this.resolve(src)
 				target = target instanceof Array ?
 					target.join(',')
 					: target
 				// recursion detected...
-				if(this.match() == this.match(src)
+				//if(this.match() == this.match(src)
+				if(this.resolve() == this.resolve(src)
 						|| seen.includes(src)){
 					//* XXX this prevents recursion...
 					if(!recursive){
@@ -2062,7 +2064,7 @@ var System = {
 
 	// XXX this can be a list for pattern paths...
 	resolved: function(){
-		return this.get('..').match() },
+		return this.get('..').resolve() },
 
 	title: function(){
 		var p = this.get('..')
