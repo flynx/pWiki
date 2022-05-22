@@ -301,10 +301,12 @@ module.BaseStore = {
 	// 	.match(<pattern>)
 	// 	.match(<pattern>, false)
 	// 		-> [<path>, ...]
+	// 		-> []
 	//
 	// 	Match pages (paths in strict mode)
 	// 	.match(<pattern>, true)
 	// 		-> [<path>, ...]
+	// 		-> []
 	//
 	// In strict mode the trailing star in the pattern will only match 
 	// actual existing pages, while in non-strict mode the pattern will 
@@ -346,9 +348,19 @@ module.BaseStore = {
 			p = this.exists(p)
 			if(p){
 				return p } } },
-	// XXX like .match(..) when paths end in '/' but when paths end with 
-	// 		a non-pattern then match the basedir and then add the basename
-	// 		to each resulting path...
+	//
+	// 	.resolve(<path>)
+	// 		-> <path>
+	//
+	// 	.resolve(<pattern>)
+	// 		-> [<path>, ...]
+	// 		-> []
+	//
+	// This is like .match(..) for non-pattern paths and paths ending 
+	// with '/'; When patterns end with a non-pattern then match the 
+	// basedir and add the basename to each resulting path...
+	//
+	// XXX should this be used by .get(..) instead of .match(..)???
 	// XXX EXPERIMENTAL 
 	resolve: function(path){
 		// pattern match * / **
@@ -362,11 +374,11 @@ module.BaseStore = {
 					&& !name.includes('*')){
 				path.pop()
 				path.push('')
-				return this.match(path.join('/'), false)
+				return this.match(path.join('/'), true)
 					.map(function(p){
 						return module.path.join(p, name) }) } }
 		// direct...
-		return this.match(path, false) },
+		return this.match(path) },
 	// 
 	// 	Resolve page
 	// 	.get(<path>)
