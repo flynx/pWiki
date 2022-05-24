@@ -292,6 +292,11 @@ module.BaseStore = {
 			// normalize the output...
 			|| false },
 
+	find: function(path){
+		for(var p of module.path.paths(path)){
+			p = this.exists(p)
+			if(p){
+				return p } } },
 	// 
 	// 	Resolve page for path
 	// 	.match(<path>)
@@ -343,11 +348,8 @@ module.BaseStore = {
 							&& res.add(m[0])
 						return res }, new Set())]
 			   .sortAs(order) }
-		// direct...
-		for(var p of module.path.paths(path)){
-			p = this.exists(p)
-			if(p){
-				return p } } },
+		// direct search...
+		return this.find(path) },
 	//
 	// 	.resolve(<path>)
 	// 		-> <path>
@@ -881,6 +883,7 @@ object.Constructor('BasePage', {
 
 	// relative proxies to store...
 	exists: relProxy('exists'), 
+	find: relProxy('find'), 
 	match: relMatchProxy('match'), 
 	resolve: relMatchProxy('resolve'),
 	delete: function(path='.'){
@@ -1465,8 +1468,14 @@ module.BaseParser = {
 						that.normalizeFilters(state.filters)
 							.reduce(function(res, filter){
 								if(page.filters[filter] == null){
+									/* XXX
 									throw new Error(
 										'.parse(..): unsupported filter: '+ filter) }
+									/*/
+									console.warn(
+										'.parse(..): unsupported filter: '+ filter) 
+									return res }
+									//*/
 								return page.filters[filter].call(page, res) 
 									?? res }, section)
 					// no global filters...
@@ -1521,6 +1530,9 @@ object.Constructor('Page', BasePage, {
 
 	// list of macros that will get raw text of their content...
 	QUOTING_MACROS: ['quote'],
+
+	// templates used to render a page via .text
+	PAGE_TPL: '_text',
 
 	// NOTE: comment this out to make the system fail when nothing is 
 	// 		resolved, not even the System/NotFound page...
@@ -1688,26 +1700,13 @@ object.Constructor('Page', BasePage, {
 				var parent_seen = state[key]
 				var seen = state[key] = 
 					(state[key] ?? [this.location]).slice()
-				//var target = this.match(src)
-				var target = this.resolve(src)
-				target = target instanceof Array ?
-					target.join(',')
-					: target
 				// recursion detected...
-				//if(this.match() == this.match(src)
-				if(this.resolve() == this.resolve(src)
-						|| seen.includes(src)){
+				// XXX RECURSION revise this...
+				if(seen.includes(src)){
 					if(!recursive){
-						/* XXX RECURSION this prevents recursion...
 						throw new Error(
 							macro +': recursion detected: '
 								+ seen.concat([src]).join(' -> ')) }
-						/*/
-							// XXX
-							console.warn(
-								macro+': recursion detected: '
-									+ seen.concat([src]).join(' -> ')) } 
-						//*/
 					// have the 'recursive' arg...
 					return this.parse(recursive, state) }
 				seen.push(src)
@@ -1879,6 +1878,11 @@ object.Constructor('Page', BasePage, {
 		// 	<macro ...>
 		// 		...
 		//
+		//
+		// 		<join>
+		// 			...
+		// 		</join>
+		//
 		// 		<else>
 		// 			...
 		// 		</else>
@@ -1894,7 +1898,7 @@ object.Constructor('Page', BasePage, {
 		// 			<macro src="/test/*/resolved"> ... </macro>
 		// 		...does not work yet...
 		macro: Macro(
-			['name', 'src', 'sort', 'text', 'else', ['strict', 'nonstrict']],
+			['name', 'src', 'sort', 'text', 'join', 'else', ['strict', 'nonstrict']],
 			function(args, body, state){
 				var that = this
 				var name = args.name //?? args[0]
@@ -1912,6 +1916,26 @@ object.Constructor('Page', BasePage, {
 					: text
 				var strict = args.strict
 					&& !args.nonstrict
+
+				var _getBlock = function(name){
+					var block = args[name] ?
+						[{
+							args: {},
+							body: args[name],
+						}]
+						: (text ?? [])
+							.filter(function(e){ 
+								return typeof(e) != 'string' 
+									&& e.name == name })
+					if(block.length == 0){
+						return }
+					// NOTE: when multiple blocks are present the 
+					// 		last one is used...
+					block = block.pop()
+					block = 
+						block.args.text 
+							?? block.body
+					return block }
 
 				if(name){
 					name = this.parse(name, state)
@@ -1939,25 +1963,7 @@ object.Constructor('Page', BasePage, {
 					// no matching pages -> get the else block...
 					if(pages.length == 0 
 							&& (text || args['else'])){
-						// XXX ELSE_PRIO
-						var else_block = 
-							args['else'] ?
-								[{
-									args: {},
-									body: args['else'],
-								}] 
-								: (text ?? [])
-									.filter(function(e){ 
-										return typeof(e) != 'string' 
-											&& e.name == 'else' })
-						if(else_block.length == 0){
-							return }
-						// NOTE: when multiple <else> tags are present 
-						// 		the last one is used...
-						else_block = else_block.pop()
-						else_block = 
-							else_block.args.text 
-								?? else_block.body
+						var else_block = _getBlock('else')
 						return else_block ?
 							[...this.__parser__.expand(this, else_block, state)]
 							: undefined }
@@ -1968,14 +1974,21 @@ object.Constructor('Page', BasePage, {
 						console.log('XXX: macro sort: not implemented')
 					}
 
+					var join_block = _getBlock('join') 
 					// apply macro text...
 					return pages
-						.map(function(page){
-							return [...that.__parser__.expand(page, text, state)] })
+						.map(function(page, i){
+							return [
+								...that.__parser__.expand(page, text, state),
+								...((join_block && i < pages.length-1) ?
+									that.__parser__.expand(page, join_block, state)
+									: []),
+							] })
 						.flat() } }),
 
 		// nesting rules...
 		'else': ['macro'],
+		'join': ['macro'],
 	},
 
 	// page parser...
@@ -2042,11 +2055,16 @@ object.Constructor('Page', BasePage, {
 
 	// expanded page text...
 	//
+	// NOTE: this uses .PAGE_TPL to render the page.
 	// NOTE: writing to .raw is the same as writing to .text...
 	get text(){
-		return [this.parse()]
+		var tpl = '/'+ this.find('./'+ this.PAGE_TPL)
+		return [this.parse(
+				tpl.endsWith(this.PAGE_TPL) ?
+					[this.get(tpl).raw]
+					: [] )]
 			.flat()
-			.join('\n') },
+			.join('\n') }, 
 	set text(value){
 		//this.store.update(this.location, {text: value}) },
 		this.__update__({text: value}) },
@@ -2126,6 +2144,9 @@ module.store =
 
 
 var System = {
+	// XXX EXPERIMENTAL...
+	_text: {text: '<macro src="." join="\n">@source(.)</macro>'},
+
 	// XXX tests...
 	test_list: function(){
 		return 'abcdef'.split('') },
