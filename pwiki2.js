@@ -499,7 +499,6 @@ module.BaseStore = {
 			next: this,
 			data: {}
 		} },
-
 }
 
 
@@ -973,7 +972,6 @@ object.Constructor('BasePage', {
 	//
 	// NOTE: <clone-history> by default is false unless fully cloning
 	//
-	// XXX revise...
 	// XXX HISTORY should we clear history by default...
 	clone: function(data={}, history=false){
 		var [data, ...args] = [...arguments]
@@ -1010,6 +1008,12 @@ object.Constructor('BasePage', {
 			//*/
 			data) },
 
+	// Create a read-only page...
+	//
+	// NOTE: all pages that are created via a read-only page are also 
+	// 		read-only.
+	//
+	// XXX test .ro().virtual() combinations...
 	// XXX EXPERIMENTAL...
 	ro: function(data={}){
 		return Object.assign({
@@ -1018,6 +1022,16 @@ object.Constructor('BasePage', {
 			__delete__: function(){ return this },
 		},
 		data) },
+
+	// Create a virtual page at current path...
+	//
+	// Virtual pages do not affect store data in any way but behave like 
+	// normal pages.
+	//
+	// NOTE: .get(..) / .clone(..) will return normal non-virtual pages
+	// 		unless the target path is the same as the virtual page .path...
+	//
+	// XXX test .ro().virtual() combinations...
 	// XXX should we be able to change path/location here???
 	// XXX EXPERIMENTAL...
 	virtual: function(data={}){
