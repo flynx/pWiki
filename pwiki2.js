@@ -2059,30 +2059,34 @@ object.Constructor('Page', BasePage, {
 			__delete__: function(){ return this },
 		},
 		data) },
-	// XXX EXPERIMENTAL...
 	// XXX should we be able to change path/location here???
+	// XXX EXPERIMENTAL...
 	virtual: function(text){
 		var that = this
-		return Object.assign({
+		return {
 			__proto__: this,
-
+			// make the location read-only...
+			get location(){
+				// NOTE: since we are not providing this as a basis for 
+				// 		inheritance we do not need to properly access 
+				// 		the parent prop...
+				// 		...otherwise use:
+				// 			object.parentProperty(..)
+				return this.__proto__.location },
 			__update__: function(data){ 
 				Object.assign(this.data, data)
 				return this },
 			__delete__: function(){ return this },
-
 			// NOTE: we need to proxy .clone(..) back to parent so as to 
 			// 		avoid overloading .data in the children too...
-			// XXX STUB...
 			clone: function(...args){
 				return that.clone(...args) },
-
 			data: {
 				ctime: Date.now(),
 				mtime: Date.now(),
 				text,
 			},
-		}) },
+		} },
 })
 
 
@@ -2158,14 +2162,12 @@ var System = {
 	links: function(){
 		// XXX
 		return '' },
-	// XXX links to current page...
+	// XXX links to pages...
 	to: function(){
-		// XXX
-		return '' },
-	// XXX links from current page...
+		return (this.get('..').data || {}).to ?? [] },
+	// XXX pages linking to us...
 	'from': function(){
-		// XXX
-		return '' },
+		return (this.get('..').data || {})['from'] ?? [] },
 
 
 	// actions...
