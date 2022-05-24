@@ -837,6 +837,7 @@ object.Constructor('BasePage', {
 	// store interface...
 	//
 	// XXX we are only doing modifiers here...
+	// 		...these ar mainly used to disable writing in .ro(..)
 	__update__: function(data){
 		this.store.update(this.location, data) 
 		return this },
@@ -911,6 +912,8 @@ object.Constructor('BasePage', {
 	// XXX should this be an iterator???
 	each: function(path){
 		var that = this
+		// NOTE: we are trying to avoid resolving non-pattern paths unless 
+		// 		we really have to...
 		path = path ?
 			module.path.relative(this.path, path)
 			: this.path
@@ -1006,6 +1009,47 @@ object.Constructor('BasePage', {
 				:{},
 			//*/
 			data) },
+
+	// XXX EXPERIMENTAL...
+	ro: function(data={}){
+		return Object.assign({
+			__proto__: this,
+			__update__: function(){ return this },
+			__delete__: function(){ return this },
+		},
+		data) },
+	// XXX should we be able to change path/location here???
+	// XXX EXPERIMENTAL...
+	virtual: function(data={}){
+		var that = this
+		return {
+			__proto__: this,
+			// make the location read-only...
+			get location(){
+				// NOTE: since we are not providing this as a basis for 
+				// 		inheritance we do not need to properly access 
+				// 		the parent prop...
+				// 		...otherwise use:
+				// 			object.parentProperty(..)
+				return this.__proto__.location },
+			__update__: function(data){ 
+				Object.assign(this.data, data)
+				return this },
+			__delete__: function(){ return this },
+			// NOTE: we need to proxy .clone(..) back to parent so as to 
+			// 		avoid overloading .data in the children too...
+			clone: function(...args){
+				var res = that.clone(...args) 
+				return res.path == this.path ?
+					that.virtual(data)
+					: res },
+			data: Object.assign(
+				{
+					ctime: Date.now(),
+					mtime: Date.now(),
+				},
+				data),
+		} },
 
 	// XXX should this be update or assign???
 	// XXX how should this work on multiple pages...
@@ -1962,7 +2006,7 @@ object.Constructor('Page', BasePage, {
 						// XXX should we wrap this in pages...
 						pages.raw
 							.map(function(data){
-								return that.virtual(data) })
+								return that.virtual({text: data}) })
 						: pages.each()
 					//*/
 					// no matching pages -> get the else block...
@@ -1983,7 +2027,6 @@ object.Constructor('Page', BasePage, {
 					// apply macro text...
 					return pages
 						.map(function(page, i){
-							console.log('---', page.path)
 							return [
 								...that.__parser__.expand(page, text, state),
 								...((join_block && i < pages.length-1) ?
@@ -2074,43 +2117,6 @@ object.Constructor('Page', BasePage, {
 	set text(value){
 		//this.store.update(this.location, {text: value}) },
 		this.__update__({text: value}) },
-
-	// XXX EXPERIMENTAL...
-	ro: function(data={}){
-		return Object.assign({
-			__proto__: this,
-			__update__: function(){ return this },
-			__delete__: function(){ return this },
-		},
-		data) },
-	// XXX should we be able to change path/location here???
-	// XXX EXPERIMENTAL...
-	virtual: function(text){
-		var that = this
-		return {
-			__proto__: this,
-			// make the location read-only...
-			get location(){
-				// NOTE: since we are not providing this as a basis for 
-				// 		inheritance we do not need to properly access 
-				// 		the parent prop...
-				// 		...otherwise use:
-				// 			object.parentProperty(..)
-				return this.__proto__.location },
-			__update__: function(data){ 
-				Object.assign(this.data, data)
-				return this },
-			__delete__: function(){ return this },
-			// NOTE: we need to proxy .clone(..) back to parent so as to 
-			// 		avoid overloading .data in the children too...
-			clone: function(...args){
-				return that.clone(...args) },
-			data: {
-				ctime: Date.now(),
-				mtime: Date.now(),
-				text,
-			},
-		} },
 })
 
 
