@@ -712,7 +712,7 @@ object.Constructor('BasePage', {
 	
 	// root page used to clone new instances via the .clone(..) method...
 	//root: undefined,
-
+	
 	// Path variables...
 	//
 	// XXX PATH_VARS should these be here???
@@ -832,6 +832,16 @@ object.Constructor('BasePage', {
 		return this.back(-offset) },
 	//*/
 	
+	// store interface...
+	//
+	// XXX we are only doing modifiers here...
+	__update__: function(data){
+		this.store.update(this.location, data) 
+		return this },
+	__delete__: function(path='.'){
+		this.store.delete(module.path.relative(this.location, path)) 
+		return this },
+
 	// page data...
 	//
 	strict: undefined,
@@ -849,7 +859,8 @@ object.Constructor('BasePage', {
 			: res },
 		//return this.store.get(this.location, !!this.strict) },
 	set data(value){
-		this.store.update(this.location, value) },
+		//this.store.update(this.location, value) },
+		this.__update__(value) },
 
 	// metadata...
 	//
@@ -858,7 +869,8 @@ object.Constructor('BasePage', {
 	get metadata(){
 		return this.store.metadata(this.location) },
 	set metadata(value){
-		this.store.update(this.location, value) },
+		//this.store.update(this.location, value) },
+		this.__update__(value) },
 
 	// number of matching pages...
 	get length(){
@@ -872,8 +884,9 @@ object.Constructor('BasePage', {
 	match: relMatchProxy('match'), 
 	resolve: relMatchProxy('resolve'),
 	delete: function(path='.'){
-		this.store.delete(module.path.relative(this.location, path))
-		return this },
+		//this.store.delete(module.path.relative(this.location, path))
+		//return this },
+		return this.__delete__() },
 
 	//
 	// 	.get(<path>[, <data>])
@@ -1643,12 +1656,16 @@ object.Constructor('Page', BasePage, {
 		// 		<text>
 		// 	</include>
 		//
+		// XXX RECURSION recursion detection is still a bit off...
 		// XXX 'text' argument is changed to 'recursive'...
 		// XXX revise recursion checks.... 
 		// XXX should this be lazy???
 		include: Macro(
 			['src', 'recursive', ['isolated']],
 			function(args, body, state, key='included', handler){
+				var macro = 'include'
+				if(typeof(args) == 'string'){
+					var [macro, args, body, state, key="included", handler] = arguments }
 				// positional args...
 				var src = args.src
 				var recursive = args.recursive || body
@@ -1680,12 +1697,17 @@ object.Constructor('Page', BasePage, {
 				//if(this.match() == this.match(src)
 				if(this.resolve() == this.resolve(src)
 						|| seen.includes(src)){
-					//* XXX this prevents recursion...
 					if(!recursive){
+						/* XXX RECURSION this prevents recursion...
 						throw new Error(
-							'include: include recursion detected: '
+							macro +': recursion detected: '
 								+ seen.concat([src]).join(' -> ')) }
-					//*/
+						/*/
+							// XXX
+							console.warn(
+								macro+': recursion detected: '
+									+ seen.concat([src]).join(' -> ')) } 
+						//*/
 					// have the 'recursive' arg...
 					return this.parse(recursive, state) }
 				seen.push(src)
@@ -1709,6 +1731,7 @@ object.Constructor('Page', BasePage, {
 					this.parse(src, state) 
 					: src
 				return this.macros.include.call(this, 
+					'source',
 					args, body, state, 'sources', 
 					function(){
 						return this.parse(this.get(src).raw +'', state) }) }),
@@ -1902,7 +1925,17 @@ object.Constructor('Page', BasePage, {
 
 				if(src){
 					src = this.parse(src, state)
+					/* XXX ARRAY page...
 					var pages = this.get(src, strict).each()
+					/*/
+					var pages = this.get(src, strict)
+					pages = pages.isArray ?
+						// XXX should we wrap this in pages...
+						pages.raw
+							.map(function(data){
+								return that.virtual(data) })
+						: pages.each()
+					//*/
 					// no matching pages -> get the else block...
 					if(pages.length == 0 
 							&& (text || args['else'])){
@@ -1962,6 +1995,13 @@ object.Constructor('Page', BasePage, {
 				return this.__parser__.parse(this, text, state) }.bind(this)) }
 		return this.__parser__.parse(this, text, state) },
 
+	// XXX not sure about the semantics here...
+	// XXX this feels a bit overcomplicated...
+	// 		...can we merge pattern and array pages into one???
+	// XXX EXPERIMENTAL
+	get isArray(){
+		return !this.isPattern 
+			&& this.raw instanceof Array },
 
 	// raw page text...
 	//
@@ -1997,7 +2037,8 @@ object.Constructor('Page', BasePage, {
 					.flat()
    			: data.text },
 	set raw(value){
-		this.store.update(this.location, {text: value}) },
+		//this.store.update(this.location, {text: value}) },
+		this.__update__({text: value}) },
 
 	// expanded page text...
 	//
@@ -2007,7 +2048,41 @@ object.Constructor('Page', BasePage, {
 			.flat()
 			.join('\n') },
 	set text(value){
-		this.store.update(this.location, {text: value}) },
+		//this.store.update(this.location, {text: value}) },
+		this.__update__({text: value}) },
+
+	// XXX EXPERIMENTAL...
+	ro: function(data={}){
+		return Object.assign({
+			__proto__: this,
+			__update__: function(){ return this },
+			__delete__: function(){ return this },
+		},
+		data) },
+	// XXX EXPERIMENTAL...
+	// XXX should we be able to change path/location here???
+	virtual: function(text){
+		var that = this
+		return Object.assign({
+			__proto__: this,
+
+			__update__: function(data){ 
+				Object.assign(this.data, data)
+				return this },
+			__delete__: function(){ return this },
+
+			// NOTE: we need to proxy .clone(..) back to parent so as to 
+			// 		avoid overloading .data in the children too...
+			// XXX STUB...
+			clone: function(...args){
+				return that.clone(...args) },
+
+			data: {
+				ctime: Date.now(),
+				mtime: Date.now(),
+				text,
+			},
+		}) },
 })
 
 
@@ -2047,6 +2122,10 @@ module.store =
 
 
 var System = {
+	// XXX tests...
+	test_list: function(){
+		return 'abcdef'.split('') },
+
 	// metadata...
 	//
 	path: function(){
@@ -2075,6 +2154,18 @@ var System = {
 	// utils...
 	//
 	// XXX System/subpaths
+	// XXX
+	links: function(){
+		// XXX
+		return '' },
+	// XXX links to current page...
+	to: function(){
+		// XXX
+		return '' },
+	// XXX links from current page...
+	'from': function(){
+		// XXX
+		return '' },
 
 
 	// actions...
