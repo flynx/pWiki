@@ -161,7 +161,7 @@ module.path = {
 	//
 	// NOTE: if seen is given (when called recursively) this will not 
 	// 		search for .ALTERNATIVE_PAGES...
-	// XXX should we normalize input '' to '/' or return it as-is???
+	// XXX should we search for each path element or just the last one (current)??? 
 	// XXX should we keep the trailing '/'???
 	paths: function*(path='/', seen){
 		var alt_pages = !seen
