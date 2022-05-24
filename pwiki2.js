@@ -1038,10 +1038,12 @@ object.Constructor('BasePage', {
 			__delete__: function(){ return this },
 			// NOTE: we need to proxy .clone(..) back to parent so as to 
 			// 		avoid overloading .data in the children too...
+			// NOTE: we are also keeping all first level queries resolving 
+			// 		to current path also virtual...
 			clone: function(...args){
 				var res = that.clone(...args) 
 				return res.path == this.path ?
-					that.virtual(data)
+					that.virtual(this.data)
 					: res },
 			data: Object.assign(
 				{
