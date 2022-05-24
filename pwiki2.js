@@ -911,8 +911,13 @@ object.Constructor('BasePage', {
 	// XXX should this be an iterator???
 	each: function(path){
 		var that = this
+		path = path ?
+			module.path.relative(this.path, path)
+			: this.path
 		//var paths = this.match(path)
-		var paths = this.resolve(path)
+		var paths = path.includes('*') ?
+			this.resolve(path)
+			: path
 		paths = paths instanceof Array ? 
 			paths 
 			: [paths]
@@ -1978,6 +1983,7 @@ object.Constructor('Page', BasePage, {
 					// apply macro text...
 					return pages
 						.map(function(page, i){
+							console.log('---', page.path)
 							return [
 								...that.__parser__.expand(page, text, state),
 								...((join_block && i < pages.length-1) ?
