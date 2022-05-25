@@ -31,11 +31,6 @@
 * XXX might need to get all the links (macro-level) from a page...
 * 		...would be useful for caching...
 *
-* XXX add page events:
-* 		locationChange
-* 		renderDone
-* 		...
-*
 *
 *
 **********************************************************************/
@@ -700,11 +695,13 @@ function(name){
 			module.path.relative(this.location, path), 
 			strict) } }
 
+var __HANDLE_NAVIGATE =
+module.__HANDLE_NAVIGATE = 
+	types.event.EventCommand('HANDLE_NAVIGATE')
+
 // XXX PATH_VARS
 // XXX HISTORY do we need history management??? 
 // XXX FUNC need to handle functions in store...
-// XXX EVENT add event triggers/handlers...
-// 		...event handlers must be local and not propogate to the root page.
 var BasePage =
 module.BasePage = 
 object.Constructor('BasePage', {
@@ -755,26 +752,46 @@ object.Constructor('BasePage', {
 	//
 	// NOTE: path variables are resolved relative to the page BEFORE 
 	// 		navigation...
+	// NOTE: the actual work is done by the .onNavigate(..) method...
 	__location: undefined,
 	get location(){
 		return this.__location ?? '/' },
-	// XXX EVENT need to be able to trigger a callback/event on this...
 	set location(path){
-		this.referrer = this.location
-		var cur = this.__location = 
-			this.resolvePathVars(
-				module.path.relative(
-					this.location, 
-					path))
-		//* XXX HISTORY...
-		if(this.history !== false){
-			this.history.includes(this.__location)
-				&& this.history.splice(
-					this.history.indexOf(this.__location)+1, 
-					this.history.length)
-			this.history.push(cur) } },
+		// trigger the event...
+		this.onNavigate(path) },
 	// referrer -- a previous page location...
 	referrer: undefined,
+
+	// events...
+	//
+	// XXX revise naming...
+	// XXX should this be able to prevent navigation???
+	onBeforeNavigate: types.event.Event('beforeNavigate'),
+	onNavigate: types.event.Event('navigate',
+		function(handle, path){
+			// special case: we are triggering handlers only...
+			// NOTE: this usually means that we are setting .__location 
+			// 		externally...
+			// XXX HISTORY this is only used for history at this point...
+			if(path === module.__HANDLE_NAVIGATE){
+				handle()
+				return }
+			this.onBeforeNavigate(path)
+			this.referrer = this.location
+			var cur = this.__location = 
+				this.resolvePathVars(
+					module.path.relative(
+						this.location, 
+						path))
+			//* XXX HISTORY...
+			if(this.history !== false){
+				this.history.includes(this.__location)
+					&& this.history.splice(
+						this.history.indexOf(this.__location)+1, 
+						this.history.length)
+				this.history.push(cur) } 
+			// trigger handlers...
+			handle() }),
 
 	// .path is a proxy to .location
 	// XXX do we need this???
@@ -794,7 +811,6 @@ object.Constructor('BasePage', {
 	get isPattern(){
 		return this.location.includes('*') },
 
-
 	// history...
 	//
 	//* XXX HISTORY...
@@ -807,7 +823,6 @@ object.Constructor('BasePage', {
 			this.__history = [] }
 			//this.__history = (this.__history ?? []).slice() }
 		return this.__history },
-	// XXX EVENT trigger location change event..,
 	back: function(offset=1){
 		var h = this.history
 		if(h === false 
@@ -826,8 +841,10 @@ object.Constructor('BasePage', {
 					+ offset,
 				h.length-1), 
 			0)
+		this.onBeforeNavigate(this.path)
 		this.referrer = this.location
-		this.__location = h[h.length-1 - p]
+		var path = this.__location = h[h.length-1 - p]
+		this.onNavigate(module.__HANDLE_NAVIGATE, path)
 		return this },
 	forward: function(offset=1){
 		return this.back(-offset) },
@@ -861,7 +878,6 @@ object.Constructor('BasePage', {
 			: res },
 		//return this.store.get(this.location, !!this.strict) },
 	set data(value){
-		//this.store.update(this.location, value) },
 		this.__update__(value) },
 
 	// metadata...
@@ -871,7 +887,6 @@ object.Constructor('BasePage', {
 	get metadata(){
 		return this.store.metadata(this.location) },
 	set metadata(value){
-		//this.store.update(this.location, value) },
 		this.__update__(value) },
 
 	// number of matching pages...
@@ -1065,6 +1080,8 @@ object.Constructor('BasePage', {
 
 	// XXX should this be update or assign???
 	// XXX how should this work on multiple pages...
+	// 		...right now this will write what-ever is given, even if it
+	// 		will never be explicitly be accessible...
 	update: function(...data){
 		return Object.assign(this, ...data) },
 
@@ -1075,6 +1092,9 @@ object.Constructor('BasePage', {
 		this.location = path
 		this.referrer = referrer },
 })
+
+// pepper in event functionality...
+types.event.EventMixin(BasePage.prototype)
 
 
 
@@ -2053,6 +2073,20 @@ object.Constructor('Page', BasePage, {
 		'join': ['macro'],
 	},
 
+	// events...
+	//
+	// NOTE: textUpdate event will not get triggered if text is updated 
+	// 		directly via .data or .__update__(..)
+	/*/ XXX EVENTS do we need this???
+	onTextUpdate: types.event.Event('textUpdate',
+		function(handle, text){
+			this.__update__({text}) }),
+	// XXX EVENTS not sure where to trigger this???
+	// 		...on .parse(..) is a bit too granular, something like .text??
+	// XXX not triggered yet...
+	//onParse: types.event.Event('parse'),
+	//*/
+
 	// page parser...
 	//
 	__parser__: module.parser,
@@ -2065,10 +2099,10 @@ object.Constructor('Page', BasePage, {
 			text = null }
 		state = state ?? {}
 		text = text ?? this.raw
-		if(text instanceof Array){
-			return text.map(function(text){
-				return this.__parser__.parse(this, text, state) }.bind(this)) }
-		return this.__parser__.parse(this, text, state) },
+		return text instanceof Array ?
+			text.map(function(text){
+				return this.__parser__.parse(this, text, state) }.bind(this))
+			: this.__parser__.parse(this, text, state) },
 
 	// true if page has an array value but is not a pattern page...
 	//
@@ -2115,8 +2149,8 @@ object.Constructor('Page', BasePage, {
 					.flat()
    			: data.text },
 	set raw(value){
-		//this.store.update(this.location, {text: value}) },
 		this.__update__({text: value}) },
+		//this.onTextUpdate(value) },
 
 	// expanded page text...
 	//
@@ -2131,8 +2165,8 @@ object.Constructor('Page', BasePage, {
 			.flat()
 			.join('\n') }, 
 	set text(value){
-		//this.store.update(this.location, {text: value}) },
 		this.__update__({text: value}) },
+		//this.onTextUpdate(value) },
 })
 
 

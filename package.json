@@ -10,6 +10,8 @@
     "ig-object": "*",
     "ig-types": "^6.9.4",
     "jszip": "*",
+    "pouchdb": "^7.3.0",
+    "pouchdb-browser": "^7.3.0",
     "requirejs": "*"
   },
   "disabled-dependencies": {
