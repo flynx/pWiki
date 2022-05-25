@@ -1012,8 +1012,6 @@ object.Constructor('BasePage', {
 	//
 	// NOTE: all pages that are created via a read-only page are also 
 	// 		read-only.
-	//
-	// XXX test .ro().virtual() combinations...
 	// XXX EXPERIMENTAL...
 	ro: function(data={}){
 		return Object.assign({
@@ -1030,9 +1028,7 @@ object.Constructor('BasePage', {
 	//
 	// NOTE: .get(..) / .clone(..) will return normal non-virtual pages
 	// 		unless the target path is the same as the virtual page .path...
-	//
-	// XXX test .ro().virtual() combinations...
-	// XXX should we be able to change path/location here???
+	// NOTE: changing .path/.location is not supported.
 	// XXX EXPERIMENTAL...
 	virtual: function(data={}){
 		var that = this
@@ -1586,7 +1582,8 @@ function(spec, func){
 module.PAGE_NOT_FOUND = '404: PAGE NOT FOUND: $PATH'
 
 // XXX PATH_VARS need to handle path variables...
-// XXX macros and filters should be features for simpler plugin handlng (???)
+// XXX filters (and macros?) should be features for simpler plugin handlng (???)
+// XXX STUB filters...
 var Page =
 module.Page = 
 object.Constructor('Page', BasePage, {
@@ -2073,12 +2070,15 @@ object.Constructor('Page', BasePage, {
 				return this.__parser__.parse(this, text, state) }.bind(this)) }
 		return this.__parser__.parse(this, text, state) },
 
-	// XXX not sure about the semantics here...
-	// XXX this feels a bit overcomplicated...
-	// 		...can we merge pattern and array pages into one???
+	// true if page has an array value but is not a pattern page...
+	//
+	// XXX the split into pattern and array pages feels a bit overcomplicated...
+	// 		...can we merge the two and simplify things???
 	// XXX EXPERIMENTAL
 	get isArray(){
 		return !this.isPattern 
+			// NOTE: we can't only use .data here as it can be a function 
+			// 		that will return an array...
 			&& this.raw instanceof Array },
 
 	// raw page text...
@@ -2125,7 +2125,7 @@ object.Constructor('Page', BasePage, {
 	get text(){
 		var tpl = '/'+ this.find('./'+ this.PAGE_TPL)
 		return [this.parse(
-				tpl.endsWith(this.PAGE_TPL) ?
+				tpl.endsWith(this.PAGE_TPL.split(/[\\\/]/).pop()) ?
 					[this.get(tpl).raw]
 					: [] )]
 			.flat()
@@ -2172,8 +2172,13 @@ module.store =
 
 
 var System = {
-	// XXX EXPERIMENTAL...
-	_text: {text: '<macro src="." join="\n">@source(.)</macro>'},
+	// base templates...
+	//
+	_text: { 
+		text: '<macro src="." join="\n">@source(.)</macro>' },
+	NotFound: { 
+		text: module.PAGE_NOT_FOUND
+			.replace('$PATH', '@source(./path)') },
 
 	// XXX tests...
 	test_list: function(){
