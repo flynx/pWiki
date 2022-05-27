@@ -669,11 +669,68 @@ module.FileStore = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+
+// XXX 
+module.PouchDB = undefined
+
 var PouchDBStore =
 module.PouchDBStore = {
 	__proto__: BaseStore,
 
-	// XXX
+	__name__: 'pWiki-test-store',
+	__key_prefix__: 'pwiki:',
+
+	__data: undefined,
+	get data(){
+		if(!this.__data){
+			var PouchDB = 
+			module.PouchDB = 
+				require('PouchDB')
+			return (this.__data = new PouchDB(this.__name__)) }
+		return this.__data },
+	set data(value){
+		this.__data = value },
+
+	// XXX cache???
+	__paths__: async function(){
+		var that = this
+		// XXX not sure if this is a good idea...
+		return (await this.data.allDocs()).rows
+			.map(function(e){ 
+				return e.id.slice(that.__key_prefix__.length) }) },
+	// XXX use an index...
+	__exists__: async function(key){
+		return !! await this.__get__(key) },
+	__get__: async function(key){
+		try{
+			return await this.data.get(this.__key_prefix__ + key) 
+		}catch(err){
+			return undefined } },
+	__update__: async function(key, data, mode='update'){
+		var {_id, _rev, ...rest} = await this.__get__(key) ?? {}
+		await this.data.put({
+			// original data...
+			...( (mode == 'update') ?
+				rest
+				: {}),
+			// new data...
+			...data,
+			// system...
+			_id: _id 
+				?? (this.__key_prefix__ + key),
+			...(_rev ? 
+				{_rev} 
+				: {}),
+		})
+		return this },
+    __delete__: async function(key){
+		var doc = await this.__get__(key)
+		doc 
+			&& (await this.data.remove(doc))
+		return this },
+
+// XXX overload...
+//    .load(..)
 }
 
 
