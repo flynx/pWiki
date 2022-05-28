@@ -286,7 +286,7 @@ module.BaseStore = {
 							: ('/'+ path)))) 
 			// normalize the output...
 			|| false },
-
+	// find the closest existing alternative path...
 	find: function(path){
 		for(var p of module.path.paths(path)){
 			p = this.exists(p)
