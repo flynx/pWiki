@@ -233,7 +233,7 @@ module.path = {
 var BaseStore = 
 module.BaseStore = {
 
-	// XXX NEXT need to think about this...
+	// XXX NEXT revise naming...
 	next: undefined,
 
 	// NOTE: .data is not part of the spec and can be implementation-specific,
