@@ -230,6 +230,7 @@ module.path = {
 // XXX LEADING_SLASH should this be strict about leading '/' in paths???
 // 		...this may lead to duplicate paths created -- '/a/b' and 'a/b'
 // XXX should we support page symlinking???
+// XXX async: not sure if we need to return this from async methods...
 var BaseStore = 
 module.BaseStore = {
 
@@ -247,10 +248,11 @@ module.BaseStore = {
 
 
 	// XXX might be a good idea to cache this...
-	__paths__: function(){
+	__paths__: async function(){
 		return Object.keys(this.data) },
-	paths: function(local=false){
-		return this.__paths__() 
+	paths: async function(local=false){
+		return this.__paths__()
+			.iter()
 			// XXX NEXT
 			.concat((!local && (this.next || {}).paths) ? 
 				this.next.paths() 
@@ -262,34 +264,34 @@ module.BaseStore = {
 	// 		-> false
 	//
 	// XXX might be a good idea to cache this...
-	__exists__: function(path){
+	__exists__: async function(path){
 		return path in this.data
 				&& path },
-	exists: function(path){
+	exists: async function(path){
 		path = module.path.normalize(path, 'string')
-		return this.__exists__(path, 'string') 
+		return (await this.__exists__(path, 'string'))
 			// NOTE: all paths at this point and in store are 
 			// 		absolute, so we check both with the leading 
 			// 		'/' and without it to make things a bit more 
 			// 		relaxed and return the actual matching path...
-			|| this.__exists__(
+			|| (await this.__exists__(
 				path[0] == '/' ? 
 					path.slice(1) 
-					: ('/'+ path))
+					: ('/'+ path)))
 			// XXX NEXT
 			// delegate to .next...
 			|| ((this.next || {}).__exists__
-				&& (this.next.__exists__(path)
-					|| this.next.__exists__(
+				&& (await this.next.__exists__(path)
+					|| await this.next.__exists__(
 						path[0] == '/' ?
 							path.slice(1)
 							: ('/'+ path)))) 
 			// normalize the output...
 			|| false },
 	// find the closest existing alternative path...
-	find: function(path){
-		for(var p of module.path.paths(path)){
-			p = this.exists(p)
+	find: async function(path){
+		for(var p of await module.path.paths(path)){
+			p = await this.exists(p)
 			if(p){
 				return p } } },
 	// 
@@ -312,7 +314,7 @@ module.BaseStore = {
 	// actual existing pages, while in non-strict mode the pattern will 
 	// match all sub-paths.
 	//
-	match: function(path, strict=false){
+	match: async function(path, strict=false){
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
@@ -328,7 +330,7 @@ module.BaseStore = {
 						.replace(/\*\*/g, '.+')
 						.replace(/\*/g, '[^\\/]+') 
 				}(?=[\\\\\/]|$)`)
-			return [...this.paths()
+			return [...(await this.paths())
 					// NOTE: we are not using .filter(..) here as wee 
 					// 		need to keep parts of the path only and not 
 					// 		return the whole thing...
@@ -359,7 +361,7 @@ module.BaseStore = {
 	//
 	// XXX should this be used by .get(..) instead of .match(..)???
 	// XXX EXPERIMENTAL 
-	resolve: function(path, strict){
+	resolve: async function(path, strict){
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
@@ -371,7 +373,7 @@ module.BaseStore = {
 					&& !name.includes('*')){
 				path.pop()
 				path.push('')
-				return this.match(path.join('/'), strict)
+				return (await this.match(path.join('/'), strict))
 					.map(function(p){
 						return module.path.join(p, name) }) } }
 		// direct...
@@ -395,12 +397,12 @@ module.BaseStore = {
 	//
 	// XXX should this call actions???
 	// XXX should this return a map for pattern matches???
-	__get__: function(key){
+	__get__: async function(key){
 		return this.data[key] },
-	get: function(path, strict=false){
+	get: async function(path, strict=false){
 		var that = this
 		//path = this.match(path, strict)
-		path = this.resolve(path, strict)
+		path = await this.resolve(path, strict)
 		return path instanceof Array ?
 			// XXX should we return matched paths???
    			path.map(function(p){
@@ -408,7 +410,7 @@ module.BaseStore = {
 				// 		this can be the result of matching a/* in a a/b/c
 				// 		and returning a a/b which can be undefined...
 				return that.get(p) })
-			: (this.__get__(path) 
+			: (await this.__get__(path) 
 				// XXX NEXT
 				?? ((this.next || {}).__get__ 
 					&& this.next.__get__(path))) },
@@ -430,14 +432,14 @@ module.BaseStore = {
 	// 		and does not try to acquire a target page.
 	// NOTE: setting/removing metadata is done via .update(..) / .delete(..)
 	// NOTE: this uses .__get__(..) internally...
-	metadata: function(path, ...args){
+	metadata: async function(path, ...args){
 		// set...
 		if(args.length > 0){
 			return this.update(path, ...args) }
 		// get...
-		path = this.exists(path)
+		path = await this.exists(path)
 		return path 
-			&& this.__get__(path) 
+			&& await this.__get__(path) 
 			|| undefined },
 
 	// NOTE: deleting and updating only applies to explicit matching 
@@ -445,13 +447,15 @@ module.BaseStore = {
 	// NOTE: edit methods are local-only...
 	//
 	// XXX do we copy the data here or modify it????
-	__update__: function(key, data, mode='update'){
-		this.data[key] = data 
-		return this },
-	update: function(path, data, mode='update'){
-		var exists = this.exists(path) 
+	__update__: async function(key, data, mode='update'){
+		this.data[key] = data },
+	update: async function(path, data, mode='update'){
+		var exists = await this.exists(path) 
 		path = exists
 			|| module.path.normalize(path, 'string')
+		data = data instanceof Promise ?
+			await data
+			: data
 		data = 
 			typeof(data) == 'function' ?
 				data
@@ -461,19 +465,18 @@ module.BaseStore = {
 						ctime: Date.now(),
 					},
 					(mode == 'update' && exists) ?
-						this.get(path)
+						await this.get(path)
 						: {},
 					data,
 					{mtime: Date.now()})
-		this.__update__(path, data, mode)
+		await this.__update__(path, data, mode)
 		return this },
-	__delete__: function(path){
-		delete this.data[path] 
-		return this },
-	delete: function(path){
-		path = this.exists(path)
+	__delete__: async function(path){
+		delete this.data[path] },
+	delete: async function(path){
+		path = await this.exists(path)
 		path
-			&& this.__delete__(path)
+			&& await this.__delete__(path)
 		return this },
 
 
@@ -482,9 +485,12 @@ module.BaseStore = {
 
 
 	// XXX do we need this???
-	load: function(...data){
+	load: async function(...data){
 		this.data = Object.assign(this.data, ...data)
 		return this },
+	json: function(asstring=false){
+		// XXX
+	},
 
 	// XXX NEXT EXPERIMENTAL...
 	nest: function(base){
@@ -519,7 +525,7 @@ function(meth, drop_cache=false, post){
 	if(typeof(drop_cache) == 'function'){
 		post = drop_cache
 		drop_cache = false }
-	return function(path, ...args){
+	return async function(path, ...args){
 		var store = this.substore(path)
 
 		var res = store == null ?
@@ -531,7 +537,7 @@ function(meth, drop_cache=false, post){
 		if(drop_cache){
 			delete this.__substores }
 		post 
-			&& (res = post.call(this, res, store, path, ...args))
+			&& (res = post.call(this, await res, store, path, ...args))
 		return res} }
 
 
@@ -565,17 +571,19 @@ module.MetaStore = {
 			undefined
 			: store },
 	
-	__paths__: function(){
+	// XXX this depends on .data having keys...
+	__paths__: async function(){
 		var that = this
 		var data = this.data
-		return Object.keys(data)
+		//return Object.keys(data)
+		return Promise.iter(Object.keys(data)
 			.map(function(path){
 				return object.childOf(data[path], module.BaseStore) ?
-					data[path]
-						.paths()
+					data[path].paths()
+						.iter()
 						.map(function(s){
 							return module.path.join(path, s) })
-				: path })
+				: path }))
 			.flat() },
 	// XXX revise...
 	__exists__: metaProxy('__exists__', 
@@ -588,6 +596,10 @@ module.MetaStore = {
 	__get__: metaProxy('__get__'),
 	__delete__: metaProxy('__delete__', true),
 	__update__: metaProxy('__update__', true),
+
+	json: function(asstring=false){
+		// XXX
+	},
 }
 
 
@@ -605,7 +617,7 @@ module.localStorageStore = {
 			localStorage
 			: undefined,
 	
-	__paths__: function(){
+	__paths__: async function(){
 		var that = this
 		return Object.keys(this.data)
 			.map(function(k){ 
@@ -613,24 +625,22 @@ module.localStorageStore = {
 					k.slice((that.__prefix__ ?? '').length) 
 					: [] }) 
 			.flat() },
-	__exists__: function(path){
+	__exists__: async function(path){
 		return ((this.__prefix__ ?? '')+ path) in this.data 
 			&& path },
-	__get__: function(path){
+	__get__: async function(path){
 		path = (this.__prefix__ ?? '')+ path
 		return path in this.data ?
 			JSON.parse(this.data[path]) 
 			: undefined },
-	__update__: function(path, data={}){
+	__update__: async function(path, data={}){
 		this.data[(this.__prefix__ ?? '')+ path] = 
-			JSON.stringify(data)
-		return this },
-	__delete__: function(path){
-		delete this.data[(this.__prefix__ ?? '')+ path]
-		return this },
+			JSON.stringify(data) },
+	__delete__: async function(path){
+		delete this.data[(this.__prefix__ ?? '')+ path] },
 
 	// XXX 
-	load: function(){
+	load: async function(){
 	},
 }
 
@@ -658,12 +668,61 @@ module.localStorageNestedStore = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+var fs = require('fs')
+var glob = require('glob')
+
+// XXX add monitor API...
+// XXX backup files on write/delete...
+// XXX do a r/o version...
 var FileStore =
 module.FileStore = {
 	__proto__: BaseStore,
-	__path__: '',
 
 	// XXX
+	__path__: 'store/fs',
+
+	// XXX do we remove the extension???
+	// XXX cache???
+	__paths__: async function(){
+		var that = this
+		return new Promise(function(resolve, reject){
+			glob(module.path.join(that.__path__, '/**/*'))
+				.on('end', function(paths){
+					resolve(paths
+						.map(function(path){ 
+							// XXX need better .__path__ removal...
+							return path
+								.slice(that.__path__.length) })) }) }) },
+	__exists__: async function(path){
+		return !!fs.existsSync(module.path.join(this.__path__, path)) ?
+			path
+			: false },
+	__get__: async function(path){
+		var p = module.path.join(this.__path__, path)
+		var {atimeMs, mtimeMs, ctimeMs, birthtimeMs} = await fs.promises.stat(p)
+		return {
+			atime: atimeMs,
+			mtime: mtimeMs,
+			ctime: ctimeMs,
+			text: fs.readFileSync(p).toString(),
+		} },
+	// XXX do we write all the data or only the .text???
+	__update__: async function(path, data, mode='update'){
+		var p = module.path.join(this.__path__, path)
+		var f = await fs.promises.open(p, 'w')
+		var size = await f.writeFile(data.text)
+		f.close()
+		// XXX check size...
+		// XXX
+	},
+    __delete__: async function(path){
+		var p = module.path.join(this.__path__, path)
+		// XXX
+	},
+	load: function(data){
+	},
+	json: function(asstring=false){
+	},
 }
 
 
@@ -911,12 +970,10 @@ object.Constructor('BasePage', {
 	//
 	// XXX we are only doing modifiers here...
 	// 		...these ar mainly used to disable writing in .ro(..)
-	__update__: function(data){
-		this.store.update(this.location, data) 
-		return this },
-	__delete__: function(path='.'){
-		this.store.delete(module.path.relative(this.location, path)) 
-		return this },
+	__update__: async function(data){
+		return this.store.update(this.location, data) },
+	__delete__: async function(path='.'){
+		return this.store.delete(module.path.relative(this.location, path)) },
 
 	// page data...
 	//
@@ -2262,7 +2319,8 @@ module.store =
 	BaseStore.nest(MetaStore)
 
 
-var System = {
+var System = 
+module.System = {
 	// base templates...
 	//
 	_text: { 
@@ -2328,7 +2386,7 @@ var System = {
 }
 
 
-/*/ XXX note sure how to organize the system actions -- there can be two 
+// XXX note sure how to organize the system actions -- there can be two 
 // 		options:
 // 			- a root ram store with all the static stuff and nest the rest
 // 			- a nested store (as is the case here)
@@ -2359,7 +2417,7 @@ Page('/', '/', store)
 store.load(require('./bootstrap'))
 
 
-// XXX TEST...
+/*/ XXX TEST...
 // XXX add filter tests...
 console.log('loading test page...')
 pwiki
