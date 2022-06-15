@@ -405,11 +405,12 @@ module.BaseStore = {
 		path = await this.resolve(path, strict)
 		return path instanceof Array ?
 			// XXX should we return matched paths???
-   			path.map(function(p){
-				// NOTE: p can match a non existing page at this point, 
-				// 		this can be the result of matching a/* in a a/b/c
-				// 		and returning a a/b which can be undefined...
-				return that.get(p) })
+   			Promise.iter(path)
+				.map(function(p){
+					// NOTE: p can match a non existing page at this point, 
+					// 		this can be the result of matching a/* in a a/b/c
+					// 		and returning a a/b which can be undefined...
+					return that.get(p) })
 			: (await this.__get__(path) 
 				// XXX NEXT
 				?? ((this.next || {}).__get__ 
@@ -533,7 +534,6 @@ function(meth, drop_cache=false, post){
 			//: this.data[store][meth](path.slice(store.length), ...args) 
 			: this.data[store][target](path.slice(store.length), ...args) 
 
-		//console.log('---', path, target, '(', store, ...args, ') ->', res)
 		if(drop_cache){
 			delete this.__substores }
 		post 
@@ -617,7 +617,7 @@ module.localStorageStore = {
 			localStorage
 			: undefined,
 	
-	__paths__: async function(){
+	__paths__: function(){
 		var that = this
 		return Object.keys(this.data)
 			.map(function(k){ 
@@ -625,22 +625,22 @@ module.localStorageStore = {
 					k.slice((that.__prefix__ ?? '').length) 
 					: [] }) 
 			.flat() },
-	__exists__: async function(path){
+	__exists__: function(path){
 		return ((this.__prefix__ ?? '')+ path) in this.data 
 			&& path },
-	__get__: async function(path){
+	__get__: function(path){
 		path = (this.__prefix__ ?? '')+ path
 		return path in this.data ?
 			JSON.parse(this.data[path]) 
 			: undefined },
-	__update__: async function(path, data={}){
+	__update__: function(path, data={}){
 		this.data[(this.__prefix__ ?? '')+ path] = 
 			JSON.stringify(data) },
-	__delete__: async function(path){
+	__delete__: function(path){
 		delete this.data[(this.__prefix__ ?? '')+ path] },
 
 	// XXX 
-	load: async function(){
+	load: function(){
 	},
 }
 
@@ -720,8 +720,10 @@ module.FileStore = {
 		// XXX
 	},
 	load: function(data){
+		// XXX
 	},
 	json: function(asstring=false){
+		// XXX
 	},
 }
 
@@ -970,9 +972,9 @@ object.Constructor('BasePage', {
 	//
 	// XXX we are only doing modifiers here...
 	// 		...these ar mainly used to disable writing in .ro(..)
-	__update__: async function(data){
+	__update__: function(data){
 		return this.store.update(this.location, data) },
-	__delete__: async function(path='.'){
+	__delete__: function(path='.'){
 		return this.store.delete(module.path.relative(this.location, path)) },
 
 	// page data...
@@ -1004,10 +1006,16 @@ object.Constructor('BasePage', {
 		this.__update__(value) },
 
 	// number of matching pages...
+	// NOTE: this can be both sync and async...
 	get length(){
 		var p = this.resolve(this.location)
 		return p instanceof Array ?
-			p.length
+				p.length
+			: p instanceof Promise ?
+				p.then(function(res){
+					return res instanceof Array ?
+						res.length
+						: 1 })
 			: 1 },
 
 	// relative proxies to store...
@@ -1016,8 +1024,6 @@ object.Constructor('BasePage', {
 	match: relMatchProxy('match'), 
 	resolve: relMatchProxy('resolve'),
 	delete: function(path='.'){
-		//this.store.delete(module.path.relative(this.location, path))
-		//return this },
 		return this.__delete__() },
 
 	//
@@ -1050,7 +1056,9 @@ object.Constructor('BasePage', {
 			this.resolve(path)
 			: path
 		paths = paths instanceof Array ? 
-			paths 
+				paths 
+			: paths instanceof Promise ?
+				paths.iter()
 			: [paths]
 		return paths
 			.map(function(path){
@@ -1066,22 +1074,22 @@ object.Constructor('BasePage', {
 	// sorting...
 	//
 	// XXX should this be page-level (current) store level???
-	sort: function(cmp){
+	// XXX when this is async, should this return a promise????
+	sort: async function(cmp){
 		// not sorting single pages...
 		if(this.length <= 1){
 			return this }
 		// sort...
-		this.metadata = 
-			{ order: this.each()
-				.sort(...arguments)
-				.map(function(p){
-					return p.path }) }
+		this.metadata = { order: await this.each()
+			.sort(...arguments)
+			.map(function(p){
+				return p.path }) }
 		return this },
-	reverse: function(){
+	reverse: async function(){
 		// not sorting single pages...
 		if(this.length <= 1){
 			return this }
-		this.metadata = { order: this.match().reverse() }
+		this.metadata = { order: (await this.match()).reverse() }
 		return this },
 
 	//
@@ -1196,6 +1204,7 @@ object.Constructor('BasePage', {
 	// XXX how should this work on multiple pages...
 	// 		...right now this will write what-ever is given, even if it
 	// 		will never be explicitly be accessible...
+	// XXX sync/async???
 	update: function(...data){
 		return Object.assign(this, ...data) },
 
@@ -1409,8 +1418,8 @@ module.BaseParser = {
 	//
 	// NOTE: this internally uses macros' keys to generate the lexing pattern.
 	lex: function*(page, str){
-		str = str 
-			?? page.raw
+		//str = str 
+		//	?? page.raw
 		// NOTE: we are doing a separate pass for comments to completely 
 		// 		decouple them from the base macro syntax, making them fully 
 		// 		transparent...
@@ -1509,8 +1518,8 @@ module.BaseParser = {
 	// NOTE: this internaly uses macros to check for propper nesting
 	//group: function*(page, lex, to=false){
 	group: function*(page, lex, to=false, parent){
-		lex = lex
-			?? this.lex(page) 
+		//lex = lex
+		//	?? this.lex(page) 
 		lex = typeof(lex) == 'string' ?
 			this.lex(page, lex)
 			: lex
@@ -1585,9 +1594,10 @@ module.BaseParser = {
 	// 			data: [ <item>, .. ],
 	// 		}
 	//
-	expand: function*(page, ast, state={}){
+	expand: async function*(page, ast, state={}){
 		ast = ast == null ?
-				this.group(page)
+				//this.group(page)
+				this.group(page, await page.raw)
 			: typeof(ast) == 'string' ?
 				this.group(page, ast)
 			: ast instanceof types.Generator ?
@@ -1617,7 +1627,7 @@ module.BaseParser = {
 				state)
 			// call...
 			var res = 
-				page.macros[name].call(page, args, body, state, value)
+				await page.macros[name].call(page, args, body, state, value)
 					?? ''
 			// result...
 			if(res instanceof Array 
@@ -1636,16 +1646,24 @@ module.BaseParser = {
 	// 	- apply filters
 	//
 	// XXX add a special filter to clear pending filters... (???)
-	parse: function(page, ast, state={}){
+	parse: async function(page, ast, state={}){
 		var that = this
 		// XXX should we handle strings as input???
 		ast = ast 
-			?? this.expand(page, null, state)
+			?? await this.expand(page, null, state)
 		ast = typeof(ast) == 'string' ?
-			this.expand(page, ast, state)
+			await this.expand(page, ast, state)
 			: ast
 
+		//* XXX this is quite ugly...
+		var blocks = []
+		for await (var a of ast){
+			blocks.push(a) }
+
+		return blocks
+		/*/
 		return [...ast]
+		//*/
 			// post handlers...
 			.map(function(section){
 				return typeof(section) == 'function' ? 
@@ -1845,11 +1863,11 @@ object.Constructor('Page', BasePage, {
 				state.filters = outer_filters
 
 				// parse the body after we are done expanding...
-				return function(state){
+				return async function(state){
 					var outer_filters = state.filters
 					state.filters = this.__parser__.normalizeFilters(filters)
 					var res =
-						[...this.parse(ast, state)]
+						[...await this.parse(ast, state)]
 							.flat()
 							.join('') 
 					state.filters = outer_filters
@@ -1870,7 +1888,7 @@ object.Constructor('Page', BasePage, {
 		// XXX should this be lazy???
 		include: Macro(
 			['src', 'recursive', ['isolated']],
-			function(args, body, state, key='included', handler){
+			async function(args, body, state, key='included', handler){
 				var macro = 'include'
 				if(typeof(args) == 'string'){
 					var [macro, args, body, state, key="included", handler] = arguments }
@@ -1882,7 +1900,7 @@ object.Constructor('Page', BasePage, {
 				if(!src){
 					return }
 				// parse arg values...
-				src = this.parse(src, state)
+				src = await this.parse(src, state)
 
 				handler = handler 
 					?? function(){
@@ -1908,7 +1926,7 @@ object.Constructor('Page', BasePage, {
 				seen.push(src)
 
 				// load the included page...
-				var res = handler.call(this)
+				var res = await handler.call(this)
 
 				// restore previous include chain...
 				if(parent_seen){
@@ -1919,17 +1937,17 @@ object.Constructor('Page', BasePage, {
 				return res }),
 		source: Macro(
 			['src'],
-			function(args, body, state){
+			async function(args, body, state){
 				var src = args.src
 				// parse arg values...
 				src = src ? 
-					this.parse(src, state) 
+					await this.parse(src, state) 
 					: src
 				return this.macros.include.call(this, 
 					'source',
 					args, body, state, 'sources', 
-					function(){
-						return this.parse(this.get(src).raw +'', state) }) }),
+					async function(){
+						return await this.parse(await this.get(src).raw +'', state) }) }),
 		//
 		// 	@quote(<src>)
 		//
@@ -1951,18 +1969,18 @@ object.Constructor('Page', BasePage, {
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: Macro(
 			['src', 'filter', 'text'],
-			function(args, body, state){
+			async function(args, body, state){
 				var src = args.src //|| args[0]
 				var text = args.text 
 					?? body 
 					?? []
 				// parse arg values...
 				src = src ? 
-					this.parse(src, state)
+					await this.parse(src, state)
 					: src
 				text = src ?
 						// source page...
-						this.get(src).raw
+						await this.get(src).raw
 					: text instanceof Array ?
 						text.join('')
 					: text
@@ -2027,7 +2045,7 @@ object.Constructor('Page', BasePage, {
 		// 		...seems that we'll fall into recursion on definition...
 		slot: Macro(
 			['name', 'text', ['shown', 'hidden']],
-			function(args, body, state){
+			async function(args, body, state){
 				var name = args.name
 				var text = args.text 
 					?? body 
@@ -2041,7 +2059,7 @@ object.Constructor('Page', BasePage, {
 
 				// parse arg values...
 				name = name ?
-					this.parse(name, state)
+					await this.parse(name, state)
 					: name
 
 				//var hidden = name in slots
@@ -2055,7 +2073,7 @@ object.Constructor('Page', BasePage, {
 							// show first instance...
 							: name in slots)
 
-				slots[name] = [...this.__parser__.expand(this, text, state)]
+				slots[name] = [...await this.__parser__.expand(this, text, state)]
 
 				return hidden ?
 					''
@@ -2095,7 +2113,7 @@ object.Constructor('Page', BasePage, {
 		// 		...does not work yet...
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else', ['strict', 'nonstrict']],
-			function(args, body, state){
+			async function(args, body, state){
 				var that = this
 				var name = args.name //?? args[0]
 				var src = args.src
@@ -2134,7 +2152,7 @@ object.Constructor('Page', BasePage, {
 					return block }
 
 				if(name){
-					name = this.parse(name, state)
+					name = await this.parse(name, state)
 					// define new named macro...
 					if(text){
 						;(state.macros = state.macros ?? {})[name] = text
@@ -2144,24 +2162,24 @@ object.Constructor('Page', BasePage, {
 						text = state.macros[name] } }
 
 				if(src){
-					src = this.parse(src, state)
+					src = await this.parse(src, state)
 					/* XXX ARRAY page...
 					var pages = this.get(src, strict).each()
 					/*/
 					var pages = this.get(src, strict)
-					pages = pages.isArray ?
+					pages = await pages.isArray ?
 						// XXX should we wrap this in pages...
-						pages.raw
+						(await pages.raw)
 							.map(function(data){
 								return that.virtual({text: data}) })
-						: pages.each()
+						: await pages.each()
 					//*/
 					// no matching pages -> get the else block...
 					if(pages.length == 0 
 							&& (text || args['else'])){
 						var else_block = _getBlock('else')
 						return else_block ?
-							[...this.__parser__.expand(this, else_block, state)]
+							[...await this.__parser__.expand(this, else_block, state)]
 							: undefined }
 
 					// sort pages...
@@ -2172,14 +2190,25 @@ object.Constructor('Page', BasePage, {
 
 					var join_block = _getBlock('join') 
 					// apply macro text...
-					return pages
-						.map(function(page, i){
+					return Promise.iter(pages)
+						.map(async function(page, i){
+							//* XXX really ugly...
+							var res = []
+							for await (var c of that.__parser__.expand(page, text, state)){
+								res.push(c) }
+							if(join_block && i < pages.length-1){
+								for await (var c of that.__parser__.expand(page, join_block, state)){
+									res.push(c) } }
+							return res
+							/*/
 							return [
-								...that.__parser__.expand(page, text, state),
+								...await that.__parser__.expand(page, text, state),
 								...((join_block && i < pages.length-1) ?
-									that.__parser__.expand(page, join_block, state)
+									await that.__parser__.expand(page, join_block, state)
 									: []),
-							] })
+							] 
+							//*/
+						})
 						.flat() } }),
 
 		// nesting rules...
@@ -2204,7 +2233,8 @@ object.Constructor('Page', BasePage, {
 	// page parser...
 	//
 	__parser__: module.parser,
-	parse: function(text, state){
+	parse: async function(text, state){
+		var that = this
 		// .parser(<state>)
 		if(arguments.length == 1 
 				&& text instanceof Object
@@ -2212,10 +2242,12 @@ object.Constructor('Page', BasePage, {
 			state = text
 			text = null }
 		state = state ?? {}
-		text = text ?? this.raw
+		text = text 
+			?? await this.raw
 		return text instanceof Array ?
-			text.map(function(text){
-				return this.__parser__.parse(this, text, state) }.bind(this))
+			Promise.iter(text)
+				.map(function(text){
+					return that.__parser__.parse(that, text, state) })
 			: this.__parser__.parse(this, text, state) },
 
 	// true if page has an array value but is not a pattern page...
@@ -2223,19 +2255,19 @@ object.Constructor('Page', BasePage, {
 	// XXX the split into pattern and array pages feels a bit overcomplicated...
 	// 		...can we merge the two and simplify things???
 	// XXX EXPERIMENTAL
-	get isArray(){
+	get isArray(){ return (async function(){
 		return !this.isPattern 
 			// NOTE: we can't only use .data here as it can be a function 
 			// 		that will return an array...
-			&& this.raw instanceof Array },
+			&& await this.raw instanceof Array }).call(this) },
 
 	// raw page text...
 	//
 	// NOTE: writing to .raw is the same as writing to .text...
 	// NOTE: when matching multiple pages this will return a list...
-	get raw(){
+	get raw(){ return (async function(){
 		var that = this
-		var data = this.data
+		var data = await this.data
 		// no data...
 		// NOTE: if we hit this it means that nothing was resolved, 
 		// 		not even the System/NotFound page, i.e. something 
@@ -2261,7 +2293,7 @@ object.Constructor('Page', BasePage, {
 							d.call(that)
 							: d.text })
 					.flat()
-   			: data.text },
+   			: data.text }).call(this) },
 	set raw(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
@@ -2270,14 +2302,14 @@ object.Constructor('Page', BasePage, {
 	//
 	// NOTE: this uses .PAGE_TPL to render the page.
 	// NOTE: writing to .raw is the same as writing to .text...
-	get text(){
-		var tpl = '/'+ this.find('./'+ this.PAGE_TPL)
-		return [this.parse(
+	get text(){ return (async function(){
+		var tpl = '/'+ await this.find('./'+ this.PAGE_TPL)
+		return [await this.parse(
 				tpl.endsWith(this.PAGE_TPL.split(/[\\\/]/).pop()) ?
-					[this.get(tpl).raw]
+					[await this.get(tpl).raw]
 					: [] )]
 			.flat()
-			.join('\n') }, 
+			.join('\n') }).call(this) }, 
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
