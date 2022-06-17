@@ -2280,12 +2280,11 @@ object.Constructor('Page', BasePage, {
 				return msg }
 			throw new Error(msg) }
 		// get the data...
-		return typeof(data) == 'function' ?
-				// XXX FUNC not sure about this...
+		return (
+			// action...
+			typeof(data) == 'function' ?
 				data.call(this)
 			// multiple matches...
-			// XXX should this get one of the pages or all of the pages???
-			// XXX should we use a special template to render???
 			: data instanceof Array ?
 				data
 					.map(function(d){
@@ -2293,7 +2292,7 @@ object.Constructor('Page', BasePage, {
 							d.call(that)
 							: d.text })
 					.flat()
-   			: data.text }).call(this) },
+   			: data.text )}).call(this) },
 	set raw(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
