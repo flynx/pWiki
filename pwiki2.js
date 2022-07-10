@@ -1,6 +1,15 @@
 /**********************************************************************
 * 
 *
+*
+* Architecture:
+* 	store
+* 		
+* 	page
+* 	renderer
+*
+*
+*
 * XXX might be a good idea to try signature based security:
 * 		- sign changes
 * 		- sign sync session
@@ -75,6 +84,8 @@ module.path = {
 		'NotFound',
 	],
 
+	// Default alternate search locations...
+	//
 	// NOTE: if a path here is relative it is also searched relative to 
 	// 		the target path.
 	SEARCH_PATHS: [
@@ -83,6 +94,12 @@ module.path = {
 		'/System',
 	],
 
+	// Path utils...
+	//
+	// Path can be in one of two formats:
+	// 	string
+	// 	array
+	//
 	// NOTE: trailing/leading '/' are represented by '' at end/start of 
 	// 		path list...
 	normalize: function(path='.', format='auto'){
@@ -229,7 +246,16 @@ module.path = {
 // 			.load(..)
 //
 //
-// NOTE: store keys must be normalized...
+// NOTE: store keys must be normalized to avoid conditions where two
+// 		forms of the same path exist at the same time...
+//
+//
+// XXX potential architectural problems:
+// 		- .paths()
+// 			external index -- is this good???
+// 			bottleneck??
+// 			cache/index???
+// 			...can we avoid this??
 //
 // XXX LEADING_SLASH should this be strict about leading '/' in paths???
 // 		...this may lead to duplicate paths created -- '/a/b' and 'a/b'
