@@ -4,11 +4,28 @@
 *
 * Architecture:
 * 	store
-* 		
 * 	page
 * 	renderer
 *
 *
+* XXX weaknesses to review:
+* 		- <store>.paths() as an index...
+* 			+ decouples the search logic from the store backend
+* 			- requires the whole list of pages to be in memory
+* 				...need to be independent of the number of pages if at 
+* 				all possible -- otherwise this will hinder long-term use...
+* 		- 
+*
+*
+* TODO:
+* 	- .load(..) / .json(..) -- for most stores...
+* 		might be a good idea to keep a unified format...
+* 	- <page>.then() -- resolve when all pending write operations done ???
+* 	- an async REPL...
+*
+*
+*
+***********************************************************************
 *
 * XXX might be a good idea to try signature based security:
 * 		- sign changes
@@ -64,7 +81,6 @@ var types = require('ig-types')
 //---------------------------------------------------------------------
 // Path...
 
-// XXX still some questions...
 var path = 
 module.path = {
 
@@ -573,7 +589,6 @@ function(meth, drop_cache=false, post){
 
 // XXX not sure about the name...
 // XXX should this be a mixin???
-// XXX TEST...
 var MetaStore =
 module.MetaStore = {
 	__proto__: BaseStore,
@@ -826,6 +841,7 @@ module.PouchDBStore = {
 
 
 //---------------------------------------------------------------------
+// Page...
 
 var relProxy = 
 function(name){
@@ -948,13 +964,12 @@ object.Constructor('BasePage', {
 	set path(value){
 		this.location = value },
 
+	// XXX should these be writable???
 	get name(){
 		return module.path.split(this.path).pop() },
-	// XXX should this rename or change path???
 	//set name(value){ },
 	get dir(){
 		return module.path.relative(this.location, '..') },
-	// XXX should writing to this move the page???
 	//set dir(value){ },
 	get isPattern(){
 		return this.location.includes('*') },
