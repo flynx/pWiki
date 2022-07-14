@@ -47,6 +47,7 @@
 * 		pwiki/store.js
 * 		plugin/markdown.js
 * 		plugin/pouchdb.js
+* 		...
 *
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
