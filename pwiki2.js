@@ -2491,6 +2491,7 @@ Page('/', '/', store)
 //---------------------------------------------------------------------
 // XXX experiments and testing...
 
+// XXX for persistent stores test if the data is already loaded here...
 store.load(require('./bootstrap'))
 
 
