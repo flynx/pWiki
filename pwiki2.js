@@ -18,6 +18,7 @@
 *
 *
 * TODO:
+* 	- async parser does not work...
 * 	- .load(..) / .json(..) -- for most stores...
 * 		might be a good idea to keep a unified format...
 * 	- <page>.then() -- resolve when all pending write operations done ???
@@ -964,6 +965,10 @@ object.Constructor('BasePage', {
 		return this.location },
 	set path(value){
 		this.location = value },
+
+	// XXX do we need this...
+	get resolvedPath(){
+		return this.match() },
 
 	// XXX should these be writable???
 	get name(){
