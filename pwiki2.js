@@ -1278,6 +1278,8 @@ types.event.EventMixin(BasePage.prototype)
 // XXX should we warn about stuff like <macro src=/moo/> -- currently 
 // 		this will simply be ignored, i.e. passed trough the parser 
 // 		without change...
+// XXX might be a good idea to both think of a good async parse and
+// 		create tools for sync parsing (get links etc.)...
 
 var BaseParser =
 module.BaseParser = {
