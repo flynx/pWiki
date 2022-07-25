@@ -22,7 +22,7 @@
 * 	- .load(..) / .json(..) -- for most stores...
 * 		might be a good idea to keep a unified format...
 * 	- <page>.then() -- resolve when all pending write operations done ???
-* 	- an async REPL...
+* 	- an async REPL???
 *
 *
 *
@@ -43,12 +43,6 @@
 * 			a signature (a page =))
 *
 * XXX split this into modules...
-* 		pwiki.js
-* 		pwiki/page.js
-* 		pwiki/store.js
-* 		plugin/markdown.js
-* 		plugin/pouchdb.js
-* 		...
 *
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
