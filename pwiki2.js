@@ -1439,6 +1439,7 @@ module.BaseParser = {
 					: (res[order.shift()] = e) })
 		return res },
 
+
 	// Strip comments...
 	//
 	stripComments: function(str){
