@@ -42,7 +42,7 @@
 * 		- in this view a user in the system is simply a set of keys and 
 * 			a signature (a page =))
 *
-* XXX split this into modules...
+* XXX split this into modules (???)
 *
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
