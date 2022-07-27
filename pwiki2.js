@@ -1698,14 +1698,13 @@ module.BaseParser = {
 		var that = this
 		// XXX should we handle strings as input???
 		ast = ast 
-			?? await this.expand(page, null, state)
+			?? this.expand(page, null, state)
 		ast = typeof(ast) == 'string' ?
-			await this.expand(page, ast, state)
+			this.expand(page, ast, state)
 			: ast
 
 		//return [...ast]
-		return await ast
-			.iter()
+		return ast
 			// post handlers...
 			.map(function(section){
 				return typeof(section) == 'function' ? 
