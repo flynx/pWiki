@@ -1701,14 +1701,16 @@ module.BaseParser = {
 			await this.expand(page, ast, state)
 			: ast
 
-		//* XXX this is quite ugly...
+		/* XXX this is quite ugly...
 		var blocks = []
 		for await (var a of ast){
 			blocks.push(a) }
 
 		return blocks
 		/*/
-		return [...ast]
+		//return [...ast]
+		return await ast
+			.iter()
 		//*/
 			// post handlers...
 			.map(function(section){
