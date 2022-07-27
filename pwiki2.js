@@ -22,7 +22,7 @@
 * 	- .load(..) / .json(..) -- for most stores...
 * 		might be a good idea to keep a unified format...
 * 	- <page>.then() -- resolve when all pending write operations done ???
-* 	- an async REPL...
+* 	- an async REPL???
 *
 *
 *
@@ -42,13 +42,7 @@
 * 		- in this view a user in the system is simply a set of keys and 
 * 			a signature (a page =))
 *
-* XXX split this into modules...
-* 		pwiki.js
-* 		pwiki/page.js
-* 		pwiki/store.js
-* 		plugin/markdown.js
-* 		plugin/pouchdb.js
-* 		...
+* XXX split this into modules (???)
 *
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
@@ -1441,6 +1435,7 @@ module.BaseParser = {
 					: (res[order.shift()] = e) })
 		return res },
 
+
 	// Strip comments...
 	//
 	stripComments: function(str){
@@ -1708,15 +1703,9 @@ module.BaseParser = {
 			await this.expand(page, ast, state)
 			: ast
 
-		//* XXX this is quite ugly...
-		var blocks = []
-		for await (var a of ast){
-			blocks.push(a) }
-
-		return blocks
-		/*/
-		return [...ast]
-		//*/
+		//return [...ast]
+		return await ast
+			.iter()
 			// post handlers...
 			.map(function(section){
 				return typeof(section) == 'function' ? 
