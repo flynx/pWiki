@@ -1908,12 +1908,12 @@ object.Constructor('Page', BasePage, {
 				return async function(state){
 					var outer_filters = state.filters
 					state.filters = this.__parser__.normalizeFilters(filters)
-					var res =
-						[...await this.parse(ast, state)]
+					var res = this.parse(ast, state)
+						.iter()
 							.flat()
 							.join('') 
 					state.filters = outer_filters
-					return { data: res } } } },
+					return { data: await res } } } },
 		//
 		// 	@include(<path>)
 		//
