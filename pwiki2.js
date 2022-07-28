@@ -1703,7 +1703,6 @@ module.BaseParser = {
 			this.expand(page, ast, state)
 			: ast
 
-		//return [...ast]
 		return ast
 			// post handlers...
 			.map(function(section){
@@ -1893,7 +1892,9 @@ object.Constructor('Page', BasePage, {
 
 				// expand the body...
 				var ast = expand ?
-						[...this.__parser__.expand(this, body, state)]
+						// XXX async...
+						//[...this.__parser__.expand(this, body, state)]
+						this.__parser__.expand(this, body, state)
 					: body instanceof Array ?
 						body
 					// NOTE: wrapping the body in an array effectively 
