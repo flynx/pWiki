@@ -18,7 +18,6 @@
 *
 *
 * TODO:
-* 	- async parser does not work...
 * 	- .load(..) / .json(..) -- for most stores...
 * 		might be a good idea to keep a unified format...
 * 	- <page>.then() -- resolve when all pending write operations done ???
@@ -571,10 +570,11 @@ function(meth, drop_cache=false, post){
 	return async function(path, ...args){
 		var store = this.substore(path)
 
-		var res = store == null ?
-			object.parentCall(MetaStore, meth, this, path, ...args)
-			//: this.data[store][meth](path.slice(store.length), ...args) 
-			: this.data[store][target](path.slice(store.length), ...args) 
+		var res = 
+			store == null ?
+				object.parentCall(MetaStore, meth, this, path, ...args)
+				//: this.data[store][meth](path.slice(store.length), ...args) 
+				: this.data[store][target](path.slice(store.length), ...args) 
 
 		if(drop_cache){
 			delete this.__substores }
@@ -629,7 +629,7 @@ module.MetaStore = {
 	// XXX revise...
 	__exists__: metaProxy('__exists__', 
 		function(res, store, path){
-			return store ?
+			return (res && store) ?
 				// XXX which way should we go???
 				//module.path.join(store, res)
 				path
@@ -722,6 +722,8 @@ module.FileStore = {
 	// XXX
 	__path__: 'store/fs',
 
+	__directory_text__: '.text',
+
 	// XXX do we remove the extension???
 	// XXX cache???
 	__paths__: async function(){
@@ -735,18 +737,32 @@ module.FileStore = {
 							return path
 								.slice(that.__path__.length) })) }) }) },
 	__exists__: async function(path){
-		return !!fs.existsSync(module.path.join(this.__path__, path)) ?
-			path
-			: false },
+		var p = module.path.join(this.__path__, path)
+		try {
+			var stat = await fs.promises.stat(p)
+			// NOTE: we consider a directory as "existing" iff we can 
+			// 		produce text for it...
+			return stat.isDirectory() ?
+					(!!fs.existsSync(p +'/'+ this.__directory_text__) 
+						&& path)
+				: !!fs.existsSync(p) ?
+					path
+				: false
+		} catch(err){
+			return false } },
 	__get__: async function(path){
 		var p = module.path.join(this.__path__, path)
-		var {atimeMs, mtimeMs, ctimeMs, birthtimeMs} = await fs.promises.stat(p)
+		var stat = await fs.promises.stat(p)
+		var {atimeMs, mtimeMs, ctimeMs, birthtimeMs} = stat
 		return {
 			atime: atimeMs,
 			mtime: mtimeMs,
 			ctime: ctimeMs,
-			text: fs.readFileSync(p).toString(),
+			text: stat.isDirectory() ? 
+				fs.readFileSync(p +'/'+ this.__directory_text__).toString()
+				: fs.readFileSync(p).toString(),
 		} },
+	// XXX handle writing to directories...
 	// XXX do we write all the data or only the .text???
 	__update__: async function(path, data, mode='update'){
 		var p = module.path.join(this.__path__, path)
@@ -779,6 +795,8 @@ var PouchDBStore =
 module.PouchDBStore = {
 	__proto__: BaseStore,
 
+	// XXX should this be __path__???
+	// 		...this sets the path where the store is created...
 	__name__: 'pWiki-test-store',
 	__key_prefix__: 'pwiki:',
 
@@ -831,8 +849,10 @@ module.PouchDBStore = {
 			&& (await this.data.remove(doc))
 		return this },
 
-// XXX overload...
-//    .load(..)
+	// XXX 
+	load: function(){
+
+	},
 }
 
 
@@ -1911,10 +1931,11 @@ object.Constructor('Page', BasePage, {
 				return async function(state){
 					var outer_filters = state.filters
 					state.filters = this.__parser__.normalizeFilters(filters)
-					var res = this.parse(ast, state)
-						.iter()
-							.flat()
-							.join('') 
+					var res = 
+						this.parse(ast, state)
+							.iter()
+								.flat()
+								.join('') 
 					state.filters = outer_filters
 					return { data: await res } } } },
 		//
@@ -2477,6 +2498,19 @@ store.next.load(
 			res[module.path.join('System', key)] = func
 			return res }, {}))
 //*/
+
+store.update('@file', 
+	Object.create(FileStore))
+
+// XXX writing to pages in here does not work yet...
+// 		p.pwiki.path = '/@pouch/README'
+// 		p.pwiki.text = 'PouchDB Store'
+store.update('@pouch', 
+	Object.assign(
+		Object.create(PouchDBStore),
+		{
+			__name__: 'store/pouch',
+		}))
 
 
 // NOTE: in general the root wiki api is simply a page instance.
