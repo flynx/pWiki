@@ -1464,8 +1464,10 @@ module.BaseParser = {
 	// 		}
 	//
 	//
-	// NOTE: this internally uses macros' keys to generate the lexing pattern.
+	// NOTE: this internally uses page.macros' keys to generate the 
+	// 		lexing pattern.
 	lex: function*(page, str){
+		// XXX we can't get .raw from the page without going async...
 		//str = str 
 		//	?? page.raw
 		// NOTE: we are doing a separate pass for comments to completely 
@@ -1563,9 +1565,10 @@ module.BaseParser = {
 	// 			...
 	// 		}
 	//
-	// NOTE: this internaly uses macros to check for propper nesting
+	// NOTE: this internaly uses page.macros to check for propper nesting
 	//group: function*(page, lex, to=false){
 	group: function*(page, lex, to=false, parent){
+		// XXX we can't get .raw from the page without going async...
 		//lex = lex
 		//	?? this.lex(page) 
 		lex = typeof(lex) == 'string' ?
