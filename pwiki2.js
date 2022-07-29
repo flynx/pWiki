@@ -722,7 +722,8 @@ module.FileStore = {
 	// XXX
 	__path__: 'store/fs',
 
-	__directory_text__: '.text',
+	// XXX should this be "index" or ".index"???
+	__directory_text__: '.index',
 
 	// XXX do we remove the extension???
 	// XXX cache???
@@ -762,6 +763,40 @@ module.FileStore = {
 				fs.readFileSync(p +'/'+ this.__directory_text__).toString()
 				: fs.readFileSync(p).toString(),
 		} },
+	//
+	// 	Add data to path...
+	// 	.__update_path__(<path>, <data>)
+	//
+	// 	Clear data from path...
+	// 	.__update_path__(<path>, undefined)
+	//
+	// XXX this is FileStore-specific...
+	// XXX create a file path and set data...
+	// 		- convert files in path to dirs:
+	// 			a/b/c -> a/b/c/.text 
+	// 				- move "c" -> "c.bak"
+	// 				- mkdir "c" 
+	// 				- move "c.bak" -> "c/.text"
+	// 		- convert last dir to file if directory empty...
+	// 			a/b/c/.text -> a/b/c
+	// 				(same as above)
+	// 		- remove empty dirs from path...
+	// XXX might be a good idea to have a store-specific backup/tmp dir...
+	// XXX might be a good idea to move this functionality to 
+	// 		.__update__(..) and use it from .__delete__(..)...
+	__update_path__: async function(path, data, mode='update'){
+		var p = module.path.join(this.__path__, path)
+
+		// write/update...
+		if(data != null){
+			// XXX create/update basedir...
+
+		// clear/remove...
+		} else {
+			// XXX remove file...
+			// XXX recursively check/remove dirs...
+		}
+	},
 	// XXX handle writing to directories...
 	// 		i.e. write to "./"+ this.__directory_text__
 	// XXX would need to convert a file to a dir if writing to sub-path...
