@@ -763,15 +763,21 @@ module.FileStore = {
 				: fs.readFileSync(p).toString(),
 		} },
 	// XXX handle writing to directories...
+	// 		i.e. write to "./"+ this.__directory_text__
+	// XXX would need to convert a file to a dir if writing to sub-path...
+	// XXX recursively create all dirs...
 	// XXX do we write all the data or only the .text???
 	__update__: async function(path, data, mode='update'){
 		var p = module.path.join(this.__path__, path)
+
 		var f = await fs.promises.open(p, 'w')
 		var size = await f.writeFile(data.text)
 		f.close()
 		// XXX check size...
 		// XXX
 	},
+	// XXX remove empty dirs (???)
+	// XXX convert a dir to a file if removing last sub-file/dir...
     __delete__: async function(path){
 		var p = module.path.join(this.__path__, path)
 		// XXX
