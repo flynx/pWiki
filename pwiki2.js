@@ -573,8 +573,10 @@ function(meth, drop_cache=false, post){
 		var res = 
 			store == null ?
 				object.parentCall(MetaStore, meth, this, path, ...args)
-				//: this.data[store][meth](path.slice(store.length), ...args) 
-				: this.data[store][target](path.slice(store.length), ...args) 
+				: this.data[store][target](
+					// NOTE: we are normalizing for root/non-root paths...
+					path.slice(path.indexOf(store)+store.length), 
+					...args) 
 
 		if(drop_cache){
 			delete this.__substores }
@@ -601,9 +603,13 @@ module.MetaStore = {
 					return path })) },
 	substore: function(path){
 		path = module.path.normalize(path, 'string')
+		var root = path[0] == '/'
 		var store = this.substores
 			.filter(function(p){
-				return path.startsWith(p) })
+				return path.startsWith(
+					root ? 
+						'/'+p 
+						: p) })
 			.sort(function(a, b){
 				return a.length - b.length })
 			.pop() 
@@ -628,14 +634,14 @@ module.MetaStore = {
 			.flat() },
 	// XXX revise...
 	__exists__: metaProxy('__exists__', 
+		// normalize path...
 		function(res, store, path){
-			return (res && store) ?
-				// XXX which way should we go???
-				//module.path.join(store, res)
+			return (store && res) ?
 				path
 	   			: res }),
 	__get__: metaProxy('__get__'),
 	__delete__: metaProxy('__delete__', true),
+	// XXX BUG: this does not create stuff in sub-store...
 	__update__: metaProxy('__update__', true),
 
 	json: function(asstring=false){
@@ -722,12 +728,14 @@ var exists =
 module.exists =
 async function(base, sub, options={index: '.index'}){
 	if(typeof(sub) != 'string'){
-		options = sub
+		options = sub ?? options
 		sub = base
-		base = '' }
+		base = null }
 	var {index} = options
 
-	var target = module.path.join(base, sub)
+	var target = base ?
+		module.path.join(base, sub)
+		: sub
 	if(!fs.existsSync(target)){
 		return false }
 	var stat = await fs.promises.stat(target)
@@ -738,12 +746,14 @@ var read =
 module.read =
 async function(base, sub, options={index: '.index'}){
 	if(typeof(sub) != 'string'){
-		options = sub
+		options = sub ?? options
 		sub = base
-		base = '' }
+		base = null }
 	var {index} = options
 
-	var target = module.path.join(base, sub)
+	var target = base ?
+		module.path.join(base, sub)
+		: sub
 	if(!fs.existsSync(target)){
 		return undefined }
 	// handle dir text...
@@ -759,14 +769,16 @@ var mkdir =
 module.mkdir =
 async function(base, sub, options={index: '.index'}){
 	if(typeof(sub) != 'string'){
-		options = sub
-		sub = base
-		base = '' }
+		options = sub ?? options
+		sub = base 
+		base = null }
 	var {index} = options
 
 	var levels = module.path.split(sub)
 	for(var level of levels){
-		base = module.path.join(base, level)
+		base = base == null ?
+			level
+			: module.path.join(base, level)
 		// nothing exists -- create dir and continue...
 		if(!fs.existsSync(base)){
 			await fs.promises.mkdir(base, {recursive: true}) 
@@ -787,25 +799,35 @@ async function(base, sub, options={index: '.index'}){
 var update = 
 module.update =
 async function(base, sub, data, options={index: '.index'}){
-	if(typeof(sub) != 'string'){
-		options = sub
+	if(typeof(data) != 'string'){
+		options = data ?? options
+		data = sub
 		sub = base
-		base = '' }
+		base = null }
 	var {index} = options
 
+	var target = base ?
+		module.path.join(base, sub)
+		: sub
 	// path already exists...
-	if(fs.existsSync(module.path.join(base, sub))){
-		var stat = await fs.promises.stat(base)
+	if(fs.existsSync(target)){
+		var stat = await fs.promises.stat(target)
 		if(stat.isDirectory()){
-			sub = module.path.join(sub, index) } 
+			target = module.path.join(target, index) } 
 	// create path / parts of path...
 	} else {
-		var levels = module.path.split(sub)
-		var basename = levels.pop()
+		var levels = module.path.split(target)
+		levels.pop()
 		// ensure the parent dir exists...
-		await module.mkdir(base, levels, index) }
+		await module.mkdir(
+			...(base ?
+				// NOTE: we are keeping this separate here to avoid creating 
+				// 		anything above it...
+				[base]
+				: []), 
+			levels, 
+			options) }
 	// write the data...
-	var target = module.path.join(base, sub)
 	var f = await fs.promises.open(target, 'w')
 	await f.writeFile(data)
 	f.close()
@@ -814,13 +836,15 @@ var clear =
 module.clear =
 async function(base, sub, options={index: '.index'}){
 	if(typeof(sub) != 'string'){
-		options = sub
+		options = sub ?? options
 		sub = base
 		base = '' }
 	var {index} = options
 
 	// remove leaf...
-	var target = module.path.join(base, sub)
+	var target = base == '' ?
+		sub
+		: module.path.join(base, sub)
 	// dir...
 	if(fs.existsSync(target)){
 		var stat = await fs.promises.stat(target)
@@ -853,6 +877,12 @@ async function(base, sub, options={index: '.index'}){
 				fs.promises.rmdir(cur) } }
 		levels.pop() } 
 	return target }
+// XXX cleanup all sub-paths...
+var cleanup =
+module.cleanup =
+async function(base){
+	// XXX
+}
 
 
 // XXX add monitor API...
@@ -882,7 +912,7 @@ module.FileStore = {
 							return path
 								.slice(that.__path__.length) })) }) }) },
 	__exists__: async function(path){
-		return module.exists(this.__path__, path, {index: this.__directory_text__}) 
+		return await module.exists(this.__path__, path, {index: this.__directory_text__}) 
 			&& path },
 	__get__: async function(path){
 		var p = module.path.join(this.__path__, path)
@@ -891,8 +921,9 @@ module.FileStore = {
 			atime: atimeMs,
 			mtime: mtimeMs,
 			ctime: ctimeMs,
-			text: module.read(p, {index: this.__directory_text__})
+			text: await module.read(p, {index: this.__directory_text__})
 		} },
+	// XXX BUG: meta-store: writing to this creates a root path rather than a file...
 	// XXX do we write all the data or only the .text???
 	__update__: async function(path, data, mode='update'){
 		return module.update(
