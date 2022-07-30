@@ -712,6 +712,149 @@ module.localStorageNestedStore = {
 var fs = require('fs')
 var glob = require('glob')
 
+//	exists(base[, options])
+//		-> true/false
+//
+//	exists(base, path[, options])
+//		-> true/false
+//
+var exists =
+module.exists =
+async function(base, sub, options={index: '.index'}){
+	if(typeof(sub) != 'string'){
+		options = sub
+		sub = base
+		base = '' }
+	var {index} = options
+
+	var target = module.path.join(base, sub)
+	if(!fs.existsSync(target)){
+		return false }
+	var stat = await fs.promises.stat(target)
+	if(stat.isDirectory()){
+		return fs.existsSync(module.path.join(target, index)) }
+	return true }
+var read =
+module.read =
+async function(base, sub, options={index: '.index'}){
+	if(typeof(sub) != 'string'){
+		options = sub
+		sub = base
+		base = '' }
+	var {index} = options
+
+	var target = module.path.join(base, sub)
+	if(!fs.existsSync(target)){
+		return undefined }
+	// handle dir text...
+	var stat = await fs.promises.stat(target)
+	if(stat.isDirectory()){
+		var target = module.path.join(target, index) 
+		fs.existsSync(target)
+			|| (target = false) }
+	return target ?
+		fs.promises.readFile(target, {encoding: 'utf-8'})
+		: undefined }
+var mkdir = 
+module.mkdir =
+async function(base, sub, options={index: '.index'}){
+	if(typeof(sub) != 'string'){
+		options = sub
+		sub = base
+		base = '' }
+	var {index} = options
+
+	var levels = module.path.split(sub)
+	for(var level of levels){
+		base = module.path.join(base, level)
+		// nothing exists -- create dir and continue...
+		if(!fs.existsSync(base)){
+			await fs.promises.mkdir(base, {recursive: true}) 
+			continue }
+		// directory -- continue...
+		var stat = await fs.promises.stat(base)
+		if(stat.isDirectory()){
+			continue }
+		// file -- convert to dir...
+		await fs.promises.rename(base, base+'.pwiki-bak') 
+		await fs.promises.mkdir(base, {recursive: true}) 
+		await fs.promises.rename(base +'.pwiki-bak', base +'/'+ index) }
+	return base }
+// XXX error checking???
+// XXX metadata???
+// XXX modes???
+// XXX should this transform <dir>/.index into a file if nothing else exists in it???
+var update = 
+module.update =
+async function(base, sub, data, options={index: '.index'}){
+	if(typeof(sub) != 'string'){
+		options = sub
+		sub = base
+		base = '' }
+	var {index} = options
+
+	// path already exists...
+	if(fs.existsSync(module.path.join(base, sub))){
+		var stat = await fs.promises.stat(base)
+		if(stat.isDirectory()){
+			sub = module.path.join(sub, index) } 
+	// create path / parts of path...
+	} else {
+		var levels = module.path.split(sub)
+		var basename = levels.pop()
+		// ensure the parent dir exists...
+		await module.mkdir(base, levels, index) }
+	// write the data...
+	var target = module.path.join(base, sub)
+	var f = await fs.promises.open(target, 'w')
+	await f.writeFile(data)
+	f.close()
+	return target }
+var clear = 
+module.clear =
+async function(base, sub, options={index: '.index'}){
+	if(typeof(sub) != 'string'){
+		options = sub
+		sub = base
+		base = '' }
+	var {index} = options
+
+	// remove leaf...
+	var target = module.path.join(base, sub)
+	// dir...
+	if(fs.existsSync(target)){
+		var stat = await fs.promises.stat(target)
+		if(stat.isDirectory()){
+			var files = await fs.promises.readdir(target)
+			// remove index...
+			if(files.includes(index)){
+				await fs.promises.rm(module.path.join(target, index))
+				// NOTE: we do not care what we pop as long as the .length 
+				// 		is correct as we'll not be using the content after 
+				// 		this point...
+				files.pop() }
+			// remove dir if empty...
+			if(files.length == 0){
+				fs.promises.rmdir(target) }
+		// simple file...
+		} else {
+			await fs.promises.rm(target) } }
+	// cleanup path -- remove empty dirs... (XXX ???)
+	var levels = module.path.split(sub)
+		.slice(0, -1)
+	while(levels.length > 0){
+		var cur = module.path.join(base, ...levels)
+		if(fs.existsSync(cur)){
+			var stat = await fs.promises.stat(base)
+			if(stat.isDirectory()){
+				// stop cleanup if non-empty dir...
+				if((await fs.promises.readdir(cur)).length != 0){
+					break }
+				fs.promises.rmdir(cur) } }
+		levels.pop() } 
+	return target }
+
+
 // XXX add monitor API...
 // XXX backup files on write/delete...
 // XXX do a r/o version...
@@ -726,6 +869,7 @@ module.FileStore = {
 	__directory_text__: '.index',
 
 	// XXX do we remove the extension???
+	// XXX BUG? is this recursive???
 	// XXX cache???
 	__paths__: async function(){
 		var that = this
@@ -738,85 +882,27 @@ module.FileStore = {
 							return path
 								.slice(that.__path__.length) })) }) }) },
 	__exists__: async function(path){
-		var p = module.path.join(this.__path__, path)
-		try {
-			var stat = await fs.promises.stat(p)
-			// NOTE: we consider a directory as "existing" iff we can 
-			// 		produce text for it...
-			return stat.isDirectory() ?
-					(!!fs.existsSync(p +'/'+ this.__directory_text__) 
-						&& path)
-				: !!fs.existsSync(p) ?
-					path
-				: false
-		} catch(err){
-			return false } },
+		return module.exists(this.__path__, path, {index: this.__directory_text__}) 
+			&& path },
 	__get__: async function(path){
 		var p = module.path.join(this.__path__, path)
-		var stat = await fs.promises.stat(p)
-		var {atimeMs, mtimeMs, ctimeMs, birthtimeMs} = stat
+		var {atimeMs, mtimeMs, ctimeMs, birthtimeMs} = await fs.promises.stat(p)
 		return {
 			atime: atimeMs,
 			mtime: mtimeMs,
 			ctime: ctimeMs,
-			text: stat.isDirectory() ? 
-				fs.readFileSync(p +'/'+ this.__directory_text__).toString()
-				: fs.readFileSync(p).toString(),
+			text: module.read(p, {index: this.__directory_text__})
 		} },
-	//
-	// 	Add data to path...
-	// 	.__update_path__(<path>, <data>)
-	//
-	// 	Clear data from path...
-	// 	.__update_path__(<path>, undefined)
-	//
-	// XXX this is FileStore-specific...
-	// XXX create a file path and set data...
-	// 		- convert files in path to dirs:
-	// 			a/b/c -> a/b/c/.text 
-	// 				- move "c" -> "c.bak"
-	// 				- mkdir "c" 
-	// 				- move "c.bak" -> "c/.text"
-	// 		- convert last dir to file if directory empty...
-	// 			a/b/c/.text -> a/b/c
-	// 				(same as above)
-	// 		- remove empty dirs from path...
-	// XXX might be a good idea to have a store-specific backup/tmp dir...
-	// XXX might be a good idea to move this functionality to 
-	// 		.__update__(..) and use it from .__delete__(..)...
-	__update_path__: async function(path, data, mode='update'){
-		var p = module.path.join(this.__path__, path)
-
-		// write/update...
-		if(data != null){
-			// XXX create/update basedir...
-
-		// clear/remove...
-		} else {
-			// XXX remove file...
-			// XXX recursively check/remove dirs...
-		}
-	},
-	// XXX handle writing to directories...
-	// 		i.e. write to "./"+ this.__directory_text__
-	// XXX would need to convert a file to a dir if writing to sub-path...
-	// XXX recursively create all dirs...
 	// XXX do we write all the data or only the .text???
 	__update__: async function(path, data, mode='update'){
-		var p = module.path.join(this.__path__, path)
-
-		var f = await fs.promises.open(p, 'w')
-		var size = await f.writeFile(data.text)
-		f.close()
-		// XXX check size...
-		// XXX
-	},
-	// XXX remove empty dirs (???)
-	// XXX convert a dir to a file if removing last sub-file/dir...
+		return module.update(
+			this.__path__, path, 
+			data.text, 
+			{index: this.__directory_text__}) },
     __delete__: async function(path){
-		var p = module.path.join(this.__path__, path)
-		// XXX
-	},
+		return module.clear(
+			this.__path__, path, 
+			{index: this.__directory_text__}) },
 	load: function(data){
 		// XXX
 	},
