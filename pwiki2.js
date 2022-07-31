@@ -930,13 +930,27 @@ async function(base, sub, options={index: '.index'}){
 var cleanup =
 module.cleanup =
 async function(base, options={index: '.index'}){
+	var {index} = options
+
 	glob(module.path.join(base, '**/*'))
-		.on('end', function(paths){
+		.on('end', async function(paths){
 			paths
 				.sort(function(a, b){
 					return b.length - a.length })
-			// XXX
-		}) }
+			for(var path of paths){
+				var stat = await fs.promises.stat(base)
+				if(stat.isDirectory()){
+					var children = await fs.promises.readdir(path)
+					// empty -> remove...
+					if((children.length == 0){
+						fs.promises.rmdir(path) 
+						continue }
+					// dir -> file...
+					if(children.length == 1 
+							&& children[0] == index){
+						// XXX
+						continue }
+				} } }) }
 
 
 // XXX add a lock file and prevent multiple adapters from controlling 
