@@ -925,11 +925,18 @@ async function(base, sub, options={index: '.index'}){
 		levels.pop() } 
 	return target }
 // XXX cleanup all sub-paths...
+// 		- remove empty leaf dirs
+// 		- dir -> file ???
 var cleanup =
 module.cleanup =
-async function(base){
-	// XXX
-}
+async function(base, options={index: '.index'}){
+	glob(module.path.join(base, '**/*'))
+		.on('end', function(paths){
+			paths
+				.sort(function(a, b){
+					return b.length - a.length })
+			// XXX
+		}) }
 
 
 // XXX add a lock file and prevent multiple adapters from controlling 
@@ -956,11 +963,11 @@ module.FileStore = {
 			glob(module.path.join(that.__path__, '**/*'))
 				.on('end', function(paths){
 					Promise.all(paths
-						.map(async function(path){
-							return await module.exists(path) ?
-								path
-									.slice(that.__path__.length)
-								: [] }))
+							.map(async function(path){
+								return await module.exists(path) ?
+									path
+										.slice(that.__path__.length)
+									: [] }))
 						.then(function(paths){
 							resolve(paths.flat()) }) }) }) },
 	__exists__: async function(path){
