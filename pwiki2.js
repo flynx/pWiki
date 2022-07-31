@@ -521,18 +521,60 @@ module.BaseStore = {
 			&& await this.__delete__(path)
 		return this },
 
-
 	// XXX NEXT might be a good idea to have an API to move pages from 
 	// 		current store up the chain...
 
-
-	// XXX do we need this???
+	// load/json protocol...
+	//
+	// The .load(..) / .json(..) methods have two levels of implementation:
+	// 	- generic
+	// 		uses .update(..) and .paths()/.get(..) and is usable as-is
+	// 		in any store adapter implementing the base protocol.
+	// 	- batch
+	// 		implemented via .__batch_load__(..) and .__batch_json__(..) 
+	// 		methods and can be adapter specific.
+	//
+	// NOTE: the generic level does not care about the nested stores 
+	// 		and other details, as it uses the base API and will produce 
+	// 		full and generic result regardless of actual store topology.
+	// NOTE: implementations of the batch level need to handle nested 
+	// 		stores correctly.
+	// 		XXX not sure if we can avoid this at this stage...
+	// NOTE: care must be taken with inheriting the batch protocol methods
+	// 		as they take precedence over the generic protocol. It is 
+	// 		recommended to either overload them or simply assign null or
+	// 		undefined to them when inheriting from a non-base-store.
+	//__batch_load__: function(data){
+	//	// ...
+	//	return this }, 
 	load: async function(...data){
-		this.data = Object.assign(this.data, ...data)
+		var input = {}
+		for(var e of data){
+			input = {...input, ...e} }
+		// batch loader (optional)...
+		if(this.__batch_load__){
+			this.__batch_load__(input)
+		// one-by-one loader...
+		} else {
+			for(var [path, value] of Object.entries(input)){
+				this.update(path, value) } }
 		return this },
-	json: function(asstring=false){
-		// XXX
-	},
+	//__batch_json__: function(){
+	//	// ...
+	//	return json},
+	json: async function(asstring=false){
+		// batch...
+		if(this.__batch_json__){
+			var res = this.__batch_json__(asstring)
+		// generic...
+		} else {
+			var res = {}
+			for(var path of await this.paths()){
+				res[path] = await this.get(path) } }
+		return (asstring 
+				&& typeof(res) != 'string') ?
+			JSON.stringify(res)
+			: res },
 
 	// XXX NEXT EXPERIMENTAL...
 	nest: function(base){
@@ -585,6 +627,8 @@ function(meth, drop_cache=false, post){
 		return res} }
 
 
+// XXX this gets stuff from .data, can we avoid this???
+// 		...this can restrict this to being in-memory...
 // XXX not sure about the name...
 // XXX should this be a mixin???
 var MetaStore =
@@ -603,6 +647,8 @@ module.MetaStore = {
 					return path })) },
 	substore: function(path){
 		path = module.path.normalize(path, 'string')
+		if(this.substores.includes(path)){
+			return path }
 		var root = path[0] == '/'
 		var store = this.substores
 			.filter(function(p){
@@ -617,6 +663,8 @@ module.MetaStore = {
 			// the actual store is not stored within itself...
 			undefined
 			: store },
+	getstore: function(path){
+		return this.data[this.substore(path)] },
 	
 	// XXX this depends on .data having keys...
 	__paths__: async function(){
@@ -644,9 +692,6 @@ module.MetaStore = {
 	// XXX BUG: this does not create stuff in sub-store...
 	__update__: metaProxy('__update__', true),
 
-	json: function(asstring=false){
-		// XXX
-	},
 }
 
 
@@ -685,10 +730,6 @@ module.localStorageStore = {
 			JSON.stringify(data) },
 	__delete__: function(path){
 		delete this.data[(this.__prefix__ ?? '')+ path] },
-
-	// XXX 
-	load: function(){
-	},
 }
 
 
@@ -832,6 +873,12 @@ async function(base, sub, data, options={index: '.index'}){
 	await f.writeFile(data)
 	f.close()
 	return target }
+var backup =
+module.backup =
+async function(base, sub, options={index: '.index', backup:'/.backup'}){
+	var {index, backup} = options
+	// XXX
+}
 var clear = 
 module.clear =
 async function(base, sub, options={index: '.index'}){
@@ -885,6 +932,8 @@ async function(base){
 }
 
 
+// XXX add a lock file and prevent multiple adapters from controlling 
+// 		one path...
 // XXX add monitor API...
 // XXX backup files on write/delete...
 // XXX do a r/o version...
@@ -894,23 +943,26 @@ module.FileStore = {
 
 	// XXX
 	__path__: 'store/fs',
+	__backup_path__: '/.backup',
 
 	// XXX should this be "index" or ".index"???
 	__directory_text__: '.index',
 
 	// XXX do we remove the extension???
-	// XXX BUG? is this recursive???
 	// XXX cache???
 	__paths__: async function(){
 		var that = this
 		return new Promise(function(resolve, reject){
-			glob(module.path.join(that.__path__, '/**/*'))
+			glob(module.path.join(that.__path__, '**/*'))
 				.on('end', function(paths){
-					resolve(paths
-						.map(function(path){ 
-							// XXX need better .__path__ removal...
-							return path
-								.slice(that.__path__.length) })) }) }) },
+					Promise.all(paths
+						.map(async function(path){
+							return await module.exists(path) ?
+								path
+									.slice(that.__path__.length)
+								: [] }))
+						.then(function(paths){
+							resolve(paths.flat()) }) }) }) },
 	__exists__: async function(path){
 		return await module.exists(this.__path__, path, {index: this.__directory_text__}) 
 			&& path },
@@ -934,12 +986,6 @@ module.FileStore = {
 		return module.clear(
 			this.__path__, path, 
 			{index: this.__directory_text__}) },
-	load: function(data){
-		// XXX
-	},
-	json: function(asstring=false){
-		// XXX
-	},
 }
 
 
@@ -1006,11 +1052,6 @@ module.PouchDBStore = {
 		doc 
 			&& (await this.data.remove(doc))
 		return this },
-
-	// XXX 
-	load: function(){
-
-	},
 }
 
 
