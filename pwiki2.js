@@ -766,6 +766,7 @@ var FILESTORE_OPTIONS = {
 
 	clearEmptyDir: true,
 	dirToFile: true,
+	cleanBackup: true,
 
 	verbose: true,
 }
@@ -823,14 +824,88 @@ async function(base, sub, options){
 	return target ?
 		fs.promises.readFile(target, {encoding: 'utf-8'})
 		: undefined }
-// XXX
+// NOTE: backing up ** will include nested backups...
+// XXX add versioning...
 var backup =
 module.backup =
 async function(base, sub, options){
-	var {index, backup} =
+	var {index, backup, verbose, recursive, cleanBackup} =
 		Object.assign({}, 
 			FILESTORE_OPTIONS, 
 			options ?? {})
+	recursive = recursive ?? false
+
+	var _backup = backup
+	backup = 
+		module.path.join(
+			base,
+			module.path.relative(sub, backup))
+
+	// ** or * -- backup each file in path...
+	if(/[\\\/]*\*\*?$/.test(sub)){
+		if(cleanBackup 
+				&& fs.existsSync(backup)){
+			verbose
+				&& console.log('backup(..): cleaning:', backup)
+			await fs.promises.rm(backup, {recursive: true}) }
+		if(sub.endsWith('**')){
+			options = {
+				...(options ?? {}), 
+				recursive: true,
+			} }
+		sub = sub.replace(/[\\\/]*\*\*?$/, '')
+		// XXX should we ignore only the first element (current) or the sub-path???
+		var b = module.path.split(_backup)
+			.filter(function(p){ 
+				return p != '' })
+			.shift()
+		return fs.promises.readdir(base +'/'+ sub)
+			.iter()
+			// skip backups...
+			.filter(function(file){
+				return !file.includes(b) })
+			.map(async function(file){
+				return await module.backup(base, sub +'/'+ file, options) })
+			// keep only the paths we backed up...
+			.filter(function(e){ 
+				return !!e }) 
+
+	// backup single page...
+	} else {
+		var target = module.path.join(base, sub) 
+		var full = _backup[0] == '/'
+
+		// nothing to backup...
+		if(!fs.existsSync(target)){
+			verbose
+				&& console.log('backup(..): target does not exist:', target)
+			return }
+
+		if(!recursive){
+			var stat = await fs.promises.stat(target)
+			if(stat.isDirectory()){
+				sub += '/'+index 
+				target += '/'+index
+				// nothing to backup...
+				if(!fs.existsSync(target)){
+					verbose
+						&& console.log('backup(..): nothing to backup:', target)
+					return } } }
+
+		var to = full ?
+			backup +'/'+ sub
+			: backup +'/'+ module.path.basename(sub)
+		var todir = module.path.dirname(to)
+
+		verbose
+			&& console.log('backup(..):', sub, '->', to)
+		await fs.promises.mkdir(todir, {recursive: true}) 
+		await fs.promises.cp(target, to, {force: true, recursive})
+		return to } }
+// XXX
+var restore =
+module.restore =
+async function(base, sub, options){
 	// XXX
 }
 var mkdir = 
@@ -989,18 +1064,13 @@ async function(base, options){
 				} } }) }
 
 
-// XXX add a lock file and prevent multiple adapters from controlling 
-// 		one path...
-// XXX add monitor API...
-// XXX backup files on write/delete...
-// XXX do a r/o version...
-var FileStore =
-module.FileStore = {
+// XXX add monitor API + cache + live mode (auto on when lock detected)...
+var FileStoreRO =
+module.FileStoreRO = {
 	__proto__: BaseStore,
 
 	// XXX
 	__path__: 'store/fs',
-	__backup_path__: '/.backup',
 
 	// XXX should this be "index" or ".index"???
 	__directory_text__: '.index',
@@ -1032,6 +1102,25 @@ module.FileStore = {
 			ctime: ctimeMs,
 			text: await module.read(p, {index: this.__directory_text__})
 		} },
+
+	__update__: function(){},
+	__delete__: function(){},
+}
+
+// XXX add a lock file and prevent multiple adapters from controlling 
+// 		one path...
+// XXX backup files on write/delete...
+var FileStore =
+module.FileStore = {
+	__proto__: FileStoreRO,
+
+	// XXX
+	__path__: 'store/fs',
+	__backup_path__: '/.backup',
+
+	// XXX should this be "index" or ".index"???
+	__directory_text__: '.index',
+
 	// XXX BUG: meta-store: writing to this creates a root path rather than a file...
 	// XXX do we write all the data or only the .text???
 	__update__: async function(path, data, mode='update'){
@@ -1043,7 +1132,33 @@ module.FileStore = {
 		return module.clear(
 			this.__path__, path, 
 			{index: this.__directory_text__}) },
+
+	// specific API...
+	cleanup: async function(options={}){
+		return module.cleanup(this.__path__, {
+			index: this.__directory_text__,
+			...options, 
+		}) },
+	// XXX should these be generic???
+	// XXX add versioning...
+	backup: async function(path='**', options={}){
+		return module.backup(
+			this.__path__, path, 
+			{
+				index: this.__directory_text__,
+				backup: this.__backup_path__,
+				...options,
+			}) },
+	restore: async function(path='**', options={}){
+		return module.restore(
+			this.__path__, path, 
+			{
+				index: this.__directory_text__,
+				backup: this.__backup_path__,
+				...options,
+			}) },
 }
+
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
