@@ -778,12 +778,19 @@ var FILESTORE_OPTIONS = {
 	verbose: true,
 }
 
+var getOpts = function(opts){
+	return {
+		...FILESTORE_OPTIONS,
+		...(opts ?? {}),
+	} }
+
 //	func(base[, options])
 //		-> true/false
 //
 //	func(base, path[, options])
 //		-> true/false
 //
+// XXX not yet sure how w should handle dot-files....
 // XXX should these be store methods???
 // XXX do we need error checking in these???
 var exists =
@@ -793,9 +800,7 @@ async function(base, sub, options){
 		options = sub ?? options
 		sub = base
 		base = null }
-	var {index} = Object.assign({}, 
-		FILESTORE_OPTIONS, 
-		options ?? {})
+	var {index} = getOpts(options)
 
 	var target = base ?
 		module.path.join(base, sub)
@@ -813,9 +818,7 @@ async function(base, sub, options){
 		options = sub ?? options
 		sub = base
 		base = null }
-	var {index} = Object.assign({}, 
-		FILESTORE_OPTIONS, 
-		options ?? {})
+	var {index} = getOpts(options)
 
 	var target = base ?
 		module.path.join(base, sub)
@@ -838,9 +841,7 @@ async function(base, sub, options){
 		options = sub ?? options
 		sub = base 
 		base = null }
-	var {index} = Object.assign({}, 
-		FILESTORE_OPTIONS, 
-		options ?? {})
+	var {index} = getOpts(options)
 
 	var levels = module.path.split(sub)
 	for(var level of levels){
@@ -873,9 +874,7 @@ async function(base, sub, data, options){
 		data = sub
 		sub = base
 		base = null }
-	var {index} = Object.assign({}, 
-		FILESTORE_OPTIONS, 
-		options ?? {})
+	var {index} = getOpts(options)
 
 	var target = base ?
 		module.path.join(base, sub)
@@ -910,9 +909,7 @@ async function(base, sub, options){
 		options = sub ?? options
 		sub = base
 		base = '' }
-	var {index} = Object.assign({}, 
-		FILESTORE_OPTIONS, 
-		options ?? {})
+	var {index} = getOpts(options)
 
 	// remove leaf...
 	var target = base == '' ?
@@ -953,10 +950,7 @@ async function(base, sub, options){
 var cleanup =
 module.cleanup =
 async function(base, options){
-	var {index, clearEmptyDir, dirToFile, verbose} = 
-		Object.assign({}, 
-			FILESTORE_OPTIONS, 
-			options ?? {})
+	var {index, clearEmptyDir, dirToFile, verbose} = getOpts(options)
 
 	glob(module.path.join(base, '**/*'))
 		.on('end', async function(paths){
@@ -986,115 +980,241 @@ async function(base, options){
 						continue }
 				} } }) }
 
-//
-// 	backing(<base>[, <options>])
-// 	backing(<base>, '**'[, <options>])
-// 	backing(<base>, '**', Date.timeStamp()[, <options>])
-// 		-> <list>
-//
-// 	backing(<base>, <path>[, <version>][, <options>])
-// 		-> <list>
-//
-// 	backing(<base>, <path>, false[, <options>])
-// 		-> <list>
-//
-// NOTE: backing up ** will include nested backups but will skip the 
-// 		root backup...
-// NOTE: currently this ignores only the first element of the options.backup
-// 		path.
 var backup =
-module.backup =
-async function(base, sub='**', version=Date.timeStamp(), options){
-	if(typeof(sub) == 'object'){
-		options = sub
-		sub = '**' }
-	if(typeof(version) == 'object'){
-		options = version
-		version = Date.timeStamp() }
-	// options...
-	var {index, backup, verbose, recursive, cleanBackup} =
-		Object.assign({}, 
-			FILESTORE_OPTIONS, 
-			options ?? {})
-	recursive = recursive ?? false
+module.backup = {
+	// XXX backup config???
 
-	var _backup = backup = 
-		version ?
-			module.path.join(backup, version)
-			: backup
-	backup = 
-		module.path.join(
-			base,
-			module.path.relative(sub, backup))
+	//
+	// 	.create(<base>[, <options>])
+	// 	.create(<base>, '**'[, <options>])
+	// 	.create(<base>, '**', Date.timeStamp()[, <options>])
+	// 		-> <list>
+	//
+	// 	.create(<base>, <path>[, <version>][, <options>])
+	// 		-> <list>
+	//
+	// 	.create(<base>, <path>, false[, <options>])
+	// 		-> <list>
+	//
+	// .create(..) and .restore(..) are completely symmetrical.
+	//
+	// NOTE: backing up ** will include nested backups but will skip the 
+	// 		root backup but will ignore the root backup dir...
+	//
+	// XXX since these are *almost* identical in structure, can we reuse one 
+	// 		to implement the other???
+	// 		..or can we implement these in a manner similar to "cp A B" vs. "cp B A"???
+	create: async function(base, sub='**', version=Date.timeStamp(), options){
+		var that = this
+		if(typeof(sub) == 'object'){
+			options = sub
+			sub = '**' }
+		if(typeof(version) == 'object'){
+			options = version
+			version = Date.timeStamp() }
+		// options...
+		var {index, backup, verbose, recursive, cleanBackup, __batch} = options = getOpts(options)
+		recursive = recursive ?? false
 
-	// ** or * -- backup each file in path...
-	if(/[\\\/]*\*\*?$/.test(sub)){
-		if(cleanBackup 
-				&& fs.existsSync(backup)){
+		var _backup = backup = 
+			version ?
+				module.path.join(backup, version)
+				: backup
+		backup = 
+			module.path.join(
+				base,
+				module.path.relative(module.path.dirname(sub), backup))
+
+		// ** or * -- backup each file in path...
+		if(/[\\\/]*\*\*?$/.test(sub)){
+			if(sub.endsWith('**')){
+				options.recursive = true }
+			options.__batch = true
+
+			if(cleanBackup 
+					&& fs.existsSync(backup)){
+				verbose
+					&& console.log('.create(..): cleaning:', backup)
+				await fs.promises.rm(backup, {recursive: true}) }
+			sub = sub.replace(/[\\\/]*\*\*?$/, '')
+			var b = module.path.split(_backup)
+				.filter(function(p){ 
+					return p != '' })
+				.shift()
+			return fs.promises.readdir(base +'/'+ sub)
+				.iter()
+				// skip backups...
+				.filter(function(file){
+					return !file.includes(b) })
+				.map(async function(file){
+					return await that.create(base, sub +'/'+ file, version, options) })
+				// keep only the paths we backed up...
+				.filter(function(e){ 
+					return !!e }) 
+
+		// backup single page...
+		} else {
+			var target = module.path.join(base, sub) 
+			var full = _backup[0] == '/'
+
+			// nothing to backup...
+			if(!fs.existsSync(target)){
+				verbose
+					&& console.log('.create(..): target does not exist:', target)
+				return }
+
+			var to = full ?
+				backup +'/'+ sub
+				: backup +'/'+ module.path.basename(sub)
+			var todir = module.path.dirname(to)
+
+			if(!recursive){
+				var stat = await fs.promises.stat(target)
+				if(stat.isDirectory()){
+					target += '/'+index 
+					to += '/'+index 
+					// nothing to backup...
+					if(!fs.existsSync(target)){
+						verbose
+							&& !__batch
+							&& console.log('.create(..): nothing to backup:', target)
+						return } } }
+
 			verbose
-				&& console.log('backup(..): cleaning:', backup)
-			await fs.promises.rm(backup, {recursive: true}) }
-		if(sub.endsWith('**')){
-			options = {
-				...(options ?? {}), 
-				recursive: true,
-			} }
-		sub = sub.replace(/[\\\/]*\*\*?$/, '')
-		// XXX should we ignore only the first element (current) or the sub-path???
-		var b = module.path.split(_backup)
-			.filter(function(p){ 
-				return p != '' })
-			.shift()
-		return fs.promises.readdir(base +'/'+ sub)
-			.iter()
-			// skip backups...
-			.filter(function(file){
-				return !file.includes(b) })
-			.map(async function(file){
-				return await module.backup(base, sub +'/'+ file, version, options) })
-			// keep only the paths we backed up...
-			.filter(function(e){ 
-				return !!e }) 
+				&& console.log('.create(..):', sub, '->', to)
+			await fs.promises.mkdir(todir, {recursive: true}) 
+			await fs.promises.cp(target, to, {force: true, recursive})
+			return to } },
+	restore: async function(base, sub, version, options){
+		var that = this
+		// XXX
+		var {index, backup, verbose, recursive, preBackup, __batch} = options = getOpts(options)
+		recursive = recursive ?? false
 
-	// backup single page...
-	} else {
-		var target = module.path.join(base, sub) 
-		var full = _backup[0] == '/'
+		var _backup = backup = 
+			version ?
+				module.path.join(backup, version)
+				: backup
+		backup = 
+			module.path.join(
+				base,
+				module.path.relative(
+					module.path.dirname(sub), 
+					backup))
 
-		// nothing to backup...
-		if(!fs.existsSync(target)){
+		// check if we can restore...
+		if(!fs.existsSync(backup)){
 			verbose
-				&& console.log('backup(..): target does not exist:', target)
+				&& console.log('restore(..): no backup version:', version)
 			return }
 
-		if(!recursive){
-			var stat = await fs.promises.stat(target)
-			if(stat.isDirectory()){
-				sub += '/'+index 
-				target += '/'+index
-				// nothing to backup...
-				if(!fs.existsSync(target)){
+		// XXX should we use the same options...
+		preBackup
+			&& await this.create(base, sub, options ?? {})
+
+		// ** or * -- backup each file in path...
+		// NOTE: when restoring there is no difference between ** and *...
+		if(/[\\\/]*\*\*?$/.test(sub)){
+			if(sub.endsWith('**')){
+				options.recursive = true }
+			// restore...
+			// NOTE: we have already made a full backup so no need to 
+			// 		redo it down the line...
+			options.preBackup = false
+			options.__batch = true
+
+			sub = sub.replace(/[\\\/]*\*\*?$/, '')
+			var to = module.path.join(base, sub)
+			var b = module.path.split(_backup)
+				.filter(function(p){ 
+					return p != '' })
+				.shift()
+			// cleanup...
+			// NOTE: we need this stage as the file list we are backing up 
+			// 		and the one in the target dir can differ, and a single-page
+			// 		.restore(..) will only remove collisions...
+			await fs.promises.readdir(base +'/'+ sub)
+				.iter()
+				// skip backups...
+				.filter(function(file){
+					return !file.includes(b) })
+				.map(async function(file){
+					var p = module.path.join(base, sub, file)
 					verbose
-						&& console.log('backup(..): nothing to backup:', target)
-					return } } }
+						&& console.log('restore(..): removing:', p)
+					await fs.promises.rm(p, {recursive: true})
+					return p })
+			return fs.promises.readdir(backup)
+				.iter()
+				.map(async function(file){
+					return await that.restore(base, sub+'/'+file, version, options) })
+				// keep only the paths we backed up...
+				.filter(function(e){ 
+					return !!e }) 
 
-		var to = full ?
-			backup +'/'+ sub
-			: backup +'/'+ module.path.basename(sub)
-		var todir = module.path.dirname(to)
+		// single page...
+		} else {
+			var index_file = ''
+			var full = _backup[0] == '/'
+			var source = full ?
+				module.path.join(backup, sub)
+				: module.path.join(backup, module.path.basename(sub))
+			if(!fs.existsSync(source)){
+				verbose
+					&& console.log('restore(..): source not present in backup:', source)
+				return }
+			var to = module.path.join(base, sub)
+			if(fs.existsSync(to)){
+				var stat = await fs.promises.stat(to)
+				if(stat.isDirectory()){
+					var f = module.path.join(to, index)
+					if(fs.existsSync(f)){
+						verbose
+							&& console.log('restore(..): removing:', f)
+						await fs.promises.rm(f) }
+				} else {
+					verbose
+						&& console.log('restore(..): removing:', to)
+					await fs.promises.rm(to) } }
 
-		verbose
-			&& console.log('backup(..):', sub, '->', to)
-		await fs.promises.mkdir(todir, {recursive: true}) 
-		await fs.promises.cp(target, to, {force: true, recursive})
-		return to } }
-// XXX
-var restore =
-module.restore =
-async function(base, sub, version, options){
-	// XXX
+			if(!recursive){
+				// handle dir text...
+				var stat = await fs.promises.stat(source)
+				if(stat.isDirectory()){
+					source += '/'+index
+					to += '/'+index 
+					if(!fs.existsSync(source)){
+						verbose
+							&& !__batch
+							&& console.log('restore(..): source not present in backup:', source)
+						return } } }
+
+			verbose
+				&& console.log('restore(..): restoring:', to)
+			await fs.promises.cp(source, to, {recursive: true})
+			return source } },
+	//
+	//	Get backup versions...
+	//	listbackups(<base>[, <options>])
+	//	listbackups(<base>, '*'[, <options>])
+	//		-> <list>
+	//
+	//	Get backup versions containing <path>...
+	//	listbackups(<base>, <path>[, <options>])
+	//		-> <list>
+	//
+	list: async function(base, sub, options){
+		var that = this
+		if(typeof(sub) == 'object'){
+			options = sub
+			sub = '*' }
+		var {index, backup} = getOpts(options)
+		// XXX
+	},
 }
 
+
+// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
 // XXX might be a good idea to support ro mode on top level explicitly...
 // XXX add monitor API + cache + live mode (auto on when lock detected)...
@@ -1175,7 +1295,7 @@ module.FileStore = {
 	// XXX should these be generic???
 	// XXX add versioning...
 	backup: async function(path='**', options={}){
-		return module.backup(
+		return backup.create(
 			this.__path__, path, 
 			{
 				index: this.__directory_text__,
@@ -1183,7 +1303,7 @@ module.FileStore = {
 				...options,
 			}) },
 	restore: async function(path='**', options={}){
-		return module.restore(
+		return backup.restore(
 			this.__path__, path, 
 			{
 				index: this.__directory_text__,
