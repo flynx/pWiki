@@ -759,20 +759,35 @@ module.localStorageNestedStore = {
 var fs = require('fs')
 var glob = require('glob')
 
-//	exists(base[, options])
+
+var FILESTORE_OPTIONS = {
+	index: '.index',
+	backup: '/.backup',
+
+	clearEmptyDir: true,
+	dirToFile: true,
+
+	verbose: true,
+}
+
+//	func(base[, options])
 //		-> true/false
 //
-//	exists(base, path[, options])
+//	func(base, path[, options])
 //		-> true/false
 //
+// XXX should these be store methods???
+// XXX do we need error checking in these???
 var exists =
 module.exists =
-async function(base, sub, options={index: '.index'}){
+async function(base, sub, options){
 	if(typeof(sub) != 'string'){
 		options = sub ?? options
 		sub = base
 		base = null }
-	var {index} = options
+	var {index} = Object.assign({}, 
+		FILESTORE_OPTIONS, 
+		options ?? {})
 
 	var target = base ?
 		module.path.join(base, sub)
@@ -785,12 +800,14 @@ async function(base, sub, options={index: '.index'}){
 	return true }
 var read =
 module.read =
-async function(base, sub, options={index: '.index'}){
+async function(base, sub, options){
 	if(typeof(sub) != 'string'){
 		options = sub ?? options
 		sub = base
 		base = null }
-	var {index} = options
+	var {index} = Object.assign({}, 
+		FILESTORE_OPTIONS, 
+		options ?? {})
 
 	var target = base ?
 		module.path.join(base, sub)
@@ -806,14 +823,26 @@ async function(base, sub, options={index: '.index'}){
 	return target ?
 		fs.promises.readFile(target, {encoding: 'utf-8'})
 		: undefined }
+// XXX
+var backup =
+module.backup =
+async function(base, sub, options){
+	var {index, backup} =
+		Object.assign({}, 
+			FILESTORE_OPTIONS, 
+			options ?? {})
+	// XXX
+}
 var mkdir = 
 module.mkdir =
-async function(base, sub, options={index: '.index'}){
+async function(base, sub, options){
 	if(typeof(sub) != 'string'){
 		options = sub ?? options
 		sub = base 
 		base = null }
-	var {index} = options
+	var {index} = Object.assign({}, 
+		FILESTORE_OPTIONS, 
+		options ?? {})
 
 	var levels = module.path.split(sub)
 	for(var level of levels){
@@ -822,6 +851,8 @@ async function(base, sub, options={index: '.index'}){
 			: module.path.join(base, level)
 		// nothing exists -- create dir and continue...
 		if(!fs.existsSync(base)){
+			verbose 
+				&& console.log('mkdir(..): mkdir:', base)
 			await fs.promises.mkdir(base, {recursive: true}) 
 			continue }
 		// directory -- continue...
@@ -829,23 +860,24 @@ async function(base, sub, options={index: '.index'}){
 		if(stat.isDirectory()){
 			continue }
 		// file -- convert to dir...
+		verbose 
+			&& console.log('mkdir(..): converting file to dir:', base)
 		await fs.promises.rename(base, base+'.pwiki-bak') 
 		await fs.promises.mkdir(base, {recursive: true}) 
 		await fs.promises.rename(base +'.pwiki-bak', base +'/'+ index) }
 	return base }
-// XXX error checking???
 // XXX metadata???
-// XXX modes???
-// XXX should this transform <dir>/.index into a file if nothing else exists in it???
 var update = 
 module.update =
-async function(base, sub, data, options={index: '.index'}){
+async function(base, sub, data, options){
 	if(typeof(data) != 'string'){
 		options = data ?? options
 		data = sub
 		sub = base
 		base = null }
-	var {index} = options
+	var {index} = Object.assign({}, 
+		FILESTORE_OPTIONS, 
+		options ?? {})
 
 	var target = base ?
 		module.path.join(base, sub)
@@ -873,20 +905,16 @@ async function(base, sub, data, options={index: '.index'}){
 	await f.writeFile(data)
 	f.close()
 	return target }
-var backup =
-module.backup =
-async function(base, sub, options={index: '.index', backup:'/.backup'}){
-	var {index, backup} = options
-	// XXX
-}
 var clear = 
 module.clear =
-async function(base, sub, options={index: '.index'}){
+async function(base, sub, options){
 	if(typeof(sub) != 'string'){
 		options = sub ?? options
 		sub = base
 		base = '' }
-	var {index} = options
+	var {index} = Object.assign({}, 
+		FILESTORE_OPTIONS, 
+		options ?? {})
 
 	// remove leaf...
 	var target = base == '' ?
@@ -924,13 +952,13 @@ async function(base, sub, options={index: '.index'}){
 				fs.promises.rmdir(cur) } }
 		levels.pop() } 
 	return target }
-// XXX cleanup all sub-paths...
-// 		- remove empty leaf dirs
-// 		- dir -> file ???
 var cleanup =
 module.cleanup =
-async function(base, options={index: '.index'}){
-	var {index} = options
+async function(base, options){
+	var {index, clearEmptyDir, dirToFile, verbose} = 
+		Object.assign({}, 
+			FILESTORE_OPTIONS, 
+			options ?? {})
 
 	glob(module.path.join(base, '**/*'))
 		.on('end', async function(paths){
@@ -938,17 +966,25 @@ async function(base, options={index: '.index'}){
 				.sort(function(a, b){
 					return b.length - a.length })
 			for(var path of paths){
-				var stat = await fs.promises.stat(base)
+				var stat = await fs.promises.stat(path)
 				if(stat.isDirectory()){
 					var children = await fs.promises.readdir(path)
 					// empty -> remove...
-					if((children.length == 0){
-						fs.promises.rmdir(path) 
+					if(clearEmptyDir 
+							&& children.length == 0){
+						verbose 
+							&& console.log('cleanup(..): removing dir:', path)
+						fs.promises.rmdir(path)
 						continue }
 					// dir -> file...
-					if(children.length == 1 
+					if(dirToFile
+							&& children.length == 1 
 							&& children[0] == index){
-						// XXX
+						verbose 
+							&& console.log('cleanup(..): converting dir to file:', path)
+						await fs.promises.rename(path +'/'+ index, path+'.pwiki-bak') 
+						await fs.promises.rmdir(path) 
+						await fs.promises.rename(path +'.pwiki-bak', path)
 						continue }
 				} } }) }
 
