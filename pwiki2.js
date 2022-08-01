@@ -762,10 +762,14 @@ module.localStorageNestedStore = {
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+//
+// XXX structure is not final...
+// 		- need to split each adapter into modules...
+// 		- should the media handler api be merged with store???
+// 		- how do we handle config???
 
 var fs = require('fs')
 var glob = require('glob')
-
 
 var FILESTORE_OPTIONS = {
 	index: '.index',
@@ -778,7 +782,8 @@ var FILESTORE_OPTIONS = {
 	verbose: true,
 }
 
-var getOpts = function(opts){
+var getOpts = 
+function(opts){
 	return {
 		...FILESTORE_OPTIONS,
 		...(opts ?? {}),
@@ -980,9 +985,18 @@ async function(base, options){
 						continue }
 				} } }) }
 
+// XXX backup metadata...
+// 		- date
+// 		- reason
+// 		- refs...
+// XXX set hidden attribute on backup dir...
 var backup =
 module.backup = {
 	// XXX backup config???
+	//index: '.index',
+	//base: '/.backup',
+	//cleanBackup: true,
+	//verbose: true,
 
 	//
 	// 	.create(<base>[, <options>])
@@ -1209,8 +1223,28 @@ module.backup = {
 			options = sub
 			sub = '*' }
 		var {index, backup} = getOpts(options)
-		// XXX
-	},
+
+		// handle local/global backups...
+		var full = backup[0] == '/'
+		base = full ?
+			module.path.join(base, backup)
+			: module.path.join(base, module.path.dirname(sub), backup)
+		sub = full ?
+			sub
+			: module.path.basename(sub)
+
+		return fs.promises.readdir(base)
+			.iter()
+			.filter(function(version){
+				return (sub == '*' || sub == '**')
+					|| fs.existsSync(
+						module.path.join(base, version, sub)) }) },
+
+	// XXX do we need methods lile:
+	// 		.remove(base, version, ..)
+	// 		.clear(base, ..)
+	// 		.pack(..)
+	// 		...
 }
 
 
