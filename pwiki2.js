@@ -1,7 +1,6 @@
 /**********************************************************************
 * 
 *
-*
 * Architecture:
 * 	store
 * 	page
@@ -18,10 +17,13 @@
 *
 *
 * TODO:
-* 	- .load(..) / .json(..) -- for most stores...
-* 		might be a good idea to keep a unified format...
 * 	- <page>.then() -- resolve when all pending write operations done ???
 * 	- an async REPL???
+*
+*
+* XXX BUG: .get('/* /path').raw will return a punch of '/*' copies, should 
+* 		be the same as .get('/*').match()...
+* 		(NOTE: the " " in the pattern is to avoid closing the block comment)
 *
 *
 *
@@ -74,10 +76,6 @@ var basestore = require('./store/base')
 var filestore = require('./store/file')
 var localstoragestore = require('./store/localstorage')
 var pouchdbstore = require('./store/pouchdb')
-
-
-
-//---------------------------------------------------------------------
 
 
 
@@ -1732,14 +1730,11 @@ store.next.load(
 store.update('@file', 
 	Object.create(filestore.FileStore))
 
-// XXX writing to pages in here does not work yet...
-// 		p.pwiki.path = '/@pouch/README'
-// 		p.pwiki.text = 'PouchDB Store'
 store.update('@pouch', 
 	Object.assign(
 		Object.create(pouchdbstore.PouchDBStore),
 		{
-			__name__: 'data/pouch',
+			__path__: 'data/pouch',
 		}))
 
 

@@ -26,7 +26,7 @@ module.PouchDBStore = {
 
 	// XXX should this be __path__???
 	// 		...this sets the path where the store is created...
-	__name__: 'data/pouch',
+	__path__: 'data/pouch',
 	__key_prefix__: 'pwiki:',
 
 	__data: undefined,
@@ -35,7 +35,7 @@ module.PouchDBStore = {
 			var PouchDB = 
 			module.PouchDB = 
 				require('PouchDB')
-			return (this.__data = new PouchDB(this.__name__)) }
+			return (this.__data = new PouchDB(this.__path__)) }
 		return this.__data },
 	set data(value){
 		this.__data = value },
