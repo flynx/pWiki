@@ -1222,7 +1222,7 @@ module.backup = {
 		if(typeof(sub) == 'object'){
 			options = sub
 			sub = '*' }
-		var {index, backup} = getOpts(options)
+		var {backup} = getOpts(options)
 
 		// handle local/global backups...
 		var full = backup[0] == '/'
@@ -1233,18 +1233,32 @@ module.backup = {
 			sub
 			: module.path.basename(sub)
 
-		return fs.promises.readdir(base)
-			.iter()
-			.filter(function(version){
-				return (sub == '*' || sub == '**')
-					|| fs.existsSync(
-						module.path.join(base, version, sub)) }) },
+		return fs.existsSync(base) ?
+			fs.promises.readdir(base)
+				.iter()
+				.filter(function(version){
+					return (sub == '*' || sub == '**')
+						|| fs.existsSync(
+							module.path.join(base, version, sub)) }) 
+			: [] },
 
 	// XXX do we need methods lile:
-	// 		.remove(base, version, ..)
-	// 		.clear(base, ..)
 	// 		.pack(..)
 	// 		...
+
+	remove: async function(base, version, options){
+		var {backup, verbose} = getOpts(options)
+		var target = 
+			(version == '*' || version == '**') ?
+				module.path.join(base, backup)
+				: module.path.join(base, backup, version)
+		if(fs.existsSync(target)){
+			verbose
+				&& console.log(`.remove(..): removing:`, target)
+			await fs.promises.rm(target, {recursive: true})
+			return target } },
+	clear: async function(base, options){
+		return await this.remove(base, '*', options) }
 }
 
 
