@@ -7,6 +7,8 @@ BOOTSTRAP_FILES := \
 	README.md
 
 LOCAL_MODULES := \
+	node_modules/ig-doc/doc.js \
+	node_modules/ig-stoppable/stoppable.js \
 	node_modules/ig-object/object.js \
 	node_modules/ig-actions/actions.js \
 	node_modules/ig-features/features.js
