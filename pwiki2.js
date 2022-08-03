@@ -21,9 +21,7 @@
 * 	- an async REPL???
 *
 *
-* XXX BUG: macro is broken...
-* 		this will fail:
-* 			p.pwiki.parse('<macro src="/test/*">@source(./path)</macro>')
+* XXX BUG: macro's join does not seem to work...
 *
 *
 *
@@ -1196,6 +1194,7 @@ object.Constructor('Page', BasePage, {
 					return }
 				// parse arg values...
 				src = await this.parse(src, state)
+				var full = this.get(src).path
 
 				handler = handler 
 					?? function(){
@@ -1208,17 +1207,17 @@ object.Constructor('Page', BasePage, {
 				// handle recursion...
 				var parent_seen = state[key]
 				var seen = state[key] = 
-					(state[key] ?? [this.location]).slice()
+					state[key] 
+						?? [] 
 				// recursion detected...
-				// XXX RECURSION revise this...
-				if(seen.includes(src)){
+				if(seen.includes(full)){
 					if(!recursive){
 						throw new Error(
 							macro +': recursion detected: '
-								+ seen.concat([src]).join(' -> ')) }
+								+ seen.concat([full]).join(' -> ')) }
 					// have the 'recursive' arg...
 					return this.parse(recursive, state) }
-				seen.push(src)
+				seen.push(full)
 
 				// load the included page...
 				var res = await handler.call(this)
@@ -1563,7 +1562,6 @@ object.Constructor('Page', BasePage, {
 	// NOTE: writing to .raw is the same as writing to .text...
 	// NOTE: when matching multiple pages this will return a list...
 	get raw(){ return (async function(){
-		var that = this
 		var data = await this.data
 		// no data...
 		// NOTE: if we hit this it means that nothing was resolved, 
