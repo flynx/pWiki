@@ -1537,11 +1537,13 @@ object.Constructor('Page', BasePage, {
 			text = null }
 		state = state ?? {}
 		text = text 
-			?? await this.raw
+			?? await this.each()
 		return text instanceof Array ?
 			Promise.iter(text)
 				.map(function(text){
-					return that.__parser__.parse(that, text, state) })
+					return text instanceof Page ?
+						that.__parser__.parse(text, null, state)
+						: that.__parser__.parse(that, text, state) })
 			: this.__parser__.parse(this, text, state) },
 
 	// true if page has an array value but is not a pattern page...
@@ -1561,6 +1563,28 @@ object.Constructor('Page', BasePage, {
 	// NOTE: when matching multiple pages this will return a list...
 	get raw(){ return (async function(){
 		var that = this
+
+		var pages = await this.each()
+			.map(async function(page){
+				var data = await page.data
+				return (
+					// action...
+					typeof(data) == 'function' ?
+						data.call(page)
+						: data.text ) })
+
+		if(pages.length == 0){
+			var msg = (this.PAGE_NOT_FOUND 
+					|| module.PAGE_NOT_FOUND)
+				.replace(/\$PATH/, this.path)
+			if(this.PAGE_NOT_FOUND){
+				return msg }
+			throw new Error(msg) }
+
+		return this.isPattern ?
+			pages
+			: pages[0] }).call(this) },
+	/*/
 		var data = await this.data
 		// no data...
 		// NOTE: if we hit this it means that nothing was resolved, 
@@ -1587,6 +1611,7 @@ object.Constructor('Page', BasePage, {
 							: d.text })
 					.flat()
    			: data.text )}).call(this) },
+	//*/
 	set raw(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
