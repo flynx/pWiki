@@ -34,7 +34,7 @@ module.PouchDBStore = {
 		if(!this.__data){
 			var PouchDB = 
 			module.PouchDB = 
-				require('PouchDB')
+				require('pouchdb')
 			return (this.__data = new PouchDB(this.__path__)) }
 		return this.__data },
 	set data(value){
