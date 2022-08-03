@@ -21,9 +21,6 @@
 * 	- an async REPL???
 *
 *
-* XXX BUG: macro's join does not seem to work...
-*
-*
 *
 ***********************************************************************
 *
@@ -1483,26 +1480,17 @@ object.Constructor('Page', BasePage, {
 					}
 
 					var join_block = _getBlock('join') 
+
 					// apply macro text...
-					return Promise.iter(pages)
-						.map(async function(page, i){
-							//* XXX really ugly...
-							var res = []
-							for await (var c of that.__parser__.expand(page, text, state)){
-								res.push(c) }
-							if(join_block && i < pages.length-1){
-								for await (var c of that.__parser__.expand(page, join_block, state)){
-									res.push(c) } }
-							return res
-							/*/
+					return pages
+						.map(function(page, i){
 							return [
-								...await that.__parser__.expand(page, text, state),
+								that.__parser__.expand(page, text, state),
+								// weave in the join block...
 								...((join_block && i < pages.length-1) ?
-									await that.__parser__.expand(page, join_block, state)
+									[that.__parser__.expand(that, join_block, state)]
 									: []),
-							] 
-							//*/
-						})
+							] })
 						.flat() } }),
 
 		// nesting rules...
