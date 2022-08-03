@@ -21,9 +21,9 @@
 * 	- an async REPL???
 *
 *
-* XXX BUG: .get('/* /path').raw will return a punch of '/*' copies, should 
-* 		be the same as .get('/*').match()...
-* 		(NOTE: the " " in the pattern is to avoid closing the block comment)
+* XXX BUG: macro is broken...
+* 		this will fail:
+* 			p.pwiki.parse('<macro src="/test/*">@source(./path)</macro>')
 *
 *
 *
@@ -272,7 +272,8 @@ object.Constructor('BasePage', {
 	// page data...
 	//
 	strict: undefined,
-	get data(){
+	get data(){ return (async function(){
+		var that = this
 		// NOTE: we need to make sure each page gets the chance to handle 
 		// 		its context....
 		if(this.isPattern){
@@ -280,10 +281,10 @@ object.Constructor('BasePage', {
 				.map(function(page){
 					return page.data }) }
 		// single page...
-		var res = this.store.get(this.location, !!this.strict)
+		var res = await this.store.get(this.location, !!this.strict)
 		return typeof(res) == 'function' ?
 			res.bind(this)
-			: res },
+			: res }).call(this) },
 		//return this.store.get(this.location, !!this.strict) },
 	set data(value){
 		this.__update__(value) },
@@ -1563,28 +1564,6 @@ object.Constructor('Page', BasePage, {
 	// NOTE: when matching multiple pages this will return a list...
 	get raw(){ return (async function(){
 		var that = this
-
-		var pages = await this.each()
-			.map(async function(page){
-				var data = await page.data
-				return (
-					// action...
-					typeof(data) == 'function' ?
-						data.call(page)
-						: data.text ) })
-
-		if(pages.length == 0){
-			var msg = (this.PAGE_NOT_FOUND 
-					|| module.PAGE_NOT_FOUND)
-				.replace(/\$PATH/, this.path)
-			if(this.PAGE_NOT_FOUND){
-				return msg }
-			throw new Error(msg) }
-
-		return this.isPattern ?
-			pages
-			: pages[0] }).call(this) },
-	/*/
 		var data = await this.data
 		// no data...
 		// NOTE: if we hit this it means that nothing was resolved, 
@@ -1601,17 +1580,16 @@ object.Constructor('Page', BasePage, {
 		return (
 			// action...
 			typeof(data) == 'function' ?
-				data.call(this)
+				data()
 			// multiple matches...
 			: data instanceof Array ?
 				data
 					.map(function(d){
 						return typeof(d) == 'function'?
-							d.call(that)
+							d()
 							: d.text })
 					.flat()
    			: data.text )}).call(this) },
-	//*/
 	set raw(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
