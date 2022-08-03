@@ -49,7 +49,8 @@ module.PouchDBStore = {
 				return e.id.slice(that.__key_prefix__.length) }) },
 	// XXX use an index...
 	__exists__: async function(key){
-		return !! await this.__get__(key) },
+		return !!(await this.__get__(key)) 
+			&& key },
 	__get__: async function(key){
 		try{
 			return await this.data.get(this.__key_prefix__ + key) 

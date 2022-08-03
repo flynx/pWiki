@@ -44,6 +44,7 @@ var pwpath = require('../lib/path')
 // 			cache/index???
 // 			...can we avoid this??
 //
+// XXX might be a good idea to split this into a generic store and a MemStore...
 // XXX LEADING_SLASH should this be strict about leading '/' in paths???
 // 		...this may lead to duplicate paths created -- '/a/b' and 'a/b'
 // XXX should we support page symlinking???

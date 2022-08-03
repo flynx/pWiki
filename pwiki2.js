@@ -316,7 +316,8 @@ object.Constructor('BasePage', {
 	match: relMatchProxy('match'), 
 	resolve: relMatchProxy('resolve'),
 	delete: function(path='.'){
-		return this.__delete__() },
+		this.__delete__() 
+		return this },
 
 	//
 	// 	.get(<path>[, <data>])
