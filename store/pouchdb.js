@@ -13,12 +13,7 @@ var types = require('ig-types')
 var pwpath = require('../lib/path')
 var base = require('../store/base')
 
-// XXX HACK: trick requirejs to delay module loading...
-var req = require
-module.PouchDB = 
-	typeof(PouchDB) != 'undefined' ?
-		PouchDB
-		: req('pouchdb')
+var pouchdb = require('pouchdb')
 
 
 //---------------------------------------------------------------------
@@ -35,7 +30,7 @@ module.PouchDBStore = {
 	__data: undefined,
 	get data(){
 		return this.__data 
-			?? (this.__data = new module.PouchDB(this.__path__)) },
+			?? (this.__data = new pouchdb.PouchDB(this.__path__)) },
 	set data(value){
 		this.__data = value },
 

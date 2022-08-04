@@ -482,6 +482,7 @@ module.PAGE_NOT_FOUND = '404: PAGE NOT FOUND: $PATH'
 // XXX PATH_VARS need to handle path variables...
 // XXX filters (and macros?) should be features for simpler plugin handlng (???)
 // XXX STUB filters...
+// XXX rename to pWikiPage???
 var Page =
 module.Page = 
 object.Constructor('Page', BasePage, {
@@ -526,6 +527,9 @@ object.Constructor('Page', BasePage, {
 
 		markdown: markdown.markdown,
 		'quote-markdown': markdown.quoteMarkdown,
+
+		text: function(source){
+			return `<pre>${source}</pre>` },
 	},
 
 	//
@@ -1054,7 +1058,9 @@ var System =
 module.System = {
 	// base templates...
 	//
-	_text: { 
+	// XXX revise this...
+	// 		...need to be able to do: /some/path/_text
+	_text: {
 		text: '<macro src="." join="\n">@source(.)</macro>' },
 	NotFound: { 
 		text: module.PAGE_NOT_FOUND

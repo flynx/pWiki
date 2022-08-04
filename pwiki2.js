@@ -1,17 +1,28 @@
 /**********************************************************************
 * 
 *
+* XXX wikiword filter seems to hang on /
+* XXX do filters affect the whole page or only what comes after???
+* XXX BUG: need to be able to affect the default render wrpaper... 
+* 		i.e.: /some/path vs. /some/path/_text vs. /some/path/_raw
+*
+*
 * XXX ROADMAP:
 * 	- run in browser
 * 		- basics, loading 							-- DONE
 * 		- test localStorage / sessionStorage 		-- DONE
 * 		- test pouch								-- DONE
-* 		- render page
+* 		- render page								-- DONE
 * 		- navigation
-* 			- hash/anchor
+* 			- hash/anchor							-- DONE
 * 			- service worker
+* 				...handle relative urls (???)
 * 		- migrate bootstrap
-* 	- test pwa
+* 		- store topology
+* 	- WikiWord
+* 	- markdown										-- DONE
+* 	- service worker
+* 	- pwa
 * 	- archive old code
 * 	- update docs
 * 	- refactor and cleanup
@@ -59,6 +70,7 @@
 * TODO:
 * 	- <page>.then() -- resolve when all pending write operations done ???
 * 	- an async REPL???
+* 	- custom element???
 *
 *
 *

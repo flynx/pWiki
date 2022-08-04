@@ -8,6 +8,7 @@
 /*********************************************************************/
 
 var base = require('./base')
+var showdown = require('showdown')
 
 
 //---------------------------------------------------------------------
@@ -16,8 +17,12 @@ module.markdown =
 base.Filter(
 	{quote: 'quote-markdown'},
 	function(source){
-		// XXX
-		return source })
+		var converter = new showdown.Converter({
+			strikethrough: true,
+			tables: true,
+			tasklists: true,
+		})
+		return converter.makeHtml(source) })
 
 module.quoteMarkdown = 
 function(source){

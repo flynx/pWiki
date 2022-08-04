@@ -52,6 +52,10 @@ pwiki.store.update('@pouch', {
 })
 
 
+// XXX
+typeof(Bootstrap) != 'undefined'
+	&& pwiki.store.load(Bootstrap)
+
 
 
 /**********************************************************************

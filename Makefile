@@ -13,17 +13,23 @@ LOCAL_MODULES := \
 	node_modules/ig-actions/actions.js \
 	node_modules/ig-features/features.js
 
+EXT_MODULES := \
+	$(wildcard node_modules/pouchdb/dist/*) \
+	$(wildcard node_modules/jszip/dist/*) \
+	$(wildcard node_modules/showdown/dist/*)
+
 POUCH_DB := \
 	$(wildcard node_modules/pouchdb/dist/*)
 
 
 
-ext-lib/pouchdb.js: node_modules $(POUCH_DB)
-	cp $(POUCH_DB) ext-lib/
+lib/types: node_modules
+	mkdir -p $@
+	cp node_modules/ig-types/*js $@
+
 
 bootstrap.js: scripts/bootstrap.js $(BOOTSTRAP_FILES)
 	node $<
-
 
 
 .PHONY: bootstrap
@@ -34,8 +40,9 @@ node_modules:
 	npm install
 
 
-dev: node_modules ext-lib/pouchdb.js $(LOCAL_MODULES) bootstrap
+dev: node_modules lib/types $(EXT_MODULES) $(LOCAL_MODULES) bootstrap
 	cp $(LOCAL_MODULES) lib/
+	cp $(EXT_MODULES) ext-lib/
 
 
 clean:

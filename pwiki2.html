@@ -27,38 +27,95 @@
 <style>
 </style>
 
-<script src="ext-lib/pouchdb.js"></script>
+<!-- XXX do we need this??? -->
+<script src="bootstrap.js"></script>
 
 <!--script data-main="pwiki2" src="ext-lib/require.js"></script-->
 <script src="ext-lib/require.js"></script>
 <script>
+
+
+var makeFallbacks = 
+function(paths, search=['lib']){
+	return Object.entries(paths)
+		.map(function([key, path]){
+			// package...
+			if(path.endsWith('/')){
+				return [key, path] }
+			return [
+				key,
+				[
+					path,
+					...search
+						.map(function(base){
+							return base +'/'+ path.split(/[\\\/]+/g).pop() }),
+				]
+			] })
+		.reduce(function(res, [key, value]){
+			res[key] = value
+			return res }, {}) }
+
+
 require.config({
 	paths: {
-		'ig-doc': 'node_modules/ig-doc/doc',
-		'ig-stoppable': 'node_modules/ig-stoppable/stoppable',
-		'ig-object': 'node_modules/ig-object/object',
-		'ig-types': 'node_modules/ig-types/',
-		'object-run': 'node_modules/object-run/run',
+		...makeFallbacks({
+			'ig-doc': 'node_modules/ig-doc/doc',
+			'ig-stoppable': 'node_modules/ig-stoppable/stoppable',
+			'object-run': 'node_modules/object-run/run',
+			'ig-object': 'node_modules/ig-object/object',
+		}),
 
-		'pouchdb': 'node_modules/pouchdb-browser/lib/index',
+		// packages...
+		'ig-types': [
+			'node_modules/ig-types',
+			'lib/types',
+		],
+
+		// external stuff...
+		...makeFallbacks({
+			'jszip': 'node_modules/jszip/dist/jszip',
+			'pouchdb': 'node_modules/pouchdb/dist/pouchdb',
+			'showdown': 'node_modules/showdown/dist/showdown',
+		}, ['ext-lib']),
 	},
 	packages: [
 		'ig-types',
 	]
 })
 
-var setup = function(){
-	require(['./browser'], function(m){ 
-		window.pwiki = m.pwiki
-	})
-}
+// start loading pWiki...
+require(['./browser'], function(m){ 
+	window.pwiki = m.pwiki 
+
+	// handle location.hash (both directions)
+	var _debounceHashChange = false
+	pwiki.onNavigate(async function(){
+		// update location.hash without retriggering...
+		_debounceHashChange = true
+		location.hash = this.path
+		setTimeout(function(){
+			_debounceHashChange = false }, 0) 
+		// render...
+		document.querySelector('#pWiki').innerHTML = await this.text })
+	window.addEventListener('hashchange', function(evt){
+		evt.preventDefault()
+		if(_debounceHashChange){
+			return }
+		var [path, hash] = location.hash.slice(1).split('#')
+		path = path.trim() == '' ? 
+			'/' 
+			: path
+		pwiki.path = path })
+
+	// show current page...
+	pwiki.path = location.hash.slice(1)
+}) 
+
 </script>
 
-<body onload="setup()">
+<body>
 
-pWiki2
-
-<div class="wiki" />
+<div id="pWiki" />
 
 </body>
 </html>
