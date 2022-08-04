@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<!--html manifest="pwiki.appcache"-->
+<head>
+<title>pWiki</title>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+<link rel="manifest" href="manifest.json">
+
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-Bold.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-BoldItalic.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-ExtraBold.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-ExtraBoldItalic.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-Italic.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-Light.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-LightItalic.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-Regular.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-Semibold.ttf">
+<link rel="prefetch" href="css/fonts/Open_Sans/OpenSans-SemiboldItalic.ttf">
+
+<link rel="stylesheet" href="css/fonts.css">
+
+</head>
+
+<style>
+</style>
+
+<!--script data-main="pwiki2" src="ext-lib/require.js"></script-->
+<script src="ext-lib/require.js"></script>
+<script>
+require.config({
+	paths: {
+		'ig-doc': 'node_modules/ig-doc/doc',
+		'ig-stoppable': 'node_modules/ig-stoppable/stoppable',
+		'ig-object': 'node_modules/ig-object/object',
+		'ig-types': 'node_modules/ig-types/',
+		'object-run': 'node_modules/object-run/run',
+
+		'pouchdb': 'node_modules/pouchdb-browser/lib/index',
+	},
+	packages: [
+		'ig-types',
+	]
+})
+
+var setup = function(){
+	require(['./browser'], function(){ })
+}
+</script>
+
+<body onload="setup()">
+
+pWiki2
+
+<div class="wiki" />
+
+</body>
+</html>
+
+<!-- vim:set sw=4 ts=4 : -->
