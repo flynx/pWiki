@@ -477,8 +477,6 @@ function(spec, func){
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-module.PAGE_NOT_FOUND = '404: PAGE NOT FOUND: $PATH'
-
 // XXX PATH_VARS need to handle path variables...
 // XXX filters (and macros?) should be features for simpler plugin handlng (???)
 // XXX STUB filters...
@@ -503,7 +501,9 @@ object.Constructor('Page', BasePage, {
 	// 		as if we reach this it's likely all the bootstrap is either also
 	// 		not present or broken.
 	// NOTE: to force the system to fail set this to undefined.
-	PAGE_NOT_FOUND: module.PAGE_NOT_FOUND,
+	NOT_FOUND_ERROR: 'NotFoundError',
+
+	RECURSION_ERROR: 'RecursionError',
 
 	//
 	// 	<filter>(<source>)
@@ -634,7 +634,8 @@ object.Constructor('Page', BasePage, {
 			async function(args, body, state, key='included', handler){
 				var macro = 'include'
 				if(typeof(args) == 'string'){
-					var [macro, args, body, state, key="included", handler] = arguments }
+					var [macro, args, body, state, key, handler] = arguments 
+					key = key ?? 'included' }
 				// positional args...
 				var src = args.src
 				var recursive = args.recursive || body
@@ -647,50 +648,44 @@ object.Constructor('Page', BasePage, {
 				var full = this.get(src).path
 
 				handler = handler 
-					?? function(){
+					?? function(src){
 						return this.get(src)
 							.parse(
 								isolated ? 
-									{[key]: state[key]} 
+									{seen: (state.seen ?? []).slice()} 
 									: state) }
 
 				// handle recursion...
-				var parent_seen = state[key]
-				var seen = state[key] = 
-					state[key] 
-						?? [] 
+				var parent_seen = 'seen' in state
+				var seen = state.seen = 
+					(state.seen
+						?? []).slice()
 				// recursion detected...
-				if(seen.includes(full)){
+				if(seen.includes(full) || full == this.path){
 					if(!recursive){
-						throw new Error(
-							macro +': recursion detected: '
-								+ seen.concat([full]).join(' -> ')) }
+						return this.parse(this.get('./'+this.RECURSIVE_TPL).raw) }
 					// have the 'recursive' arg...
 					return this.parse(recursive, state) }
 				seen.push(full)
 
 				// load the included page...
-				var res = await handler.call(this)
+				var res = await handler.call(this, src)
 
-				// restore previous include chain...
-				if(parent_seen){
-					state[key] = parent_seen
-				} else {
-					delete state[key] }
+				if(!parent_seen){
+					delete state.seen }
 
 				return res }),
+		// NOTE: the main difference between this and @include is that 
+		// 		this renders the src in the context of current page while 
+		// 		include is rendered in the context of its page but with
+		// 		the same state...
 		source: Macro(
 			['src'],
 			async function(args, body, state){
-				var src = args.src
-				// parse arg values...
-				src = src ? 
-					await this.parse(src, state) 
-					: src
 				return this.macros.include.call(this, 
 					'source',
 					args, body, state, 'sources', 
-					async function(){
+					async function(src){
 						return await this.parse(await this.get(src).raw +'', state) }) }),
 		//
 		// 	@quote(<src>)
@@ -1008,12 +1003,12 @@ object.Constructor('Page', BasePage, {
 		// 		not even the System/NotFound page, i.e. something 
 		// 		went really wrong...
 		if(data == null){
-			var msg = (this.PAGE_NOT_FOUND 
-					|| module.PAGE_NOT_FOUND)
-				.replace(/\$PATH/, this.path)
-			if(this.PAGE_NOT_FOUND){
-				return msg }
-			throw new Error(msg) }
+			if(this.NOT_FOUND_ERROR){
+				var msg = this.get('./'+ this.NOT_FOUND_ERROR)
+				if(await msg.match()){
+					return msg.raw } }
+			// last resort...
+			throw new Error('NOT FOUND ERROR: '+ this.path) }
 		// get the data...
 		return (
 			// action...
@@ -1036,6 +1031,15 @@ object.Constructor('Page', BasePage, {
 	//
 	// NOTE: this uses .PAGE_TPL to render the page.
 	// NOTE: writing to .raw is the same as writing to .text...
+	//* XXX not sure if this is a good strategy...
+	get text(){ return (async function(){
+		var path = pwpath.split(this.path)
+		return [path.at(-1)[0] == '_' ?
+				await this.parse()
+				: await this.get('./'+ this.PAGE_TPL).parse()]
+			.flat()
+			.join('\n') }).call(this) },
+	/*/
 	get text(){ return (async function(){
 		var tpl = '/'+ await this.find('./'+ this.PAGE_TPL)
 		return [await this.parse(
@@ -1044,6 +1048,7 @@ object.Constructor('Page', BasePage, {
 					: [] )]
 			.flat()
 			.join('\n') }).call(this) }, 
+	//*/
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
@@ -1058,13 +1063,19 @@ var System =
 module.System = {
 	// base templates...
 	//
-	// XXX revise this...
-	// 		...need to be able to do: /some/path/_text
 	_text: {
-		text: '<macro src="." join="\n">@source(.)</macro>' },
-	NotFound: { 
-		text: module.PAGE_NOT_FOUND
-			.replace('$PATH', '@source(./path)') },
+		// XXX join does not seem to do anything...
+		// 		...this might be applied to each page rather than to a 
+		// 		set of pages...
+		//text: '<macro src=".." join="\n">@source(.)</macro>' },
+		text: '@include(..)' },
+	_list: {
+		text: '<macro src=".." join="\n---\n">@source(.)</macro>' },
+
+	RecursionError: {
+		text: 'RECURSION ERROR: @quote(./path)' },
+	NotFoundError: { 
+		text: 'NOT FOUND ERROR: @quote(./path)' },
 
 	// XXX tests...
 	test_list: function(){

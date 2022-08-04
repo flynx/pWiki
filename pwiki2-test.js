@@ -49,7 +49,7 @@ pwiki.store.update('@pouch', {
 // XXX experiments and testing...
 
 // XXX for persistent stores test if the data is already loaded here...
-pwiki.store.load(bootstrap)
+//pwiki.store.load(bootstrap)
 
 
 // XXX TEST...
@@ -106,7 +106,7 @@ pwiki.pwiki
 			+'@slot(name=b text="non-filled slot")\n'
 			+'\n'
 			+'Including /other #1: @include(/other)\n'
-			+'Including /other #2: @include(/other)\n'
+			//+'Including /other #2: @include(/other)\n'
 			+'\n'
 			+'Including /test: @include(/test recursive="Recursion type 1 (<now/>)")\n'
 			+'\n'

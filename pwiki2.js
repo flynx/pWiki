@@ -1,6 +1,15 @@
 /**********************************************************************
 * 
 *
+* XXX the following are not the same:
+* 			pwiki.get(/test).parse('<macro src="*" join="\n">@source('./path')</macro>')
+* 		and
+* 			pwiki.get('/test/*').parse('<macro src="." join="\n">@source('./path')</macro>')
+* 		the former is called once and iterates while the later is called 
+* 		per-page...
+*		...should be the same -- i.e. the macro should decide...
+*			page range -> include -> joun
+*			page range -> macro -> iterate
 * XXX wikiword filter seems to hang on /
 * XXX do filters affect the whole page or only what comes after???
 * XXX need to be able to affect the default render wrpaper... 
