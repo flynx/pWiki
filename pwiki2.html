@@ -27,6 +27,8 @@
 <style>
 </style>
 
+<script src="ext-lib/pouchdb.js"></script>
+
 <!--script data-main="pwiki2" src="ext-lib/require.js"></script-->
 <script src="ext-lib/require.js"></script>
 <script>
@@ -46,7 +48,9 @@ require.config({
 })
 
 var setup = function(){
-	require(['./browser'], function(){ })
+	require(['./browser'], function(m){ 
+		window.pwiki = m.pwiki
+	})
 }
 </script>
 

@@ -50,11 +50,18 @@ module.localStorageStore = {
 			JSON.stringify(data) },
 	__delete__: function(path){
 		delete this.data[(this.__prefix__ ?? '')+ path] },
+
+	clear: function(){
+		for(var e in this.data){
+			if(e.startsWith(this.__prefix__)){
+				delete this.data[e] } } 
+		return this },
 }
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+// XXX
 var localStorageNestedStore =
 module.localStorageNestedStore = {
 	__proto__: base.BaseStore,

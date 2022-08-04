@@ -14,13 +14,8 @@ var types = require('ig-types')
 
 var pwpath = require('./lib/path')
 var parser = require('./parser')
-
-var basestore = require('./store/base')
-
-//var localstoragestore = require('./store/localstorage')
-// XXX for some reason this does not run quietly in browser
-//var pouchdbstore = require('./store/pouchdb')
-//var filestore = require('./store/file')
+var filters = require('./filters/base')
+var markdown = require('./filters/markdown')
 
 
 //---------------------------------------------------------------------
@@ -45,6 +40,9 @@ function(name){
 			strict) } 
 	Object.defineProperty(func, 'name', {value: name})
 	return func }
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 var __HANDLE_NAVIGATE =
 module.__HANDLE_NAVIGATE = 
@@ -459,17 +457,9 @@ types.event.EventMixin(BasePage.prototype)
 
 
 
-// -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-// XXX should these be something more generic like Object.assign(..) ???
+//---------------------------------------------------------------------
 
-// XXX revise...
-var Filter = 
-module.Filter =
-function(...args){
-	var func = args.pop()
-	args.length > 0
-		&& Object.assign(func, args.pop())
-	return func }
+// XXX should these be something more generic like Object.assign(..) ???
 
 // XXX do we need anything else like .doc, attrs???
 var Macro =
@@ -531,23 +521,11 @@ object.Constructor('Page', BasePage, {
 			return source 
 				.replace(/test/g, 'TEST') },
 
-		wikiword: Filter(
-			{quote: 'quote-wikiword'},
-			function(source){
-				// XXX
-				return source }),
-		'quote-wikiword': function(source){
-			// XXX
-			return source },
+		wikiword: filters.wikiWord,
+		'quote-wikiword': filters.quoteWikiWord,
 
-		markdown: Filter(
-			{quote: 'quote-markdown'},
-			function(source){
-				// XXX
-				return source }),
-		'quote-markdown': function(source){
-			// XXX
-			return source },
+		markdown: markdown.markdown,
+		'quote-markdown': markdown.quoteMarkdown,
 	},
 
 	//
@@ -1070,14 +1048,73 @@ object.Constructor('Page', BasePage, {
 
 
 //---------------------------------------------------------------------
+// System pages/actions...
 
-var WIKIWORD_PATTERN =
-	RegExp('('+[
-		//'\\\\?(\\/|\\./|\\.\\./|>>|[A-Z][_a-z0-9]+[A-Z/])[_a-zA-Z0-9/]*',
-		'\\\\?\\/?(\\./|\\.\\./|>>|[A-Z][_a-z0-9]+[A-Z/])[_a-zA-Z0-9/]*',
-		'\\\\?\\[[^\\]]+\\]',
-	].join('|') +')', 'g')
+var System = 
+module.System = {
+	// base templates...
+	//
+	_text: { 
+		text: '<macro src="." join="\n">@source(.)</macro>' },
+	NotFound: { 
+		text: module.PAGE_NOT_FOUND
+			.replace('$PATH', '@source(./path)') },
 
+	// XXX tests...
+	test_list: function(){
+		return 'abcdef'.split('') },
+
+	// metadata...
+	//
+	path: function(){
+		return this.get('..').path },
+	location: function(){
+		return this.get('..').path },
+	dir: function(){
+		return this.get('..').dir },
+	name: function(){
+		return this.get('..').name },
+	ctime: function(){
+		return this.get('..').data.ctime },
+	mtime: function(){
+		return this.get('..').data.mtime },
+
+	// XXX this can be a list for pattern paths...
+	resolved: function(){
+		return this.get('..').resolve() },
+
+	title: function(){
+		var p = this.get('..')
+		return p.title 
+			?? p.name },
+
+
+	// utils...
+	//
+	// XXX System/subpaths
+	// XXX
+	links: function(){
+		// XXX
+		return '' },
+	// XXX links to pages...
+	to: function(){
+		return (this.get('..').data || {}).to ?? [] },
+	// XXX pages linking to us...
+	'from': function(){
+		return (this.get('..').data || {})['from'] ?? [] },
+
+
+	// actions...
+	//
+	delete: function(){
+		this.location = '..'
+		this.delete()
+		return this.text },
+	// XXX System/back
+	// XXX System/forward
+	// XXX System/sort
+	// XXX System/reverse
+}
 
 
 

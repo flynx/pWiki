@@ -1,22 +1,52 @@
 /**********************************************************************
 * 
 *
-* Architecture:
-* 	store
-* 	page
-* 	renderer
-*
-*
 * XXX ROADMAP:
 * 	- run in browser
-* 	- test localStorage / sessionStorage
-* 	- test pouch
-* 	- move the bootstrap over
+* 		- basics, loading 							-- DONE
+* 		- test localStorage / sessionStorage 		-- DONE
+* 		- test pouch								-- DONE
+* 		- render page
+* 		- navigation
+* 			- hash/anchor
+* 			- service worker
+* 		- migrate bootstrap
 * 	- test pwa
 * 	- archive old code
 * 	- update docs
 * 	- refactor and cleanup
 * 	- pack as electron app (???)
+*
+*
+*
+* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+*
+* Architecture:
+* 	store
+* 	page
+* 	renderer
+*
+* Modules:
+* 	page				- base pages and page APIs (XXX should this be in lib???)
+* 	parser				- pWiki macro parser (XXX should this be in lib???)
+* 	store				- stores
+* 		base			- memory store and store utils
+*		file			- file storage
+*		localstorage	- localStorage / sessionStorage stores
+*		pouchdb			-
+* 		...
+* 	filter				- page filters
+* 		base			- base filters incl. wikiword
+* 		markdown		- markdown renderer
+* 		...
+* 	pwiki2				- main cli / node entry point
+* 	browser				- browser entry point
+* 	pwiki2-test			- testing and experimenting (XXX move to test.js)
+*
+*
+* Q: can we make this a single module with +/- some plugins??
+* 	...this would make things quite a bit simpler but will negate the 
+* 	use of high level libs like types...
 *
 *
 * XXX weaknesses to review:
@@ -26,8 +56,6 @@
 * 				...need to be independent of the number of pages if at 
 * 				all possible -- otherwise this will hinder long-term use...
 * 		- 
-*
-*
 * TODO:
 * 	- <page>.then() -- resolve when all pending write operations done ???
 * 	- an async REPL???
@@ -114,80 +142,13 @@ module.store =
 		.nest({ __proto__: basestore.MetaStore })
 
 
-var System = 
-module.System = {
-	// base templates...
-	//
-	_text: { 
-		text: '<macro src="." join="\n">@source(.)</macro>' },
-	NotFound: { 
-		text: page.PAGE_NOT_FOUND
-			.replace('$PATH', '@source(./path)') },
-
-	// XXX tests...
-	test_list: function(){
-		return 'abcdef'.split('') },
-
-	// metadata...
-	//
-	path: function(){
-		return this.get('..').path },
-	location: function(){
-		return this.get('..').path },
-	dir: function(){
-		return this.get('..').dir },
-	name: function(){
-		return this.get('..').name },
-	ctime: function(){
-		return this.get('..').data.ctime },
-	mtime: function(){
-		return this.get('..').data.mtime },
-
-	// XXX this can be a list for pattern paths...
-	resolved: function(){
-		return this.get('..').resolve() },
-
-	title: function(){
-		var p = this.get('..')
-		return p.title 
-			?? p.name },
-
-
-	// utils...
-	//
-	// XXX System/subpaths
-	// XXX
-	links: function(){
-		// XXX
-		return '' },
-	// XXX links to pages...
-	to: function(){
-		return (this.get('..').data || {}).to ?? [] },
-	// XXX pages linking to us...
-	'from': function(){
-		return (this.get('..').data || {})['from'] ?? [] },
-
-
-	// actions...
-	//
-	delete: function(){
-		this.location = '..'
-		this.delete()
-		return this.text },
-	// XXX System/back
-	// XXX System/forward
-	// XXX System/sort
-	// XXX System/reverse
-}
-
-
 // XXX note sure how to organize the system actions -- there can be two 
 // 		options:
 // 			- a root ram store with all the static stuff and nest the rest
 // 			- a nested store (as is the case here)
 // XXX nested system store...
 store.update('System', 
-	Object.create(basestore.BaseStore).load(System))
+	Object.create(basestore.BaseStore).load(page.System))
 
 
 // NOTE: in general the root wiki api is simply a page instance.

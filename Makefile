@@ -13,7 +13,13 @@ LOCAL_MODULES := \
 	node_modules/ig-actions/actions.js \
 	node_modules/ig-features/features.js
 
+POUCH_DB := \
+	$(wildcard node_modules/pouchdb/dist/*)
 
+
+
+ext-lib/pouchdb.js: node_modules $(POUCH_DB)
+	cp $(POUCH_DB) ext-lib/
 
 bootstrap.js: scripts/bootstrap.js $(BOOTSTRAP_FILES)
 	node $<
@@ -28,7 +34,7 @@ node_modules:
 	npm install
 
 
-dev: node_modules $(LOCAL_MODULES) bootstrap
+dev: node_modules ext-lib/pouchdb.js $(LOCAL_MODULES) bootstrap
 	cp $(LOCAL_MODULES) lib/
 
 
