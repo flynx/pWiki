@@ -3,8 +3,8 @@
 *
 * XXX wikiword filter seems to hang on /
 * XXX do filters affect the whole page or only what comes after???
-* XXX BUG: need to be able to affect the default render wrpaper... 
-* 		i.e.: /some/path vs. /some/path/_text vs. /some/path/_raw
+* XXX need to be able to affect the default render wrpaper... 
+* 		i.e.: /some/path (default) vs. /some/path/_view vs. /some/path/_raw
 *
 *
 * XXX ROADMAP:
@@ -20,8 +20,7 @@
 * 		- migrate bootstrap
 * 		- store topology
 * 	- WikiWord
-* 	- markdown										-- DONE
-* 	- service worker
+* 	- markdown										-- DONE??
 * 	- pwa
 * 	- archive old code
 * 	- update docs

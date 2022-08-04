@@ -13,7 +13,7 @@ var types = require('ig-types')
 var pwpath = require('../lib/path')
 var base = require('../store/base')
 
-var pouchdb = require('pouchdb')
+var PouchDB = require('pouchdb')
 
 
 //---------------------------------------------------------------------
@@ -30,7 +30,7 @@ module.PouchDBStore = {
 	__data: undefined,
 	get data(){
 		return this.__data 
-			?? (this.__data = new pouchdb.PouchDB(this.__path__)) },
+			?? (this.__data = new PouchDB(this.__path__)) },
 	set data(value){
 		this.__data = value },
 
