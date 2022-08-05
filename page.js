@@ -255,12 +255,38 @@ object.Constructor('BasePage', {
 
 	// relative proxies to store...
 	exists: relProxy('exists'), 
-	find: relProxy('find'), 
 	match: relMatchProxy('match'), 
 	resolve: relMatchProxy('resolve'),
 	delete: function(path='.'){
 		this.__delete__() 
 		return this },
+
+	//
+	// 	Find current path (non-strict)
+	// 	.find()
+	// 	.find(false)
+	// 	.find('.')
+	// 	.find('.', false)
+	// 		-> path
+	// 		-> undefined
+	//
+	// 	Find current path in strict/non-strict mode...
+	// 	.find(true)
+	// 	.find(false)
+	// 		-> path
+	// 		-> undefined
+	//
+	// 	Find path relative to current page (strict/non-strict)
+	// 	.find(<path>[, <strict>])
+	// 		-> path
+	// 		-> undefined
+	//
+	find: function(path='.', strict=false){
+		if(path === true || path === false){
+			strict = path
+			path = '.' }
+		return this.store.find(
+			pwpath.relative(this.location, path), strict) },
 
 	//
 	// 	.get(<path>[, <data>])
@@ -280,31 +306,30 @@ object.Constructor('BasePage', {
 			}) },
 
 	// XXX should this be an iterator???
-	each: function(path){
+	each: async function*(path){
 		var that = this
 		// NOTE: we are trying to avoid resolving non-pattern paths unless 
 		// 		we really have to...
 		path = path ?
 			pwpath.relative(this.path, path)
 			: this.path
-		//var paths = this.match(path)
 		var paths = path.includes('*') ?
 			this.resolve(path)
 			: path
 		paths = paths instanceof Array ? 
 				paths 
 			: paths instanceof Promise ?
-				paths.iter()
+				await paths
 			: [paths]
-		return paths
-			.map(function(path){
-				return that.get('/'+ path) }) },
 
-	map: function(func){
+		for(var path of paths){
+			yield that.get('/'+ path) } },
+
+	map: async function(func){
 		return this.each().map(func) },
-	filter: function(func){
+	filter: async function(func){
 		return this.each().filter(func) },
-	reduce: function(func, dfl){
+	reduce: async function(func, dfl){
 		return this.each().reduce(func, dfl) },
 
 	// sorting...
@@ -316,10 +341,11 @@ object.Constructor('BasePage', {
 		if(this.length <= 1){
 			return this }
 		// sort...
-		this.metadata = { order: await this.each()
-			.sort(...arguments)
-			.map(function(p){
-				return p.path }) }
+		this.metadata = 
+			{ order: await this.each()
+				.sort(...arguments)
+				.map(function(p){
+					return p.path }) }
 		return this },
 	reverse: async function(){
 		// not sorting single pages...
@@ -645,36 +671,46 @@ object.Constructor('Page', BasePage, {
 					return }
 				// parse arg values...
 				src = await this.parse(src, state)
-				var full = this.get(src).path
+				var base = this.get(src).path
 
 				handler = handler 
-					?? function(src){
+					?? async function(src){
 						return this.get(src)
 							.parse(
 								isolated ? 
 									{seen: (state.seen ?? []).slice()} 
 									: state) }
 
-				// handle recursion...
-				var parent_seen = 'seen' in state
-				var seen = state.seen = 
-					(state.seen
-						?? []).slice()
-				// recursion detected...
-				if(seen.includes(full) || full == this.path){
-					if(!recursive){
-						return this.parse(this.get('./'+this.RECURSIVE_TPL).raw) }
-					// have the 'recursive' arg...
-					return this.parse(recursive, state) }
-				seen.push(full)
+				// XXX this is really odd -- works OK for multiple pages 
+				// 		and res turns into a string '[object Promise]' 
+				// 		for a non-pattern page...
+				return this.get(src)
+					.each()
+					.map(async function(page){
+						var full = page.path
 
-				// load the included page...
-				var res = await handler.call(this, src)
+						// handle recursion...
+						var parent_seen = 'seen' in state
+						var seen = state.seen = 
+							(state.seen
+								?? []).slice()
+						// recursion detected...
+						//if(seen.includes(full) || full == base){
+						if(seen.includes(full)){
+							if(!recursive){
+								return page.parse(page.get('./'+page.RECURSION_ERROR).raw) }
+							// have the 'recursive' arg...
+							return page.parse(recursive, state) }
+						seen.push(full)
 
-				if(!parent_seen){
-					delete state.seen }
+						// load the included page...
+						var res = await handler.call(page, full)
 
-				return res }),
+						if(!parent_seen){
+							delete state.seen }
+
+						return res })
+					.join('\n') }),
 		// NOTE: the main difference between this and @include is that 
 		// 		this renders the src in the context of current page while 
 		// 		include is rendered in the context of its page but with
@@ -686,7 +722,7 @@ object.Constructor('Page', BasePage, {
 					'source',
 					args, body, state, 'sources', 
 					async function(src){
-						return await this.parse(await this.get(src).raw +'', state) }) }),
+						return this.parse(await this.get(src).raw, state) }) }),
 		//
 		// 	@quote(<src>)
 		//
@@ -902,9 +938,6 @@ object.Constructor('Page', BasePage, {
 
 				if(src){
 					src = await this.parse(src, state)
-					/* XXX ARRAY page...
-					var pages = this.get(src, strict).each()
-					/*/
 					var pages = this.get(src, strict)
 					pages = await pages.isArray ?
 						// XXX should we wrap this in pages...
@@ -912,7 +945,6 @@ object.Constructor('Page', BasePage, {
 							.map(function(data){
 								return that.virtual({text: data}) })
 						: await pages.each()
-					//*/
 					// no matching pages -> get the else block...
 					if(pages.length == 0 
 							&& (text || args['else'])){
@@ -971,15 +1003,7 @@ object.Constructor('Page', BasePage, {
 			state = text
 			text = null }
 		state = state ?? {}
-		text = text 
-			?? await this.each()
-		return text instanceof Array ?
-			Promise.iter(text)
-				.map(function(text){
-					return text instanceof Page ?
-						that.__parser__.parse(text, null, state)
-						: that.__parser__.parse(that, text, state) })
-			: this.__parser__.parse(this, text, state) },
+		return this.__parser__.parse(this, text, state) },
 
 	// true if page has an array value but is not a pattern page...
 	//
@@ -1031,24 +1055,31 @@ object.Constructor('Page', BasePage, {
 	//
 	// NOTE: this uses .PAGE_TPL to render the page.
 	// NOTE: writing to .raw is the same as writing to .text...
-	//* XXX not sure if this is a good strategy...
 	get text(){ return (async function(){
+		var path = pwpath.split(this.path)
+		path.at(-1)[0] == '_'
+			|| path.push(this.PAGE_TPL)
+
+		var tpl = pwpath.join(path)
+		var tpl_name = path.pop()
+		path = pwpath.join(path)
+
+		// get the template relative to the top most pattern...
+		tpl = await this.get(tpl).find(true)
+		if(!tpl){
+			throw new Error('UNKNOWN RENDER TEMPLATE: '+ tpl_name) }
+
+		// render template in context of page...
+		return this.get(path)
+			.parse(await this.get(tpl).raw) }).call(this) },
+		/*/
 		var path = pwpath.split(this.path)
 		return [path.at(-1)[0] == '_' ?
 				await this.parse()
 				: await this.get('./'+ this.PAGE_TPL).parse()]
 			.flat()
 			.join('\n') }).call(this) },
-	/*/
-	get text(){ return (async function(){
-		var tpl = '/'+ await this.find('./'+ this.PAGE_TPL)
-		return [await this.parse(
-				tpl.endsWith(this.PAGE_TPL.split(/[\\\/]/).pop()) ?
-					[await this.get(tpl).raw]
-					: [] )]
-			.flat()
-			.join('\n') }).call(this) }, 
-	//*/
+		//*/
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
@@ -1064,13 +1095,10 @@ module.System = {
 	// base templates...
 	//
 	_text: {
-		// XXX join does not seem to do anything...
-		// 		...this might be applied to each page rather than to a 
-		// 		set of pages...
-		//text: '<macro src=".." join="\n">@source(.)</macro>' },
-		text: '@include(..)' },
-	_list: {
-		text: '<macro src=".." join="\n---\n">@source(.)</macro>' },
+		//text: '<macro src="." join="\n">@source(.)</macro>' },
+		text: '@include(.)' },
+	_raw: {
+		text: '@quote(.)' },
 
 	RecursionError: {
 		text: 'RECURSION ERROR: @quote(./path)' },

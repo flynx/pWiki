@@ -444,12 +444,12 @@ module.BaseParser = {
 	// XXX add a special filter to clear pending filters... (???)
 	parse: async function(page, ast, state={}){
 		var that = this
-		// XXX should we handle strings as input???
 		ast = ast 
 			?? this.expand(page, null, state)
 		ast = typeof(ast) == 'string' ?
 			this.expand(page, ast, state)
 			: ast
+
 
 		return ast
 			// post handlers...

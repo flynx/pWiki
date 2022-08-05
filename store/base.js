@@ -107,8 +107,8 @@ module.BaseStore = {
 			// normalize the output...
 			|| false },
 	// find the closest existing alternative path...
-	find: async function(path){
-		for(var p of await pwpath.paths(path)){
+	find: async function(path, strict=false){
+		for(var p of await pwpath.paths(path, !!strict)){
 			p = await this.exists(p)
 			if(p){
 				return p } } },

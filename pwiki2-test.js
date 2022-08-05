@@ -81,11 +81,12 @@ pwiki.pwiki
 	})
 	.update({
 		location: '/page',
-		text: 'PAGE\n'
+		text: '>>> PAGE\n'
 			+'\n'
 			+'@include(/test recursive="Recursion type 2 (<now/>)")\n'
 			+'\n'
-			+'@slot(name=b text="filled slot")\n',
+			+'@slot(name=b text="filled slot")\n'
+			+ '<<< PAGE\n',
 	})
 	.update({
 		location: '/other',
@@ -97,22 +98,27 @@ pwiki.pwiki
 			+'\n'
 			+'globally filtered test text...\n'
 			+'\n'
+			// XXX this does not seem to work...
 			+'<filter -test>...unfiltered test text</filter>\n'
 			+'\n'
 			//+'<filter test>locally filtered test text</filter>\n'
 			+'\n'
-			+'@slot(name=a text="non-filled slot")\n'
+			// XXX slots do not seem to work...
+			+'@slot(name=a text="non-filled slot a")\n'
 			+'\n'
-			+'@slot(name=b text="non-filled slot")\n'
+			+'@slot(name=b text="non-filled slot b")\n'
 			+'\n'
 			+'Including /other #1: @include(/other)\n'
-			//+'Including /other #2: @include(/other)\n'
+			+'Including /other #2: @include(/other)\n'
 			+'\n'
 			+'Including /test: @include(/test recursive="Recursion type 1 (<now/>)")\n'
 			+'\n'
 			+'Including /page: @include(/page recursive="...")\n'
 			+'\n'
-			+'Including /: \\@include(/)\n'
+			+'Sourceing /: \\@include(/)\n'
+			+'\n'
+			// XXX slots do not seem to work...
+			+'<slot name="a">filled slot a</slot>\n'
 			+'\n'
 			+'@filter(test)',
 	})
