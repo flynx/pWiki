@@ -15,11 +15,16 @@
 * 			- hash/anchor							-- DONE
 * 			- service worker
 * 				...handle relative urls (???)
+* 		- editor and interactivity
 * 		- migrate bootstrap
 * 		- store topology
 * 	- WikiWord										-- DONE
 * 	- markdown										-- DONE??
 * 	- pwa
+* 	- cli
+* 		- basic wiki manipulations (1:1 methods)
+* 		- import/export/sync
+* 		- introspection/repl
 * 	- archive old code
 * 	- update docs
 * 	- refactor and cleanup
