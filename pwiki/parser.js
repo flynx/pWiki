@@ -450,8 +450,9 @@ module.BaseParser = {
 			this.expand(page, ast, state)
 			: ast
 
-
-		return ast
+		// NOTE: we need to await for ast here as we need stage 2 of 
+		// 		parsing to happen AFTER everything else completes...
+		return (await ast)
 			// post handlers...
 			.map(function(section){
 				return typeof(section) == 'function' ? 

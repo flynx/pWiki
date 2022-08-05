@@ -7,6 +7,8 @@
 (function(require){ var module={} // make module AMD/node compatible...
 /*********************************************************************/
 
+var object = require('ig-object')
+
 var pwiki = require('./pwiki2')
 
 // XXX for some reason this does not run quietly in browser
@@ -55,6 +57,27 @@ pwiki.store.update('@pouch', {
 // XXX TEST...
 // XXX add filter tests...
 pwiki.pwiki
+	.update({
+		location: '/test/wikiword',
+		text: object.doc`
+			This is a basic WikiWord test, all  
+			the [basic] forms and Versions of  
+			/inline/links.
+
+			@filter(wikiword markdown) `,
+	})
+	.update({
+		location: '/test/slots',
+		text: object.doc`
+			Testing slot mechanics...
+
+			This slot is <slot name="empty">unfilled</slot>
+
+			...while this <slot name="non-empty">text should be replaced...</slot>
+
+			<slot name="non-empty">text is filling a slot</slot>
+		`,
+	})
 	.update({
 		location: '/test/a',
 		text: 'a',

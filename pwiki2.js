@@ -1,13 +1,7 @@
 /**********************************************************************
 * 
 *
-* XXX revise macros...
-* 		- filters behave in an odd way...
-* 		- slots do not seem to work...
-* XXX wikiword filter seems to hang on /
-* XXX do filters affect the whole page or only what comes after???
-* XXX need to be able to affect the default render wrpaper... 
-* 		i.e.: /some/path (default) vs. /some/path/_view vs. /some/path/_raw
+* XXX wikiword filter seems to act up on /
 *
 *
 * XXX ROADMAP:
@@ -28,6 +22,7 @@
 * 	- archive old code
 * 	- update docs
 * 	- refactor and cleanup
+* 		- module structure							-- DONE
 * 	- pack as electron app (???)
 *
 *
