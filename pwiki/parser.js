@@ -441,6 +441,15 @@ module.BaseParser = {
 	// 		- expand macros -- .expand(..)
 	// 	- apply filters
 	//
+	// NOTE: this has to synchronize everything between stage 1 (up to 
+	// 		and including expand) and stage 2 (post-handlers, filters, ...)
+	// 		because the former need a fully loaded and expanded page if 
+	// 		we want to do this in 2 stages and not 3...
+	// 		XXX might be fun to try a load-and-tweak approach the first 
+	// 			version used -- i.e. setting placeholders and replacing 
+	// 			them on demand rather than on encounter (as is now), e.g.
+	// 			a slot when loaded will replace the prior occurrences...
+	//
 	// XXX add a special filter to clear pending filters... (???)
 	parse: async function(page, ast, state={}){
 		var that = this
@@ -460,6 +469,8 @@ module.BaseParser = {
 					: section })
 			.flat()
 			// filters...
+			// XXX if one of the post-handlers is a promise this will 
+			// 		need to sync...
 			.map(function(section){
 				return (
 					// expand section...

@@ -71,9 +71,9 @@ pwiki.pwiki
 		text: object.doc`
 			Testing slot mechanics...
 
-			This slot is <slot name="empty">unfilled</slot>
+			This slot is (<slot name="empty">unfilled</slot>)
 
-			...while this <slot name="non-empty">text should be replaced...</slot>
+			...while this (<slot name="non-empty">text should be replaced...</slot>)
 
 			<slot name="non-empty">text is filling a slot</slot>
 		`,

@@ -2,6 +2,7 @@
 * 
 *
 * XXX wikiword filter seems to act up on /
+* XXX BUG? /test/wikiword -- produces nested links...
 *
 *
 * XXX ROADMAP:
@@ -16,7 +17,7 @@
 * 				...handle relative urls (???)
 * 		- migrate bootstrap
 * 		- store topology
-* 	- WikiWord
+* 	- WikiWord										-- DONE
 * 	- markdown										-- DONE??
 * 	- pwa
 * 	- archive old code
