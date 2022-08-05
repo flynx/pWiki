@@ -12,7 +12,7 @@
 var object = require('ig-object')
 var types = require('ig-types')
 
-var pwpath = require('./lib/path')
+var pwpath = require('./path')
 var parser = require('./parser')
 var filters = require('./filters/base')
 var markdown = require('./filters/markdown')
@@ -519,7 +519,7 @@ object.Constructor('Page', BasePage, {
 	QUOTING_MACROS: ['quote'],
 
 	// templates used to render a page via .text
-	PAGE_TPL: '_text',
+	PAGE_TEMPLATE: '_text',
 
 	// NOTE: comment this out to make the system fail when nothing is 
 	// 		resolved, not even the System/NotFound page...
@@ -1053,12 +1053,12 @@ object.Constructor('Page', BasePage, {
 
 	// expanded page text...
 	//
-	// NOTE: this uses .PAGE_TPL to render the page.
+	// NOTE: this uses .PAGE_TEMPLATE to render the page.
 	// NOTE: writing to .raw is the same as writing to .text...
 	get text(){ return (async function(){
 		var path = pwpath.split(this.path)
 		path.at(-1)[0] == '_'
-			|| path.push(this.PAGE_TPL)
+			|| path.push(this.PAGE_TEMPLATE)
 
 		var tpl = pwpath.join(path)
 		var tpl_name = path.pop()
@@ -1076,7 +1076,7 @@ object.Constructor('Page', BasePage, {
 		var path = pwpath.split(this.path)
 		return [path.at(-1)[0] == '_' ?
 				await this.parse()
-				: await this.get('./'+ this.PAGE_TPL).parse()]
+				: await this.get('./'+ this.PAGE_TEMPLATE).parse()]
 			.flat()
 			.join('\n') }).call(this) },
 		//*/
@@ -1094,20 +1094,46 @@ var System =
 module.System = {
 	// base templates...
 	//
+	// These are used to control how a page is rendered. 
+	//
+	// pWiki has to have a template appended to any path, if one is not 
+	// given then "_text" is used internally.
+	//
+	// A template is rendered in the context of the parent page, e.g. 
+	// for /path/to/page, the actual rendered template is /path/to/page/_text
+	// and it is rendered from /path/to/page.
+	//
+	// A template is any page named starting with an underscore ("_") 
+	// thus it is not recommended to use underscores to start page names.
+	//
+	// The actual default template is controlled via <page>.PAGE_TEMPLATE
+	//
+	// Example:
+	// 		_list: {
+	//			text: '<macro src="." join="\n">- @source(.)</macro>' },
+	//
 	_text: {
-		//text: '<macro src="." join="\n">@source(.)</macro>' },
 		text: '@include(.)' },
 	_raw: {
 		text: '@quote(.)' },
 
+
+	// base system pages...
+	//
+	// NOTE: these are last resort pages, preferably overloaded in /Templates.
 	RecursionError: {
 		text: 'RECURSION ERROR: @quote(./path)' },
 	NotFoundError: { 
 		text: 'NOT FOUND ERROR: @quote(./path)' },
 
+
+	// page actions...
+	//
+
 	// XXX tests...
 	test_list: function(){
 		return 'abcdef'.split('') },
+
 
 	// metadata...
 	//

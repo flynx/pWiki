@@ -10,9 +10,9 @@
 var pwiki = require('./pwiki2')
 
 // XXX for some reason this does not run quietly in browser
-var pouchdbstore = require('./store/pouchdb')
+var pouchdbstore = require('./pwiki/store/pouchdb')
 // XXX need to prevent this from breaking in browser...
-var filestore = require('./store/file')
+var filestore = require('./pwiki/store/file')
 
 // XXX this fails silently in browser...
 var bootstrap = require('./bootstrap')

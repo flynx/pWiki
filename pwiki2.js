@@ -119,10 +119,10 @@
 var object = require('ig-object')
 var types = require('ig-types')
 
-var pwpath = require('./lib/path')
-var page = require('./page')
+var pwpath = require('./pwiki/path')
+var page = require('./pwiki/page')
 
-var basestore = require('./store/base')
+var basestore = require('./pwiki/store/base')
 
 //var localstoragestore = require('./store/localstorage')
 // XXX for some reason this does not run quietly in browser

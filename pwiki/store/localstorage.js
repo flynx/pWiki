@@ -10,9 +10,9 @@
 var object = require('ig-object')
 var types = require('ig-types')
 
-var pwpath = require('../lib/path')
+var pwpath = require('../path')
 
-var base = require('../store/base')
+var base = require('./base')
 
 
 //---------------------------------------------------------------------

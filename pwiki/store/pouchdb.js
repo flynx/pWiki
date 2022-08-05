@@ -10,8 +10,8 @@
 var object = require('ig-object')
 var types = require('ig-types')
 
-var pwpath = require('../lib/path')
-var base = require('../store/base')
+var pwpath = require('../path')
+var base = require('./base')
 
 var PouchDB = require('pouchdb')
 
