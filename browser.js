@@ -10,13 +10,13 @@
 var object = require('ig-object')
 var types = require('ig-types')
 
-var pwpath = require('./lib/path')
-var page = require('./page')
+var pwpath = require('./pwiki/path')
+var page = require('./pwiki/page')
 
-var basestore = require('./store/base')
-var localstoragestore = require('./store/localstorage')
+var basestore = require('./pwiki/store/base')
+var localstoragestore = require('./pwiki/store/localstorage')
 
-var pouchdbstore = require('./store/pouchdb')
+var pouchdbstore = require('./pwiki/store/pouchdb')
 
 // XXX this fails silently in browser...
 //var bootstrap = require('./bootstrap')
