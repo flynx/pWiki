@@ -3,6 +3,9 @@
 *
 * XXX wikiword filter seems to act up on /
 * XXX BUG? /test/wikiword -- produces nested links...
+* 		to reproduce:
+* 			await p.pwiki.get('/test/wikiword').text
+* 		..as-is, seems not to deal well with tags...
 *
 *
 * XXX ROADMAP:
@@ -75,6 +78,8 @@
 * 			...another solution is to offload the search to the store backend
 * 			but this would require the stores to reimplement most of pwiki/path
 * 		- 
+*
+*
 * TODO:
 * 	- <page>.then() -- resolve when all pending write operations done ???
 * 	- an async REPL???
