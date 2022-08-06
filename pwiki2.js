@@ -1,11 +1,6 @@
 /**********************************************************************
 * 
 *
-* XXX shoul Doc/About be found from both / and /WikiHome???
-*		...currently / + Doc/About reolves correctly while
-* 		/WikiHome + Doc/About is not found...
-* 		...this is a questions of subpath search, i.e. when we do not 
-* 		find "About" should we search for Doc/About and so on...
 * XXX wikiword filter seems to act up on /
 * XXX BUG? /test/wikiword -- produces nested links...
 *
@@ -74,6 +69,11 @@
 * 			- requires the whole list of pages to be in memory
 * 				...need to be independent of the number of pages if at 
 * 				all possible -- otherwise this will hinder long-term use...
+* 			.paths() should be cached to make all path searches away from 
+* 			async waits as we can test quite a number of paths before we 
+* 			find a page...
+* 			...another solution is to offload the search to the store backend
+* 			but this would require the stores to reimplement most of pwiki/path
 * 		- 
 * TODO:
 * 	- <page>.then() -- resolve when all pending write operations done ???
