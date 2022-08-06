@@ -124,7 +124,15 @@ module = {
 	//
 	// NOTE: if seen is given (when called recursively) this will not 
 	// 		search for .ALTERNATIVE_PAGES...
-	// XXX should we search for each path element or just the last one (current)??? 
+	// NOTE: this will search for basename and each subpath, e.g:
+	// 			a/b/c	
+	// 				-> a/b/c/d
+	// 				-> a/c/d
+	// 				-> c/d
+	// 				-> d
+	// 				// now search for 'c/d'...
+	// 				-> a/c/d
+	// 				-> ...
 	// XXX should we keep the trailing '/'???
 	paths: function*(path='/', strict=false){
 		if(path === true || path === false){
@@ -159,16 +167,23 @@ module = {
 		var page = path.pop()
 		for(var tpl of ['.', ...this.SEARCH_PATHS]){
 			// search for page up the path...
-			var p = path.slice()
-			while(p.length > 0){
-				var cur = this.relative(p, tpl +'/'+ page, 'string')
-				if(!seen.has(cur)){
-					seen.add(cur)
-					yield cur }
-				// special case: non-relative template/page path...
-				if(tpl[0] == '/'){
-					break }
-				p.pop() } }
+			var pg = page
+			var base = path.slice()
+			while(base.length > 0){
+				var p = base.slice()
+				while(p.length > 0){
+					var cur = this.relative(p, tpl +'/'+ pg, 'string')
+					if(!seen.has(cur)){
+						seen.add(cur)
+						yield cur }
+					// special case: non-relative template/page path...
+					if(tpl[0] == '/'){
+						break }
+					p.pop() } 
+				// next search for tail sub-path...
+				// 		for a/b/c
+				// 			c in a/b -> b/c in a
+				pg = base.pop() +'/'+ pg } }
 		// alternative pages...
 		if(alt_pages){
 			for(var page of [...this.ALTERNATIVE_PAGES]){

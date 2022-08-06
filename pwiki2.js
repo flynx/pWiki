@@ -1,6 +1,11 @@
 /**********************************************************************
 * 
 *
+* XXX shoul Doc/About be found from both / and /WikiHome???
+*		...currently / + Doc/About reolves correctly while
+* 		/WikiHome + Doc/About is not found...
+* 		...this is a questions of subpath search, i.e. when we do not 
+* 		find "About" should we search for Doc/About and so on...
 * XXX wikiword filter seems to act up on /
 * XXX BUG? /test/wikiword -- produces nested links...
 *
@@ -120,7 +125,9 @@
 var object = require('ig-object')
 var types = require('ig-types')
 
-var pwpath = require('./pwiki/path')
+var pwpath = 
+module.path =
+	require('./pwiki/path')
 var page = require('./pwiki/page')
 
 var basestore = require('./pwiki/store/base')

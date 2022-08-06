@@ -10,6 +10,7 @@
 var object = require('ig-object')
 
 var pwiki = require('./pwiki2')
+module.path = pwiki.path
 
 // XXX for some reason this does not run quietly in browser
 var pouchdbstore = require('./pwiki/store/pouchdb')

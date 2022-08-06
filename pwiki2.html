@@ -83,9 +83,17 @@ require.config({
 	]
 })
 
+
+document.pwikiloaded = new Event('pwikiloaded')
+
+
 // start loading pWiki...
 require(['./browser'], function(m){ 
 	window.pwiki = m.pwiki 
+
+	// XXX make a pWikiDom page to manage this...
+	pwiki.dom = document.querySelector('#pWiki')
+
 
 	// handle location.hash (both directions)
 	var _debounceHashChange = false
@@ -96,7 +104,13 @@ require(['./browser'], function(m){
 		setTimeout(function(){
 			_debounceHashChange = false }, 0) 
 		// render...
-		document.querySelector('#pWiki').innerHTML = await this.text })
+		pwiki.dom.innerHTML = await this.text 
+		// pwiki page loaded event...
+		// XXX do we need to use a MutationObserver here to trigger this 
+		//		after the above is done loading???
+		//		(see: https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver)
+		pwiki.dom.dispatchEvent(document.pwikiloaded) })
+
 	window.addEventListener('hashchange', function(evt){
 		evt.preventDefault()
 		if(_debounceHashChange){
@@ -105,7 +119,19 @@ require(['./browser'], function(m){
 		path = path.trim() == '' ? 
 			'/' 
 			: path
-		pwiki.path = path })
+		pwiki.path = path 
+
+		// XXX when loaded us <elem>.scrollIntoView() to get to hash...
+		//		...would also be nice to keep hash within location.hash...
+	})
+
+
+	// XXX use a pwiki.onLoad event...
+	pwiki.dom.addEventListener('pwikiloaded', function(evt){
+		console.log('pWiki loaded')
+
+		// XXX scroll
+	})
 
 	// show current page...
 	pwiki.path = location.hash.slice(1)

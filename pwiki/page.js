@@ -1088,6 +1088,21 @@ object.Constructor('Page', BasePage, {
 
 
 //---------------------------------------------------------------------
+
+// XXX do we actually need this???
+var DOMPage =
+module.DOMPage = 
+object.Constructor('DOMPage', Page, {
+	dom: undefined,
+
+	// XXX might be a good idea to move this up to Page and trigger when 
+	// 		done updating...
+	onLoad: types.event.Event('onLoad'),
+})
+
+
+
+//---------------------------------------------------------------------
 // System pages/actions...
 
 var System = 
@@ -1186,6 +1201,7 @@ module.System = {
 	// XXX System/sort
 	// XXX System/reverse
 }
+
 
 
 
