@@ -6,6 +6,14 @@
 * 		to reproduce:
 * 			await p.pwiki.get('/test/wikiword').text
 * 		..as-is, seems not to deal well with tags...
+* 		...also might be a good idea to try and moke wiki-word generation
+* 		a DOM thing instead of a filter, this seems logical as we might
+* 		need it only within a UI and I do not think I'll be working on
+* 		a non DOM interface (curses, ...) any time soon...
+* XXX add action to reset overloaded (bootstrap) pages...
+* 		- per page
+* 		- global
+*
 *
 *
 * XXX ROADMAP:
@@ -80,16 +88,11 @@
 * 		- 
 *
 *
-* TODO:
+* TODO?:
 * 	- <page>.then() -- resolve when all pending write operations done ???
 * 	- an async REPL???
 * 	- custom element???
-*
-*
-*
-***********************************************************************
-*
-* XXX might be a good idea to try signature based security:
+* 	- might be a good idea to try signature based security:
 * 		- sign changes
 * 		- sign sync session
 * 		- refuse changes with wrong signatures
@@ -103,20 +106,10 @@
 * 		- in this view a user in the system is simply a set of keys and 
 * 			a signature (a page =))
 *
-* XXX pages into lib/page ???
-*
-* XXX add action to reset overloaded (bootstrap) pages...
-* 		- per page
-* 		- global
-*
 * XXX need to think about search -- page function argument syntax???
 *
 * XXX might need to get all the links (macro-level) from a page...
 * 		...would be useful for caching...
-*
-* XXX .__paths__(..) may be a bottleneck...
-* 		need to either think of a way around it or cache the path index
-* 		in a sync way...
 *
 *
 *
