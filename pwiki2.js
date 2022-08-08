@@ -13,6 +13,7 @@
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
 * 		- global
+* XXX Q: can we access fs from a pwa???
 *
 *
 *
@@ -22,16 +23,30 @@
 * 		- test localStorage / sessionStorage 		-- DONE
 * 		- test pouch								-- DONE
 * 		- render page								-- DONE
-* 		- navigation
+* 		- navigation								-- DONE
 * 			- hash/anchor							-- DONE
-* 			- service worker
-* 				...handle relative urls (???)
 * 		- editor and interactivity
 * 		- migrate bootstrap
 * 		- store topology
-* 	- WikiWord										-- DONE
 * 	- markdown										-- DONE??
+* 	- WikiWord										--
+* 		currently this is broken as it does not know how to deal with HTML
+* 		this can be solved by one of:
+* 			- make this a dom filter and only handle text nodes (as v1-2)
+* 			- add a way to go around tags (as pwiki/parser)
+* 		the first approach looks more promising...
+* 	- dom filters ???
+* 		does this need to be a pWiki level thing or just a js call/load??
+* 		...this can be used to contain all to page-side stuff like:
+* 			- hash handling / navigation
+* 			- editors
+* 			- wikiwords
+* 	- configuration
+* 		- defaults
+* 		- System/config (global)
 * 	- pwa
+* 		- service worker ???
+* 			...handle relative urls (???)
 * 	- cli
 * 		- basic wiki manipulations (1:1 methods)
 * 		- import/export/sync
@@ -39,7 +54,7 @@
 * 	- archive old code
 * 	- update docs
 * 	- refactor and cleanup
-* 		- module structure							-- DONE
+* 		- module structure							-- REVISE
 * 	- pack as electron app (???)
 *
 *

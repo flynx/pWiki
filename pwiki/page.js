@@ -816,6 +816,8 @@ object.Constructor('Page', BasePage, {
 		// 		explicit shown/hidden arguments are given.
 		// NOTE: hidden has precedence over shown if both are given.
 		//
+		// XXX revise the use of hidden/shown use mechanic and if it's 
+		// 		needed...
 		// XXX how do we handle a slot defined within a slot????
 		// 		...seems that we'll fall into recursion on definition...
 		slot: Macro(
@@ -1095,6 +1097,13 @@ module.DOMPage =
 object.Constructor('DOMPage', Page, {
 	dom: undefined,
 
+	plugins: {
+		// XXX
+		wikiword: undefined,
+	},
+
+	// events...
+	//
 	// XXX might be a good idea to move this up to Page and trigger when 
 	// 		done updating...
 	onLoad: types.event.Event('onLoad'),

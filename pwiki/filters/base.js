@@ -21,6 +21,7 @@ function(...args){
 
 
 //---------------------------------------------------------------------
+// XXX this does not seem to handle html well...
 
 var WIKIWORD_PATTERN =
 	RegExp('('+[
