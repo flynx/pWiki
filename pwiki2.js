@@ -29,7 +29,7 @@
 * 		- migrate bootstrap
 * 		- store topology
 * 	- markdown										-- DONE??
-* 	- WikiWord										--
+* 	- WikiWord										-- DONE-ish
 * 		currently this is broken as it does not know how to deal with HTML
 * 		this can be solved by one of:
 * 			- make this a dom filter and only handle text nodes (as v1-2)

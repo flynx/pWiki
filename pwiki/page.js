@@ -548,8 +548,9 @@ object.Constructor('Page', BasePage, {
 			return source 
 				.replace(/test/g, 'TEST') },
 
-		wikiword: filters.wikiWord,
-		'quote-wikiword': filters.quoteWikiWord,
+		// XXX
+		wikiword: function(){}, 
+		'quote-wikiword': function(){},
 
 		markdown: markdown.markdown,
 		'quote-markdown': markdown.quoteMarkdown,
@@ -1005,6 +1006,7 @@ object.Constructor('Page', BasePage, {
 			state = text
 			text = null }
 		state = state ?? {}
+
 		return this.__parser__.parse(this, text, state) },
 
 	// true if page has an array value but is not a pattern page...
@@ -1101,6 +1103,7 @@ object.Constructor('DOMPage', Page, {
 		// XXX
 		wikiword: undefined,
 	},
+
 
 	// events...
 	//
