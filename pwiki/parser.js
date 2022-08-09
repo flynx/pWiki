@@ -480,15 +480,15 @@ module.BaseParser = {
 					: state.filters ?
 						that.normalizeFilters(state.filters)
 							.reduce(function(res, filter){
+								// unknown filter...
+								// NOTE: we try not to break on user errors
+								// 		if we can help it...
 								if(page.filters[filter] == null){
-									/* XXX
-									throw new Error(
-										'.parse(..): unsupported filter: '+ filter) }
-									/*/
 									console.warn(
 										'.parse(..): unsupported filter: '+ filter) 
 									return res }
-									//*/
+								// NOTE: if a filter returns falsy then it 
+								// 		will have no effect on the result...
 								return page.filters[filter].call(page, res) 
 									?? res }, section)
 					// no global filters...

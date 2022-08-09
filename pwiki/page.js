@@ -548,7 +548,9 @@ object.Constructor('Page', BasePage, {
 			return source 
 				.replace(/test/g, 'TEST') },
 
-		// XXX
+		// XXX one way to do this in a stable manner is to wrap the source 
+		// 		in something like <span wikiwords=yes> .. </span> and only 
+		// 		process those removing the wrapper in dom...
 		wikiword: function(){}, 
 		'quote-wikiword': function(){},
 
