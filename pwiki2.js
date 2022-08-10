@@ -2,22 +2,6 @@
 * 
 *
 * XXX BUG: .get('/*').raw hangs...
-* XXX RELATIVE relative urls are a bit odd...
-* 			Path/to/page opens Moo	-> Path/to/Page/Moo
-* 		should be (???):
-* 			Path/to/page opens Moo	-> Path/to/Moo
-* 		this boils down to how path.relative(..) works, treating the base
-* 		as a directory always (current) vs. only if '/' is at the end, on 
-* 		one hand the current approach is more uniform with less subtle ways
-* 		to make mistakes but on the other hand this may introduce a lot 
-* 		of complexity to the user writing links, e.g. how should the 
-* 		following be interpreted?
-* 			page: /SomePage
-* 				link: SomeOtherPage
-* 					-> /SomeOtherPage
-* 					-> /SomePage/SomeOtherPage (current)
-* 		the current approach does not seem to be intuitive...
-* 		can this be fixed uniformly across the whole system???
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
 * 		- global
@@ -38,9 +22,17 @@
 * 		- store topology
 * 	- markdown										-- DONE??
 * 	- WikiWord										-- DONE
-* 	- dom filters									-- DONE
-* 		- wikiword									-- DONE
-* 		- path2link (wikiword?)						--
+* 	- dom filter mechanics							-- DONE
+* 	- filters / dom filters:
+* 		- wikiword (control)
+* 			this can be done in one of two ways:
+* 				- wrapping blocks in elemens
+* 					...requires negative filter calls, either on -wikiword 
+* 					or a different filter like nowikiwords...
+* 				- tags (current)
+* 		- raw / code
+* 		- nl2br
+* 		- path2link (wikiword?)			
 * 		- editor
 * 	- configuration
 * 		- defaults
@@ -121,6 +113,24 @@
 * 		- check if we can use the same mechanics as ssh...
 * 		- in this view a user in the system is simply a set of keys and 
 * 			a signature (a page =))
+*
+* XXX RELATIVE relative urls are a bit odd...
+* 			Path/to/page opens Moo	-> Path/to/Page/Moo
+* 		should be (???):
+* 			Path/to/page opens Moo	-> Path/to/Moo
+* 		this boils down to how path.relative(..) works, treating the base
+* 		as a directory always (current) vs. only if '/' is at the end, on 
+* 		one hand the current approach is more uniform with less subtle ways
+* 		to make mistakes but on the other hand this may introduce a lot 
+* 		of complexity to the user writing links, e.g. how should the 
+* 		following be interpreted?
+* 			page: /SomePage
+* 				link: SomeOtherPage
+* 					-> /SomeOtherPage
+* 					-> /SomePage/SomeOtherPage (current)
+* 		the current approach does not seem to be intuitive...
+* 		can this be fixed uniformly across the whole system???
+* 		XXX document this!
 *
 * XXX need to think about search -- page function argument syntax???
 *
