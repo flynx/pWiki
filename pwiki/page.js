@@ -54,11 +54,17 @@ module.__HANDLE_NAVIGATE =
 var BasePage =
 module.BasePage = 
 object.Constructor('BasePage', {
-	// NOTE: this can be inherited...
-	//store: undefined,
-	
 	// root page used to clone new instances via the .clone(..) method...
 	//root: undefined,
+	
+	// NOTE: this can be inherited...
+	//store: undefined,
+	//__store: undefined,
+	get store(){
+		return this.__store 
+			?? (this.root ?? {}).__store },
+	set store(value){
+		this.__store = value },
 	
 	// Path variables...
 	//
@@ -470,7 +476,11 @@ object.Constructor('BasePage', {
 	update: function(...data){
 		return Object.assign(this, ...data) },
 
+	// XXX should this take an options/dict argument????
 	__init__: function(path, referrer, store){
+		if(referrer && typeof(referrer) != 'string'){
+			store = referrer
+			referrer = undefined }
 		// NOTE: this will allow inheriting .store from the prototype
 		if(store){
 			this.store = store }
@@ -551,6 +561,8 @@ object.Constructor('Page', BasePage, {
 		// XXX one way to do this in a stable manner is to wrap the source 
 		// 		in something like <span wikiwords=yes> .. </span> and only 
 		// 		process those removing the wrapper in dom...
+		// 		...not sure how to handle -wikiword filter calls -- now 
+		// 		this is entirely handled by the parser without calling this...
 		wikiword: function(){}, 
 		'quote-wikiword': function(){},
 
@@ -1095,23 +1107,61 @@ object.Constructor('Page', BasePage, {
 
 //---------------------------------------------------------------------
 
-// XXX do we actually need this???
-var DOMPage =
-module.DOMPage = 
-object.Constructor('DOMPage', Page, {
+var wikiword = require('./dom/wikiword')
+
+var pWikiPageElement =
+module.pWikiPageElement = 
+object.Constructor('pWikiPageElement', Page, {
+	__page_constructor__: Page,
+
 	dom: undefined,
 
-	plugins: {
-		// XXX
-		wikiword: undefined,
+	domFilters: {
+		// XXX see Page.filters.wikiword for notes...
+		wikiword: wikiword.wikiWordText,
 	},
 
 
+	get title(){
+		return this.dom.getAttribute('title')
+			|| (this.dom.querySelector('h1') || {}).innerText
+			|| this.path },
+	// XXX this is not persistent, is this what we want???
+	set title(value){
+		this.dom.setAttribute('title', value) },
+
 	// events...
 	//
-	// XXX might be a good idea to move this up to Page and trigger when 
-	// 		done updating...
-	onLoad: types.event.Event('onLoad'),
+	__pWikiLoadedDOMEvent: new Event('pwikiloaded'),
+	onLoad: types.event.Event('onLoad', function(){
+		this.dom.dispatchEvent(this.__pWikiLoadedDOMEvent) }),
+
+	refresh: async function(){
+		var dom = this.dom
+		dom.innerHTML = await this.text 
+		for(var filter of Object.values(this.domFilters)){
+			filter
+				&& filter.call(this, dom) }
+		this.onLoad()
+		return this },
+
+	// NOTE: cloning this will return .__page_constructor__ and not 
+	// 		.constructor instances...
+	clone: function(){
+		// NOTE: we only get full clones here specifically to copy all 
+		// 		the relevant data...
+		var page = object.parentCall(pWikiPageElement.prototype.clone, this, ...arguments)
+		// mutate the constructor...
+		this.__page_constructor__
+			&& (page.__proto__ = this.__page_constructor__.prototype)
+		return page },
+
+	__init__: function(dom, ...args){
+		if(dom instanceof Element){
+			this.dom = dom
+		} else {
+			args.unshift(dom) }
+		return object.parentCall(pWikiPageElement.prototype.__init__, this, ...args) },
 })
 
 

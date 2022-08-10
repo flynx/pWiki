@@ -72,11 +72,11 @@ function*(root, skip_empty=true){
 // 	a
 // 	[wikiwords=no]
 //
-var wikiword =
-module.wikiword =
-function(root){
+var wikiWordText =
+module.wikiWordText =
+function(elem){
 	var tmp = document.createElement('div')
-	iterText(pwiki.dom)
+	iterText(elem)
 		.forEach(function(text){
 			// skip stuff...
 			if(text.parentNode.nodeName == 'a'

@@ -88,58 +88,34 @@ document.pwikiloaded = new Event('pwikiloaded')
 
 
 // start loading pWiki...
-require(['./browser', './pwiki/dom/wikiword'], function(pwiki, wikiword){ 
+require(['./browser'], function(pwiki){ 
 	pwiki = window.pwiki = pwiki.pwiki 
-	wikiword = window.wikiword = wikiword.wikiword
 
-	// XXX for some reason this sets to undefined...
-	var iterText = window.iterText = wikiword.iterText
-
-	// XXX make a pWikiDom page to manage this...
 	pwiki.dom = document.querySelector('#pWiki')
 
-	// handle location.hash (both directions)
-	var _debounceHashChange = false
-	pwiki.onNavigate(async function(){
-		// update location.hash without retriggering...
-		_debounceHashChange = true
-		location.hash = this.path
-		setTimeout(function(){
-			_debounceHashChange = false }, 0) 
-		// render...
-		pwiki.dom.innerHTML = await this.text 
-		// pwiki page loaded event...
-		// XXX do we need to use a MutationObserver here to trigger this 
-		//		after the above is done loading???
-		//		(see: https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver)
-		pwiki.dom.dispatchEvent(document.pwikiloaded) 
-
-		// wikiwords
-		// XXX this should be controllable from the page...
-		wikiword(pwiki.dom)
-	})
-
+	// handle location.hash/history (both directions)
 	window.addEventListener('hashchange', function(evt){
 		evt.preventDefault()
-		if(_debounceHashChange){
-			return }
 		var [path, hash] = location.hash.slice(1).split('#')
 		path = path.trim() == '' ? 
 			'/' 
 			: path
-		pwiki.path = path 
+		pwiki.path = path })
+	pwiki
+		.onNavigate(function(){
+			// NOTE: we do not need to directly update location.hash here as
+			//		that will push an extra history item...
+			history.replaceState({path: pwiki.path}, pwiki.title, '#'+pwiki.path)
+			// NOTE: we are intentionally not awaiting for this -- this 
+			//		separates the navigate and load events...
+			pwiki.refresh() })
+		.onLoad(function(evt){
+			// handle title...
+			document.querySelector('title').innerHTML = this.title
 
-		// XXX when loaded us <elem>.scrollIntoView() to get to hash...
-		//		...would also be nice to keep hash within location.hash...
-	})
-
-
-	// XXX use a pwiki.onLoad event...
-	pwiki.dom.addEventListener('pwikiloaded', function(evt){
-		console.log('pWiki loaded')
-
-		// XXX scroll
-	})
+			// XXX when loaded us <elem>.scrollIntoView() to get to hash...
+			//		...would also be nice to keep hash within location.hash...
+		})
 
 	// show current page...
 	pwiki.path = location.hash.slice(1)

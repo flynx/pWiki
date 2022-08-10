@@ -36,7 +36,8 @@ var pwiki =
 module.pwiki = 
 	// XXX
 	//page.DOMPage('/', '/', store)
-	page.Page('/', '/', store)
+	//page.Page('/', '/', store)
+	page.pWikiPageElement('/', '/', store)
 
 
 pwiki.store.update('@local', {
