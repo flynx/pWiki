@@ -98,10 +98,34 @@ module = {
 				.join('/'), 
 			'string') },
 	basename: function(path){
-		return this.split(path).pop() },
+		path = this.split(path)
+		return path.length == 1 ?
+				path[0]	
+			: (path.at(-1) == '' ?
+				path.at(-2)
+				: path.at(-1)) },
 	dirname: function(path){
-		return this.relative(path, '..', 'string') },
+		path = this.split(path)
+		path = path.length == 1 ?
+				'.'
+			: path.length == 2 ?
+				path[0]
+			: (path.at(-1) == '' ?
+					path.slice(0, -2)
+					: path.slice(0, -1))
+				.join('/') 
+		return path == '' ?
+			'/'
+			: path },
 
+	// XXX BUG? which is more correct??
+	// 			.relative('a/b/c', 'x') 
+	// 				-> 'a/b/c/x' (current)
+	// 		or:
+	// 			.relative('a/b/c', 'x') 
+	// 				-> 'a/b/x' 
+	// 		...not sure about this yet...
+	// 		XXX REVISE...
 	relative: function(parent, path, format='auto'){
 		format = format == 'auto' ?
 			(path instanceof Array ?
@@ -118,6 +142,13 @@ module = {
 		path = path instanceof Array ?
 			path
 			: path.split(/\s*[\\\/]+\s*/)
+		// NOTE: relative paths are siblings and not children unless the 
+		// 		parent is explicitly a directory (i.e. ends in '/')...
+		/* XXX RELATIVE -- leading @ in path is the same as a trailing / in parent...
+		path[0] == '@' ?
+			path.shift()
+			: parent.pop()
+		//*/
 		return this.normalize([...parent, ...path], format) },
 
 	// Build alternative paths for page acquisition...
@@ -172,7 +203,9 @@ module = {
 			while(base.length > 0){
 				var p = base.slice()
 				while(p.length > 0){
-					var cur = this.relative(p, tpl +'/'+ pg, 'string')
+					// NOTE: we are adding '' to path here to get things 
+					// 		relative to it and not relative to basedir...
+					var cur = this.relative([...p, ''], tpl +'/'+ pg, 'string')
 					if(!seen.has(cur)){
 						seen.add(cur)
 						yield cur }

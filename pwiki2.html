@@ -98,24 +98,39 @@ require(['./browser'], function(pwiki){
 		evt.preventDefault()
 		var [path, hash] = location.hash.slice(1).split('#')
 		path = path.trim() == '' ? 
-			'/' 
+			pwiki.path
+			//'/'
 			: path
+		// XXX treat links as absolute unless explicitly relative...
+		path = /^\.\.?([\\\/].*)?$/.test(path) ?
+			path
+			: '/'+path
+		// NOTE: .hash needs to be set before .path, otherwise the path 
+		//		handlers will not see it..
+		pwiki.hash = hash 
 		pwiki.path = path })
 	pwiki
 		.onNavigate(function(){
 			// NOTE: we do not need to directly update location.hash here as
 			//		that will push an extra history item...
-			history.replaceState({path: pwiki.path}, pwiki.title, '#'+pwiki.path)
+			history.replaceState(
+				{path: this.path}, 
+				this.title, 
+				'#'+this.path 
+					+(this.hash ? 
+						'#'+this.hash 
+						: ''))
 			// NOTE: we are intentionally not awaiting for this -- this 
 			//		separates the navigate and load events...
-			pwiki.refresh() })
+			this.refresh() })
 		.onLoad(function(evt){
 			// handle title...
 			document.querySelector('title').innerHTML = this.title
-
-			// XXX when loaded us <elem>.scrollIntoView() to get to hash...
-			//		...would also be nice to keep hash within location.hash...
-		})
+			// scroll to anchor element...
+			this.hash
+				&& this.dom
+					.querySelector('#'+ this.hash)
+					.scrollIntoView() })
 
 	// show current page...
 	pwiki.path = location.hash.slice(1)

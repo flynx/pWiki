@@ -1,15 +1,23 @@
 /**********************************************************************
 * 
 *
-* XXX wikiword filter seems to act up on /
-* XXX BUG? /test/wikiword -- produces nested links...
-* 		to reproduce:
-* 			await p.pwiki.get('/test/wikiword').text
-* 		..as-is, seems not to deal well with tags...
-* 		...also might be a good idea to try and moke wiki-word generation
-* 		a DOM thing instead of a filter, this seems logical as we might
-* 		need it only within a UI and I do not think I'll be working on
-* 		a non DOM interface (curses, ...) any time soon...
+* XXX BUG: .get('/*').raw hangs...
+* XXX RELATIVE relative urls are a bit odd...
+* 			Path/to/page opens Moo	-> Path/to/Page/Moo
+* 		should be (???):
+* 			Path/to/page opens Moo	-> Path/to/Moo
+* 		this boils down to how path.relative(..) works, treating the base
+* 		as a directory always (current) vs. only if '/' is at the end, on 
+* 		one hand the current approach is more uniform with less subtle ways
+* 		to make mistakes but on the other hand this may introduce a lot 
+* 		of complexity to the user writing links, e.g. how should the 
+* 		following be interpreted?
+* 			page: /SomePage
+* 				link: SomeOtherPage
+* 					-> /SomeOtherPage
+* 					-> /SomePage/SomeOtherPage (current)
+* 		the current approach does not seem to be intuitive...
+* 		can this be fixed uniformly across the whole system???
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
 * 		- global
@@ -29,18 +37,11 @@
 * 		- migrate bootstrap
 * 		- store topology
 * 	- markdown										-- DONE??
-* 	- WikiWord										-- DONE-ish
-* 		currently this is broken as it does not know how to deal with HTML
-* 		this can be solved by one of:
-* 			- make this a dom filter and only handle text nodes (as v1-2)
-* 			- add a way to go around tags (as pwiki/parser)
-* 		the first approach looks more promising...
-* 	- dom filters ???
-* 		does this need to be a pWiki level thing or just a js call/load??
-* 		...this can be used to contain all to page-side stuff like:
-* 			- hash handling / navigation
-* 			- editors
-* 			- wikiwords
+* 	- WikiWord										-- DONE
+* 	- dom filters									-- DONE
+* 		- wikiword									-- DONE
+* 		- path2link (wikiword?)						--
+* 		- editor
 * 	- configuration
 * 		- defaults
 * 		- System/config (global)

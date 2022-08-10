@@ -25,7 +25,11 @@ var relProxy =
 function(name){
 	var func = function(path='.', ...args){
 		return this.store[name](
+			/* XXX RELATIVE 
+			pwpath.relative(this.location+'/', path), 
+			/*/
 			pwpath.relative(this.location, path), 
+			//*/
 			...args) } 
 	Object.defineProperty(func, 'name', {value: name})
 	return func } 
@@ -36,7 +40,11 @@ function(name){
 			strict = path
 			path = '.' }
 		return this.store[name](
+			/* XXX RELATIVE 
+			pwpath.relative(this.location+'/', path), 
+			/*/
 			pwpath.relative(this.location, path), 
+			//*/
 			strict) } 
 	Object.defineProperty(func, 'name', {value: name})
 	return func }
@@ -161,10 +169,10 @@ object.Constructor('BasePage', {
 
 	// XXX should these be writable???
 	get name(){
-		return pwpath.split(this.path).pop() },
+		return pwpath.basename(this.location) },
 	//set name(value){ },
 	get dir(){
-		return pwpath.relative(this.location, '..') },
+		return pwpath.dirname(this.location) },
 	//set dir(value){ },
 	get isPattern(){
 		return this.location.includes('*') },
@@ -215,7 +223,11 @@ object.Constructor('BasePage', {
 	__update__: function(data){
 		return this.store.update(this.location, data) },
 	__delete__: function(path='.'){
+		/* XXX RELATIVE
+		return this.store.delete(pwpath.relative(this.location+'/', path)) },
+		/*/
 		return this.store.delete(pwpath.relative(this.location, path)) },
+		//*/
 
 	// page data...
 	//
@@ -292,7 +304,11 @@ object.Constructor('BasePage', {
 			strict = path
 			path = '.' }
 		return this.store.find(
+			/* XXX RELATIVE
+			//pwpath.relative(this.location+'/', path), strict) },
+			/*/
 			pwpath.relative(this.location, path), strict) },
+			//*/
 
 	//
 	// 	.get(<path>[, <data>])

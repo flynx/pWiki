@@ -35,7 +35,6 @@ store.update('System',
 var pwiki =
 module.pwiki = 
 	// XXX
-	//page.DOMPage('/', '/', store)
 	//page.Page('/', '/', store)
 	page.pWikiPageElement('/', '/', store)
 
