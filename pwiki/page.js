@@ -1193,6 +1193,8 @@ object.Constructor('pWikiPageElement', Page, {
 
 	// NOTE: cloning this will return .__page_constructor__ and not 
 	// 		.constructor instances...
+	// XXX can we use .__clone_base__ here??
+	// 		...or can we avoid this alltogether???
 	clone: function(){
 		// NOTE: we only get full clones here specifically to copy all 
 		// 		the relevant data...
