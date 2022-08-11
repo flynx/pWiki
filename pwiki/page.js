@@ -67,7 +67,7 @@ object.Constructor('BasePage', {
 
 	// a base page to be used as a base for cloning if root is of a 
 	// different "class"...
-	//__clone_base__: undefined,
+	//__clone_proto__: undefined,
 	
 	// NOTE: this can be inherited...
 	//store: undefined,
@@ -407,19 +407,22 @@ object.Constructor('BasePage', {
 		data = full ? 
 			args[0] ?? {} 
 			: data
+		var src = this.__clone_proto__ 
+			?? (this.root || {}).__clone_proto__
+			?? this.root
+			?? this
 		return Object.assign(
 			full ?
 				// full copy...
-				this.constructor(this.path, this.referrer, this.store)
+				// XXX src or this???
+				//this.constructor(this.path, this.referrer, this.store)
+				src.constructor(this.path, this.referrer, this.store)
 				// NOTE: this will restrict all the clones to the first 
 				// 		generation maintaining the original (.root) page as 
 				// 		the common root...
 				// 		this will make all the non-shadowed attrs set on the
 				// 		root visible to all sub-pages.
-				: Object.create(
-					(this.root || {}).__clone_base__
-						?? this.root 
-						?? this),
+				: Object.create(src),
 			{
 				root: this.root ?? this,
 				location: this.location, 
@@ -1134,8 +1137,6 @@ var wikiword = require('./dom/wikiword')
 var pWikiPageElement =
 module.pWikiPageElement = 
 object.Constructor('pWikiPageElement', Page, {
-	__page_constructor__: Page,
-
 	dom: undefined,
 
 
@@ -1144,6 +1145,15 @@ object.Constructor('pWikiPageElement', Page, {
 		wikiword: wikiword.wikiWordText,
 	},
 
+	__clone_constructor__: Page,
+
+	__clone_proto: undefined,
+	get __clone_proto__(){
+		return (this.__clone_proto = this.__clone_proto 
+			?? this.__clone_constructor__('/', '/', this.store)) },
+	set __clone_proto__(value){
+		this.__clone_proto = value },
+	
 	// NOTE: setting location will reset .hash set it directly via either
 	// 		one of:
 	// 			.location = [path, hash]
@@ -1191,19 +1201,6 @@ object.Constructor('pWikiPageElement', Page, {
 		this.onLoad()
 		return this },
 
-	// NOTE: cloning this will return .__page_constructor__ and not 
-	// 		.constructor instances...
-	// XXX can we use .__clone_base__ here??
-	// 		...or can we avoid this alltogether???
-	clone: function(){
-		// NOTE: we only get full clones here specifically to copy all 
-		// 		the relevant data...
-		var page = object.parentCall(pWikiPageElement.prototype.clone, this, ...arguments)
-		// mutate the constructor...
-		this.__page_constructor__
-			&& (page.__proto__ = this.__page_constructor__.prototype)
-		return page },
-
 	// handle dom as first argument...
 	__init__: function(dom, ...args){
 		if(typeof(Element) != 'undefined'){
@@ -1211,8 +1208,6 @@ object.Constructor('pWikiPageElement', Page, {
 				this.dom = dom
 			} else {
 				args.unshift(dom) } }
-		// XXX is this the correct way to go???
-		this.__clone_base__ = this.clone()
 		return object.parentCall(pWikiPageElement.prototype.__init__, this, ...args) },
 })
 
