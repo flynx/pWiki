@@ -88,6 +88,25 @@
 * 	use of high level libs like types...
 *
 *
+* XXX DOC:
+* 		- paths in pWiki behave a bit differently than traditional 
+* 			file-system paths, this is due to one key distinction:
+* 				in pWiki there is no distinction between a file and a 
+* 				directory
+* 			i.e. each path can both contain data as a file and at the same
+* 			time support sub-paths etc.
+* 			for this reason behaviour of some APIs will differ, all paths
+* 			within a page (a-la file) are relative to its children and not
+* 			to it's siblings. For example, for page "/a/b/c" a link to "./x"
+* 			will resolve to "/a/b/c/x" and this is independent of whether
+* 			the base path is given as "/a/b/c/" or "/a/b/c"
+*
+* 			NOTE: implementing things in a traditional manner would 
+* 				introduce lots of edge-cases and subtle ways to make 
+* 				mistakes, bugs and inconsistencies.
+* 		- 
+*
+*
 * XXX weaknesses to review:
 * 		- <store>.paths() as an index...
 * 			+ decouples the search logic from the store backend
