@@ -101,14 +101,11 @@ require(['./browser'], function(pwiki){
 			pwiki.path
 			//'/'
 			: path
-		// XXX treat links as absolute unless explicitly relative...
+		// treat links as absolute unless explicitly relative...
 		path = /^\.\.?([\\\/].*)?$/.test(path) ?
 			path
 			: '/'+path
-		// NOTE: .hash needs to be set before .path, otherwise the path 
-		//		handlers will not see it..
-		pwiki.hash = hash 
-		pwiki.path = path })
+		pwiki.path = [path, hash] })
 	pwiki
 		.onNavigate(function(){
 			// NOTE: we do not need to directly update location.hash here as
@@ -140,7 +137,8 @@ require(['./browser'], function(pwiki){
 
 <body>
 
-<div id="pWiki" />
+<!-- XXX need to add something passive but animated here... -->
+<div id="pWiki">Loading...</div>
 
 </body>
 </html>

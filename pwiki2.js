@@ -1,6 +1,12 @@
 /**********************************************************************
 * 
 *
+* XXX BUG:
+* 		pwiki.get(..)					-> Page object
+* 		pwiki.get(..).get(..)			-> pWikiPageElement object
+* 		pwiki.get(..).get(..).get(..)	-> Page object
+* 		...
+*
 * XXX BUG: .get('/*').raw hangs...
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
@@ -20,7 +26,7 @@
 * 		- editor and interactivity
 * 		- migrate bootstrap
 * 		- store topology
-* 	- markdown										-- DONE??
+* 	- markdown										-- DONE
 * 	- WikiWord										-- DONE
 * 	- dom filter mechanics							-- DONE
 * 	- filters / dom filters:

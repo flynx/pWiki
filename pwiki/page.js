@@ -329,7 +329,6 @@ object.Constructor('BasePage', {
 
 	// XXX should this be an iterator???
 	each: async function*(path){
-		var that = this
 		// NOTE: we are trying to avoid resolving non-pattern paths unless 
 		// 		we really have to...
 		path = path ?
@@ -345,7 +344,7 @@ object.Constructor('BasePage', {
 			: [paths]
 
 		for(var path of paths){
-			yield that.get('/'+ path) } },
+			yield this.get('/'+ path) } },
 
 	map: async function(func){
 		return this.each().map(func) },
@@ -1132,17 +1131,41 @@ object.Constructor('pWikiPageElement', Page, {
 
 	dom: undefined,
 
+
 	domFilters: {
 		// XXX see Page.filters.wikiword for notes...
 		wikiword: wikiword.wikiWordText,
 	},
 
+	// NOTE: setting location will reset .hash set it directly via either
+	// 		one of:
+	// 			.location = [path, hash]
+	// 			.location = 'path#hash'
+	hash: undefined,
+	// NOTE: getting .location will not return the hash, so as not to force
+	// 		the user to parse it out each time.
+	get location(){
+		return object.parentProperty(pWikiPageElement.prototype, 'location')
+			.get.call(this) },
+	set location(value){
+		var [value, hash] = 
+			// .location = [path, hash]
+			value instanceof Array ?
+				value
+			// .location = '<path>#<hash>'
+			: value.includes('#') ?
+				value.split('#')
+			// no hash is given...
+			: [value, undefined]
+		this.hash = hash
+		object.parentProperty(pWikiPageElement.prototype, 'location')
+			.set.call(this, value) },
 
+	// XXX this is not persistent, is this what we want???
 	get title(){
 		return this.dom.getAttribute('title')
 			|| (this.dom.querySelector('h1') || {}).innerText
 			|| this.path },
-	// XXX this is not persistent, is this what we want???
 	set title(value){
 		this.dom.setAttribute('title', value) },
 
@@ -1172,6 +1195,7 @@ object.Constructor('pWikiPageElement', Page, {
 			&& (page.__proto__ = this.__page_constructor__.prototype)
 		return page },
 
+	// handle dom as first argument...
 	__init__: function(dom, ...args){
 		if(dom instanceof Element){
 			this.dom = dom

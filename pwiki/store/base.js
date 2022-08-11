@@ -343,19 +343,26 @@ module.BaseStore = {
 			for(var [path, value] of Object.entries(input)){
 				this.update(path, value) } }
 		return this },
+	// NOTE: this will not serialize functions...
 	//__batch_json__: function(){
 	//	// ...
 	//	return json},
-	json: async function(asstring=false){
+	json: async function(options={}){
+		if(options === true){
+			options = {stringify: true} }
+		var {stringify, keep_funcs} = options
 		// batch...
 		if(this.__batch_json__){
-			var res = this.__batch_json__(asstring)
+			var res = this.__batch_json__(stringify)
 		// generic...
 		} else {
 			var res = {}
 			for(var path of await this.paths()){
-				res[path] = await this.get(path) } }
-		return (asstring 
+				var page = await this.get(path) 
+				if(keep_funcs 
+						|| typeof(page) != 'function'){
+					res[path] = page } } }
+		return (stringify 
 				&& typeof(res) != 'string') ?
 			JSON.stringify(res)
 			: res },
