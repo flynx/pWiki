@@ -6,6 +6,10 @@
 * 		pwiki.get(..).get(..)			-> pWikiPageElement object
 * 		pwiki.get(..).get(..).get(..)	-> Page object
 * 		...
+* 		..the problem here is trivial, we are doing  Object.construct(this.root) 
+* 		in clone -- the question is what are we going to clone if .root
+* 		is of a different type (without ending up with long inheritance
+* 		chains)???
 *
 * XXX BUG: .get('/*').raw hangs...
 * XXX add action to reset overloaded (bootstrap) pages...
@@ -26,6 +30,7 @@
 * 		- editor and interactivity
 * 		- migrate bootstrap
 * 		- store topology
+* 		- sync and sync conf
 * 	- markdown										-- DONE
 * 	- WikiWord										-- DONE
 * 	- dom filter mechanics							-- DONE

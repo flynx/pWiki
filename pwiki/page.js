@@ -64,6 +64,10 @@ module.BasePage =
 object.Constructor('BasePage', {
 	// root page used to clone new instances via the .clone(..) method...
 	//root: undefined,
+
+	// a base page to be used as a base for cloning if root is of a 
+	// different "class"...
+	//__clone_base__: undefined,
 	
 	// NOTE: this can be inherited...
 	//store: undefined,
@@ -412,7 +416,10 @@ object.Constructor('BasePage', {
 				// 		the common root...
 				// 		this will make all the non-shadowed attrs set on the
 				// 		root visible to all sub-pages.
-				: Object.create(this.root ?? this),
+				: Object.create(
+					(this.root || {}).__clone_base__
+						?? this.root 
+						?? this),
 			{
 				root: this.root ?? this,
 				location: this.location, 
@@ -1197,10 +1204,13 @@ object.Constructor('pWikiPageElement', Page, {
 
 	// handle dom as first argument...
 	__init__: function(dom, ...args){
-		if(dom instanceof Element){
-			this.dom = dom
-		} else {
-			args.unshift(dom) }
+		if(typeof(Element) != 'undefined'){
+			if(dom instanceof Element){
+				this.dom = dom
+			} else {
+				args.unshift(dom) } }
+		// XXX is this the correct way to go???
+		this.__clone_base__ = this.clone()
 		return object.parentCall(pWikiPageElement.prototype.__init__, this, ...args) },
 })
 
