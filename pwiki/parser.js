@@ -391,6 +391,7 @@ module.BaseParser = {
 	// 		<string>
 	// 		// returned by .macros.filter(..)
 	// 		| {
+	// 			// XXX is this still relevant...
 	// 			filters: [
 	// 				'<filter>'
 	// 					| '-<filter>',
@@ -399,6 +400,9 @@ module.BaseParser = {
 	// 			data: [ <item>, .. ],
 	// 		}
 	//
+	// XXX macros: we are mixing up ast state and parse state...
+	// 		one should only be used for parsing and be forgotten after 
+	// 		the ast is constructed the other should be part of the ast...
 	expand: async function*(page, ast, state={}){
 		ast = ast == null ?
 				//this.group(page)
@@ -454,6 +458,7 @@ module.BaseParser = {
 	// 			them on demand rather than on encounter (as is now), e.g.
 	// 			a slot when loaded will replace the prior occurrences...
 	//
+	// XXX this should be recursive....
 	// XXX add a special filter to clear pending filters... (???)
 	parse: async function(page, ast, state={}){
 		var that = this
@@ -474,8 +479,6 @@ module.BaseParser = {
 						: section }))
 			.flat()
 			// filters...
-			// XXX if one of the post-handlers is a promise this will 
-			// 		need to sync...
 			.map(function(section){
 				return (
 					// expand section...
@@ -496,6 +499,7 @@ module.BaseParser = {
 								// 		will have no effect on the result...
 								return page.filters[filter].call(page, res) 
 									?? res }, section)
+					//*/
 					// no global filters...
 					: section ) })
 			.flat()

@@ -59,12 +59,32 @@ pwiki.store.update('@pouch', {
 // XXX add filter tests...
 pwiki.pwiki
 	.update({
+		location: '/test/test',
+		text: 'test', })
+	.update({
+		location: '/test/filter',
+		text: object.doc`
+		Should be: AAAAaaaaAAAAaaaa : test<filter -test>test</filter>@include(../test)@include(../test isolated)
+		@filter(test)
+		`, })
+	.update({
+		location: '/test/filter-local',
+		text: object.doc`
+		Should be: aaaaAAAAaaaa : test<filter test>test</filter>test
+		`, })
+	.update({
+		location: '/test/filter-isolated',
+		text: object.doc`
+		Should be: AAAAaaaaAAAA : test<filter isolated>test</filter>test
+		@filter(test)
+		`, })
+	.update({
 		location: '/test/quote',
 		text: object.doc`
 			Inline quoted text:
 			---
 			<quote>
-				this should not get expanded: @now()
+				this test should not get expanded: @now()
 			</quote>
 			---
 
@@ -75,12 +95,11 @@ pwiki.pwiki
 
 			Quote filters:
 			---
-			<quote filter="test">
-				test filters...
+			<quote filter="quote-tags test">
+				test <now />...
 			</quote>
 			---
-		`,
-	})
+		`, })
 	.update({
 		location: '/test/wikiword',
 		text: object.doc`
@@ -88,8 +107,7 @@ pwiki.pwiki
 			the [basic] forms and Versions of  
 			/inline/links.
 
-			@filter(wikiword markdown) `,
-	})
+			@filter(wikiword markdown) `, })
 	.update({
 		location: '/test/slots',
 		text: object.doc`
@@ -100,8 +118,7 @@ pwiki.pwiki
 			...while this (<slot name="non-empty">text should be replaced...</slot>)
 
 			<slot name="non-empty">text is filling a slot</slot>
-		`,
-	})
+		`, })
 	.update({
 		location: '/test/a',
 		text: 'a',

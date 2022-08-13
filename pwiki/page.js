@@ -583,6 +583,12 @@ object.Constructor('Page', BasePage, {
 			return source 
 				.replace(/test/g, 'TEST') },
 
+		'quote-tags': function(source){
+			return source
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;') },
+
 		// XXX one way to do this in a stable manner is to wrap the source 
 		// 		in something like <span wikiwords=yes> .. </span> and only 
 		// 		process those removing the wrapper in dom...
@@ -626,19 +632,13 @@ object.Constructor('Page', BasePage, {
 		// 		<filter> <filter-spec>
 		// 		| -<filter> <filter-spec>
 		//
+		//* XXX
 		filter: function(args, body, state, expand=true){
 			var that = this
-			var filters = state.filters = 
-				state.filters ?? []
-			// separate local filters...
-			if(body){
-				var outer_filters = filters
-				filters = state.filters =
-					[outer_filters] }
 
-			// merge in new filters...
+			var outer = state.filters = 
+				state.filters ?? []
 			var local = Object.keys(args)
-			filters.splice(filters.length, 0, ...local)
 
 			// trigger quote-filter...
 			var quote = local
@@ -651,36 +651,30 @@ object.Constructor('Page', BasePage, {
 
 			// local filters...
 			if(body){
-				// isolate from parent...
-				state.filters.includes(this.ISOLATED_FILTERS)
-					&& state.filters[0] instanceof Array
-					&& state.filters.shift()
-
 				// expand the body...
 				var ast = expand ?
-						// XXX async...
-						//[...this.__parser__.expand(this, body, state)]
 						this.__parser__.expand(this, body, state)
 					: body instanceof Array ?
 						body
 					// NOTE: wrapping the body in an array effectively 
 					// 		escapes it from parsing...
 					: [body]
-				filters = state.filters
 
-				state.filters = outer_filters
-
-				// parse the body after we are done expanding...
 				return async function(state){
-					var outer_filters = state.filters
-					state.filters = this.__parser__.normalizeFilters(filters)
+					// XXX can we lose stuff from state this way???
+					// 		...at this stage it should more or less be static -- check!
 					var res = 
-						await this.parse(ast, state)
-							.iter()
-								.flat()
-								.join('') 
-					state.filters = outer_filters
-					return { data: res } } } },
+						await this.__parser__.filter(this, ast, {
+							...state,
+							filters: local.includes(this.ISOLATED_FILTERS) ?
+								local
+								: [...outer, ...local],
+						})
+					return {data: res} }
+
+			// global filters...
+			} else {
+				state.filters = [...outer, ...local] } },
 		//
 		// 	@include(<path>)
 		//
@@ -715,15 +709,12 @@ object.Constructor('Page', BasePage, {
 
 				handler = handler 
 					?? async function(src){
-						return this.get(src)
-							.parse(
-								isolated ? 
-									{seen: (state.seen ?? []).slice()} 
-									: state) }
+						return isolated ?
+							{data: await this.get(src)
+								.parse({seen: (state.seen ?? []).slice()})}
+							: this.get(src)
+								.parse(state) }
 
-				// XXX this is really odd -- works OK for multiple pages 
-				// 		and res turns into a string '[object Promise]' 
-				// 		for a non-pattern page...
 				return this.get(src)
 					.each()
 					.map(async function(page){
@@ -749,8 +740,7 @@ object.Constructor('Page', BasePage, {
 						if(!parent_seen){
 							delete state.seen }
 
-						return res })
-					.join('\n') }),
+						return res }) }),
 		// NOTE: the main difference between this and @include is that 
 		// 		this renders the src in the context of current page while 
 		// 		include is rendered in the context of its page but with
@@ -1116,14 +1106,6 @@ object.Constructor('Page', BasePage, {
 		// render template in context of page...
 		return this.get(path)
 			.parse(await this.get(tpl).raw) }).call(this) },
-		/*/
-		var path = pwpath.split(this.path)
-		return [path.at(-1)[0] == '_' ?
-				await this.parse()
-				: await this.get('./'+ this.PAGE_TEMPLATE).parse()]
-			.flat()
-			.join('\n') }).call(this) },
-		//*/
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
@@ -1240,9 +1222,15 @@ module.System = {
 	//			text: '<macro src="." join="\n">- @source(.)</macro>' },
 	//
 	_text: {
-		text: '@include(.)' },
+		text: '<macro src="." join="\n">@include(. isolated)</macro>' },
+		// XXX this does not separate items when getting patterns...
+		//text: '@include(. isolated)' },
 	_raw: {
 		text: '@quote(.)' },
+
+	// XXX not sure if this is the right way to go...
+	_code: {
+		text: '<pre wikiwords="no"><quote filter="quote-tags" src="."/></pre>' },
 
 
 	// base system pages...
