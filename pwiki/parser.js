@@ -148,8 +148,7 @@ module.BaseParser = {
 	// NOTE: arg pre-parsing is dome by .lex(..) but at that stage we do not
 	// 		yet touch the actual macros (we need them to get the .arg_spec)
 	// 		so the actual parsing is done in .expand(..)
-	parseArgs: function(spec, args, state){
-		var that = this
+	parseArgs: function(spec, args){
 		// spec...
 		var order = spec.slice()
 		var bools = new Set(
@@ -179,6 +178,16 @@ module.BaseParser = {
 					(res[e] = true)
 					: (res[order.shift()] = e) })
 		return res },
+	// XXX should this be here or on page???
+	callMacro: function(page, name, args, body, state, ...rest){
+		return page.macros[name].call(page, 
+				this.parseArgs(
+					page.macros[name].arg_spec 
+						?? [], 
+					args),
+				body, 
+				state, 
+				...rest) },
 
 
 	// Strip comments...
@@ -415,16 +424,11 @@ module.BaseParser = {
 			// nested macro -- skip...
 			if(typeof(page.macros[name]) != 'function'){
 				continue }
-			// args...
-			args = this.parseArgs.call(page,
-				page.macros[name].arg_spec 
-					?? [], 
-				args,
-				state)
-			// call...
+
 			var res = 
-				await page.macros[name].call(page, args, body, state, value)
+				await this.callMacro(page, name, args, body, state) 
 					?? ''
+
 			// result...
 			if(res instanceof Array 
 					|| page.macros[name] instanceof types.Generator){

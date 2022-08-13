@@ -780,6 +780,7 @@ object.Constructor('Page', BasePage, {
 		// NOTE: the filter argument has the same semantics as the filter 
 		// 		macro with one exception, when used in quote, the body is 
 		// 		not expanded...
+		// NOTE: the filter argument uses the same filters as @filter(..)
 		//
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: Macro(
@@ -817,19 +818,19 @@ object.Constructor('Page', BasePage, {
 				// NOTE: since the body of quote(..) only has filters applied 
 				// 		to it doing the first stage of .filter(..) as late 
 				// 		as the second stage here will have no ill effect...
-				return function(state){
+				// NOTE: this uses the same filters as @filter(..)
+				return async function(state){
 					// add global quote-filters...
 					filters =
 						(state.quote_filters 
 								&& !(filters ?? []).includes(this.ISOLATED_FILTERS)) ?
 							[...state.quote_filters, ...(filters ?? [])]
 							: filters
-					if(filters){
-						filters = Object.fromEntries(Object.entries(filters))
-						return this.macros.filter
-							.call(this, filters, text, state, false)
-							.call(this, state) }
-					return text } }),
+					return filters ?
+						await this.__parser__.callMacro(
+								this, 'filter', filters, text, state, false)
+							.call(this, state)
+						: text } }),
 		// very similar to @filter(..) but will affect @quote(..) filters...
 		'quote-filter': function(args, body, state){
 			var filters = state.quote_filters = 
