@@ -461,12 +461,13 @@ module.BaseParser = {
 
 		// NOTE: we need to await for ast here as we need stage 2 of 
 		// 		parsing to happen AFTER everything else completes...
-		return (await ast)
-			// post handlers...
-			.map(function(section){
-				return typeof(section) == 'function' ? 
-					section.call(page, state)
-					: section })
+		return await Promise.iter((await ast)
+				// post handlers...
+				.map(function(section){
+					return typeof(section) == 'function' ? 
+						// NOTE: this can produce promises...
+						section.call(page, state)
+						: section }))
 			.flat()
 			// filters...
 			// XXX if one of the post-handlers is a promise this will 

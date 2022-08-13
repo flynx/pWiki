@@ -71,6 +71,14 @@ pwiki.pwiki
 			Included quoted text:
 			---
 			<quote src="/test/slots"/>
+			---
+
+			Quote filters:
+			---
+			<quote filter="test">
+				test filters...
+			</quote>
+			---
 		`,
 	})
 	.update({

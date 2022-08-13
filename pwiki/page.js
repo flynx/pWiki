@@ -675,12 +675,12 @@ object.Constructor('Page', BasePage, {
 					var outer_filters = state.filters
 					state.filters = this.__parser__.normalizeFilters(filters)
 					var res = 
-						this.parse(ast, state)
+						await this.parse(ast, state)
 							.iter()
 								.flat()
 								.join('') 
 					state.filters = outer_filters
-					return { data: await res } } } },
+					return { data: res } } } },
 		//
 		// 	@include(<path>)
 		//
