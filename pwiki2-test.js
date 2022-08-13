@@ -59,6 +59,21 @@ pwiki.store.update('@pouch', {
 // XXX add filter tests...
 pwiki.pwiki
 	.update({
+		location: '/test/quote',
+		text: object.doc`
+			Inline quoted text:
+			---
+			<quote>
+				this should not get expanded: @now()
+			</quote>
+			---
+
+			Included quoted text:
+			---
+			<quote src="/test/slots"/>
+		`,
+	})
+	.update({
 		location: '/test/wikiword',
 		text: object.doc`
 			This is a basic WikiWord test, all  

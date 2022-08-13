@@ -90,9 +90,7 @@ document.pwikiloaded = new Event('pwikiloaded')
 // start loading pWiki...
 require(['./browser'], function(pwiki){ 
 	pwiki = window.pwiki = pwiki.pwiki 
-
 	pwiki.dom = document.querySelector('#pWiki')
-
 	// handle location.hash/history (both directions)
 	window.addEventListener('hashchange', function(evt){
 		evt.preventDefault()
@@ -128,10 +126,27 @@ require(['./browser'], function(pwiki){
 				&& this.dom
 					.querySelector('#'+ this.hash)
 					.scrollIntoView() })
-
 	// show current page...
 	pwiki.path = location.hash.slice(1)
 }) 
+
+
+// XXX
+var saveData = async function(){
+	var blob = new Blob([await pwiki.store.json(true)], {type: "text/plain;charset=utf-8"});
+
+	var a = document.createElement('a')
+    var blobURL = a.href = URL.createObjectURL(blob)
+    a.download = 'pWiki-dump.json'
+
+    //document.body.appendChild(a)
+    a.dispatchEvent(new MouseEvent("click"))
+    //document.body.removeChild(a)
+    //URL.revokeObjectURL(blobURL)
+}
+
+
+
 
 </script>
 

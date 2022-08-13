@@ -17,7 +17,8 @@
 * 		- render page								-- DONE
 * 		- navigation								-- DONE
 * 			- hash/anchor							-- DONE
-* 		- editor and interactivity
+* 		- basic editor and interactivity
+* 		- export / zip
 * 		- migrate bootstrap
 * 		- store topology
 * 		- sync and sync conf
@@ -33,8 +34,21 @@
 * 				- tags (current)
 * 		- raw / code
 * 		- nl2br
-* 		- path2link (wikiword?)			
+* 		- path2link (wikiword?)						-- DONE	
 * 		- editor
+* 			MediumEditor (markdown-plugin)
+* 				https://github.com/yabwe/medium-editor
+* 				https://github.com/IonicaBizau/medium-editor-markdown
+* 					- heavy-ish markdown plugin
+* 			ToastUI (markdown)
+* 				https://github.com/nhn/tui.editor
+* 					- quite heavy
+* 			Pen (markdown)
+* 				https://github.com/sofish/pen
+* 					- no npm module
+* 					- not sure if it works on mobile
+* 					+ small
+* 			tiptap (no-markdown, investigate y.js)
 * 	- configuration
 * 		- defaults
 * 		- System/config (global)
