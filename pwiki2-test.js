@@ -59,6 +59,20 @@ pwiki.store.update('@pouch', {
 // XXX add filter tests...
 pwiki.pwiki
 	.update({
+		location: '/test/comments',
+		text: object.doc`
+		<!--[pWiki[ This text should be visible... ]]-->
+
+		<!--[pWiki[
+			This text should be visible too... 
+		]]-->
+
+		<pwiki-comment>
+			And this should not be visible...
+		</pwiki-comment>
+		`,
+	})
+	.update({
 		location: '/test/test',
 		text: 'test', })
 	.update({

@@ -1231,8 +1231,8 @@ module.System = {
 	// XXX not sure if this is the right way to go...
 	_code: {
 		text: '<pre wikiwords="no"><quote filter="quote-tags" src="."/></pre>' },
-	//_edit: {
 	_ed: {
+	//_edit: {
 		text: 
 			'<pre class="editor" '
 					+'wikiwords="no" '
@@ -1316,7 +1316,7 @@ module.Settings = {
 	Export: {
 		text: '<button onclick="exportData()">Export</button>' },
 	// XXX
-	Settings: {
+	Config: {
 		text: '{}' },
 }
 

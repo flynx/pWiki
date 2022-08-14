@@ -118,10 +118,10 @@ module.BaseParser = {
 	// XXX do we need basic inline and block commets a-la lisp???
 	COMMENT_PATTERN: RegExp('('+[
 			// <!--[pwiki[ .. ]]-->
-			'<!--\\[pwiki\\[(?<uncomment>.*)\\]\\]-->',
+			'<!--\\[pwiki\\[(?<uncomment>.*?)\\]\\]-->',
 
 			// <pwiki-comment> .. </pwiki-comment>
-			'<\\s*pwiki-comment[^>]*>.*<\\/\\s*pwiki-comment\\s*>',
+			'<\\s*pwiki-comment[^>]*>.*?<\\/\\s*pwiki-comment\\s*>',
 			// <pwiki-comment .. />
 			'<\\s*pwiki-comment[^\\/>]*\\/>',
 		].join('|') +')', 'smig'),
