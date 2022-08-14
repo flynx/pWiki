@@ -31,6 +31,8 @@ module.store =
 
 store.update('System', 
 	Object.create(basestore.BaseStore).load(page.System))
+store.update('Settings', 
+	Object.create(basestore.BaseStore).load(page.Settings))
 
 var pwiki =
 module.pwiki = 

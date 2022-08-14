@@ -1,6 +1,7 @@
 /**********************************************************************
 * 
 *
+* XXX BUG: comments seem to be broken -- see: /Doc/About
 * XXX BUG: browser: .get('/*').raw hangs...
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
@@ -17,8 +18,10 @@
 * 		- render page								-- DONE
 * 		- navigation								-- DONE
 * 			- hash/anchor							-- DONE
-* 		- basic editor and interactivity
-* 		- export / zip
+* 		- basic editor and interactivity			-- DONE
+* 		- export
+* 			- json									-- DONE
+* 			- zip
 * 		- migrate bootstrap
 * 		- store topology
 * 		- sync and sync conf
@@ -229,6 +232,9 @@ module.store =
 // XXX nested system store...
 store.update('System', 
 	Object.create(basestore.BaseStore).load(page.System))
+store.update('Settings', 
+	Object.create(basestore.BaseStore).load(page.Settings))
+
 
 
 // NOTE: in general the root wiki api is simply a page instance.

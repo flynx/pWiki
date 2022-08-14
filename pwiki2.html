@@ -131,8 +131,24 @@ require(['./browser'], function(pwiki){
 }) 
 
 
+// XXX make this a 2 stage save -- first cache and then save to store...
+// XXX versioning???
+var SAVE_TIMEOUT = 5000
+var SAVE_QUEUE = {}
+var saveContent = function(path, text){
+	SAVE_QUEUE[path] = text }
+var saveNow = function(){
+	var queue = Object.entries(SAVE_QUEUE)
+	SAVE_QUEUE = {}
+	queue
+		.forEach(function([path, text]){
+			console.log('saving changes to:', path)
+			pwiki.get(path).raw = text }) }
+setInterval(saveNow, 5000)
+
+
 // XXX
-var saveData = async function(){
+var exportData = async function(){
 	var blob = new Blob([await pwiki.store.json(true)], {type: "text/plain;charset=utf-8"});
 
 	var a = document.createElement('a')

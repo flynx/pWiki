@@ -664,7 +664,7 @@ object.Constructor('Page', BasePage, {
 					// XXX can we lose stuff from state this way???
 					// 		...at this stage it should more or less be static -- check!
 					var res = 
-						await this.__parser__.filter(this, ast, {
+						await this.__parser__.parse(this, ast, {
 							...state,
 							filters: local.includes(this.ISOLATED_FILTERS) ?
 								local
@@ -1231,6 +1231,15 @@ module.System = {
 	// XXX not sure if this is the right way to go...
 	_code: {
 		text: '<pre wikiwords="no"><quote filter="quote-tags" src="."/></pre>' },
+	//_edit: {
+	_ed: {
+		text: 
+			'<pre class="editor" '
+					+'wikiwords="no" '
+					+'contenteditable '
+					+'oninput="saveContent(\'@source(./path)\', this.innerText)">'
+				+'<quote filter="quote-tags" src="."/>'
+			+'</pre>' },
 
 
 	// base system pages...
@@ -1300,6 +1309,15 @@ module.System = {
 	// XXX System/forward
 	// XXX System/sort
 	// XXX System/reverse
+}
+
+var Settings =
+module.Settings = {
+	Export: {
+		text: '<button onclick="exportData()">Export</button>' },
+	// XXX
+	Settings: {
+		text: '{}' },
 }
 
 
