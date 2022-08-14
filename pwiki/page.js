@@ -25,11 +25,7 @@ var relProxy =
 function(name){
 	var func = function(path='.', ...args){
 		return this.store[name](
-			/* XXX RELATIVE 
-			pwpath.relative(this.location+'/', path), 
-			/*/
 			pwpath.relative(this.location, path), 
-			//*/
 			...args) } 
 	Object.defineProperty(func, 'name', {value: name})
 	return func } 
@@ -40,11 +36,7 @@ function(name){
 			strict = path
 			path = '.' }
 		return this.store[name](
-			/* XXX RELATIVE 
-			pwpath.relative(this.location+'/', path), 
-			/*/
 			pwpath.relative(this.location, path), 
-			//*/
 			strict) } 
 	Object.defineProperty(func, 'name', {value: name})
 	return func }
@@ -227,11 +219,7 @@ object.Constructor('BasePage', {
 	__update__: function(data){
 		return this.store.update(this.location, data) },
 	__delete__: function(path='.'){
-		/* XXX RELATIVE
-		return this.store.delete(pwpath.relative(this.location+'/', path)) },
-		/*/
 		return this.store.delete(pwpath.relative(this.location, path)) },
-		//*/
 
 	// page data...
 	//
@@ -277,7 +265,20 @@ object.Constructor('BasePage', {
 
 	// relative proxies to store...
 	exists: relProxy('exists'), 
+	//* XXX MATCH
 	match: relMatchProxy('match'), 
+	/*/
+	match: async function(path='.', strict=false){
+		if(path === true || path === false){
+			strict = path
+			path = '.' }
+		path = pwpath.relative(this.location, path)
+		var res = await this.store.match(path, strict) 
+		return res.length == 0 ?
+			// XXX are we going outside of match semantics here???
+			this.store.find(path) 
+			: res },
+	//*/
 	resolve: relMatchProxy('resolve'),
 	delete: function(path='.'){
 		this.__delete__() 
@@ -308,11 +309,7 @@ object.Constructor('BasePage', {
 			strict = path
 			path = '.' }
 		return this.store.find(
-			/* XXX RELATIVE
-			//pwpath.relative(this.location+'/', path), strict) },
-			/*/
 			pwpath.relative(this.location, path), strict) },
-			//*/
 
 	//
 	// 	.get(<path>[, <data>])
@@ -346,6 +343,10 @@ object.Constructor('BasePage', {
 			: paths instanceof Promise ?
 				await paths
 			: [paths]
+		// XXX MATCH
+		paths = paths.length == 0 ?
+			[await this.find(path)]
+			: paths
 
 		for(var path of paths){
 			yield this.get('/'+ path) } },
@@ -632,7 +633,6 @@ object.Constructor('Page', BasePage, {
 		// 		<filter> <filter-spec>
 		// 		| -<filter> <filter-spec>
 		//
-		//* XXX
 		filter: function(args, body, state, expand=true){
 			var that = this
 
@@ -685,12 +685,11 @@ object.Constructor('Page', BasePage, {
 		// 		<text>
 		// 	</include>
 		//
-		// XXX RECURSION recursion detection is still a bit off...
 		// XXX 'text' argument is changed to 'recursive'...
 		// XXX revise recursion checks.... 
 		// XXX should this be lazy???
 		include: Macro(
-			['src', 'recursive', ['isolated']],
+			['src', 'recursive', 'join', ['isolated']],
 			async function(args, body, state, key='included', handler){
 				var macro = 'include'
 				if(typeof(args) == 'string'){
@@ -698,13 +697,18 @@ object.Constructor('Page', BasePage, {
 					key = key ?? 'included' }
 				// positional args...
 				var src = args.src
-				var recursive = args.recursive || body
-				var isolated = args.isolated 
-
+					&& await this.parse(args.src, state)
 				if(!src){
 					return }
+				var recursive = args.recursive || body
+				var isolated = args.isolated 
+				var join = args.join 
+					&& await this
+						// render join block relative to the path before the first '*'...
+						.get(this.path.split(/\*/).shift())
+						.parse(args.join, state)
+
 				// parse arg values...
-				src = await this.parse(src, state)
 				var base = this.get(src).path
 
 				handler = handler 
@@ -715,7 +719,8 @@ object.Constructor('Page', BasePage, {
 							: this.get(src)
 								.parse(state) }
 
-				return this.get(src)
+				//return this.get(src)
+				var res = this.get(src)
 					.each()
 					.map(async function(page){
 						var full = page.path
@@ -740,7 +745,11 @@ object.Constructor('Page', BasePage, {
 						if(!parent_seen){
 							delete state.seen }
 
-						return res }) }),
+						return res }) 
+					return join ?
+						res.between(join)
+						: res }),
+					//*/
 		// NOTE: the main difference between this and @include is that 
 		// 		this renders the src in the context of current page while 
 		// 		include is rendered in the context of its page but with
@@ -772,6 +781,7 @@ object.Constructor('Page', BasePage, {
 		// 		not expanded...
 		// NOTE: the filter argument uses the same filters as @filter(..)
 		//
+		// XXX need to handle pattern paths (like include: join=...)
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: Macro(
 			['src', 'filter', 'text'],
@@ -995,16 +1005,16 @@ object.Constructor('Page', BasePage, {
 					var join_block = _getBlock('join') 
 
 					// apply macro text...
-					return pages
+					var res = await pages
 						.map(function(page, i){
-							return [
-								that.__parser__.expand(page, text, state),
-								// weave in the join block...
-								...((join_block && i < pages.length-1) ?
-									[that.__parser__.expand(that, join_block, state)]
-									: []),
-							] })
-						.flat() } }),
+							return that.__parser__.expand(page, text, state) })
+					return join_block ?
+						res.between(await that.__parser__.expand(
+							// render join block relative to the path before the first '*'...
+							that.get(that.path.split(/\*/).shift()), 
+							join_block, 
+							state))
+						: res } }),
 
 		// nesting rules...
 		'else': ['macro'],
@@ -1221,26 +1231,38 @@ module.System = {
 	// 		_list: {
 	//			text: '<macro src="." join="\n">- @source(.)</macro>' },
 	//
+	// XXX all of these should support pattern pages...
 	_text: {
-		text: '<macro src="." join="\n">@include(. isolated)</macro>' },
-		// XXX this does not separate items when getting patterns...
-		//text: '@include(. isolated)' },
+		text: '@include(. isolated join="@source(file-separator)")' },
+	// XXX add join...
 	_raw: {
 		text: '@quote(.)' },
 
 	// XXX not sure if this is the right way to go...
 	_code: {
-		text: '<pre wikiwords="no"><quote filter="quote-tags" src="."/></pre>' },
+		text: 
+			'<macro src="." join="@source(file-separator)">'
+				+'<pre wikiwords="no"><quote filter="quote-tags" src="."/></pre>' 
+			+'</macro>'},
 	_ed: {
 	//_edit: {
 		text: 
-			'<pre class="editor" '
-					+'wikiwords="no" '
-					+'contenteditable '
-					+'oninput="saveContent(\'@source(./path)\', this.innerText)">'
-				+'<quote filter="quote-tags" src="."/>'
-			+'</pre>' },
+			'<macro src="." join="@source(file-separator)">'
+				+'<pre class="editor" '
+						+'wikiwords="no" '
+						+'contenteditable '
+						+'oninput="saveContent(\'@source(./path)\', this.innerText)">'
+					+'<quote filter="quote-tags" src="."/>'
+				+'</pre>' 
+			+'</macro>'},
 
+	paths: {
+		text: '<macro src="../*/path" join="  ">@source(.)</macro>' },
+
+	// page parts...
+	//
+	'line-separator': { text: '<br>' },
+	'file-separator': { text: '<hr>' },
 
 	// base system pages...
 	//

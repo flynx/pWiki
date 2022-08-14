@@ -145,8 +145,8 @@ module.BaseStore = {
 					pwpath.normalize(path, 'string')
 						.replace(/^\/|\/$/g, '')
 						.replace(/\//g, '\\/')
-						.replace(/\*\*/g, '.+')
-						.replace(/\*/g, '[^\\/]+') 
+						.replace(/\*\*/g, '.*')
+						.replace(/\*/g, '[^\\/]*') 
 				}(?=[\\\\\/]|$)`)
 			return [...(await this.paths())
 					// NOTE: we are not using .filter(..) here as wee 

@@ -59,6 +59,18 @@ pwiki.store.update('@pouch', {
 // XXX add filter tests...
 pwiki.pwiki
 	.update({
+		location: '/test/sort/*',
+		order: ['a', 'c', 'b'], })
+	.update({
+		location: '/test/sort/a',
+		text: 'a', })
+	.update({
+		location: '/test/sort/b',
+		text: 'b', })
+	.update({
+		location: '/test/sort/c',
+		text: 'c', })
+	.update({
 		location: '/test/comments',
 		text: object.doc`
 		<!--[pWiki[ This text should be visible... ]]-->
@@ -113,6 +125,16 @@ pwiki.pwiki
 				test <now />...
 			</quote>
 			---
+		`, })
+	// XXX BUG: this prints '' for each <quote>
+	.update({
+		location: '/test/macro-quote',
+		text: object.doc`
+		Outside of macro:
+		<quote src="/test/a"/>
+
+		In macro:
+		<macro src="/test/*/path" join="\n">-- <quote src="/test/a"/></macro>
 		`, })
 	.update({
 		location: '/test/wikiword',

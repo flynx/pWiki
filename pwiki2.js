@@ -1,8 +1,22 @@
 /**********************************************************************
 * 
 *
-* XXX BUG: comments seem to be broken -- see: /Doc/About
-* XXX BUG: browser: .get('/*').raw hangs...
+* XXX BUG: join block gets repeated three times per page...
+* 			await p.pwiki.get('/test/sort/*').text 
+* 		essentially this is the culprit:
+* 			await p.pwiki.get('/test/sort/*').parse('@source(file-separator)')
+* XXX BUG: browser: .get('/*').raw hangs in the browser context...
+* XXX might be a good idea to add page caching (state.page_cache) relative 
+* 		to a path on parsing, to avoid re-matching the same page over and 
+* 		over again from the same context
+* 		format:
+* 			{
+* 				<basedir>: {
+* 					<path>: <data>,
+* 					...
+* 				},
+* 				...
+* 			}
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
 * 		- global
@@ -21,7 +35,7 @@
 * 		- basic editor and interactivity			-- DONE
 * 		- export
 * 			- json									-- DONE
-* 			- zip
+* 			- zip (json/tree)
 * 		- migrate bootstrap
 * 		- store topology
 * 		- sync and sync conf
