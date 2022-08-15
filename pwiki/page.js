@@ -44,12 +44,7 @@ function(name){
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-var __HANDLE_NAVIGATE =
-module.__HANDLE_NAVIGATE = 
-	types.event.EventCommand('HANDLE_NAVIGATE')
-
 // XXX PATH_VARS
-// XXX HISTORY do we need history management??? 
 // XXX FUNC need to handle functions in store...
 var BasePage =
 module.BasePage = 
@@ -128,13 +123,6 @@ object.Constructor('BasePage', {
 	onBeforeNavigate: types.event.Event('beforeNavigate'),
 	onNavigate: types.event.Event('navigate',
 		function(handle, path){
-			// special case: we are triggering handlers only...
-			// NOTE: this usually means that we are setting .__location 
-			// 		externally...
-			// XXX HISTORY this is only used for history at this point...
-			if(path === module.__HANDLE_NAVIGATE){
-				handle()
-				return }
 			this.onBeforeNavigate(path)
 			this.referrer = this.location
 			var cur = this.__location = 
@@ -142,13 +130,6 @@ object.Constructor('BasePage', {
 					pwpath.relative(
 						this.location, 
 						path))
-			//* XXX HISTORY...
-			if(this.history !== false){
-				this.history.includes(this.__location)
-					&& this.history.splice(
-						this.history.indexOf(this.__location)+1, 
-						this.history.length)
-				this.history.push(cur) } 
 			// trigger handlers...
 			handle() }),
 
@@ -172,45 +153,6 @@ object.Constructor('BasePage', {
 	//set dir(value){ },
 	get isPattern(){
 		return this.location.includes('*') },
-
-	// history...
-	//
-	//* XXX HISTORY...
-	// NOTE: set this to false to disable history...
-	__history: undefined,
-	get history(){
-		if(this.__history === false){
-			return false }
-		if(!this.hasOwnProperty('__history')){
-			this.__history = [] }
-			//this.__history = (this.__history ?? []).slice() }
-		return this.__history },
-	back: function(offset=1){
-		var h = this.history
-		if(h === false 
-				|| h.length <= 1){
-			return this }
-		// get position in history...
-		var p = h.indexOf(this.location)
-		// if outside of history go to last element...
-		p = p < 0 ? 
-			h.length
-			: p
-		p = Math.max(
-			Math.min(
-				h.length-1 
-					- p 
-					+ offset,
-				h.length-1), 
-			0)
-		this.onBeforeNavigate(this.path)
-		this.referrer = this.location
-		var path = this.__location = h[h.length-1 - p]
-		this.onNavigate(module.__HANDLE_NAVIGATE, path)
-		return this },
-	forward: function(offset=1){
-		return this.back(-offset) },
-	//*/
 	
 	// store interface...
 	//
@@ -410,7 +352,6 @@ object.Constructor('BasePage', {
 	//
 	// NOTE: <clone-history> by default is false unless fully cloning
 	//
-	// XXX HISTORY should we clear history by default...
 	clone: function(data={}, history=false){
 		var [data, ...args] = [...arguments]
 		var full = data === true
@@ -444,14 +385,6 @@ object.Constructor('BasePage', {
 				location: this.location, 
 				referrer: this.referrer,
 			},
-			// XXX HISTORY...
-			this.__history !== false ?
-				{ __history: 
-					history ?
-						(this.__history ?? []).slice() 
-						: [] }
-				:{},
-			//*/
 			data) },
 
 	// Create a read-only page...
