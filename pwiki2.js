@@ -2,9 +2,16 @@
 * 
 *
 *
-* XXX BUG: pwiki2-test.js: /test/macros -- broken parser...
+* XXX BUG: source/include problem... 
+* 		to reproduce:
+* 			.get('/System/_text_macro/_text').text
+* 		this does not exhibit the issue:
+* 			.get('/System/_text_macro').text
 * XXX BUG?: markdown: when parsing chunks each chunk gets an open/closed 
 * 		<p> inserted at start/end -- this breaks stuff returned by macros...
+* 		...there are two ways to dance around this:
+* 			- make filters run a bit more globaly -- per block...
+* 			- find a local parser...
 * XXX OPTIMIZE: /_tree is really slow...
 * XXX might be a good idea to add page caching (state.page_cache) relative 
 * 		to a path on parsing, to avoid re-matching the same page over and 
@@ -17,6 +24,7 @@
 * 				},
 * 				...
 * 			}
+* XXX BUG: FF: conflict between object.run and PouchDB... 
 * XXX BUG: browser: .get('/*').raw hangs in the browser context...
 * XXX BUG?: /_tree for some reason does not show anything on lower levels...
 * 		...renaming _tree -> all fixed the issue
@@ -28,6 +36,7 @@
 * 		- per page
 * 		- global
 * XXX Q: can we access fs from a pwa???
+* 		...looks like no :|
 *
 *
 *
@@ -46,10 +55,14 @@
 * 			- zip (json/tree)						--
 * 		- page actions
 * 			- delete								-- DONE
-* 			- move/rename							--
+* 			- copy/move								-- 
 * 		- migrate bootstrap							--
 * 		- store topology							--
 * 		- sync and sync conf						--
+* 		- images
+* 			- get 									-- 
+* 			- download								--
+* 			- upload								--
 * 	- markdown										-- DONE
 * 	- WikiWord										-- DONE
 * 	- dom filter mechanics							-- DONE

@@ -52,8 +52,8 @@ module.BaseParser = {
 				'"(?<PREFIXDoubleQuotedArg>[^"]*)"',
 				"'(?<PREFIXSingleQuotedArg>[^']*)'",
 				// arg
-				// NOTE: this is last because it could eat up parts of the above 
-				// 		alternatives...
+				// NOTE: this is last because it could eat up parts of 
+				// 		the above alternatives...
 				//'|\\s+[^\\s\\/>\'"]+',
 				'(?<PREFIXArg>[^\\sSTOP\'"]+)',
 			].join('|'),

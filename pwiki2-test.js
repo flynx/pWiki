@@ -65,7 +65,7 @@ pwiki.pwiki
 		text: object.doc`
 		some text with inline @source(./path) macros...
 
-		<div wikiwords=false>
+		<div wikiwords=no>
 			now @source(./path) inside a div...
 		</div>` })
 	.update({

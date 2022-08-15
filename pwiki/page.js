@@ -281,7 +281,18 @@ object.Constructor('BasePage', {
 	//*/
 	resolve: relMatchProxy('resolve'),
 	delete: function(path='.'){
-		this.__delete__() 
+		this.__delete__(path) 
+		return this },
+
+	// XXX should these be implemented here or proxy to .store???
+	copy: async function(to){
+		this.get(to).data = await this.data
+		this.path = to
+		return this },
+	move: async function(to){
+		var from = this.path
+		await this.copy(to)
+		this.delete(from)
 		return this },
 
 	//
@@ -1299,6 +1310,8 @@ module.System = {
 
 	// XXX tests...
 	//
+	_test_macro: {
+		text: '@source(./name) @source(./name)'},
 	test_page: function(){
 		console.log('--- RENDERER:', this.render_root)
 		console.log('--- PATH:    ', this.path)
