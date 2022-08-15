@@ -1,11 +1,11 @@
 /**********************************************************************
 * 
 *
-* XXX BUG: join block gets repeated three times per page...
-* 			await p.pwiki.get('/test/sort/*').text 
-* 		essentially this is the culprit:
-* 			await p.pwiki.get('/test/sort/*').parse('@source(file-separator)')
-* XXX BUG: browser: .get('/*').raw hangs in the browser context...
+*
+* XXX BUG: pwiki2-test.js: /test/macros -- broken parser...
+* XXX BUG?: markdown: when parsing chunks each chunk gets an open/closed 
+* 		<p> inserted at start/end -- this breaks stuff returned by macros...
+* XXX OPTIMIZE: /_tree is really slow...
 * XXX might be a good idea to add page caching (state.page_cache) relative 
 * 		to a path on parsing, to avoid re-matching the same page over and 
 * 		over again from the same context
@@ -17,6 +17,13 @@
 * 				},
 * 				...
 * 			}
+* XXX BUG: browser: .get('/*').raw hangs in the browser context...
+* XXX BUG?: /_tree for some reason does not show anything on lower levels...
+* 		...renaming _tree -> all fixed the issue
+* 		...might be a problem with how rendering templates are handled in 
+* 		<page>.text...
+* 		...if this is not fixable need to document that rendering templates 
+* 		are not to be recursive...
 * XXX add action to reset overloaded (bootstrap) pages...
 * 		- per page
 * 		- global
@@ -32,24 +39,30 @@
 * 		- render page								-- DONE
 * 		- navigation								-- DONE
 * 			- hash/anchor							-- DONE
+* 			- action redirects (see: System/delete)	-- DONE
 * 		- basic editor and interactivity			-- DONE
 * 		- export
 * 			- json									-- DONE
-* 			- zip (json/tree)
-* 		- migrate bootstrap
-* 		- store topology
-* 		- sync and sync conf
+* 			- zip (json/tree)						--
+* 		- page actions
+* 			- delete								-- DONE
+* 			- move/rename							--
+* 		- migrate bootstrap							--
+* 		- store topology							--
+* 		- sync and sync conf						--
 * 	- markdown										-- DONE
 * 	- WikiWord										-- DONE
 * 	- dom filter mechanics							-- DONE
 * 	- filters / dom filters:
+* 		- markdown??
 * 		- wikiword (control)
 * 			this can be done in one of two ways:
 * 				- wrapping blocks in elemens
 * 					...requires negative filter calls, either on -wikiword 
 * 					or a different filter like nowikiwords...
 * 				- tags (current)
-* 		- raw / code
+* 		- raw / code								-- DONE?
+* 		- all (tree)								-- DONE
 * 		- nl2br
 * 		- path2link (wikiword?)						-- DONE	
 * 		- editor

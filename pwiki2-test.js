@@ -58,6 +58,22 @@ pwiki.store.update('@pouch', {
 // XXX TEST...
 // XXX add filter tests...
 pwiki.pwiki
+	// XXX BUG: the second @source(..) includes the current page again 
+	// 		for some reason....
+	.update({
+		location: '/test/macros',
+		text: object.doc`
+		some text with inline @source(./path) macros...
+
+		<div wikiwords=false>
+			now @source(./path) inside a div...
+		</div>` })
+	.update({
+		location: '/test/markdown',
+		text: object.doc`
+		some text with inline @source(./path) macros...
+
+		@filter(markdown)` })
 	.update({
 		location: '/test/sort/*',
 		order: ['a', 'c', 'b'], })

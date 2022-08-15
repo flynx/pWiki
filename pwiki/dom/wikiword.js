@@ -10,7 +10,7 @@
 var WIKIWORD_PATTERN =
 	RegExp('('+[
 		// /some/path | ./some/path | ../some/path | >>/some/path
-		'(?:^|\\s)(|\\.|\\.\\.|>>)[\\/\\\\][^\\s]+',
+		'(?<=^|\\s)(|\\.|\\.\\.|>>)[\\/\\\\][^\\s]+',
 		// [path]
 		'\\\\?\\[[^\\]]+\\]',
 		// WikiWord

@@ -68,6 +68,7 @@ module.BaseStore = {
 	// XXX might be a good idea to cache this...
 	__paths__: async function(){
 		return Object.keys(this.data) },
+	//* XXX uncached...
 	paths: async function(local=false){
 		return this.__paths__()
 			.iter()
@@ -75,6 +76,25 @@ module.BaseStore = {
 			.concat((!local && (this.next || {}).paths) ? 
 				this.next.paths() 
 				: []) },
+	/*/
+	__paths_cache_timeout: 1000,
+	__paths_cache_timer: undefined,
+	__paths_cache: undefined,
+	paths: async function(local=false){
+		this.__paths_cache_timer =
+			this.__paths_cache_timer
+				?? setTimeout(function(){
+					delete this.__paths_cache_timer
+					delete this.__paths_cache
+				}.bind(this), this.__paths_cache_timeout ?? 1000)
+		return this.__paths_cache
+			|| this.__paths__()
+				.iter()
+				// XXX NEXT
+				.concat((!local && (this.next || {}).paths) ? 
+					this.next.paths() 
+					: []) },
+	//*/
 
 	//
 	// 	.exists(<path>)
@@ -364,7 +384,7 @@ module.BaseStore = {
 					res[path] = page } } }
 		return (stringify 
 				&& typeof(res) != 'string') ?
-			JSON.stringify(res)
+			JSON.stringify(res, options.replacer, options.space)
 			: res },
 
 	// XXX NEXT EXPERIMENTAL...

@@ -324,7 +324,8 @@ object.Constructor('BasePage', {
 				location: path, 
 				...data,
 				referrer: data.referrer 
-					?? this.location,
+					//?? this.location,
+					?? this.referrer,
 				strict,
 			}) },
 
@@ -343,10 +344,11 @@ object.Constructor('BasePage', {
 			: paths instanceof Promise ?
 				await paths
 			: [paths]
-		// XXX MATCH
+		/*/ XXX MATCH
 		paths = paths.length == 0 ?
 			[await this.find(path)]
 			: paths
+		//*/
 
 		for(var path of paths){
 			yield this.get('/'+ path) } },
@@ -424,6 +426,8 @@ object.Constructor('BasePage', {
 				// 		this will make all the non-shadowed attrs set on the
 				// 		root visible to all sub-pages.
 				: Object.create(src),
+			// XXX
+			//{...this},
 			{
 				root: this.root ?? this,
 				location: this.location, 
@@ -695,21 +699,15 @@ object.Constructor('Page', BasePage, {
 				if(typeof(args) == 'string'){
 					var [macro, args, body, state, key, handler] = arguments 
 					key = key ?? 'included' }
-				// positional args...
+				var base = this.get(this.path.split(/\*/).shift())
 				var src = args.src
-					&& await this.parse(args.src, state)
+					&& await base.parse(args.src, state)
 				if(!src){
 					return }
 				var recursive = args.recursive || body
 				var isolated = args.isolated 
 				var join = args.join 
-					&& await this
-						// render join block relative to the path before the first '*'...
-						.get(this.path.split(/\*/).shift())
-						.parse(args.join, state)
-
-				// parse arg values...
-				var base = this.get(src).path
+					&& await base.parse(args.join, state)
 
 				handler = handler 
 					?? async function(src){
@@ -734,9 +732,9 @@ object.Constructor('Page', BasePage, {
 						//if(seen.includes(full) || full == base){
 						if(seen.includes(full)){
 							if(!recursive){
-								return page.parse(page.get('./'+page.RECURSION_ERROR).raw) }
+								return base.parse(page.get('./'+page.RECURSION_ERROR).raw) }
 							// have the 'recursive' arg...
-							return page.parse(recursive, state) }
+							return base.parse(recursive, state) }
 						seen.push(full)
 
 						// load the included page...
@@ -787,12 +785,13 @@ object.Constructor('Page', BasePage, {
 			['src', 'filter', 'text'],
 			async function(args, body, state){
 				var src = args.src //|| args[0]
+				var base = this.get(this.path.split(/\*/).shift())
 				var text = args.text 
 					?? body 
 					?? []
 				// parse arg values...
 				src = src ? 
-					await this.parse(src, state)
+					await base.parse(src, state)
 					: src
 				text = src ?
 						// source page...
@@ -935,6 +934,7 @@ object.Constructor('Page', BasePage, {
 				var that = this
 				var name = args.name //?? args[0]
 				var src = args.src
+				var base = this.get(this.path.split(/\*/).shift())
 				var sort = (args.sort ?? '')
 					.split(/\s+/g)
 					.filter(function(e){ 
@@ -970,7 +970,7 @@ object.Constructor('Page', BasePage, {
 					return block }
 
 				if(name){
-					name = await this.parse(name, state)
+					name = await base.parse(name, state)
 					// define new named macro...
 					if(text){
 						;(state.macros = state.macros ?? {})[name] = text
@@ -980,7 +980,7 @@ object.Constructor('Page', BasePage, {
 						text = state.macros[name] } }
 
 				if(src){
-					src = await this.parse(src, state)
+					src = await base.parse(src, state)
 					var pages = this.get(src, strict)
 					pages = await pages.isArray ?
 						// XXX should we wrap this in pages...
@@ -1113,12 +1113,20 @@ object.Constructor('Page', BasePage, {
 		if(!tpl){
 			throw new Error('UNKNOWN RENDER TEMPLATE: '+ tpl_name) }
 
+		var data = {
+			render_root: this,
+		}
 		// render template in context of page...
-		return this.get(path)
-			.parse(await this.get(tpl).raw) }).call(this) },
+		return this.get(path, data)
+			.parse(await this.get(tpl, data).raw) }).call(this) },
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
+
+	clone: function(data={}, ...args){
+		this.render_root
+			&& (data = {render_root: this.render_root, ...data})
+		return object.parentCall(Page.prototype.clone, this, data, ...args) },
 })
 
 
@@ -1244,7 +1252,7 @@ module.System = {
 			'<macro src="." join="@source(file-separator)">'
 				+'<pre wikiwords="no"><quote filter="quote-tags" src="."/></pre>' 
 			+'</macro>'},
-	_ed: {
+	_edit: {
 	//_edit: {
 		text: 
 			'<macro src="." join="@source(file-separator)">'
@@ -1256,8 +1264,50 @@ module.System = {
 				+'</pre>' 
 			+'</macro>'},
 
-	paths: {
-		text: '<macro src="../*/path" join="  ">@source(.)</macro>' },
+
+	// XXX debug...
+	_path: {text: '@source(./path join=" ")'},
+
+
+	list: {
+		text: '<macro src="../*/path" join="@source(line-separator)">@source(.)</macro>' },
+	// XXX this is really slow...
+	// XXX for some reason replacing both @quote(..) with @source(..) in 
+	// 		the links will break macro parsing...
+	// XXX should this be all or tree???
+	tree: {
+		text: object.doc`
+			<macro src="../*">
+				<div>
+					<a href="#@quote(./path)">@source(./name)</a>
+					<a href="#@quote(./path)/delete">&times;</a>
+					<div style="padding-left: 30px">
+						@source(./tree)
+					</div>
+				</div>
+			</macro>` },
+
+	// XXX this is somewhat broken...
+	info: {
+		text: object.doc`
+			# @source(./path)
+
+			- Render root: @source(./renderer)
+			- Render root: @source(./renderer)
+
+			` },
+
+	// XXX tests...
+	//
+	test_page: function(){
+		console.log('--- RENDERER:', this.render_root)
+		console.log('--- PATH:    ', this.path)
+		console.log('--- REFERRER:', this.referrer)
+		console.log('--- PAGE:', this)
+		return this.path },
+	test_list: function(){
+		return 'abcdef'.split('') },
+
 
 	// page parts...
 	//
@@ -1272,17 +1322,18 @@ module.System = {
 	NotFoundError: { 
 		text: 'NOT FOUND ERROR: @quote(./path)' },
 
+	DeletingPage: {
+		text: 'Deleting: @source(../path)' },
+
 
 	// page actions...
 	//
 
-	// XXX tests...
-	test_list: function(){
-		return 'abcdef'.split('') },
-
 
 	// metadata...
 	//
+	renderer: function(){
+		return (this.render_root || {}).path },
 	path: function(){
 		return this.get('..').path },
 	location: function(){
@@ -1324,9 +1375,16 @@ module.System = {
 	// actions...
 	//
 	delete: function(){
-		this.location = '..'
-		this.delete()
-		return this.text },
+		var target = this.get('..')
+
+		target.delete()
+
+		// redirect...
+		this.render_root
+			&& (this.render_root.location = this.referrer)
+		// show info about the delete operation...
+		return target.get('./DeletingPage').text },
+
 	// XXX System/back
 	// XXX System/forward
 	// XXX System/sort

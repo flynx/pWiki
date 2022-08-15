@@ -22,6 +22,8 @@ base.Filter(
 			tables: true,
 			tasklists: true,
 		})
+		// XXX the problem here is that any string gets nested into a 
+		// 		paragraph -- this messes up partial filtering...
 		return converter.makeHtml(source) })
 
 module.quoteMarkdown = 

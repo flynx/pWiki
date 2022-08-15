@@ -58,9 +58,10 @@ module = {
 		var root = path[0] == '' 
 			|| path[0] == '/'
 		path = (path instanceof Array ?
-				path
-				// NOTE: this will also trim the path elements...
-				: path.split(/\s*[\\\/]+\s*/))
+				path.join('/')
+				: path)
+			// NOTE: this will also trim the path elements...
+			.split(/\s*[\\\/]+\s*/)
 			.reduce(function(res, e, i, L){
 				// special case: leading '..' / '.'
 				if(res.length == 0 
@@ -94,8 +95,7 @@ module = {
 		return this.normalize(
 			(parts[0] instanceof Array ?
 					parts[0]
-					: parts)
-				.join('/'), 
+					: parts), 
 			'string') },
 	basename: function(path){
 		path = this.split(path)

@@ -500,7 +500,6 @@ module.BaseParser = {
 								// 		will have no effect on the result...
 								return page.filters[filter].call(page, res) 
 									?? res }, section)
-					//*/
 					// no global filters...
 					: section ) })
 			.flat()
