@@ -1060,14 +1060,13 @@ object.Constructor('Page', BasePage, {
 		path = pwpath.join(path)
 
 		// get the template relative to the top most pattern...
+		// XXX BUG: this sometimes returns undefined on load...
 		tpl = await this.get(tpl).find(true)
 		if(!tpl){
 			throw new Error('UNKNOWN RENDER TEMPLATE: '+ tpl_name) }
 
-		var data = {
-			render_root: this,
-		}
 		// render template in context of page...
+		var data = { render_root: this }
 		return this.get(path, data)
 			.parse(await this.get(tpl, data).raw) }).call(this) },
 	set text(value){

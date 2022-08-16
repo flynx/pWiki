@@ -32,6 +32,8 @@ store.next.load(
 			return res }, {}))
 //*/
 
+// XXX these are async...
+// 		...see browser.js for a way to deal with this...
 pwiki.store.update('@file-ro', {
 	__proto__: filestore.FileStoreRO,
 	__path__: 'bootstrap',

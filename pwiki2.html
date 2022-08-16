@@ -88,9 +88,10 @@ document.pwikiloaded = new Event('pwikiloaded')
 
 
 // start loading pWiki...
-require(['./browser'], function(pwiki){ 
-	pwiki = window.pwiki = pwiki.pwiki 
+require(['./browser'], function(browser){ 
+	pwiki = window.pwiki = browser.pwiki 
 	pwiki.dom = document.querySelector('#pWiki')
+
 	// handle location.hash/history (both directions)
 	window.addEventListener('hashchange', function(evt){
 		evt.preventDefault()
@@ -126,9 +127,14 @@ require(['./browser'], function(pwiki){
 				&& this.dom
 					.querySelector('#'+ this.hash)
 					.scrollIntoView() })
-	// show current page...
-	pwiki.path = location.hash.slice(1)
-}) 
+
+	// wait for stuff to finish...
+	browser.setup.then(function(){
+
+		// show current page...
+		pwiki.path = location.hash.slice(1)
+
+	}) }) 
 
 
 // XXX make this a 2 stage save -- first cache and then save to store...

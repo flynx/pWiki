@@ -29,36 +29,40 @@ module.store =
 	{ __proto__: basestore.BaseStore }
 		.nest({ __proto__: basestore.MetaStore })
 
-store.update('System', 
-	Object.create(basestore.BaseStore).load(page.System))
-store.update('Settings', 
-	Object.create(basestore.BaseStore).load(page.Settings))
+module.setup = 
+Promise.all([
+	// static stores...
+	//
+	store.update('System', 
+		Object.create(basestore.BaseStore).load(page.System)),
+	store.update('Settings', 
+		Object.create(basestore.BaseStore).load(page.Settings)),
+
+	// persistent stores...
+	//
+	store.update('@local', {
+		__proto__: localstoragestore.localStorageStore,
+		data: localStorage,
+	}),
+	store.update('@session', {
+		__proto__: localstoragestore.localStorageStore,
+		data: sessionStorage,
+	}),
+	store.update('@pouch', {
+		__proto__: pouchdbstore.PouchDBStore,
+	}),
+])
+// XXX
+//typeof(Bootstrap) != 'undefined'
+//	&& pwiki.store.load(Bootstrap)
+
+
 
 var pwiki =
 module.pwiki = 
 	// XXX
 	//page.Page('/', '/', store)
 	page.pWikiPageElement('/', '/', store)
-
-
-pwiki.store.update('@local', {
-	__proto__: localstoragestore.localStorageStore,
-	data: localStorage,
-})
-
-pwiki.store.update('@session', {
-	__proto__: localstoragestore.localStorageStore,
-	data: sessionStorage,
-})
-
-pwiki.store.update('@pouch', {
-	__proto__: pouchdbstore.PouchDBStore,
-})
-
-
-// XXX
-//typeof(Bootstrap) != 'undefined'
-//	&& pwiki.store.load(Bootstrap)
 
 
 
