@@ -515,6 +515,14 @@ object.Constructor('Page', BasePage, {
 
 	RECURSION_ERROR: 'RecursionError',
 
+	// The page that started the current render...
+	//
+	// This is set by .text and maintained by .clone(..).
+	//
+	// NOTE: for manual rendering (.parse(..), ... etc.) this has to be 
+	// 		setup manually.
+	render_root: undefined,
+
 	//
 	// 	<filter>(<source>)
 	// 		-> <result>
@@ -661,7 +669,6 @@ object.Constructor('Page', BasePage, {
 							: this.get(src)
 								.parse(state) }
 
-				//return this.get(src)
 				var res = this.get(src)
 					.each()
 					.map(async function(page){
@@ -1067,6 +1074,7 @@ object.Constructor('Page', BasePage, {
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
 
+	// pass on .render_root to clones...
 	clone: function(data={}, ...args){
 		this.render_root
 			&& (data = {render_root: this.render_root, ...data})
@@ -1186,6 +1194,8 @@ module.System = {
 	// XXX all of these should support pattern pages...
 	_text: {
 		text: '@include(. isolated join="@source(file-separator)")' },
+	_text2: {
+		text: '<macro src="." join="@source(file-separator)">@include(. isolated)</macro>' },
 	// XXX add join...
 	_raw: {
 		text: '@quote(.)' },
