@@ -60,22 +60,24 @@ pwiki.store.update('@pouch', {
 // XXX TEST...
 // XXX add filter tests...
 pwiki.pwiki
-	// XXX BUG: the second @source(..) includes the current page again 
-	// 		for some reason....
-	.update({
-		location: '/test/macros',
-		text: object.doc`
-		some text with inline @source(./path) macros...
-
-		<div wikiwords=no>
-			now @source(./path) inside a div...
-		</div>` })
 	.update({
 		location: '/test/markdown',
 		text: object.doc`
 		some text with inline @source(./path) macros...
 
 		@filter(markdown)` })
+	.update({
+		location: '/test/recursion',
+		text: object.doc` @include(.) ` })
+	.update({
+		location: '/test/recursionA',
+		text: object.doc` @include(../recursionB) ` })
+	.update({
+		location: '/test/recursionB',
+		text: object.doc` @include(../recursionA) ` })
+	.update({
+		location: '/test/recursionC',
+		text: object.doc` @include(recursionC) ` })
 	.update({
 		location: '/test/sort/*',
 		order: ['a', 'c', 'b'], })

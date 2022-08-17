@@ -1,11 +1,7 @@
 /**********************************************************************
 * 
 *
-* XXX BUG: source/include problem... 
-* 		to reproduce:
-* 			.get('/System/_text_macro/_text').text
-* 		this does not exhibit the issue:
-* 			.get('/System/_text_macro').text
+* XXX BUG: /** /paths -- does not work...
 * XXX BUG?: markdown: when parsing chunks each chunk gets an open/closed 
 * 		<p> inserted at start/end -- this breaks stuff returned by macros...
 * 		...there are two ways to dance around this:
@@ -15,7 +11,11 @@
 * 		...this is expected but not intuitive...
 * 		might be a good idea to add a special path like /Stores to list
 * 		sub-stores...
-* XXX OPTIMIZE: /_tree is really slow...
+* XXX OPTIMIZE: /tree is really slow...
+* 		...is the problem purely in the async/await playing ping-pong???
+* XXX might be a good idea to make things optionally sync via a .sync()
+* 		method, or request a specific set of data (in the parser, after 
+* 		collecting all the stuff needed and fetching it in one go)...
 * XXX might be a good idea to add page caching (state.page_cache) relative 
 * 		to a path on parsing, to avoid re-matching the same page over and 
 * 		over again from the same context
@@ -159,6 +159,8 @@
 * 			NOTE: implementing things in a traditional manner would 
 * 				introduce lots of edge-cases and subtle ways to make 
 * 				mistakes, bugs and inconsistencies.
+* 		- types of recursion
+* 			(see: pwiki/page.js: Page.macros.include(..) notes)
 * 		- 
 *
 *

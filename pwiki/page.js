@@ -496,6 +496,8 @@ module.Page =
 object.Constructor('Page', BasePage, {
 	__parser__: parser.parser,
 
+	NESTING_RECURSION_THRESHOLD: 10,
+
 	// Filter that will isolate the page/include/.. from parent filters...
 	ISOLATED_FILTERS: 'isolated',
 
@@ -641,8 +643,20 @@ object.Constructor('Page', BasePage, {
 		// 		<text>
 		// 	</include>
 		//
-		// XXX 'text' argument is changed to 'recursive'...
-		// XXX revise recursion checks.... 
+		// NOTE: there can be two ways of recursion in pWiki:
+		// 			- flat recursion
+		// 				/A -> /A -> /A -> ..
+		// 			- nested recursion 
+		// 				/A -> /A/A -> /A/A/A -> ..
+		// 		Both can be either direct (type I) or indirect (type II).
+		// 		The former is trivial to check for while the later is 
+		// 		not quite so, as we can have different contexts at 
+		// 		different paths that would lead to different resulting 
+		// 		renders.
+		// 		At the moment nested recursion is checked in a fast but 
+		// 		not 100% correct manner focusing on path depth and ignoring
+		// 		the context, this potentially can lead to false positives.
+		//
 		// XXX should this be lazy???
 		include: Macro(
 			['src', 'recursive', 'join', ['isolated']],
@@ -665,7 +679,8 @@ object.Constructor('Page', BasePage, {
 					?? async function(src){
 						return isolated ?
 							{data: await this.get(src)
-								.parse({seen: (state.seen ?? []).slice()})}
+								//.parse({seen: new Set(state.seen ?? [])})}
+								.parse({seen: state.seen})}
 							: this.get(src)
 								.parse(state) }
 
@@ -677,20 +692,30 @@ object.Constructor('Page', BasePage, {
 						// handle recursion...
 						var parent_seen = 'seen' in state
 						var seen = state.seen = 
-							(state.seen
-								?? []).slice()
+							new Set(state.seen ?? [])
 						// recursion detected...
-						//if(seen.includes(full) || full == base){
-						if(seen.includes(full)){
+						if(seen.has(full)
+								// nesting path recursion...
+								// XXX a more general way to check would be to see if the
+								// 		path resolves to the same source (done below) and
+								// 		check if the context has changed -- i.e. if the paths
+								// 		actually contain anything...
+								|| (seen.size % (this.NESTING_RECURSION_THRESHOLD || 10) == 0
+									&& new Set([...seen]
+										.map(function(p){
+											return page.get(p).match()[0] }))
+										.size < seen.size)){
 							if(!recursive){
-								return base.parse(page.get('./'+page.RECURSION_ERROR).raw) }
+								return page.get(page.RECURSION_ERROR).parse(state) }
 							// have the 'recursive' arg...
 							return base.parse(recursive, state) }
-						seen.push(full)
+						seen.add(full)
 
 						// load the included page...
 						var res = await handler.call(page, full)
 
+						// NOTE: we only track recursion down and not sideways...
+						seen.delete(full)
 						if(!parent_seen){
 							delete state.seen }
 
@@ -710,7 +735,7 @@ object.Constructor('Page', BasePage, {
 					'source',
 					args, body, state, 'sources', 
 					async function(src){
-						return this.parse(await this.get(src).raw, state) }) }),
+						return this.parse(this.get(src).raw, state) }) }),
 		//
 		// 	@quote(<src>)
 		//
@@ -950,8 +975,7 @@ object.Constructor('Page', BasePage, {
 					// sort pages...
 					// XXX SORT
 					if(sort.length > 0){
-						console.log('XXX: macro sort: not implemented')
-					}
+						console.log('XXX: macro sort: not implemented') }
 
 					var join_block = _getBlock('join') 
 
@@ -990,6 +1014,7 @@ object.Constructor('Page', BasePage, {
 	//
 	parse: async function(text, state){
 		var that = this
+		text = await text
 		// .parser(<state>)
 		if(arguments.length == 1 
 				&& text instanceof Object
@@ -1023,7 +1048,7 @@ object.Constructor('Page', BasePage, {
 		// 		went really wrong...
 		if(data == null){
 			if(this.NOT_FOUND_ERROR){
-				var msg = this.get('./'+ this.NOT_FOUND_ERROR)
+				var msg = this.get(this.NOT_FOUND_ERROR)
 				if(await msg.match()){
 					return msg.raw } }
 			// last resort...
@@ -1068,7 +1093,7 @@ object.Constructor('Page', BasePage, {
 		// render template in context of page...
 		var data = { render_root: this }
 		return this.get(path, data)
-			.parse(await this.get(tpl, data).raw) }).call(this) },
+			.parse(this.get(tpl, data).raw) }).call(this) },
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
@@ -1252,8 +1277,6 @@ module.System = {
 
 	// XXX tests...
 	//
-	_test_macro: {
-		text: '@source(./name) @source(./name)'},
 	test_page: function(){
 		console.log('--- RENDERER:', this.render_root)
 		console.log('--- PATH:    ', this.path)
@@ -1273,9 +1296,9 @@ module.System = {
 	//
 	// NOTE: these are last resort pages, preferably overloaded in /Templates.
 	RecursionError: {
-		text: 'RECURSION ERROR: @quote(./path)' },
+		text: 'RECURSION ERROR: @quote(../path)' },
 	NotFoundError: { 
-		text: 'NOT FOUND ERROR: @quote(./path)' },
+		text: 'NOT FOUND ERROR: @quote(../path)' },
 
 	DeletingPage: {
 		text: 'Deleting: @source(../path)' },
@@ -1338,7 +1361,7 @@ module.System = {
 		this.render_root
 			&& (this.render_root.location = this.referrer)
 		// show info about the delete operation...
-		return target.get('./DeletingPage').text },
+		return target.get('DeletingPage').text },
 
 	// XXX System/back
 	// XXX System/forward
