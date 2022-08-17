@@ -517,6 +517,8 @@ object.Constructor('Page', BasePage, {
 
 	RECURSION_ERROR: 'RecursionError',
 
+	NOT_FOUND_TEMPLATE_ERROR: 'NotFoundTemplateError',
+
 	// The page that started the current render...
 	//
 	// This is set by .text and maintained by .clone(..).
@@ -828,6 +830,9 @@ object.Constructor('Page', BasePage, {
 		//	Force hide a slot...
 		//	<slot hidden ... />
 		//
+		//	Insert previous slot content...
+		//	<content/>
+		//
 		//
 		// NOTE: by default only the first slot with <name> is visible, 
 		// 		all other slots with <name> will replace its content, unless
@@ -836,8 +841,6 @@ object.Constructor('Page', BasePage, {
 		//
 		// XXX revise the use of hidden/shown use mechanic and if it's 
 		// 		needed...
-		// XXX how do we handle a slot defined within a slot????
-		// 		...seems that we'll fall into recursion on definition...
 		slot: Macro(
 			['name', 'text', ['shown', 'hidden']],
 			async function(args, body, state){
@@ -869,17 +872,31 @@ object.Constructor('Page', BasePage, {
 							: name in slots)
 
 				// NOTE: we prioritize the nested slots over the current...
+				var parent_slot = slots[name]
 				delete slots[name]
 				var slot = await this.__parser__.expand(this, text, state)
-				slots[name] = 
+				parent_slot = slot[name] == null ?
+					parent_slot
+					: slot
+				slot = slots[name] = 
 					slots[name] 
 						?? slot
+
+				// handle slot-content...
+				for(var i in slot){
+					if(typeof(slot[i]) != 'string'
+							&& slot[i].name == 'content'){
+						break }
+					i = null }
+				i != null 
+					&& parent_slot
+					&& (slot[i] = parent_slot)
 
 				return hidden ?
 					''
 					: function(state){
 						return state.slots[name] } }), 
-		'slot-content': ['slot'],
+		'content': ['slot'],
 
 		// 	
 		// 	<macro src=<url>> .. </macro>
@@ -1091,10 +1108,10 @@ object.Constructor('Page', BasePage, {
 		path = pwpath.join(path)
 
 		// get the template relative to the top most pattern...
-		// XXX BUG: this sometimes returns undefined on load...
 		tpl = await this.get(tpl).find(true)
 		if(!tpl){
-			throw new Error('UNKNOWN RENDER TEMPLATE: '+ tpl_name) }
+			console.warn('UNKNOWN RENDER TEMPLATE: '+ tpl_name) 
+			return this.get(this.NOT_FOUND_TEMPLATE_ERROR).parse() }
 
 		// render template in context of page...
 		var data = { render_root: this }
@@ -1355,6 +1372,8 @@ module.System = {
 		text: 'RECURSION ERROR: @quote(../path)' },
 	NotFoundError: { 
 		text: 'NOT FOUND ERROR: @quote(./path)' },
+	NotFoundTemplateError: {
+		text: 'NOT FOUND TEMPLATE ERROR: @quote(../path)' },
 
 	DeletingPage: {
 		text: 'Deleting: @source(../path)' },
@@ -1381,23 +1400,21 @@ module.System = {
 		return this.get('..').path },
 	location: function(){
 		return this.get('..').path },
+	// XXX this can be a list for pattern paths...
+	resolved: function(){
+		return this.get('..').resolve() },
 	dir: function(){
 		return this.get('..').dir },
 	name: function(){
 		return this.get('..').name },
-	ctime: function(){
-		return this.get('..').data.ctime ?? '' },
-	mtime: function(){
-		return this.get('..').data.mtime ?? '' },
-
-	// XXX this can be a list for pattern paths...
-	resolved: function(){
-		return this.get('..').resolve() },
-
 	title: function(){
 		var p = this.get('..')
 		return p.title 
 			?? p.name },
+	ctime: function(){
+		return this.get('..').data.ctime ?? '' },
+	mtime: function(){
+		return this.get('..').data.mtime ?? '' },
 
 
 	// utils...
@@ -1437,6 +1454,42 @@ module.System = {
 	// XXX broken...
 	test_list: function(){
 		return 'abcdef'.split('') },
+	test_slots: {
+		/* XXX
+		text: object.doc`
+			Sequential:
+			<slot name="sequential">unfilled</slot>
+			<slot name="sequential">filled</slot>
+			<slot name="sequential">refilled</slot> 
+			<br><br>
+			Nested:
+			<slot name="nested">
+				unfilled
+				<slot name="nested">
+					filled
+					<slot name="nested">
+						refilled
+					</slot>
+				</slot>
+			</slot> 
+			<br><br>
+			Content: A B C:
+			<slot name="slot-content">A</slot>
+			<slot name="slot-content"><content/> B</slot>
+			<slot name="slot-conten"><content/> C</slot>
+			<br><br>
+		//*/
+		text: object.doc`
+			Nested content: A B C:
+			<slot name="nested-slot-content">
+				A
+				<slot name="nested-slot-content">
+					<content/> B
+					<slot name="nested-slot-content">
+						<content/> C
+					</slot>
+				</slot>
+			</slot> ` },
 }
 
 var Settings =

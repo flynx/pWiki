@@ -1,9 +1,9 @@
 /**********************************************************************
 * 
 *
-* XXX might be a good idea for slots to support getting previous slot 
-* 		content, e.g.:
-* 			<slot name="header"><slot-content/> new text</slot>
+* XXX slot <content/> does not work in nested slots...
+* XXX ranges in pattern paths...
+* 		...url syntax???
 * XXX BUG?: markdown: when parsing chunks each chunk gets an open/closed 
 * 		<p> inserted at start/end -- this breaks stuff returned by macros...
 * 		...there are two ways to dance around this:
@@ -43,7 +43,7 @@
 * 			- zip (json/tree)						--
 * 		- page actions
 * 			- delete								-- DONE
-* 			- copy/move								-- 
+* 			- copy/move								-- DONE
 * 		- migrate bootstrap							--
 * 		- store topology							--
 * 		- sync and sync conf						--

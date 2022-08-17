@@ -191,6 +191,22 @@ pwiki.pwiki
 						refilled
 					</slot>
 				</slot>
+			</slot> 
+			<br><br>
+			Content: A B C:
+			<slot name="slot-content">A</slot>
+			<slot name="slot-content"><content/> B</slot>
+			<slot name="slot-conten"><content/> C</slot>
+			<br><br>
+			Nested content: A B C:
+			<slot name="nested-slot-content">
+				A
+				<slot name="nested-slot-content">
+					<content/> B
+					<slot name="nested-slot-content">
+						<content/> C
+					</slot>
+				</slot>
 			</slot> `, })
 	.update({
 		location: '/test/nesting',

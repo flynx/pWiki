@@ -392,6 +392,7 @@ module.BaseParser = {
 	// 		<func>
 	// 		| <promise>
 	// 		| <string>
+	// 		| { skip: true, ... }
 	// 		| { data: <ast> }
 	// 		| <ast>
 	//
@@ -422,6 +423,7 @@ module.BaseParser = {
 			var {name, args, body} = value
 			// nested macro -- skip...
 			if(typeof(page.macros[name]) != 'function'){
+				yield {...value, skip: true}
 				continue }
 
 			var res = 
@@ -451,10 +453,15 @@ module.BaseParser = {
 				e.call(page, state)
 				: e
 
+			// expand arrays...
 			if(e instanceof Array){
 				yield* this.resolve(page, e, state)
+			// data -- unwrap content...
 			} else if(e instanceof Object && 'data' in e){
 				yield { data: await this.resolve(page, e.data, state) }
+			// skipped items...
+			} else if(e instanceof Object && e.skip){
+				continue
 			} else {
 				yield e } } },
 
