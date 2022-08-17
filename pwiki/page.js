@@ -828,7 +828,7 @@ object.Constructor('Page', BasePage, {
 		//
 		//
 		// NOTE: by default only the first slot with <name> is visible, 
-		// 		all other slot with <name> will replace its content, unless
+		// 		all other slots with <name> will replace its content, unless
 		// 		explicit shown/hidden arguments are given.
 		// NOTE: hidden has precedence over shown if both are given.
 		//
@@ -1217,9 +1217,18 @@ module.System = {
 	//
 	// XXX all of these should support pattern pages...
 	_text: {
-		text: '@include(. isolated join="@source(file-separator)")' },
-	_text2: {
-		text: '<macro src="." join="@source(file-separator)">@include(. isolated)</macro>' },
+		//text: '@include(. isolated join="@source(file-separator)")' },
+		// XXX problem: the show slot
+		text: object.doc`
+			<slot name="header">@source(./path)/_edit</slot>
+			<hr>
+			<slot name="content"></slot>
+			<hr>
+			<slot name="footer"></slot>
+
+			<slot name="content">
+				@include(. join="@source(file-separator)")
+			</slot>` },
 	// XXX add join...
 	_raw: {
 		text: '@quote(.)' },
@@ -1233,7 +1242,9 @@ module.System = {
 	_edit: {
 	//_edit: {
 		text: 
-			'<macro src="." join="@source(file-separator)">'
+			'@source(./path)'
+			+'<hr>'
+			+'<macro src="." join="@source(file-separator)">'
 				+'<pre class="editor" '
 						+'wikiwords="no" '
 						+'contenteditable '
@@ -1248,7 +1259,7 @@ module.System = {
 
 
 	list: {
-		text: '<macro src="../*/path" join="@source(line-separator)">@source(.)</macro>' },
+		text: `<macro src="../*/path" join="@source(line-separator)">@source(.)</macro>` },
 	// XXX this is really slow...
 	// XXX for some reason replacing both @quote(..) with @source(..) in 
 	// 		the links will break macro parsing...
@@ -1285,6 +1296,13 @@ module.System = {
 		return this.path },
 	test_list: function(){
 		return 'abcdef'.split('') },
+	// XXX problem: it appears that we can't fill a slot from within a slot...
+	// 		...the "content" slot below does not override the content slot in _text
+	test_slots: {
+		text: object.doc`OUTER
+		<slot name="header">HEADER</slot>
+		<slot name="content">CONTENT</slot>
+		<slot name="footer">FOOTER</SLOT> `},
 
 
 	// page parts...
@@ -1298,7 +1316,7 @@ module.System = {
 	RecursionError: {
 		text: 'RECURSION ERROR: @quote(../path)' },
 	NotFoundError: { 
-		text: 'NOT FOUND ERROR: @quote(../path)' },
+		text: 'NOT FOUND ERROR: @quote(./path)' },
 
 	DeletingPage: {
 		text: 'Deleting: @source(../path)' },

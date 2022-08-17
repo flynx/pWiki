@@ -32,22 +32,21 @@ store.next.load(
 			return res }, {}))
 //*/
 
-// XXX these are async...
-// 		...see browser.js for a way to deal with this...
-pwiki.store.update('@file-ro', {
-	__proto__: filestore.FileStoreRO,
-	__path__: 'bootstrap',
-})
-
-pwiki.store.update('@file', {
-	__proto__: filestore.FileStore,
-	__path__: 'data/fs',
-})
-
-pwiki.store.update('@pouch', {
-	__proto__: pouchdbstore.PouchDBStore,
-	__path__: 'data/pouch',
-})
+module.setup = 
+Promise.all([
+	pwiki.store.update('@file-ro', {
+		__proto__: filestore.FileStoreRO,
+		__path__: 'bootstrap',
+	}),
+	pwiki.store.update('@file', {
+		__proto__: filestore.FileStore,
+		__path__: 'data/fs',
+	}),
+	pwiki.store.update('@pouch', {
+		__proto__: pouchdbstore.PouchDBStore,
+		__path__: 'data/pouch',
+	}),
+])
 
 
 //---------------------------------------------------------------------
@@ -165,7 +164,7 @@ pwiki.pwiki
 
 			@filter(wikiword markdown) `, })
 	.update({
-		location: '/test/slots',
+		location: '/test/slot',
 		text: object.doc`
 			Testing slot mechanics...
 
@@ -175,6 +174,26 @@ pwiki.pwiki
 
 			<slot name="non-empty">text is filling a slot</slot>
 		`, })
+	.update({
+		location: '/test/slots',
+		text: object.doc`
+			<slot name="slot">unfilled</slot>
+
+			<slot name="slot">filled</slot>
+
+			<slot name="slot">refilled</slot> `, })
+	.update({
+		location: '/test/nestedslots',
+		text: object.doc`
+			<slot name="slot">
+				unfilled
+				<slot name="slot">
+					filled
+					<slot name="slot">
+						refilled
+					</slot>
+				</slot>
+			</slot> `, })
 	.update({
 		location: '/test/a',
 		text: 'a',
