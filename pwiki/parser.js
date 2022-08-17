@@ -387,18 +387,13 @@ module.BaseParser = {
 
 	// Expand macros...
 	//
+	//	<ast> ::= [ <item>, .. ]
 	// 	<item> ::=
-	// 		<string>
-	// 		// returned by .macros.filter(..)
-	// 		| {
-	// 			// XXX is this still relevant...
-	// 			filters: [
-	// 				'<filter>'
-	// 					| '-<filter>',
-	// 				...
-	// 			],
-	// 			data: [ <item>, .. ],
-	// 		}
+	// 		<func>
+	// 		| <promise>
+	// 		| <string>
+	// 		| { data: <ast> }
+	// 		| <ast>
 	//
 	// XXX macros: we are mixing up ast state and parse state...
 	// 		one should only be used for parsing and be forgotten after 
@@ -440,13 +435,37 @@ module.BaseParser = {
 			} else {
 				yield res } } },
 
+	// recursively resolve and enumerate the ast...
+	//
+	//	<ast> ::= [ <item>, .. ]
+	// 	<item> ::=
+	// 		<string>
+	// 		| { data: <ast> }
+	//
+	// XXX should this also resolve e.data???
+	resolve: async function*(page, ast, state={}){
+		// NOTE: we need to await for ast here as we need stage 2 of 
+		// 		parsing to happen AFTER everything else completes...
+		for(var e of await ast){
+			e = typeof(e) == 'function' ?
+				e.call(page, state)
+				: e
+
+			if(e instanceof Array){
+				yield* this.resolve(page, e, state)
+			} else if(e instanceof Object && 'data' in e){
+				yield { data: await this.resolve(page, e.data, state) }
+			} else {
+				yield e } } },
+
 	// Fully parse a page...
 	//
 	// This runs in two stages:
-	// 	- expand the page
+	// 	- resolve the page
 	// 		- lex the page -- .lex(..)
 	// 		- group block elements -- .group(..)
 	// 		- expand macros -- .expand(..)
+	// 		- resolve ast -- .resolve(..)
 	// 	- apply filters
 	//
 	// NOTE: this has to synchronize everything between stage 1 (up to 
@@ -458,7 +477,6 @@ module.BaseParser = {
 	// 			them on demand rather than on encounter (as is now), e.g.
 	// 			a slot when loaded will replace the prior occurrences...
 	//
-	// XXX this should be recursive....
 	// XXX add a special filter to clear pending filters... (???)
 	parse: async function(page, ast, state={}){
 		var that = this
@@ -468,17 +486,7 @@ module.BaseParser = {
 			this.expand(page, ast, state)
 			: ast
 
-		// NOTE: we need to await for ast here as we need stage 2 of 
-		// 		parsing to happen AFTER everything else completes...
-		return await Promise.iter((await ast)
-				.flat()
-				// post handlers...
-				.map(function(section){
-					return typeof(section) == 'function' ? 
-						// NOTE: this can produce promises...
-						section.call(page, state)
-						: section }))
-			.flat()
+		return await this.resolve(page, ast, state)
 			// filters...
 			.map(function(section){
 				return (

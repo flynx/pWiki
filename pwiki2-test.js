@@ -179,11 +179,9 @@ pwiki.pwiki
 		text: object.doc`
 			Sequential:
 			<slot name="sequential">unfilled</slot>
-
 			<slot name="sequential">filled</slot>
-
 			<slot name="sequential">refilled</slot> 
-
+			<br><br>
 			Nested:
 			<slot name="nested">
 				unfilled
@@ -194,6 +192,18 @@ pwiki.pwiki
 					</slot>
 				</slot>
 			</slot> `, })
+	.update({
+		location: '/test/nesting',
+		text: object.doc`
+			Quote in macro:
+			<macro src=".">
+				<quote src="./path"/>
+			</macro>
+			<hr>
+			Quote in slot:
+			<slot name="moo">
+				<quote src="./path"/>
+			</slot>` })
 	.update({
 		location: '/test/a',
 		text: 'a',

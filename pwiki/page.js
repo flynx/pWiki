@@ -505,7 +505,7 @@ object.Constructor('Page', BasePage, {
 	QUOTING_MACROS: ['quote'],
 
 	// templates used to render a page via .text
-	PAGE_TEMPLATE: '_text',
+	PAGE_TEMPLATE: '_view',
 
 	// NOTE: comment this out to make the system fail when nothing is 
 	// 		resolved, not even the System/NotFound page...
@@ -658,6 +658,7 @@ object.Constructor('Page', BasePage, {
 		// 		the context, this potentially can lead to false positives.
 		//
 		// XXX should this be lazy???
+		// XXX should we use .__parser__.expand(..) instead of .parse(..) ???
 		include: Macro(
 			['src', 'recursive', 'join', ['isolated']],
 			async function(args, body, state, key='included', handler){
@@ -758,6 +759,7 @@ object.Constructor('Page', BasePage, {
 		// XXX need to handle pattern paths (like include: join=...)
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: Macro(
+			//['src', 'filter', 'text', 'join'],
 			['src', 'filter', 'text'],
 			async function(args, body, state){
 				var src = args.src //|| args[0]
@@ -866,12 +868,18 @@ object.Constructor('Page', BasePage, {
 							// show first instance...
 							: name in slots)
 
-				slots[name] = [...await this.__parser__.expand(this, text, state)]
+				// NOTE: we prioritize the nested slots over the current...
+				delete slots[name]
+				var slot = await this.__parser__.expand(this, text, state)
+				slots[name] = 
+					slots[name] 
+						?? slot
 
 				return hidden ?
 					''
 					: function(state){
 						return state.slots[name] } }), 
+		'slot-content': ['slot'],
 
 		// 	
 		// 	<macro src=<url>> .. </macro>
@@ -969,7 +977,7 @@ object.Constructor('Page', BasePage, {
 							&& (text || args['else'])){
 						var else_block = _getBlock('else')
 						return else_block ?
-							[...await this.__parser__.expand(this, else_block, state)]
+							await this.__parser__.expand(this, else_block, state)
 							: undefined }
 
 					// sort pages...
@@ -980,15 +988,13 @@ object.Constructor('Page', BasePage, {
 					var join_block = _getBlock('join') 
 
 					// apply macro text...
-					var res = await pages
-						.map(function(page, i){
+					var res = pages
+						.map(function(page){
 							return that.__parser__.expand(page, text, state) })
 					return join_block ?
-						res.between(await that.__parser__.expand(
+						res.between(
 							// render join block relative to the path before the first '*'...
-							that.get(that.path.split(/\*/).shift()), 
-							join_block, 
-							state))
+							await that.__parser__.expand(base, join_block, state))
 						: res } }),
 
 		// nesting rules...
@@ -1200,10 +1206,10 @@ module.System = {
 	// These are used to control how a page is rendered. 
 	//
 	// pWiki has to have a template appended to any path, if one is not 
-	// given then "_text" is used internally.
+	// given then "_view" is used internally.
 	//
 	// A template is rendered in the context of the parent page, e.g. 
-	// for /path/to/page, the actual rendered template is /path/to/page/_text
+	// for /path/to/page, the actual rendered template is /path/to/page/_view
 	// and it is rendered from /path/to/page.
 	//
 	// A template is any page named starting with an underscore ("_") 
@@ -1217,10 +1223,10 @@ module.System = {
 	//
 	// XXX all of these should support pattern pages...
 	_text: {
-		//text: '@include(. isolated join="@source(file-separator)")' },
-		// XXX problem: the show slot
+		text: '@include(. isolated join="@source(file-separator)")' },
+	_view: {
 		text: object.doc`
-			<slot name="header">@source(./path)/_edit</slot>
+			<slot name="header">/list @source(./path)/_edit</slot>
 			<hr>
 			<slot name="content"></slot>
 			<hr>
@@ -1239,7 +1245,22 @@ module.System = {
 			'<macro src="." join="@source(file-separator)">'
 				+'<pre wikiwords="no"><quote filter="quote-tags" src="."/></pre>' 
 			+'</macro>'},
-	// XXX can we reuse _text here???
+	/* XXX can we reuse _view here???
+	_edit: {
+		text: 
+			'@include(PageTemplate)'
+			+'<slot name="header">@source(./path)</slot>'
+			+'<slot name="content">'
+				+'<macro src="." join="@source(file-separator)">'
+					+'<pre class="editor" '
+							+'wikiwords="no" '
+							+'contenteditable '
+							+'oninput="saveContent(\'@source(./path)\', this.innerText)">'
+						+'<quote filter="quote-tags" src="."/>'
+					+'</pre>' 
+				+'</macro>'
+			+'</slot>'},
+	/*/
 	_edit: {
 		text: 
 			'@source(./path)'
@@ -1252,13 +1273,30 @@ module.System = {
 					+'<quote filter="quote-tags" src="."/>'
 				+'</pre>' 
 			+'</macro>'},
+	//*/
+	edit: {
+		text: 
+			//'@include(PageTemplate)'
+			'@include(_view)'
+			+'<slot name="header">@source(../path)</slot>'
+			+'<slot name="content">'
+				// XXX for some reason this is not called...
+				+'<macro src=".." join="@source(file-separator)">'
+					+'<pre class="editor" '
+							+'wikiwords="no" '
+							+'contenteditable '
+							+'oninput="saveContent(\'@source(./path)\', this.innerText)">'
+						+'<quote filter="quote-tags" src="."/>'
+					+'</pre>' 
+				+'</macro>'
+			+'</slot>'},
 
 	// XXX this does not yet work...
 	// XXX "_test" breaks differently than "test"
 	//_test: {
 	test: {
 		text: object.doc`
-			@source(_text)
+			@source(_view)
 			<slot name="header">HEADER</slot>
 			<slot name="content">CONTENT</slot>
 			<slot name="footer">FOOTER</slot> `},
@@ -1269,68 +1307,41 @@ module.System = {
 
 
 	list: {
-		text: `<macro src="../*/path" join="@source(line-separator)">@source(.)</macro>` },
+		text: object.doc`
+			<slot name="header">
+				/list
+				<a href="#@source(../../path)/list">&#x21D1;</a>
+				@source(../path)
+			</slot>
+			<macro src="../*" join="@source(line-separator)">
+				<a href="#@source(./path)/list">&#x21B3;</a>
+				<a href="#@source(./path)">@source(./name)</a>
+				<a href="#@source(./path)/delete">&times;</a>
+			</macro>` },
 	// XXX this is really slow...
-	// XXX for some reason replacing both @quote(..) with @source(..) in 
-	// 		the links will break macro parsing...
-	// XXX should this be all or tree???
 	tree: {
 		text: object.doc`
 			<macro src="../*">
 				<div>
-					<a href="#@quote(./path)">@source(./name)</a>
-					<a href="#@quote(./path)/delete">&times;</a>
+					<a href="#@source(./path)">@source(./name)</a>
+					<a href="#@source(./path)/delete">&times;</a>
 					<div style="padding-left: 30px">
 						@source(./tree)
 					</div>
 				</div>
 			</macro>` },
-
-	// XXX this is somewhat broken...
+	all: {
+		text: `@include(../**/path join="<br>")`},
 	info: {
 		text: object.doc`
-			# @source(./path)
-
-			- Render root: @source(./renderer)
-			- Render root: @source(./renderer)
-
-			` },
-
-	// XXX tests...
-	//
-	test_page: function(){
-		console.log('--- RENDERER:', this.render_root)
-		console.log('--- PATH:    ', this.path)
-		console.log('--- REFERRER:', this.referrer)
-		console.log('--- PAGE:', this)
-		return this.path },
-	test_list: function(){
-		return 'abcdef'.split('') },
-	// XXX problem: it appears that we can't fill a slot from within a slot...
-	// 		...the "content" slot below does not override the content slot in _text
-	test_base_slots: {
-		text: object.doc`OUTER
-		<slot name="header">HEADER</slot>
-		<slot name="content">CONTENT</slot>
-		<slot name="footer">FOOTER</SLOT> `},
-	// XXX does not work yet...
-	test_slots: {
-		text: object.doc`
-			Sequential:
-			<slot name="sequential">unfilled</slot>
-			<slot name="sequential">filled</slot>
-			<slot name="sequential">refilled</slot> 
-			<br><br>
-			Nested:
-			<slot name="nested">
-				unfilled
-				<slot name="nested">
-					filled
-					<slot name="nested">
-						refilled
-					</slot>
-				</slot>
-			</slot> ` },
+			Path: @source(../path)<br>
+			Resolved path: @source(../resolved)<br>
+			Referrer: @source(../referrer)<br>
+			Renderer: @source(../renderer)<br>
+			ctime: @source(../ctime)<br>
+			mtime: @source(../mtime)<br>
+			<hr>
+			<pre wikiwords="no"><quote filter="quote-tags" src=".."/></pre> ` },
 
 	// page parts...
 	//
@@ -1348,15 +1359,24 @@ module.System = {
 	DeletingPage: {
 		text: 'Deleting: @source(../path)' },
 
+	PageTemplate: {
+		text: object.doc`
+			<slot name="header">@source(./path)/_edit</slot>
+			<hr>
+			<slot name="content"></slot>
+			<hr>
+			<slot name="footer"></slot> ` },
+
 
 	// page actions...
 	//
-
 
 	// metadata...
 	//
 	renderer: function(){
 		return (this.render_root || {}).path },
+	referrer: function(){
+		return this.referrer || this.path },
 	path: function(){
 		return this.get('..').path },
 	location: function(){
@@ -1366,9 +1386,9 @@ module.System = {
 	name: function(){
 		return this.get('..').name },
 	ctime: function(){
-		return this.get('..').data.ctime },
+		return this.get('..').data.ctime ?? '' },
 	mtime: function(){
-		return this.get('..').data.mtime },
+		return this.get('..').data.mtime ?? '' },
 
 	// XXX this can be a list for pattern paths...
 	resolved: function(){
@@ -1412,6 +1432,11 @@ module.System = {
 	// XXX System/forward
 	// XXX System/sort
 	// XXX System/reverse
+	
+
+	// XXX broken...
+	test_list: function(){
+		return 'abcdef'.split('') },
 }
 
 var Settings =
