@@ -177,19 +177,19 @@ pwiki.pwiki
 	.update({
 		location: '/test/slots',
 		text: object.doc`
-			<slot name="slot">unfilled</slot>
+			Sequential:
+			<slot name="sequential">unfilled</slot>
 
-			<slot name="slot">filled</slot>
+			<slot name="sequential">filled</slot>
 
-			<slot name="slot">refilled</slot> `, })
-	.update({
-		location: '/test/nestedslots',
-		text: object.doc`
-			<slot name="slot">
+			<slot name="sequential">refilled</slot> 
+
+			Nested:
+			<slot name="nested">
 				unfilled
-				<slot name="slot">
+				<slot name="nested">
 					filled
-					<slot name="slot">
+					<slot name="nested">
 						refilled
 					</slot>
 				</slot>

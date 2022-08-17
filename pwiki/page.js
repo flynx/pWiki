@@ -670,7 +670,7 @@ object.Constructor('Page', BasePage, {
 					&& await base.parse(args.src, state)
 				if(!src){
 					return }
-				var recursive = args.recursive || body
+				var recursive = args.recursive ?? body
 				var isolated = args.isolated 
 				var join = args.join 
 					&& await base.parse(args.join, state)
@@ -705,7 +705,7 @@ object.Constructor('Page', BasePage, {
 										.map(function(p){
 											return page.get(p).match()[0] }))
 										.size < seen.size)){
-							if(!recursive){
+							if(recursive == null){
 								return page.get(page.RECURSION_ERROR).parse(state) }
 							// have the 'recursive' arg...
 							return base.parse(recursive, state) }
@@ -1226,8 +1226,8 @@ module.System = {
 			<hr>
 			<slot name="footer"></slot>
 
-			<slot name="content">
-				@include(. join="@source(file-separator)")
+			<slot name="content" hidden>
+				@include(. join="@source(file-separator)" recursive="")
 			</slot>` },
 	// XXX add join...
 	_raw: {
@@ -1239,8 +1239,8 @@ module.System = {
 			'<macro src="." join="@source(file-separator)">'
 				+'<pre wikiwords="no"><quote filter="quote-tags" src="."/></pre>' 
 			+'</macro>'},
+	// XXX can we reuse _text here???
 	_edit: {
-	//_edit: {
 		text: 
 			'@source(./path)'
 			+'<hr>'
@@ -1252,6 +1252,16 @@ module.System = {
 					+'<quote filter="quote-tags" src="."/>'
 				+'</pre>' 
 			+'</macro>'},
+
+	// XXX this does not yet work...
+	// XXX "_test" breaks differently than "test"
+	//_test: {
+	test: {
+		text: object.doc`
+			@source(_text)
+			<slot name="header">HEADER</slot>
+			<slot name="content">CONTENT</slot>
+			<slot name="footer">FOOTER</slot> `},
 
 
 	// XXX debug...
@@ -1298,12 +1308,29 @@ module.System = {
 		return 'abcdef'.split('') },
 	// XXX problem: it appears that we can't fill a slot from within a slot...
 	// 		...the "content" slot below does not override the content slot in _text
-	test_slots: {
+	test_base_slots: {
 		text: object.doc`OUTER
 		<slot name="header">HEADER</slot>
 		<slot name="content">CONTENT</slot>
 		<slot name="footer">FOOTER</SLOT> `},
-
+	// XXX does not work yet...
+	test_slots: {
+		text: object.doc`
+			Sequential:
+			<slot name="sequential">unfilled</slot>
+			<slot name="sequential">filled</slot>
+			<slot name="sequential">refilled</slot> 
+			<br><br>
+			Nested:
+			<slot name="nested">
+				unfilled
+				<slot name="nested">
+					filled
+					<slot name="nested">
+						refilled
+					</slot>
+				</slot>
+			</slot> ` },
 
 	// page parts...
 	//
