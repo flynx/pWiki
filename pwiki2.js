@@ -2,6 +2,23 @@
 * 
 *
 * XXX slot <content/> does not work in nested slots...
+* XXX GENERATOR make pattern path parsing a generator...
+* 		...experiment with a controllable iterator/range thing...
+* 		This would require:
+* 			1) the rendering infrastructure to support generation and 
+* 				partial rendering starting from .expand(..) and up...
+* 										input			output
+* 					.expand(..)			DONE
+* 					.resolve(..)
+* 					.parse(..)
+* 			2) all the macros that can source pages to produce generators:
+* 					@include(..)		-- DONE
+* 					@source(..)			-- DONE
+* 					@quote(..)			-- 
+* 					@macro(..)			-- 
+* 			3) experiment with back-drivable generators...
+* 		this can be implemented/tested in parallel and integrated into 
+* 		the main pipeline if proven successful...
 * XXX ranges in pattern paths...
 * 		...url syntax???
 * XXX BUG?: markdown: when parsing chunks each chunk gets an open/closed 
@@ -51,6 +68,9 @@
 * 			- get 									-- 
 * 			- download								--
 * 			- upload								--
+* 	- search
+* 		- paths
+* 		- text
 * 	- markdown										-- DONE
 * 	- WikiWord										-- DONE
 * 	- dom filter mechanics							-- DONE

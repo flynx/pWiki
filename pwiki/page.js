@@ -659,11 +659,15 @@ object.Constructor('Page', BasePage, {
 		// 		not 100% correct manner focusing on path depth and ignoring
 		// 		the context, this potentially can lead to false positives.
 		//
-		// XXX should this be lazy???
+		// XXX make this a generator...
 		// XXX should we use .__parser__.expand(..) instead of .parse(..) ???
 		include: Macro(
 			['src', 'recursive', 'join', ['isolated']],
+			// XXX GENERATOR...
+			async function*(args, body, state, key='included', handler){
+			/*/
 			async function(args, body, state, key='included', handler){
+			//*/
 				var macro = 'include'
 				if(typeof(args) == 'string'){
 					var [macro, args, body, state, key, handler] = arguments 
@@ -687,6 +691,48 @@ object.Constructor('Page', BasePage, {
 							: this.get(src)
 								.parse(state) }
 
+				//* XXX GENERATOR...
+				var first = true
+				for(var page of await this.get(src).each()){
+					if(!first){
+						yield join }
+					first = false
+					var full = page.path
+
+					// handle recursion...
+					var parent_seen = 'seen' in state
+					var seen = state.seen = 
+						new Set(state.seen ?? [])
+					// recursion detected...
+					if(seen.has(full)
+							// nesting path recursion...
+							// XXX a more general way to check would be to see if the
+							// 		path resolves to the same source (done below) and
+							// 		check if the context has changed -- i.e. if the paths
+							// 		actually contain anything...
+							|| (seen.size % (this.NESTING_RECURSION_THRESHOLD || 10) == 0
+								&& new Set([...seen]
+									.map(function(p){
+										return page.get(p).match()[0] }))
+									.size < seen.size)){
+						if(recursive == null){
+							yield page.get(page.RECURSION_ERROR).parse(state) 
+							continue }
+						// have the 'recursive' arg...
+						yield base.parse(recursive, state) 
+						continue }
+					seen.add(full)
+
+					// load the included page...
+					var res = await handler.call(page, full)
+
+					// NOTE: we only track recursion down and not sideways...
+					seen.delete(full)
+					if(!parent_seen){
+						delete state.seen }
+
+					yield res } }),
+				/*/
 				var res = this.get(src)
 					.each()
 					.map(async function(page){
@@ -733,8 +779,13 @@ object.Constructor('Page', BasePage, {
 		// 		the same state...
 		source: Macro(
 			['src'],
+			// XXX GENERATOR...
+			async function*(args, body, state){
+				yield* this.macros.include.call(this, 
+			/*/
 			async function(args, body, state){
 				return this.macros.include.call(this, 
+			//*/
 					'source',
 					args, body, state, 'sources', 
 					async function(src){
@@ -758,6 +809,7 @@ object.Constructor('Page', BasePage, {
 		// 		not expanded...
 		// NOTE: the filter argument uses the same filters as @filter(..)
 		//
+		// XXX GENERATOR make this a generator...
 		// XXX need to handle pattern paths (like include: join=...)
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: Macro(
@@ -922,6 +974,8 @@ object.Constructor('Page', BasePage, {
 		//
 		// NOTE: if both strict and nonstrict are given the later takes 
 		// 		precedence.
+		//
+		// XXX GENERATOR make this a generator...
 		// XXX ELSE_PRIO should else attr take priority over the <else> tag???
 		// 		...currently as with text=... the attr takes priority...
 		// XXX SORT sorting not implemented yet....
