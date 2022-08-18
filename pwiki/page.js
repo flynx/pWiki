@@ -663,11 +663,7 @@ object.Constructor('Page', BasePage, {
 		// XXX should we use .__parser__.expand(..) instead of .parse(..) ???
 		include: Macro(
 			['src', 'recursive', 'join', ['isolated']],
-			// XXX GENERATOR...
 			async function*(args, body, state, key='included', handler){
-			/*/
-			async function(args, body, state, key='included', handler){
-			//*/
 				var macro = 'include'
 				if(typeof(args) == 'string'){
 					var [macro, args, body, state, key, handler] = arguments 
@@ -691,12 +687,12 @@ object.Constructor('Page', BasePage, {
 							: this.get(src)
 								.parse(state) }
 
-				//* XXX GENERATOR...
 				var first = true
-				for(var page of await this.get(src).each()){
+				for await (var page of this.get(src).each()){
 					if(!first){
 						yield join }
 					first = false
+
 					var full = page.path
 
 					// handle recursion...
@@ -732,60 +728,14 @@ object.Constructor('Page', BasePage, {
 						delete state.seen }
 
 					yield res } }),
-				/*/
-				var res = this.get(src)
-					.each()
-					.map(async function(page){
-						var full = page.path
-
-						// handle recursion...
-						var parent_seen = 'seen' in state
-						var seen = state.seen = 
-							new Set(state.seen ?? [])
-						// recursion detected...
-						if(seen.has(full)
-								// nesting path recursion...
-								// XXX a more general way to check would be to see if the
-								// 		path resolves to the same source (done below) and
-								// 		check if the context has changed -- i.e. if the paths
-								// 		actually contain anything...
-								|| (seen.size % (this.NESTING_RECURSION_THRESHOLD || 10) == 0
-									&& new Set([...seen]
-										.map(function(p){
-											return page.get(p).match()[0] }))
-										.size < seen.size)){
-							if(recursive == null){
-								return page.get(page.RECURSION_ERROR).parse(state) }
-							// have the 'recursive' arg...
-							return base.parse(recursive, state) }
-						seen.add(full)
-
-						// load the included page...
-						var res = await handler.call(page, full)
-
-						// NOTE: we only track recursion down and not sideways...
-						seen.delete(full)
-						if(!parent_seen){
-							delete state.seen }
-
-						return res }) 
-					return join ?
-						res.between(join)
-						: res }),
-					//*/
 		// NOTE: the main difference between this and @include is that 
 		// 		this renders the src in the context of current page while 
 		// 		include is rendered in the context of its page but with
 		// 		the same state...
 		source: Macro(
 			['src'],
-			// XXX GENERATOR...
 			async function*(args, body, state){
 				yield* this.macros.include.call(this, 
-			/*/
-			async function(args, body, state){
-				return this.macros.include.call(this, 
-			//*/
 					'source',
 					args, body, state, 'sources', 
 					async function(src){
