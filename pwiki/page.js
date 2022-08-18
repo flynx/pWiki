@@ -884,7 +884,8 @@ object.Constructor('Page', BasePage, {
 					slots[name] 
 						?? slot
 
-				// handle slot-content...
+				// handle <content/>...
+				// XXX BUG: nested slots are not handled correctly here...
 				for(var i in slot){
 					if(typeof(slot[i]) != 'string'
 							&& slot[i].name == 'content'){
