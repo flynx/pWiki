@@ -446,15 +446,27 @@ module.BaseParser = {
 	//
 	// XXX should this also resolve e.data???
 	resolve: async function*(page, ast, state={}){
+		ast = ast 
+			?? this.expand(page, null, state)
+		ast = typeof(ast) == 'string' ?
+			this.expand(page, ast, state)
+			: ast
+
 		// NOTE: we need to await for ast here as we need stage 2 of 
 		// 		parsing to happen AFTER everything else completes...
+		/* XXX GENERATOR -- this breaks /test_slots...
+		//		...investigate the data flow...
+		for await (var e of ast){
+		/*/
 		for(var e of await ast){
+		//*/
 			e = typeof(e) == 'function' ?
 				e.call(page, state)
 				: e
 
 			// expand arrays...
-			if(e instanceof Array){
+			if(e instanceof Array 
+					| e instanceof types.Generator){
 				yield* this.resolve(page, e, state)
 			// data -- unwrap content...
 			} else if(e instanceof Object && 'data' in e){
@@ -487,12 +499,6 @@ module.BaseParser = {
 	// XXX add a special filter to clear pending filters... (???)
 	parse: async function(page, ast, state={}){
 		var that = this
-		ast = ast 
-			?? this.expand(page, null, state)
-		ast = typeof(ast) == 'string' ?
-			this.expand(page, ast, state)
-			: ast
-
 		return await this.resolve(page, ast, state)
 			// filters...
 			.map(function(section){

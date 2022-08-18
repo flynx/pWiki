@@ -8,9 +8,14 @@
 * 			1) the rendering infrastructure to support generation and 
 * 				partial rendering starting from .expand(..) and up...
 * 										input			output
-* 					.expand(..)			DONE
-* 					.resolve(..)
-* 					.parse(..)
+* 					.expand(..)			DONE			DONE
+* 					.resolve(..)		partial			DONE
+* 						XXX for-await-of (vs. for-of-await) breaks things 
+* 							(see: /test_slots, ..?)
+* 					.parse(..)			DONE			NO
+* 						XXX with the current implementation of filters 
+* 							this can't work as a generator...
+* 							...might be a good idea to make filters local only...
 * 			2) all the macros that can source pages to produce generators:
 * 					@include(..)		-- DONE
 * 					@source(..)			-- DONE
