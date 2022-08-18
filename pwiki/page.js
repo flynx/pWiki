@@ -689,7 +689,7 @@ object.Constructor('Page', BasePage, {
 
 				var first = true
 				for await (var page of this.get(src).each()){
-					if(!first){
+					if(join && !first){
 						yield join }
 					first = false
 
@@ -759,13 +759,10 @@ object.Constructor('Page', BasePage, {
 		// 		not expanded...
 		// NOTE: the filter argument uses the same filters as @filter(..)
 		//
-		// XXX GENERATOR make this a generator...
-		// XXX need to handle pattern paths (like include: join=...)
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: Macro(
-			//['src', 'filter', 'text', 'join'],
-			['src', 'filter', 'text'],
-			async function(args, body, state){
+			['src', 'filter', 'text', 'join'],
+			async function*(args, body, state){
 				var src = args.src //|| args[0]
 				var base = this.get(this.path.split(/\*/).shift())
 				var text = args.text 
@@ -775,43 +772,59 @@ object.Constructor('Page', BasePage, {
 				src = src ? 
 					await base.parse(src, state)
 					: src
-				text = src ?
-						// source page...
-						await this.get(src).raw
-					: text instanceof Array ?
-						text.join('')
-					: text
 
+				var pages = src ?
+						this.get(src).each()
+					: text instanceof Array ?
+						[text.join('')]
+					: typeof(text) == 'string' ?
+						[text]
+					: text
 				// empty...
-				if(!text){
+				if(!pages){
 					return }
 
-				var filters = 
-					args.filter 
-						&& args.filter
-							.trim()
-							.split(/\s+/g)
+				var join = args.join 
+					&& await base.parse(args.join, state)
+				var first = true
+				for await (var page of pages){
+					if(join && !first){
+						yield join }
+					first = false
 
-				// NOTE: we are delaying .quote_filters handling here to 
-				// 		make their semantics the same as general filters...
-				// 		...and since we are internally calling .filter(..)
-				// 		macro we need to dance around it's architecture too...
-				// NOTE: since the body of quote(..) only has filters applied 
-				// 		to it doing the first stage of .filter(..) as late 
-				// 		as the second stage here will have no ill effect...
-				// NOTE: this uses the same filters as @filter(..)
-				return async function(state){
-					// add global quote-filters...
-					filters =
-						(state.quote_filters 
-								&& !(filters ?? []).includes(this.ISOLATED_FILTERS)) ?
-							[...state.quote_filters, ...(filters ?? [])]
-							: filters
-					return filters ?
-						await this.__parser__.callMacro(
-								this, 'filter', filters, text, state, false)
-							.call(this, state)
-						: text } }),
+					text = typeof(page) == 'string' ?
+						page
+						: await page.raw
+
+					var filters = 
+						args.filter 
+							&& args.filter
+								.trim()
+								.split(/\s+/g)
+
+					// NOTE: we are delaying .quote_filters handling here to 
+					// 		make their semantics the same as general filters...
+					// 		...and since we are internally calling .filter(..)
+					// 		macro we need to dance around it's architecture too...
+					// NOTE: since the body of quote(..) only has filters applied 
+					// 		to it doing the first stage of .filter(..) as late 
+					// 		as the second stage here will have no ill effect...
+					// NOTE: this uses the same filters as @filter(..)
+					// NOTE: the function wrapper here isolates text in 
+					// 		a closure per function...
+					yield (function(text){
+						return async function(state){
+							// add global quote-filters...
+							filters =
+								(state.quote_filters 
+										&& !(filters ?? []).includes(this.ISOLATED_FILTERS)) ?
+									[...state.quote_filters, ...(filters ?? [])]
+									: filters
+							return filters ?
+								await this.__parser__.callMacro(
+										this, 'filter', filters, text, state, false)
+									.call(this, state)
+								: text } })(text) } }),
 		// very similar to @filter(..) but will affect @quote(..) filters...
 		'quote-filter': function(args, body, state){
 			var filters = state.quote_filters = 
@@ -1460,7 +1473,6 @@ module.System = {
 	test_list: function(){
 		return 'abcdef'.split('') },
 	test_slots: {
-		/* XXX
 		text: object.doc`
 			Sequential:
 			<slot name="sequential">unfilled</slot>
@@ -1483,7 +1495,17 @@ module.System = {
 			<slot name="slot-content"><content/> B</slot>
 			<slot name="slot-conten"><content/> C</slot>
 			<br><br>
-		//*/
+			Nested content: A B C:
+			<slot name="nested-slot-content">
+				A
+				<slot name="nested-slot-content">
+					<content/> B
+					<slot name="nested-slot-content">
+						<content/> C
+					</slot>
+				</slot>
+			</slot> ` },
+	test_nested_slots: {
 		text: object.doc`
 			Nested content: A B C:
 			<slot name="nested-slot-content">
