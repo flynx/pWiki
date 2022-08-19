@@ -853,6 +853,11 @@ object.Constructor('Page', BasePage, {
 		// 		all other slots with <name> will replace its content, unless
 		// 		explicit shown/hidden arguments are given.
 		// NOTE: hidden has precedence over shown if both are given.
+		// NOTE: slots are handled in order of occurrence of opening tags 
+		// 		in text and not by hierarchy, i.e. the later slot overrides
+		// 		the former and the most nested overrides the parent.
+		// 		This also works for cases where slots override slots they 
+		// 		are contained in, this will not lead to recursion.
 		//
 		// XXX revise the use of hidden/shown use mechanic and if it's 
 		// 		needed...
@@ -886,32 +891,40 @@ object.Constructor('Page', BasePage, {
 							// show first instance...
 							: name in slots)
 
-				// NOTE: we prioritize the nested slots over the current...
-				var parent_slot = slots[name]
+				var stack = []
+				slots[name]
+					&& stack.push(slots[name])
 				delete slots[name]
 				var slot = await this.__parser__.expand(this, text, state)
-				parent_slot = slot[name] == null ?
-					parent_slot
-					: slot
+				slots[name]
+					&& stack.unshift(slot)
 				slot = slots[name] = 
 					slots[name] 
 						?? slot
 
 				// handle <content/>...
-				// XXX BUG: nested slots are not handled correctly here...
-				for(var i in slot){
-					if(typeof(slot[i]) != 'string'
-							&& slot[i].name == 'content'){
-						break }
-					i = null }
-				i != null 
-					&& parent_slot
-					&& (slot[i] = parent_slot)
+				for(prev of stack){
+					// get the first <content/>
+					for(var i in slot){
+						if(typeof(slot[i]) != 'string'
+								&& slot[i].name == 'content'){
+							break } 
+						i = null }
+					i != null
+						&& slot.splice(i, 1, 
+							...prev
+								// remove nested slot handlers...
+								.filter(function(e){
+									return typeof(e) != 'function'
+											|| e.slot != name }) ) }
 
 				return hidden ?
 					''
-					: function(state){
-						return state.slots[name] } }), 
+					: Object.assign(
+						function(state){
+							return state.slots[name] },
+						{slot: name}) }), 
+						//*/
 		'content': ['slot'],
 
 		// 	
@@ -1504,18 +1517,23 @@ module.System = {
 						<content/> C
 					</slot>
 				</slot>
-			</slot> ` },
-	test_nested_slots: {
-		text: object.doc`
-			Nested content: A B C:
-			<slot name="nested-slot-content">
-				A
-				<slot name="nested-slot-content">
+			</slot>
+			<br><br>
+			Mixed content: X A B C Z:
+			<slot name="mixed-slot-content">
+				X
+			</slot>
+			<slot name="mixed-slot-content">
+				<content/> A
+				<slot name="mixed-slot-content">
 					<content/> B
-					<slot name="nested-slot-content">
-						<content/> C
-					</slot>
 				</slot>
+				<slot name="mixed-slot-content">
+					<content/> C
+				</slot>
+			</slot> 
+			<slot name="mixed-slot-content">
+				<content/> Z
 			</slot> ` },
 }
 

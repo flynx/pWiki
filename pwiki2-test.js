@@ -207,6 +207,23 @@ pwiki.pwiki
 						<content/> C
 					</slot>
 				</slot>
+			</slot>
+			<br><br>
+			Mixed content: X A B C Z:
+			<slot name="mixed-slot-content">
+				X
+			</slot>
+			<slot name="mixed-slot-content">
+				<content/> A
+				<slot name="mixed-slot-content">
+					<content/> B
+					<slot name="mixed-slot-content">
+						<content/> C
+					</slot>
+				</slot>
+			</slot> 
+			<slot name="mixed-slot-content">
+				<content/> Z
 			</slot> `, })
 	.update({
 		location: '/test/nesting',

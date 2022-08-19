@@ -1,7 +1,6 @@
 /**********************************************************************
 * 
 *
-* XXX slot <content/> does not work in nested slots...
 * XXX GENERATOR make pattern path parsing a generator...
 * 		...experiment with a controllable iterator/range thing...
 * 		This would require:
@@ -19,7 +18,7 @@
 * 			2) all the macros that can source pages to produce generators:
 * 					@include(..)		-- DONE
 * 					@source(..)			-- DONE
-* 					@quote(..)			-- 
+* 					@quote(..)			-- DONE
 * 					@macro(..)			-- 
 * 			3) experiment with back-drivable generators...
 * 		this can be implemented/tested in parallel and integrated into 
@@ -171,7 +170,8 @@
 * 				mistakes, bugs and inconsistencies.
 * 		- types of recursion
 * 			(see: pwiki/page.js: Page.macros.include(..) notes)
-* 		- 
+* 		- slot <content/> order -- 
+* 			(see: page.js: Page's .macros.slot(..) notes)
 *
 *
 * XXX weaknesses to review:
