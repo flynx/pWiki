@@ -1383,7 +1383,7 @@ module.System = {
 				</div>
 			</macro>` },
 	all: {
-		text: `@include(../**/path join="<br>")`},
+		text: `@include(../**/path join="@source(line-separator)")`},
 	info: {
 		text: object.doc`
 			Path: @source(../path)<br>
