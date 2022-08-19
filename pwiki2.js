@@ -1,6 +1,8 @@
 /**********************************************************************
 * 
 *
+* XXX does @macro(..) have to follow the same overloading rules as @slot(..)???
+* 		...does it??
 * XXX GENERATOR make pattern path parsing a generator...
 * 		...experiment with a controllable iterator/range thing...
 * 		This would require:
@@ -15,6 +17,7 @@
 * 						XXX with the current implementation of filters 
 * 							this can't work as a generator...
 * 							...might be a good idea to make filters local only...
+* 						XXX slots/macros might also pose a problem...
 * 			2) all the macros that can source pages to produce generators:
 * 					@include(..)		-- DONE
 * 					@source(..)			-- DONE
@@ -23,14 +26,23 @@
 * 			3) experiment with back-drivable generators...
 * 		this can be implemented/tested in parallel and integrated into 
 * 		the main pipeline if proven successful...
-* XXX ranges in pattern paths...
+* XXX ranges in pattern paths -- page-size=X page=Y | from=X to=Y / ...
 * 		...url syntax???
+* XXX differenced in behaviour between _abc and abc, either need to make 
+* 		them the same or document the differences and the reasons behind 
+* 		them...
 * XXX BUG?: markdown: when parsing chunks each chunk gets an open/closed 
 * 		<p> inserted at start/end -- this breaks stuff returned by macros...
 * 		...there are two ways to dance around this:
 * 			- make filters run a bit more globaly -- per block...
 * 			- find a local parser...
-* XXX add something like /stores to list store info...
+* XXX introspection:
+* 			/stores
+* 				list stores...
+*			/info	
+*				list page/store info
+*			/storage
+*				list storage usage / limits
 * XXX OPTIMIZE: /tree is really slow...
 * 		...is the problem purely in the async/await playing ping-pong???
 * XXX BUG: FF: conflict between object.run and PouchDB... 
@@ -65,7 +77,8 @@
 * 		- page actions
 * 			- delete								-- DONE
 * 			- copy/move								-- DONE
-* 		- migrate bootstrap							--
+* 			- resolved (async)						--
+* 		- migrate/rewrite bootstrap					--
 * 		- store topology							--
 * 		- sync and sync conf						--
 * 		- images
@@ -78,19 +91,21 @@
 * 	- markdown										-- DONE
 * 	- WikiWord										-- DONE
 * 	- dom filter mechanics							-- DONE
-* 	- filters / dom filters:
-* 		- markdown??
-* 		- wikiword (control)
+* 	- filters
+* 		- markdown (???)							-- ???
 * 			this can be done in one of two ways:
 * 				- wrapping blocks in elemens
 * 					...requires negative filter calls, either on -wikiword 
 * 					or a different filter like nowikiwords...
 * 				- tags (current)
 * 		- raw / code								-- DONE?
-* 		- all (tree)								-- DONE
-* 		- nl2br
-* 		- path2link (wikiword?)						-- DONE	
+* 		- nl2br										-- 
+* 		- nowhitespace								-- 
+* 			clear extra whitespace from text elements
+* 	- dom filters:
 * 		- editor
+* 			basic									-- DONE
+* 				see: /System/edit
 * 			MediumEditor (markdown-plugin)
 * 				https://github.com/yabwe/medium-editor
 * 				https://github.com/IonicaBizau/medium-editor-markdown
@@ -104,6 +119,10 @@
 * 					- not sure if it works on mobile
 * 					+ small
 * 			tiptap (no-markdown, investigate y.js)
+* 		- wikiword / path2link						-- 
+* 			..do we need to be able to control this???
+* 	- templates
+* 		- all (tree)								-- DONE
 * 	- configuration
 * 		- defaults
 * 		- System/config (global)

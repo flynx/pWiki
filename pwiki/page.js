@@ -960,6 +960,7 @@ object.Constructor('Page', BasePage, {
 		// 		e.g. 
 		// 			<macro src="/test/*/resolved"> ... </macro>
 		// 		...does not work yet...
+		// 		....currently resolved returns promises....
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else', ['strict', 'nonstrict']],
 			async function(args, body, state){
@@ -1114,12 +1115,12 @@ object.Constructor('Page', BasePage, {
 				data()
 			// multiple matches...
 			: data instanceof Array ?
-				data
+				Promise.all(data
 					.map(function(d){
 						return typeof(d) == 'function'?
 							d()
 							: d.text })
-					.flat()
+					.flat())
    			: data.text )}).call(this) },
 	set raw(value){
 		this.__update__({text: value}) },
@@ -1432,7 +1433,7 @@ module.System = {
 	location: function(){
 		return this.get('..').path },
 	// XXX this can be a list for pattern paths...
-	resolved: function(){
+	resolved: async function(){
 		return this.get('..').resolve() },
 	dir: function(){
 		return this.get('..').dir },
