@@ -1011,6 +1011,8 @@ object.Constructor('Page', BasePage, {
 					src = await base.parse(src, state)
 
 					var join = _getBlock('join') 
+					join = join
+						&& await base.parse(join, state)
 
 					// expand matches...
 					var first = true
