@@ -305,6 +305,8 @@ object.Constructor('BasePage', {
 
 		for(var path of paths){
 			yield this.get('/'+ path) } },
+	[Symbol.asyncIterator]: async function*(){
+		yield* this.each() },
 
 	map: async function(func){
 		return this.each().map(func) },
@@ -658,11 +660,8 @@ object.Constructor('Page', BasePage, {
 		// 		At the moment nested recursion is checked in a fast but 
 		// 		not 100% correct manner focusing on path depth and ignoring
 		// 		the context, this potentially can lead to false positives.
-		//
-		// XXX make this a generator...
-		// XXX should we use .__parser__.expand(..) instead of .parse(..) ???
 		include: Macro(
-			['src', 'recursive', 'join', ['isolated']],
+			['src', 'recursive', 'join', ['strict', 'nonstrict', 'isolated']],
 			async function*(args, body, state, key='included', handler){
 				var macro = 'include'
 				if(typeof(args) == 'string'){
@@ -675,6 +674,8 @@ object.Constructor('Page', BasePage, {
 					return }
 				var recursive = args.recursive ?? body
 				var isolated = args.isolated 
+				var strict = args.strict
+					&& !args.nonstrict
 				var join = args.join 
 					&& await base.parse(args.join, state)
 
@@ -688,7 +689,7 @@ object.Constructor('Page', BasePage, {
 								.parse(state) }
 
 				var first = true
-				for await (var page of this.get(src).each()){
+				for await (var page of this.get(src).asPages(strict)){
 					if(join && !first){
 						yield join }
 					first = false
@@ -774,7 +775,7 @@ object.Constructor('Page', BasePage, {
 					: src
 
 				var pages = src ?
-						this.get(src).each()
+						this.get(src).asPages()
 					: text instanceof Array ?
 						[text.join('')]
 					: typeof(text) == 'string' ?
@@ -891,6 +892,7 @@ object.Constructor('Page', BasePage, {
 							// show first instance...
 							: name in slots)
 
+				// set slot value...
 				var stack = []
 				slots[name]
 					&& stack.push(slots[name])
@@ -901,7 +903,6 @@ object.Constructor('Page', BasePage, {
 				slot = slots[name] = 
 					slots[name] 
 						?? slot
-
 				// handle <content/>...
 				for(prev of stack){
 					// get the first <content/>
@@ -917,14 +918,12 @@ object.Constructor('Page', BasePage, {
 								.filter(function(e){
 									return typeof(e) != 'function'
 											|| e.slot != name }) ) }
-
 				return hidden ?
 					''
 					: Object.assign(
 						function(state){
 							return state.slots[name] },
 						{slot: name}) }), 
-						//*/
 		'content': ['slot'],
 
 		// 	
@@ -952,18 +951,14 @@ object.Constructor('Page', BasePage, {
 		// NOTE: if both strict and nonstrict are given the later takes 
 		// 		precedence.
 		//
-		// XXX GENERATOR make this a generator...
-		// XXX ELSE_PRIO should else attr take priority over the <else> tag???
-		// 		...currently as with text=... the attr takes priority...
 		// XXX SORT sorting not implemented yet....
-		// XXX should support arrays...
-		// 		e.g. 
-		// 			<macro src="/test/*/resolved"> ... </macro>
-		// 		...does not work yet...
-		// 		....currently resolved returns promises....
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else', ['strict', 'nonstrict']],
+			// XXX GENERATOR...
+			async function*(args, body, state){
+			/*/
 			async function(args, body, state){
+			//*/
 				var that = this
 				var name = args.name //?? args[0]
 				var src = args.src
@@ -1014,37 +1009,22 @@ object.Constructor('Page', BasePage, {
 
 				if(src){
 					src = await base.parse(src, state)
-					var pages = this.get(src, strict)
-					pages = await pages.isArray ?
-						// XXX should we wrap this in pages...
-						(await pages.raw)
-							.map(function(data){
-								return that.virtual({text: data}) })
-						: await pages.each()
-					// no matching pages -> get the else block...
-					if(pages.length == 0 
+
+					var join = _getBlock('join') 
+
+					// expand matches...
+					var first = true
+					for await(var page of this.get(src).asPages(strict)){
+						if(join && !first){
+							yield join }
+						first = false 
+						yield this.__parser__.expand(page, text, state) }
+					// else...
+					if(first
 							&& (text || args['else'])){
 						var else_block = _getBlock('else')
-						return else_block ?
-							await this.__parser__.expand(this, else_block, state)
-							: undefined }
-
-					// sort pages...
-					// XXX SORT
-					if(sort.length > 0){
-						console.log('XXX: macro sort: not implemented') }
-
-					var join_block = _getBlock('join') 
-
-					// apply macro text...
-					var res = pages
-						.map(function(page){
-							return that.__parser__.expand(page, text, state) })
-					return join_block ?
-						res.between(
-							// render join block relative to the path before the first '*'...
-							await that.__parser__.expand(base, join_block, state))
-						: res } }),
+						if(else_block){
+							yield this.__parser__.expand(this, else_block, state) } } } }),
 
 		// nesting rules...
 		'else': ['macro'],
@@ -1125,6 +1105,27 @@ object.Constructor('Page', BasePage, {
 	set raw(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
+
+	// iterate matches or content list as pages...
+	//
+	// XXX revise name...
+	asPages: async function*(path='.', strict=false){
+		if(path === true 
+				|| path === false){
+			strict = path
+			path = '.' }
+		var page = this.get(path, strict)
+		// handle lists in pages (actions, ... etc.)...
+		if(!page.isPattern){
+			var raw = await page.raw
+			yield* raw instanceof Array ?
+				raw
+					.map(function(p){
+						return page.virtual({text: p}) })
+				: [page] 
+		// each...
+		} else {
+			yield* page } },
 
 	// expanded page text...
 	//

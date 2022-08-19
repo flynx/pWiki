@@ -460,10 +460,10 @@ module.BaseParser = {
 		/*/
 		for(var e of await ast){
 		//*/
+			// expand delayed sections...
 			e = typeof(e) == 'function' ?
 				e.call(page, state)
 				: e
-
 			// expand arrays...
 			if(e instanceof Array 
 					| e instanceof types.Generator){

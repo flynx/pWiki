@@ -22,15 +22,13 @@
 * 					@include(..)		-- DONE
 * 					@source(..)			-- DONE
 * 					@quote(..)			-- DONE
-* 					@macro(..)			-- 
-* 			3) experiment with back-drivable generators...
-* 		this can be implemented/tested in parallel and integrated into 
-* 		the main pipeline if proven successful...
+* 					@macro(..)			-- DONE
 * XXX ranges in pattern paths -- page-size=X page=Y | from=X to=Y / ...
 * 		...url syntax???
 * XXX differenced in behaviour between _abc and abc, either need to make 
 * 		them the same or document the differences and the reasons behind 
 * 		them...
+* XXX add support for <join> tag in include/source/quote???
 * XXX BUG?: markdown: when parsing chunks each chunk gets an open/closed 
 * 		<p> inserted at start/end -- this breaks stuff returned by macros...
 * 		...there are two ways to dance around this:
