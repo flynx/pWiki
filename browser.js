@@ -33,10 +33,12 @@ module.setup =
 Promise.all([
 	// static stores...
 	//
-	store.update('System', 
-		Object.create(basestore.BaseStore).load(page.System)),
 	store.update('Settings', 
 		Object.create(basestore.BaseStore).load(page.Settings)),
+	store.update('System', 
+		Object.create(basestore.BaseStore).load(page.System)),
+	store.update('Test', 
+		Object.create(basestore.BaseStore).load(page.Test)),
 
 	// persistent stores...
 	//

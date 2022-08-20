@@ -1,8 +1,6 @@
 /**********************************************************************
 * 
 *
-* XXX does @macro(..) have to follow the same overloading rules as @slot(..)???
-* 		...does it??
 * XXX GENERATOR make pattern path parsing a generator...
 * 		...experiment with a controllable iterator/range thing...
 * 		This would require:
@@ -19,6 +17,11 @@
 * 							...might be a good idea to make filters local only...
 * 						XXX slots/macros might also pose a problem...
 * 			2) all the macros that can source pages to produce generators (DONE)
+* XXX BUG: .move(..) behaves in an odd way...
+* 		see: System/move page action
+* 		...deletes the original and moves an empty page -- sync error???
+* XXX does @macro(..) have to follow the same overloading rules as @slot(..)???
+* 		...does it??
 * XXX ranges in pattern paths -- page-size=X page=Y | from=X to=Y / ...
 * 		...url syntax???
 * XXX differenced in behaviour between _abc and abc, either need to make 

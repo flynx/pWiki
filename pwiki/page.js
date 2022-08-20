@@ -1435,7 +1435,6 @@ module.System = {
 		return this.get('..').path },
 	location: function(){
 		return this.get('..').path },
-	// XXX this can be a list for pattern paths...
 	resolved: async function(){
 		return this.get('..').resolve() },
 	dir: function(){
@@ -1460,10 +1459,10 @@ module.System = {
 		// XXX
 		return '' },
 	// XXX links to pages...
-	to: function(){
+	LinksTo: function(){
 		return (this.get('..').data || {}).to ?? [] },
 	// XXX pages linking to us...
-	'from': function(){
+	LinksFrom: function(){
 		return (this.get('..').data || {})['from'] ?? [] },
 
 
@@ -1480,16 +1479,68 @@ module.System = {
 		// show info about the delete operation...
 		return target.get('DeletingPage').text },
 
+	// XXX EXPERIMENTAL
+	// move page one level up...
+	moveUp: function(){
+		var target = this.get('..')
+		var to = '../../'+target.name
+
+		target.move(to)
+
+		// redirect...
+		this.render_root
+			&& (this.render_root.location = to)
+		// show info about the move operation...
+		return this.render_root.path },
+	// moves page to current location...
+	// Example
+	// 		/path/to/page/moveDown
+	// 			/path/page -> /path/to/page
+	moveDown: function(){
+		var to = this.get('..')
+		var target = to.get('../../'+ to.name)
+
+		target.move(to.path)
+
+		// redirect...
+		this.render_root
+			&& (this.render_root.location = to.path)
+		return this.render_root.path },
+
+	// syntax:
+	// 		/<path-from>/to:<path-to>/move
+	//
+	// XXX the syntax works, but there are problems with .move(..) method...
+	move: async function(){
+		var [from, to] = this.get('..').path.split(/\/to:/)
+		// can't move...
+		if(!from || !to){
+			console.warn(`move: can't move: "${from}" -> "${to}"`)
+			return '' }
+
+		await this.get(from).move(to)
+
+		// redirect...
+		this.render_root
+			&& (this.render_root.location = to)
+		return '' },
+
 	// XXX System/back
 	// XXX System/forward
 	// XXX System/sort
 	// XXX System/reverse
 	
 
-	// XXX broken...
-	test_list: function(){
-		return 'abcdef'.split('') },
-	test_slots: {
+}
+
+var Test =
+module.Test = {
+	'list/action': function(){
+		return [...'abcdef'] },
+	'list/statuc': {
+		text: [...'abcdef'] },
+
+	slots: {
 		text: object.doc`
 			Sequential:
 			<slot name="sequential">unfilled</slot>
