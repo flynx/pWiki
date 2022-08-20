@@ -954,11 +954,7 @@ object.Constructor('Page', BasePage, {
 		// XXX SORT sorting not implemented yet....
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else', ['strict', 'nonstrict']],
-			// XXX GENERATOR...
 			async function*(args, body, state){
-			/*/
-			async function(args, body, state){
-			//*/
 				var that = this
 				var name = args.name //?? args[0]
 				var src = args.src
@@ -976,6 +972,7 @@ object.Constructor('Page', BasePage, {
 					: text
 				var strict = args.strict
 					&& !args.nonstrict
+				var join
 
 				var _getBlock = function(name){
 					var block = args[name] ?
@@ -1000,17 +997,21 @@ object.Constructor('Page', BasePage, {
 				if(name){
 					name = await base.parse(name, state)
 					// define new named macro...
-					if(text){
-						;(state.macros = state.macros ?? {})[name] = text
+					if(text.length != 0){
+						// NOTE: we do not need to worry about saving 
+						// 		stateful text here because it is only 
+						// 		grouped and not expanded...
+						;(state.macros = state.macros ?? {})[name] = [text, _getBlock('join')]
 					// use existing macro...
 					} else if(state.macros 
 							&& name in state.macros){
-						text = state.macros[name] } }
+						[text, join] = state.macros[name] } }
 
 				if(src){
 					src = await base.parse(src, state)
 
-					var join = _getBlock('join') 
+					join = _getBlock('join') 
+						?? join 
 					join = join
 						&& await base.parse(join, state)
 
@@ -1590,6 +1591,16 @@ module.Test = {
 			<slot name="mixed-slot-content">
 				<content/> Z
 			</slot> ` },
+	macros: {
+		text: object.doc`
+			<macro name="list" join="<br>">
+				- @include(./path)
+			</macro>
+
+			<macro name="list" src="/Test/*"/>
+			<br><br>
+			<macro name="list" src="/Test/*" join=",<br>"/>
+		`},
 }
 
 var Settings =
