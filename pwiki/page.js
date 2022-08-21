@@ -192,6 +192,13 @@ object.Constructor('BasePage', {
 	set metadata(value){
 		this.__update__(value) },
 
+	get type(){ return async function(){
+		return this.store.isStore(this.path) ?
+				'store'
+			: typeof(await this.data) == 'function' ? 
+				'action' 
+			: 'page' }.bind(this)() },
+
 	// number of matching pages...
 	// NOTE: this can be both sync and async...
 	get length(){
@@ -521,6 +528,8 @@ object.Constructor('Page', BasePage, {
 
 	NOT_FOUND_TEMPLATE_ERROR: 'NotFoundTemplateError',
 
+	QUOTE_ACTION_PAGE: 'QuoteActionPage',
+
 	// XXX DEPENDS to be used for cache invalidation...
 	// Format:
 	// 	{
@@ -793,7 +802,7 @@ object.Constructor('Page', BasePage, {
 		//
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: Macro(
-			['src', 'filter', 'text', 'join'],
+			['src', 'filter', 'text', 'join', ['expandactions']],
 			async function*(args, body, state){
 				var src = args.src //|| args[0]
 				var base = this.get(this.path.split(/\*/).shift())
@@ -804,6 +813,7 @@ object.Constructor('Page', BasePage, {
 				src = src ? 
 					await base.parse(src, state)
 					: src
+				var expandactions = args.expandactions
 
 				// XXX DEPENDS
 				var depends = state.depends = 
@@ -811,7 +821,10 @@ object.Constructor('Page', BasePage, {
 						?? new Set()
 
 				var pages = src ?
-						this.get(src).asPages()
+						(!expandactions 
+								&& await this.get(src).type == 'action' ?
+							base.get(this.QUOTE_ACTION_PAGE)
+							: this.get(src).asPages())
 					: text instanceof Array ?
 						[text.join('')]
 					: typeof(text) == 'string' ?
@@ -830,8 +843,13 @@ object.Constructor('Page', BasePage, {
 					first = false
 
 					text = typeof(page) == 'string' ?
-						page
+							page
+						: (!expandactions 
+								&& await page.type == 'action') ?
+							base.get(this.QUOTE_ACTION_PAGE).raw
 						: await page.raw
+
+
 					// XXX DEPENDS...
 					page.path
 						&& depends.add(page.path)
@@ -1157,15 +1175,39 @@ object.Constructor('Page', BasePage, {
 
 	// iterate matches or content list as pages...
 	//
+	// 	.asPages()
+	// 	.asPages(<path>[, <options>])
+	// 	.asPages(<strict>[, <options>])
+	// 	.asPages(<path>, <strict>[, <options>])
+	// 	.asPages(<options>)
+	// 		-> <iter>
+	//
+	// NOTE: this will get .raw for non-pattern pages this it can trigger 
+	// 		actions...
+	//
 	// XXX revise name...
-	asPages: async function*(path='.', strict=false){
-		if(path === true 
-				|| path === false){
-			strict = path
-			path = '.' }
+	asPages: async function*(path='.', strict=false, noexpandactions=false){
+		// options...
+		var args = [...arguments]
+		var opts = typeof(args.at(-1)) == 'object' ?
+			args.pop()
+			: {}
+		var {path, strict, noexpandactions} = {
+			...opts,
+			path: typeof(args[0]) == 'string' ?
+				args.shift()
+				: '.',
+			strict: args.shift() ?? false,
+		}
+
 		var page = this.get(path, strict)
 		// handle lists in pages (actions, ... etc.)...
 		if(!page.isPattern){
+			if(noexpandactions 
+					&& await page.type == 'action'){
+				//yield this.get(this.QUOTE_ACTION_PAGE)
+				yield page 
+				return }
 			var raw = await page.raw
 			if(raw == null){
 				return }
@@ -1417,18 +1459,27 @@ module.System = {
 				@source(../path)
 			</slot>
 			<macro src="../*" join="@source(line-separator)">
-				<a href="#@source(./path)/list">&#x21B3;</a>
-				<a href="#@source(./path)">@source(./name)</a>
+				<a href="#@source(./path)/list">@source(./name)</a>
+				<i>
+					<macro src="./isAction">
+						a
+						<else>
+							<macro src="./isStore">s</macro>
+						</else>
+					</macro>
+				</i>
 				<a href="#@source(./path)/delete">&times;</a>
 			</macro>` },
 	// XXX this is really slow...
 	tree: {
 		text: object.doc`
 			<macro src="../*">
-				<div>
+				<div class="item">
 					<a href="#@source(./path)">@source(./name)</a>
-					<macro src="./isAction">*</macro>
-					<a href="#@source(./path)/delete">&times;</a>
+					<span class="show-on-hover">
+						<a href="#@source(./path)/info">&#128712;</a>
+						<a href="#@source(./path)/delete">&times;</a>
+					</span>
 					<div style="padding-left: 30px">
 						@source(./tree)
 					</div>
@@ -1438,12 +1489,20 @@ module.System = {
 		text: `@include(../**/path join="@source(line-separator)")`},
 	info: {
 		text: object.doc`
-			Path: @source(../path)<br>
-			Resolved path: @source(../resolved)<br>
-			Referrer: @source(../referrer)<br>
-			Renderer: @source(../renderer)<br>
+			Path: @source(../path) 
+				(<a href="#@source(../path)/edit">edit</a>)<br>
+			Resolved path: @source(../resolved) 
+				(<a href="#@source(../resolved)/edit">edit</a>)<br>
+			Referrer: @source(../referrer)
+				(<a href="#@source(../referrer)/edit">edit</a>)<br>
+			Renderer: @source(../renderer)
+				(<a href="#@source(../renderer)/edit">edit</a>)<br>
+
+			type: @source(../type)<br>
+
 			ctime: @source(../ctime)<br>
 			mtime: @source(../mtime)<br>
+
 			<hr>
 			<pre wikiwords="no"><quote filter="quote-tags" src=".."/></pre> ` },
 
@@ -1472,6 +1531,8 @@ module.System = {
 			<slot name="content"></slot>
 			<hr>
 			<slot name="footer"></slot> ` },
+	QuoteActionPage: {
+		text: '[ native code ]' },
 
 
 	// page actions...
@@ -1498,19 +1559,20 @@ module.System = {
 		return p.title 
 			?? p.name },
 	ctime: async function(){
-		return (await this.get('..').data).ctime ?? '' },
+		return (await this.get('..').data).ctime },
 	mtime: async function(){
-		return (await this.get('..').data).mtime ?? '' },
+		return (await this.get('..').data).mtime },
 
 	// XXX EXPERIMENTAL...
 	type: async function(){
-		// XXX also check if a page is a store...
-		return typeof(await this.get('..').data) == 'function' ? 
-			'action' 
-			: 'page' },
+		return await this.get('..').type },
 	isAction: async function(){
-		return typeof(await this.get('..').data) == 'function' ?
-			['action']
+		return await this.get('..').type == 'action' ?
+			'action'
+			: undefined },
+	isStore: async function(){
+		return await this.get('..').type == 'store' ?
+			'store'
 			: undefined },
 
 
@@ -1534,6 +1596,8 @@ module.System = {
 	delete: function(){
 		var target = this.get('..')
 
+		console.log('DELETE:', target.path)
+
 		target.delete()
 
 		// redirect...
@@ -1542,7 +1606,7 @@ module.System = {
 		// show info about the delete operation...
 		return target.get('DeletingPage').text },
 
-	// XXX EXPERIMENTAL
+	/*/ XXX EXPERIMENTAL
 	// move page one level up...
 	moveUp: function(){
 		var target = this.get('..')
@@ -1587,6 +1651,7 @@ module.System = {
 		this.render_root
 			&& (this.render_root.location = to)
 		return '' },
+	//*/
 
 	//
 	test_path: function(){

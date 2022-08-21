@@ -457,12 +457,14 @@ module.MetaStore = {
 					return object.childOf(value, BaseStore) })
 				.map(function([path, _]){
 					return path })) },
+	// XXX do we need to account for trailing '/' here???
 	substore: function(path){
 		path = pwpath.normalize(path, 'string')
 		if(this.substores.includes(path)){
 			return path }
 		var root = path[0] == '/'
 		var store = this.substores
+			// normalize store paths to the given path...
 			.filter(function(p){
 				return path.startsWith(
 					root ? 
@@ -477,6 +479,14 @@ module.MetaStore = {
 			: store },
 	getstore: function(path){
 		return this.data[this.substore(path)] },
+	// XXX do we need to account for trailing '/' here???
+	isStore: function(path){
+		path = pwpath.normalize(path, 'string')
+		path = path[0] == '/' ?
+			path.slice(1)
+			: path
+		return this.substores.includes(path)
+			|| this.substores.includes('/'+ path) },
 	
 	// XXX this depends on .data having keys...
 	__paths__: async function(){

@@ -1,8 +1,8 @@
 /**********************************************************************
 * 
 *
-* XXX need a uniform way to track state in pwiki for things like paging
-* 		and the like with simple user/macro access...
+* XXX need a uniform way to track some state in links in pwiki for things 
+* 		like paging and the like with simple user/macro access (???)...
 * 		...the simplest that comes to mind is to store in in path 
 * 		somehow:
 * 			- <path>?<arg>=<value>&...
@@ -10,12 +10,12 @@
 * 			- <path>/<arg>:<valu>/<arg>:<value>/.../<action>
 * 				stack-style arguments...
 * 				+ simple to implement
-* 				- goes thrugh page search???
+* 				- goes through page search???
 * 			- <path>:<value>:<name>=<value>:...
 * 			- ...
 * 		the general idea is to be:
 * 			- flexible enough to allow the basics done
-* 			- restrictive enough to prevent missuse
+* 			- restrictive enough to prevent misuse
 * 		...the rest of the state can simply be stored in the root pwiki 
 * 		object in one of the following ways:
 * 			- directly (attrs/dict)
