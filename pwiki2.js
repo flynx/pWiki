@@ -1,6 +1,43 @@
 /**********************************************************************
 * 
 *
+* XXX track requested paths in render state.paths...
+* 		...this would be useful for dependency tracking and cache 
+* 		management/invalidation...
+* 		...would also be useful to have a parse mode that would only
+* 		track paths -- is this practical???
+* XXX need a uniform way to track state in pwiki for things like paging
+* 		and the like with simple user/macro access...
+* 		...the simplest that comes to mind is to store in in path 
+* 		somehow:
+* 			- <path>?<arg>=<value>&...
+* 				traditional "query string"...
+* 			- <path>/<arg>:<valu>/<arg>:<value>/.../<action>
+* 				stack-style arguments...
+* 				+ simple to implement
+* 				- goes thrugh page search???
+* 			- <path>:<value>:<name>=<value>:...
+* 			- ...
+* 		the general idea is to be:
+* 			- flexible enough to allow the basics done
+* 			- restrictive enough to prevent missuse
+* 		...the rest of the state can simply be stored in the root pwiki 
+* 		object in one of the following ways:
+* 			- directly (attrs/dict)
+* 			- a special page 
+* 				- virtual (path-specific)
+* 					e.g.
+* 						/some/path/@state/page -> 4
+* 					...might be fun to implement a basic json editor
+* 					and viewer with this api...
+* 					...controlled via js 
+* 					...or special actions:
+* 						/some/path/@state/page/next (increment)
+* 						/some/path/@state/page/prev (decrement)
+* 						/some/path/@state/page=10	(assign)
+* 						...
+* 				- session
+* 				- stored (config)
 * XXX GENERATOR make pattern path parsing a generator...
 * 		...experiment with a controllable iterator/range thing...
 * 		This would require:
