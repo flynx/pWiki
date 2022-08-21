@@ -1343,6 +1343,7 @@ object.Constructor('pWikiPageElement', Page, {
 
 //---------------------------------------------------------------------
 // System pages/actions...
+// XXX move this to a more appropriate module...
 
 var System = 
 module.System = {
@@ -1420,21 +1421,18 @@ module.System = {
 			+'</macro>'},
 	//*/
 	edit: {
-		text: 
-			//'@include(PageTemplate)'
-			'@include(_view)'
-			+'<slot name="header">@source(../path)</slot>'
-			+'<slot name="content">'
-				// XXX for some reason this is not called...
-				+'<macro src=".." join="@source(file-separator)">'
-					+'<pre class="editor" '
-							+'wikiwords="no" '
-							+'contenteditable '
-							+'oninput="saveContent(\'@source(./path)\', this.innerText)">'
-						+'<quote filter="quote-tags" src="."/>'
-					+'</pre>' 
-				+'</macro>'
-			+'</slot>'},
+		text: object.doc`
+			@include(_view)
+			<slot name="header">@source(../path)</slot>
+			<slot name="content">
+				<macro src=".." join="@source(file-separator)">
+					<pre class="editor"
+							wikiwords="no"
+							contenteditable
+							oninput="saveContent(\'@source(./path)\', this.innerText)"
+					><quote filter="quote-tags" src="."/></pre> 
+				</macro>
+			</slot>`},
 
 	// XXX this does not yet work...
 	// XXX "_test" breaks differently than "test"
@@ -1559,11 +1557,17 @@ module.System = {
 		return p.title 
 			?? p.name },
 	ctime: async function(){
-		return (await this.get('..').data).ctime },
+		var date = (await this.get('..').data).ctime 
+		return date ?
+			(new Date(date)).getTimeStamp()
+			: date },
 	mtime: async function(){
-		return (await this.get('..').data).mtime },
+		var date = (await this.get('..').data).mtime 
+		return date ?
+			(new Date(date)).getTimeStamp()
+			: date },
 
-	// XXX EXPERIMENTAL...
+	// XXX EXPERIMENTAL -- page types...
 	type: async function(){
 		return await this.get('..').type },
 	isAction: async function(){
@@ -1606,7 +1610,7 @@ module.System = {
 		// show info about the delete operation...
 		return target.get('DeletingPage').text },
 
-	/*/ XXX EXPERIMENTAL
+	/*/ XXX EXPERIMENTAL -- page management...
 	// move page one level up...
 	moveUp: function(){
 		var target = this.get('..')
@@ -1653,9 +1657,6 @@ module.System = {
 		return '' },
 	//*/
 
-	//
-	test_path: function(){
-	},
 
 	// XXX System/back
 	// XXX System/forward
