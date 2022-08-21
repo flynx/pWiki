@@ -221,6 +221,9 @@ module.BaseParser = {
 	// NOTE: this internally uses page.macros' keys to generate the 
 	// 		lexing pattern.
 	lex: function*(page, str){
+		str = typeof(str) != 'string' ?
+			str+''
+			: str
 		// XXX we can't get .raw from the page without going async...
 		//str = str 
 		//	?? page.raw
@@ -325,7 +328,7 @@ module.BaseParser = {
 		// XXX we can't get .raw from the page without going async...
 		//lex = lex
 		//	?? this.lex(page) 
-		lex = typeof(lex) == 'string' ?
+		lex = typeof(lex) != 'object' ?
 			this.lex(page, lex)
 			: lex
 
@@ -403,7 +406,7 @@ module.BaseParser = {
 		ast = ast == null ?
 				//this.group(page)
 				this.group(page, await page.raw ?? '')
-			: typeof(ast) == 'string' ?
+			: typeof(ast) != 'object' ?
 				this.group(page, ast)
 			: ast instanceof types.Generator ?
 				ast
@@ -448,7 +451,7 @@ module.BaseParser = {
 	resolve: async function*(page, ast, state={}){
 		ast = ast 
 			?? this.expand(page, null, state)
-		ast = typeof(ast) == 'string' ?
+		ast = typeof(ast) != 'object' ?
 			this.expand(page, ast, state)
 			: ast
 

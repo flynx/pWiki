@@ -1167,6 +1167,8 @@ object.Constructor('Page', BasePage, {
 		// handle lists in pages (actions, ... etc.)...
 		if(!page.isPattern){
 			var raw = await page.raw
+			if(raw == null){
+				return }
 			yield* raw instanceof Array ?
 				raw
 					.map(function(p){
@@ -1425,6 +1427,7 @@ module.System = {
 			<macro src="../*">
 				<div>
 					<a href="#@source(./path)">@source(./name)</a>
+					<macro src="./isAction">*</macro>
 					<a href="#@source(./path)/delete">&times;</a>
 					<div style="padding-left: 30px">
 						@source(./tree)
@@ -1494,10 +1497,21 @@ module.System = {
 		var p = this.get('..')
 		return p.title 
 			?? p.name },
-	ctime: function(){
-		return this.get('..').data.ctime ?? '' },
-	mtime: function(){
-		return this.get('..').data.mtime ?? '' },
+	ctime: async function(){
+		return (await this.get('..').data).ctime ?? '' },
+	mtime: async function(){
+		return (await this.get('..').data).mtime ?? '' },
+
+	// XXX EXPERIMENTAL...
+	type: async function(){
+		// XXX also check if a page is a store...
+		return typeof(await this.get('..').data) == 'function' ? 
+			'action' 
+			: 'page' },
+	isAction: async function(){
+		return typeof(await this.get('..').data) == 'function' ?
+			['action']
+			: undefined },
 
 
 	// utils...
