@@ -1507,7 +1507,7 @@ module.System = {
 		this.render_root
 			&& (this.render_root.location = to.path)
 		return this.render_root.path },
-
+	//
 	// syntax:
 	// 		/<path-from>/to:<path-to>/move
 	//
@@ -1525,6 +1525,10 @@ module.System = {
 		this.render_root
 			&& (this.render_root.location = to)
 		return '' },
+
+	//
+	test_path: function(){
+	},
 
 	// XXX System/back
 	// XXX System/forward

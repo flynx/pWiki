@@ -402,7 +402,7 @@ module.BaseParser = {
 	expand: async function*(page, ast, state={}){
 		ast = ast == null ?
 				//this.group(page)
-				this.group(page, await page.raw)
+				this.group(page, await page.raw ?? '')
 			: typeof(ast) == 'string' ?
 				this.group(page, ast)
 			: ast instanceof types.Generator ?

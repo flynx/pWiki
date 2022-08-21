@@ -221,6 +221,55 @@ module = {
 		if(alt_pages){
 			for(var page of [...this.ALTERNATIVE_PAGES]){
 				yield* this.paths(path.concat(page), seen) }} },
+
+
+	// XXX EXPERIMENTAL...
+	//
+	//	.splitSrgs(<path>)
+	//		-> <spec>
+	//
+	// Format:
+	// 	{
+	// 		path: <path>
+	// 		args: {
+	// 			<name>:<value>,
+	// 			...
+	// 		}
+	// 		action: <action>
+	// 	}
+	//
+	// Syntax:
+	// 		<path>/<name>:<value>/<name>:<value>/../action
+	//
+	// XXX the problem here is that we could legitimately create path 
+	// 		items containing ":" -- it either needs to be a reserved char
+	// 		or this scheme will not work...
+	splitArgs: function(path){
+		path = this.normalize(path, 'array')
+
+		var res = {
+			path: '',
+			args: {},
+			actions: path.pop(),
+		}
+		var state = 'path'
+		var cur, value
+		for(var elem of path){
+			if(elem.includes(':')){
+				state = 'arg' }
+
+			if(state == 'path'){
+				res.path += '/'+ elem
+
+			} else if(state == 'arg'){
+				;[cur, value] = elem.split(':')
+				res[cur] = value
+				state = value
+
+			} else if(state == 'value'){
+				res[cur] += '/'+ value } }
+
+		return res },
 }
 
 
