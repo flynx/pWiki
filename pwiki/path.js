@@ -240,6 +240,13 @@ module = {
 	//
 	// Syntax:
 	// 		<path>/<name>:<value>/<name>:<value>/../action
+	// XXX or?
+	// 		<path> ::= <path>:<args>
+	// 		<args> ::=
+	// 			<arg> | <arg>:<args>
+	// 		<arg> ::=
+	// 			<value>
+	// 			| <name>:<value>
 	//
 	// XXX the problem here is that we could legitimately create path 
 	// 		items containing ":" -- it either needs to be a reserved char

@@ -521,6 +521,19 @@ object.Constructor('Page', BasePage, {
 
 	NOT_FOUND_TEMPLATE_ERROR: 'NotFoundTemplateError',
 
+	// XXX DEPENDS to be used for cache invalidation...
+	// Format:
+	// 	{
+	// 		<path>: Set([<path>, ...]),
+	// 	}
+	//
+	dependencies: undefined,
+	// NOTE: for this to populate .text must be done at least once...
+	get depends(){
+		return (this.dependencies ?? {})[this.path] },
+	set depends(value){
+		;(this.dependencies = this.dependencies ?? {})[this.path] = value },
+
 	// The page that started the current render...
 	//
 	// This is set by .text and maintained by .clone(..).
@@ -581,8 +594,17 @@ object.Constructor('Page', BasePage, {
 		// 
 		// 	<now/>
 		//
-		now: function(){
+		/* XXX DEPENDS this makes the whole render uncachable -- do we need this???
+		now: function(args, body, state){
+			// XXX DEPENDS...
+			// NOTE: this makes a template uncachable...
+			var depends = state.depends = 
+				state.depends 
+					?? new Set()
+			depends.add('TIME')
 			return ''+ Date.now() },
+		//*/
+
 		//
 		// 	@filter(<filter-spec>)
 		// 	<filter <filter-spec>/>
@@ -679,12 +701,19 @@ object.Constructor('Page', BasePage, {
 				var join = args.join 
 					&& await base.parse(args.join, state)
 
+				// XXX DEPENDS
+				var depends = state.depends = 
+					state.depends 
+						?? new Set()
+
 				handler = handler 
 					?? async function(src){
 						return isolated ?
 							{data: await this.get(src)
-								//.parse({seen: new Set(state.seen ?? [])})}
-								.parse({seen: state.seen})}
+								.parse({
+									seen: state.seen, 
+									depends,
+								})}
 							: this.get(src)
 								.parse(state) }
 
@@ -722,6 +751,8 @@ object.Constructor('Page', BasePage, {
 
 					// load the included page...
 					var res = await handler.call(page, full)
+					// XXX DEPENDS
+					depends.add(full)
 
 					// NOTE: we only track recursion down and not sideways...
 					seen.delete(full)
@@ -774,6 +805,11 @@ object.Constructor('Page', BasePage, {
 					await base.parse(src, state)
 					: src
 
+				// XXX DEPENDS
+				var depends = state.depends = 
+					state.depends 
+						?? new Set()
+
 				var pages = src ?
 						this.get(src).asPages()
 					: text instanceof Array ?
@@ -796,6 +832,9 @@ object.Constructor('Page', BasePage, {
 					text = typeof(page) == 'string' ?
 						page
 						: await page.raw
+					// XXX DEPENDS...
+					page.path
+						&& depends.add(page.path)
 
 					var filters = 
 						args.filter 
@@ -974,6 +1013,11 @@ object.Constructor('Page', BasePage, {
 					&& !args.nonstrict
 				var join
 
+				// XXX DEPENDS
+				var depends = state.depends = 
+					state.depends 
+						?? new Set()
+
 				var _getBlock = function(name){
 					var block = args[name] ?
 						[{
@@ -1021,7 +1065,9 @@ object.Constructor('Page', BasePage, {
 						if(join && !first){
 							yield join }
 						first = false 
-						yield this.__parser__.expand(page, text, state) }
+						yield this.__parser__.expand(page, text, state) 
+						// XXX DEPENDS...
+						depends.add(page.path) }
 					// else...
 					if(first
 							&& (text || args['else'])){
@@ -1150,9 +1196,11 @@ object.Constructor('Page', BasePage, {
 			return this.get(this.NOT_FOUND_TEMPLATE_ERROR).parse() }
 
 		// render template in context of page...
+		var depends = this.depends = new Set([tpl])
+		var state = {depends}
 		var data = { render_root: this }
 		return this.get(path, data)
-			.parse(this.get(tpl, data).raw) }).call(this) },
+			.parse(this.get(tpl, data).raw, state) }).call(this) },
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
