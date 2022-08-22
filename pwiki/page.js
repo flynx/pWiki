@@ -1274,18 +1274,17 @@ object.Constructor('Page', BasePage, {
 var CachedPage =
 module.CachedPage =
 object.Constructor('CachedPage', Page, {
-	// XXX should this always refer to .render_root.cachestore
-	cachestore: undefined,
-	/*/
-	get cachestore(){
-		return (this.render_root ?? this).__cachestore },
-	set cachestore(value){
-		;(this.render_root ?? this).__cachestore = value },
-	//*/
-	
 	// NOTE: set this to null/undefined/0 to disable...
 	cache_timeout: '20m',
 
+
+	// keep all the cache in one place -- .root
+	//__cachestore: undefined,
+	get cachestore(){
+		return (this.root ?? this).__cachestore },
+	set cachestore(value){
+		;(this.root ?? this).__cachestore = value },
+	
 	get cache(){
 		this.chechCache(this.path)
 		return ((this.cachestore ?? {})[this.path] ?? {}).value },

@@ -348,7 +348,8 @@ store.update('Settings',
 // XXX not yet sure how to organize the actual client -- UI, hooks, .. etc
 var pwiki =
 module.pwiki = 
-	page.Page('/', '/', store)
+	//page.Page('/', '/', store)
+	page.CachedPage('/', '/', store)
 
 
 //---------------------------------------------------------------------
