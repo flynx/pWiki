@@ -530,13 +530,12 @@ object.Constructor('Page', BasePage, {
 
 	QUOTE_ACTION_PAGE: 'QuoteActionPage',
 
-	// XXX DEPENDS to be used for cache invalidation...
 	// Format:
 	// 	{
 	// 		<path>: Set([<path>, ...]),
 	// 	}
 	//
-	//dependencies: undefined,
+	// NOTE: this is stored in .root...
 	//__dependencies: undefined,
 	get dependencies(){
 		return (this.root ?? this).__dependencies ?? {} },
@@ -609,20 +608,6 @@ object.Constructor('Page', BasePage, {
 	//
 	// XXX ASYNC make these support async page getters...
 	macros: {
-		// 
-		// 	<now/>
-		//
-		/* XXX DEPENDS this makes the whole render uncachable -- do we need this???
-		now: function(args, body, state){
-			// XXX DEPENDS...
-			// NOTE: this makes a template uncachable...
-			var depends = state.depends = 
-				state.depends 
-					?? new Set()
-			depends.add('TIME')
-			return ''+ Date.now() },
-		//*/
-
 		//
 		// 	@filter(<filter-spec>)
 		// 	<filter <filter-spec>/>
@@ -719,7 +704,6 @@ object.Constructor('Page', BasePage, {
 				var join = args.join 
 					&& await base.parse(args.join, state)
 
-				// XXX DEPENDS
 				var depends = state.depends = 
 					state.depends 
 						?? new Set()
@@ -769,7 +753,6 @@ object.Constructor('Page', BasePage, {
 
 					// load the included page...
 					var res = await handler.call(page, full)
-					// XXX DEPENDS
 					depends.add(full)
 
 					// NOTE: we only track recursion down and not sideways...
@@ -824,7 +807,6 @@ object.Constructor('Page', BasePage, {
 					: src
 				var expandactions = args.expandactions
 
-				// XXX DEPENDS
 				var depends = state.depends = 
 					state.depends 
 						?? new Set()
@@ -859,7 +841,6 @@ object.Constructor('Page', BasePage, {
 						: await page.raw
 
 
-					// XXX DEPENDS...
 					page.path
 						&& depends.add(page.path)
 
@@ -1040,7 +1021,6 @@ object.Constructor('Page', BasePage, {
 					&& !args.nonstrict
 				var join
 
-				// XXX DEPENDS
 				var depends = state.depends = 
 					state.depends 
 						?? new Set()
@@ -1086,7 +1066,6 @@ object.Constructor('Page', BasePage, {
 					join = join
 						&& await base.parse(join, state)
 
-					// XXX DEPENDS...
 					// NOTE: thie does not introduce a dependency on each 
 					// 		of the iterated pages, that is handled by the 
 					// 		respective include/source/.. macros, this however
@@ -1292,7 +1271,7 @@ object.Constructor('CachedPage', Page, {
 		;(this.root ?? this).__cachestore = value },
 	
 	get cache(){
-		this.chechCache(this.path)
+		this.checkCache(this.path)
 		return ((this.cachestore ?? {})[this.path] ?? {}).value },
 	set cache(value){
 		if(this.cachestore === false 
@@ -1315,7 +1294,7 @@ object.Constructor('CachedPage', Page, {
 				delete this.cachestore[key] } } },
 
 	// XXX should this return something useful???
-	chechCache: function(...paths){
+	checkCache: function(...paths){
 		if(!this.cache_timeout || !this.cachestore){
 			return this }
 		paths = paths.length == 0 ?
@@ -1332,6 +1311,7 @@ object.Constructor('CachedPage', Page, {
 					//console.log('CACHE: DROP:', this.path)
 					delete this.cachestore[path] } } }
 		return this },
+
 
 	__update__: function(){
 		this.cache = null
