@@ -536,7 +536,13 @@ object.Constructor('Page', BasePage, {
 	// 		<path>: Set([<path>, ...]),
 	// 	}
 	//
-	dependencies: undefined,
+	//dependencies: undefined,
+	//__dependencies: undefined,
+	get dependencies(){
+		return (this.root ?? this).__dependencies ?? {} },
+	set dependencies(value){
+		((this.root ?? this).__dependencies) = value },
+
 	// NOTE: for this to populate .text must be done at least once...
 	get depends(){
 		return (this.dependencies ?? {})[this.path] },
