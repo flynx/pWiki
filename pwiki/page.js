@@ -1059,7 +1059,7 @@ object.Constructor('Page', BasePage, {
 						[text, join] = state.macros[name] } }
 
 				if(src){
-					src = await base.parse(src, state)
+					var base = this.get(await base.parse(src, state))
 
 					join = _getBlock('join') 
 						?? join 
@@ -1070,11 +1070,11 @@ object.Constructor('Page', BasePage, {
 					// 		of the iterated pages, that is handled by the 
 					// 		respective include/source/.. macros, this however
 					// 		only depends on page count...
-					depends.add(src)
+					depends.add(base.path)
 
 					// expand matches...
 					var first = true
-					for await(var page of this.get(src).asPages(strict)){
+					for await(var page of base.asPages(strict)){
 						if(join && !first){
 							yield join }
 						first = false 
@@ -1273,27 +1273,38 @@ object.Constructor('CachedPage', Page, {
 	get cache(){
 		this.checkCache(this.path)
 		return ((this.cachestore ?? {})[this.path] ?? {}).value },
+	// XXX check * paths for matches...
 	set cache(value){
 		if(this.cachestore === false 
 				|| this.cache == value){
 			return }
 		var path = this.path
+		// clear...
 		if(value == null){
 			delete (this.cachestore ?? {})[path]
+		// set...
 		} else {
+			var prev = ((this.cachestore = this.cachestore ?? {})[path] ?? {}).value ?? {}
 			;(this.cachestore = this.cachestore ?? {})[path] = {
 				created: Date.now(),
 				// XXX
 				valid: undefined,
-				value,
+				value: {
+					...prev, 
+					...value,
+				},
 			} } 
 		// clear depended pages from cache...
 		for(var [key, deps] of Object.entries(this.dependencies)){
+			// XXX also check pattern paths...
+			// 		...the problem here is that it's getting probabilistic, 
+			// 		i.e. if we match * as a single path item then we might 
+			// 		miss creating a subtree (ex: /tree), while matching 
+			// 		/* to anything will give us lots of false positives...
 			if(key != path && deps.has(path)){
 				//console.log('CACHE: DROP:', key)
 				delete this.cachestore[key] } } },
 
-	// XXX should this return something useful???
 	checkCache: function(...paths){
 		if(!this.cache_timeout || !this.cachestore){
 			return this }
@@ -1309,6 +1320,14 @@ object.Constructor('CachedPage', Page, {
 				// drop cache...
 				if(now > created + valid){
 					//console.log('CACHE: DROP:', this.path)
+					delete this.cachestore[path] } } }
+		return this },
+	clearCache: function(...paths){
+		if(this.cachestore){
+			if(arguments.length == 0){
+				this.cachestore = null 
+			} else {
+				for(var path of paths){
 					delete this.cachestore[path] } } }
 		return this },
 
@@ -1331,11 +1350,12 @@ object.Constructor('CachedPage', Page, {
 			this.path)
 		//*/
 
-		var text = this.cache 
-			?? object.parentProperty(CachedPage.prototype, 'text').get.call(this)
+		var text = this.cache ?
+			this.cache.text
+			: object.parentProperty(CachedPage.prototype, 'text').get.call(this)
 		text instanceof Promise
 			&& text.then(function(text){
-				that.cache = text })
+				that.cache = {text} })
 		return text },
 	set text(value){
 		object.parentProperty(CachedPage.prototype, 'text').set.call(this, value) },
@@ -1710,55 +1730,10 @@ module.System = {
 		this.render_root
 			&& (this.render_root.location = this.referrer)
 		// show info about the delete operation...
-		return target.get('DeletingPage').text },
+		return target.get('DeletingPage/_text').text },
 
-	/*/ XXX EXPERIMENTAL -- page management...
-	// move page one level up...
-	moveUp: function(){
-		var target = this.get('..')
-		var to = '../../'+target.name
-
-		target.move(to)
-
-		// redirect...
-		this.render_root
-			&& (this.render_root.location = to)
-		// show info about the move operation...
-		return this.render_root.path },
-	// moves page to current location...
-	// Example
-	// 		/path/to/page/moveDown
-	// 			/path/page -> /path/to/page
-	moveDown: function(){
-		var to = this.get('..')
-		var target = to.get('../../'+ to.name)
-
-		target.move(to.path)
-
-		// redirect...
-		this.render_root
-			&& (this.render_root.location = to.path)
-		return this.render_root.path },
-	//
-	// syntax:
-	// 		/<path-from>/to:<path-to>/move
-	//
-	// XXX the syntax works, but there are problems with .move(..) method...
-	move: async function(){
-		var [from, to] = this.get('..').path.split(/\/to:/)
-		// can't move...
-		if(!from || !to){
-			console.warn(`move: can't move: "${from}" -> "${to}"`)
-			return '' }
-
-		await this.get(from).move(to)
-
-		// redirect...
-		this.render_root
-			&& (this.render_root.location = to)
-		return '' },
-	//*/
-
+	// XXX copy/move/...
+	// 		...need arguments
 
 	// XXX System/back
 	// XXX System/forward

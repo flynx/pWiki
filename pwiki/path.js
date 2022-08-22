@@ -235,7 +235,6 @@ module = {
 	// 			<name>:<value>,
 	// 			...
 	// 		}
-	// 		action: <action>
 	// 	}
 	//
 	// Syntax:
@@ -246,37 +245,22 @@ module = {
 	// 			<arg> | <arg>:<args>
 	// 		<arg> ::=
 	// 			<value>
-	// 			| <name>:<value>
+	// 			| <name>=<value>
 	//
 	// XXX the problem here is that we could legitimately create path 
 	// 		items containing ":" -- it either needs to be a reserved char
 	// 		or this scheme will not work...
 	splitArgs: function(path){
-		path = this.normalize(path, 'array')
+		path = this.normalize(path, 'string')
+		var [path, ...args] = path.split(/:/g)
 
-		var res = {
-			path: '',
-			args: {},
-			actions: path.pop(),
-		}
-		var state = 'path'
-		var cur, value
-		for(var elem of path){
-			if(elem.includes(':')){
-				state = 'arg' }
-
-			if(state == 'path'){
-				res.path += '/'+ elem
-
-			} else if(state == 'arg'){
-				;[cur, value] = elem.split(':')
-				res[cur] = value
-				state = value
-
-			} else if(state == 'value'){
-				res[cur] += '/'+ value } }
-
-		return res },
+		return {
+			path,
+			args: args.reduce(function(res, arg){
+				var [name, value] = arg.split('=')
+				res[name] = value ?? true
+				return res }, {}),
+		} },
 }
 
 
