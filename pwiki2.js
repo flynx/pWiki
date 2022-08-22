@@ -1,6 +1,7 @@
 /**********************************************************************
 * 
 *
+* XXX CACHE track store changes...
 * XXX need a uniform way to track some state in links in pwiki for things 
 * 		like paging and the like with simple user/macro access (???)...
 * 		...the simplest that comes to mind is to store in in path 
@@ -34,8 +35,6 @@
 * 				- session
 * 				- stored (config)
 * 		...css selector as path....
-* XXX CACHE cache rendered pages and invalidate cache based to changes 
-* 		to page dependencies...
 * XXX GENERATOR make pattern path parsing a generator...
 * 		...experiment with a controllable iterator/range thing...
 * 		This would require:
@@ -52,6 +51,13 @@
 * 							...might be a good idea to make filters local only...
 * 						XXX slots/macros might also pose a problem...
 * 			2) all the macros that can source pages to produce generators (DONE)
+* XXX the parser should handle all action return values, including:
+* 			- lists			-- DONE
+* 			- iterators		-- DONE
+* 			- strings		-- DONE
+* 			- numbers		-- DONE
+* 			- misc:
+* 				dates		-- ???
 * XXX BUG: .move(..) behaves in an odd way...
 * 		see: System/move page action
 * 		...deletes the original and moves an empty page -- sync error???
@@ -81,6 +87,8 @@
 * 		...looks like no :|
 * XXX DEPENDS @now() makes the template uncachable, to we actually need it???
 * XXX CHECK: @macro(..) and @slot(..) must overload in the same way...
+* XXX DEPENDS/CACHE @macro(..) introduces a dependency on count (pattern)
+* 		...not sure how we track these...
 *
 *
 *

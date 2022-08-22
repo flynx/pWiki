@@ -541,7 +541,10 @@ object.Constructor('Page', BasePage, {
 	get depends(){
 		return (this.dependencies ?? {})[this.path] },
 	set depends(value){
-		;(this.dependencies = this.dependencies ?? {})[this.path] = value },
+		if(value == null){
+			delete (this.dependencies ?? {})[this.path]
+		} else {
+			;(this.dependencies = this.dependencies ?? {})[this.path] = value } },
 
 	// The page that started the current render...
 	//
@@ -1077,15 +1080,20 @@ object.Constructor('Page', BasePage, {
 					join = join
 						&& await base.parse(join, state)
 
+					// XXX DEPENDS...
+					// NOTE: thie does not introduce a dependency on each 
+					// 		of the iterated pages, that is handled by the 
+					// 		respective include/source/.. macros, this however
+					// 		only depends on page count...
+					depends.add(src)
+
 					// expand matches...
 					var first = true
 					for await(var page of this.get(src).asPages(strict)){
 						if(join && !first){
 							yield join }
 						first = false 
-						yield this.__parser__.expand(page, text, state) 
-						// XXX DEPENDS...
-						depends.add(page.path) }
+						yield this.__parser__.expand(page, text, state) }
 					// else...
 					if(first
 							&& (text || args['else'])){
@@ -1260,11 +1268,106 @@ object.Constructor('Page', BasePage, {
 
 //---------------------------------------------------------------------
 
+// XXX this is good enough on the front-side to think about making the 
+// 		cache persistent with a very large timeout (if set at all), but
+// 		we are not tracking changes on the store-side...
+var CachedPage =
+module.CachedPage =
+object.Constructor('CachedPage', Page, {
+	// XXX should this always refer to .render_root.cachestore
+	cachestore: undefined,
+	/*/
+	get cachestore(){
+		return (this.render_root ?? this).__cachestore },
+	set cachestore(value){
+		;(this.render_root ?? this).__cachestore = value },
+	//*/
+	
+	// NOTE: set this to null/undefined/0 to disable...
+	cache_timeout: '20m',
+
+	get cache(){
+		this.chechCache(this.path)
+		return ((this.cachestore ?? {})[this.path] ?? {}).value },
+	set cache(value){
+		if(this.cachestore === false 
+				|| this.cache == value){
+			return }
+		var path = this.path
+		if(value == null){
+			delete (this.cachestore ?? {})[path]
+		} else {
+			;(this.cachestore = this.cachestore ?? {})[path] = {
+				created: Date.now(),
+				// XXX
+				valid: undefined,
+				value,
+			} } 
+		// clear depended pages from cache...
+		for(var [key, deps] of Object.entries(this.dependencies)){
+			if(key != path && deps.has(path)){
+				//console.log('CACHE: DROP:', key)
+				delete this.cachestore[key] } } },
+
+	// XXX should this return something useful???
+	chechCache: function(...paths){
+		if(!this.cache_timeout || !this.cachestore){
+			return this }
+		paths = paths.length == 0 ?
+			Object.keys(this.cachestore)
+			: paths
+		for(var path of paths){
+			var {created, valid, value} = this.cachestore[path] ?? {}
+			if(value){
+				var now = Date.now()
+				valid = valid 
+					?? Date.str2ms(this.cache_timeout)
+				// drop cache...
+				if(now > created + valid){
+					//console.log('CACHE: DROP:', this.path)
+					delete this.cachestore[path] } } }
+		return this },
+
+	__update__: function(){
+		this.cache = null
+		return object.parentCall(CachedPage.prototype.__update__, this, ...arguments) },
+	__delete__: function(){
+		this.cache = null
+		return object.parentCall(CachedPage.prototype.__delete__, this, ...arguments) },
+
+	get text(){
+		var that = this
+
+		/* XXX
+		console.log(
+			this.cache ? 
+				'CACHED:' 
+				: 'RENDER:', 
+			this.path)
+		//*/
+
+		var text = this.cache 
+			?? object.parentProperty(CachedPage.prototype, 'text').get.call(this)
+		text instanceof Promise
+			&& text.then(function(text){
+				that.cache = text })
+		return text },
+	set text(value){
+		object.parentProperty(CachedPage.prototype, 'text').set.call(this, value) },
+})
+
+
+//---------------------------------------------------------------------
+
 var wikiword = require('./dom/wikiword')
 
 var pWikiPageElement =
 module.pWikiPageElement = 
+/* XXX CACHE...
 object.Constructor('pWikiPageElement', Page, {
+/*/
+object.Constructor('pWikiPageElement', CachedPage, {
+//*/
 	dom: undefined,
 
 
@@ -1273,7 +1376,8 @@ object.Constructor('pWikiPageElement', Page, {
 		wikiword: wikiword.wikiWordText,
 	},
 
-	__clone_constructor__: Page,
+	//__clone_constructor__: Page,
+	__clone_constructor__: CachedPage,
 
 	__clone_proto: undefined,
 	get __clone_proto__(){
@@ -1320,7 +1424,16 @@ object.Constructor('pWikiPageElement', Page, {
 	onLoad: types.event.Event('onLoad', function(){
 		this.dom.dispatchEvent(this.__pWikiLoadedDOMEvent) }),
 
-	refresh: async function(){
+	// XXX CACHE...
+	__last_refresh_path: undefined,
+	refresh: async function(full=false){
+		// drop cache if re-refreshing or when full refresh requested...
+		// XXX CACHE...
+		;(full
+				|| this.__last_refresh_path == this.path)	
+			&& this.cache 
+			&& (this.cache = null)
+		this.__last_refresh_path = this.path
 		var dom = this.dom
 		dom.innerHTML = await this.text 
 		for(var filter of Object.values(this.domFilters)){
@@ -1372,7 +1485,11 @@ module.System = {
 		text: '@include(. isolated join="@source(file-separator)")' },
 	_view: {
 		text: object.doc`
-			<slot name="header">/list @source(./path)/_edit</slot>
+			<slot name="header">
+				<a href="#/list">&#9776;</a>
+				@source(./path) 
+				<a href="#@source(./path)/_edit">(edit)</a>
+			</slot>
 			<hr>
 			<slot name="content"></slot>
 			<hr>
