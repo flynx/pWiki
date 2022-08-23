@@ -50,6 +50,11 @@ module = {
 	// NOTE: trailing/leading '/' are represented by '' at end/start of 
 	// 		path list...
 	normalize: function(path='.', format='auto'){
+		/*/ XXX RENORMALIZE...
+		// do not re-normalize...
+		if(path.normalized && format != 'array'){
+			return path }
+		//*/
 		format = format == 'auto' ?
 			(path instanceof Array ?
 				'array'
@@ -83,11 +88,21 @@ module = {
 				return res }, []) 
 		return format == 'string' ?
 			// special case: root -> keep '/'
+			/*/ XXX RENORMALIZE...
+			Object.assign(
+				new String((root 
+						&& path.length == 1 
+						&& path[0] == '') ?
+					('/'+ path.join('/'))
+					: path.join('/')),
+				{normalized: true})
+			/*/
 			((root 
 					&& path.length == 1 
 					&& path[0] == '') ?
 				('/'+ path.join('/'))
 				: path.join('/'))
+			//*/
 			: path },
 	split: function(path){
 		return this.normalize(path, 'array') },
