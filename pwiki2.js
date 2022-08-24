@@ -1,8 +1,6 @@
 /**********************************************************************
 * 
 *
-* XXX BUG: 
-* 			await pwiki.get('/* /path').text -> '' (wrong)
 * XXX NORMCACHE .normalize(..) cache normalized strings...
 * 		...seems to have little impact...
 * XXX MATCH limit candidates to actual page name matches -- this will 

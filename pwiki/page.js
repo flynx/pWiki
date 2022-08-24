@@ -1255,6 +1255,18 @@ object.Constructor('Page', BasePage, {
 
 //---------------------------------------------------------------------
 
+var getCachedProp = function(obj, name){
+	var that = obj
+	var value = obj.cache ?
+		obj.cache[name]
+		: object.parentProperty(CachedPage.prototype, name).get.call(obj)
+	value instanceof Promise
+		&& value.then(function(value){
+			that.cache = {[name]: value} })
+	return value }
+var setCachedProp = function(obj, name, value){
+	return object.parentProperty(CachedPage.prototype, name).set.call(obj, value) }
+
 // XXX this is good enough on the front-side to think about making the 
 // 		cache persistent with a very large timeout (if set at all), but
 // 		we are not tracking changes on the store-side...
@@ -1304,7 +1316,6 @@ object.Constructor('CachedPage', Page, {
 			// 		miss creating a subtree (ex: /tree), while matching 
 			// 		/* to anything will give us lots of false positives...
 			if(key != path && deps.has(path)){
-				//console.log('CACHE: DROP:', key)
 				delete this.cachestore[key] } } },
 
 	checkCache: function(...paths){
@@ -1341,26 +1352,19 @@ object.Constructor('CachedPage', Page, {
 		this.cache = null
 		return object.parentCall(CachedPage.prototype.__delete__, this, ...arguments) },
 
+	/* XXX do we need to cache .raw???
+	//		...yes this makes things marginally faster but essentially 
+	//		copies the db into memory...
+	get raw(){
+		return getCachedProp(this, 'raw') },
+	set raw(value){
+		return setCachedProp(this, 'raw', value) },
+	//*/
+
 	get text(){
-		var that = this
-
-		/* XXX
-		console.log(
-			this.cache ? 
-				'CACHED:' 
-				: 'RENDER:', 
-			this.path)
-		//*/
-
-		var text = this.cache ?
-			this.cache.text
-			: object.parentProperty(CachedPage.prototype, 'text').get.call(this)
-		text instanceof Promise
-			&& text.then(function(text){
-				that.cache = {text} })
-		return text },
+		return getCachedProp(this, 'text') },
 	set text(value){
-		object.parentProperty(CachedPage.prototype, 'text').set.call(this, value) },
+		return setCachedProp(this, 'text', value) },
 })
 
 

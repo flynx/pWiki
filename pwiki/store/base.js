@@ -663,7 +663,7 @@ module.MetaStore = {
 // XXX TEST...
 var CachedStore =
 module.CachedStore = {
-	//__proto__: FileStoreRO,
+	__proto__: MetaStore,
 	
 	// format:
 	// 	{
