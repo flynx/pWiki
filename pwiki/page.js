@@ -1059,7 +1059,7 @@ object.Constructor('Page', BasePage, {
 						[text, join] = state.macros[name] } }
 
 				if(src){
-					var base = this.get(await base.parse(src, state))
+					var match = this.get(await base.parse(src, state))
 
 					join = _getBlock('join') 
 						?? join 
@@ -1070,11 +1070,11 @@ object.Constructor('Page', BasePage, {
 					// 		of the iterated pages, that is handled by the 
 					// 		respective include/source/.. macros, this however
 					// 		only depends on page count...
-					depends.add(base.path)
+					depends.add(match.path)
 
 					// expand matches...
 					var first = true
-					for await(var page of base.asPages(strict)){
+					for await(var page of match.asPages(strict)){
 						if(join && !first){
 							yield join }
 						first = false 
