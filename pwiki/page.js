@@ -1237,7 +1237,9 @@ object.Constructor('Page', BasePage, {
 		var state = {depends}
 		var data = { render_root: this }
 		return this.get(path, data)
-			.parse(this.get(tpl, data).raw, state) }).call(this) },
+			.parse(
+				this.get('/'+tpl, data).raw, 
+				state) }).call(this) },
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
@@ -1368,10 +1370,10 @@ var wikiword = require('./dom/wikiword')
 
 var pWikiPageElement =
 module.pWikiPageElement = 
-/* XXX CACHE...
-object.Constructor('pWikiPageElement', Page, {
-/*/
+// XXX CACHE...
 object.Constructor('pWikiPageElement', CachedPage, {
+/*/
+object.Constructor('pWikiPageElement', Page, {
 //*/
 	dom: undefined,
 
@@ -1381,8 +1383,11 @@ object.Constructor('pWikiPageElement', CachedPage, {
 		wikiword: wikiword.wikiWordText,
 	},
 
-	//__clone_constructor__: Page,
+	// XXX CACHE
 	__clone_constructor__: CachedPage,
+	/*/
+	__clone_constructor__: Page,
+	//*/
 
 	__clone_proto: undefined,
 	get __clone_proto__(){

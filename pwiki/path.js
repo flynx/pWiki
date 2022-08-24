@@ -41,6 +41,23 @@ module = {
 		'/System',
 	],
 
+	/*/ XXX NORMCACHE...
+	__normalized_cache_threshold: 100,
+	__normalized_cache_size: 4096,
+	__normalized_cache: undefined,
+	get _normalized_cache(){
+		var norm = this.__normalized = 
+			this.__normalized 
+			?? new Set()
+		// trim to size...
+		var l = norm.size
+		var lim = this.__normalized_cache_size ?? 1000
+		var t = this.__normalized_cache_threshold ?? 100
+		if(l > lim){
+			norm = this.__normalized = new Set([...norm].slice(Math.max(l - lim - t, t))) }
+		return norm },
+	//*/
+
 	// Path utils...
 	//
 	// Path can be in one of two formats:
@@ -50,9 +67,10 @@ module = {
 	// NOTE: trailing/leading '/' are represented by '' at end/start of 
 	// 		path list...
 	normalize: function(path='.', format='auto'){
-		/*/ XXX RENORMALIZE...
-		// do not re-normalize...
-		if(path.normalized && format != 'array'){
+		/*/ XXX NORMCACHE...
+		if(typeof(path) == 'string' 
+				&& format != 'array' 
+				&& this._normalized_cache.has(path)){
 			return path }
 		//*/
 		format = format == 'auto' ?
@@ -86,24 +104,28 @@ module = {
 				// NOTE: the last '>>' will be retained...
 				: res.push(e)
 				return res }, []) 
-		return format == 'string' ?
+		/*/ XXX NORMCACHE...
+		var res = format == 'string' ?
 			// special case: root -> keep '/'
-			/*/ XXX RENORMALIZE...
-			Object.assign(
-				new String((root 
-						&& path.length == 1 
-						&& path[0] == '') ?
-					('/'+ path.join('/'))
-					: path.join('/')),
-				{normalized: true})
-			/*/
 			((root 
 					&& path.length == 1 
 					&& path[0] == '') ?
 				('/'+ path.join('/'))
 				: path.join('/'))
-			//*/
+			: path 
+		typeof(res) == 'string'
+			&& this._normalized_cache.add(res)
+		return res },
+		/*/
+		return format == 'string' ?
+			// special case: root -> keep '/'
+			((root 
+					&& path.length == 1 
+					&& path[0] == '') ?
+				('/'+ path.join('/'))
+				: path.join('/'))
 			: path },
+		//*/
 	split: function(path){
 		return this.normalize(path, 'array') },
 	join: function(...parts){
@@ -236,6 +258,15 @@ module = {
 		if(alt_pages){
 			for(var page of [...this.ALTERNATIVE_PAGES]){
 				yield* this.paths(path.concat(page), seen) }} },
+
+	names: function(path='/'){
+		path = this.normalize(path, 'string')
+		var name = path == '/' ?
+			this.ROOT_PAGE
+			: this.basename(path)
+		return name == '' ?
+			this.ALTERNATIVE_PAGES.slice()
+			: [name, ...this.ALTERNATIVE_PAGES] },
 
 
 	// XXX EXPERIMENTAL...

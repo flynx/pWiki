@@ -14,6 +14,44 @@ var pwpath = require('../path')
 
 
 //---------------------------------------------------------------------
+
+
+//
+// 	cached(<name>, <update>[, ...<args>])
+// 	cached(<name>, <get>, <update>[, ...<args>])
+// 		-> <func>
+//
+// NOTE: in the first case (no <get>) the first <args> item can not be 
+// 		a function...
+//
+// XXX better introspection???
+var cached = 
+module.cached =
+function(name, get, update, ...args){
+	name = `__${name}_cache`
+	if(typeof(update) != 'function'){
+		args.unshift(update)
+		update = get
+		get = null }
+	return update instanceof types.AsyncFunction ?
+		async function(){
+			var cache = this[name] = 
+				this[name] 
+					?? await update.call(this)
+			return get ?
+				get.call(this, cache, ...arguments)
+			: cache }
+		: function(){
+			var cache = this[name] = 
+				this[name] 
+					?? update.call(this)
+			return get ?
+				get.call(this, cache, ...arguments)
+			: cache } }
+
+
+
+//---------------------------------------------------------------------
 // Store...
 
 //
@@ -68,33 +106,70 @@ module.BaseStore = {
 	// XXX might be a good idea to cache this...
 	__paths__: async function(){
 		return Object.keys(this.data) },
-	//* XXX uncached...
+
+	// local paths...
+	__paths: cached('paths', async function(){
+		return this.__paths__() }),
+	// XXX should this also be cached???
 	paths: async function(local=false){
-		return this.__paths__()
+		return this.__paths()
 			.iter()
-			// XXX NEXT
 			.concat((!local && (this.next || {}).paths) ? 
 				this.next.paths() 
 				: []) },
-	/*/
-	__paths_cache_timeout: 1000,
-	__paths_cache_timer: undefined,
-	__paths_cache: undefined,
-	paths: async function(local=false){
-		this.__paths_cache_timer =
-			this.__paths_cache_timer
-				?? setTimeout(function(){
-					delete this.__paths_cache_timer
-					delete this.__paths_cache
-				}.bind(this), this.__paths_cache_timeout ?? 1000)
-		return this.__paths_cache
-			|| this.__paths__()
-				.iter()
-				// XXX NEXT
-				.concat((!local && (this.next || {}).paths) ? 
-					this.next.paths() 
-					: []) },
-	//*/
+
+	// local names...
+	__names: cached('names', async function(){
+		return this.__paths()
+			.iter()
+			.reduce(function(res, path){
+				var n = pwpath.basename(path)
+				if(!n.includes('*')){
+					(res[n] = res[n] ?? []).push(path) }
+				return res }, {}) }),
+	// XXX should this also be cached???
+	names: async function(local=false){
+		return {
+			...(!local && (this.next || {}).names ?
+				await this.next.names()
+				: {}),
+			...await this.__names(),
+		} },
+
+	__cache_add: function(path){
+		if(this.__paths_cache){
+			this.__paths_cache.includes(path) 
+				|| this.__paths_cache.push(path) }
+		if(this.__names_cache){
+			var name = pwpath.basename(path)
+			var names = (this.__names_cache[name] = 
+				this.__names_cache[name] 
+					?? [])
+			names.includes(path)
+				|| names.push(path) }
+		return this },
+	__cache_remove: function(path){
+		if(this.__paths_cache){
+			var paths = this.__paths_cache
+			paths.splice(
+				paths.indexOf(
+					paths.includes(path) ? 
+						path
+					: path[0] == '/' ?
+						path.slice(1)
+					: '/'+path),
+				1) }
+		if(this.__names_cache){
+			var name = pwpath.basename(path)
+			var names = (this.__names_cache[name] = 
+				this.__names_cache[name] 
+					?? [])
+			var i = names.indexOf(path)
+			i >= 0
+				&& names.splice(i, 1)
+			if(names.length == 0){
+				delete this.__names_cache[name] } }
+		return this },
 
 	//
 	// 	.exists(<path>)
@@ -107,7 +182,7 @@ module.BaseStore = {
 				&& path },
 	exists: async function(path){
 		path = pwpath.normalize(path, 'string')
-		return (await this.__exists__(path, 'string'))
+		return (await this.__exists__(path))
 			// NOTE: all paths at this point and in store are 
 			// 		absolute, so we check both with the leading 
 			// 		'/' and without it to make things a bit more 
@@ -127,10 +202,30 @@ module.BaseStore = {
 			// normalize the output...
 			|| false },
 	// find the closest existing alternative path...
+	// XXX CACHED....
+	find: async function(path, strict=false){
+		// build list of existing page candidates...
+		var names = await this.names()
+		var pages = new Set(
+			pwpath.names(path)
+				.map(function(name){
+					return names[name] ?? [] })
+				.flat())
+		// select accessible candidate...
+		for(var p of pwpath.paths(path, !!strict)){
+			if(pages.has(p)){
+				return p }
+			p = p[0] == '/' ? 
+				p.slice(1) 
+				: '/'+p
+			if(pages.has(p)){
+				return p } } },
+	/*/
 	find: async function(path, strict=false){
 		for(var p of pwpath.paths(path, !!strict)){
 			if(p = await this.exists(p)){
 				return p } } },
+	//*/
 	// 
 	// 	Resolve page for path
 	// 	.match(<path>)
@@ -167,7 +262,14 @@ module.BaseStore = {
 						.replace(/\*\*/g, '.*')
 						.replace(/(?<=^|[\\\/]+|[^.])\*/g, '[^\\/]*') 
 				}(?=[\\\\\/]|$)`)
+			/*/ XXX CACHED....
+			var name = pwpath.basename(path)
+			return [...(name.includes('*') ?
+						await this.paths()
+						: await (this.names())[name])
+			/*/
 			return [...(await this.paths())
+			//*/
 					// NOTE: we are not using .filter(..) here as wee 
 					// 		need to keep parts of the path only and not 
 					// 		return the whole thing...
@@ -194,7 +296,11 @@ module.BaseStore = {
 	//
 	// This is like .match(..) for non-pattern paths and paths ending 
 	// with '/'; When patterns end with a non-pattern then match the 
-	// basedir and add the basename to each resulting path...
+	// basedir and add the basename to each resulting path, e.g.:
+	// 		.match('/*/tree')
+	// 			-> ['System/tree']
+	// 		.resolve('/*/tree')
+	// 			-> ['System/tree', 'Dir/tree', ...]
 	//
 	// XXX should this be used by .get(..) instead of .match(..)???
 	// XXX EXPERIMENTAL 
@@ -307,11 +413,13 @@ module.BaseStore = {
 						ctime: Date.now(),
 					},
 					(mode == 'update' && exists) ?
-						await this.get(path)
+						await this.__get__(path)
 						: {},
 					data,
 					{mtime: Date.now()})
 		await this.__update__(path, data, mode)
+		// XXX CACHED
+		this.__cache_add(path)
 		return this },
 	__delete__: async function(path){
 		delete this.data[path] },
@@ -320,8 +428,10 @@ module.BaseStore = {
 		if(this.__delete__ == null){
 			return this }
 		path = await this.exists(path)
-		path
-			&& await this.__delete__(path)
+		if(path){
+			await this.__delete__(path)
+			// XXX CACHED
+			this.__cache_remove(path) }
 		return this },
 
 	// XXX NEXT might be a good idea to have an API to move pages from 
@@ -399,71 +509,55 @@ module.BaseStore = {
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-//
-// XXX stores to experiment with:
-// 		- cache
-// 		- fs
-// 		- PouchDB
-//
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 // Meta-Store
 //
 // Extends BaseStore to handle other stores as pages. i.e. sub-paths can 
 // be handled by nested stores.
 //
 
-// XXX might be a good idea to normalize args...
 var metaProxy = 
-function(meth, drop_cache=false, post){
-	var target = meth.replace(/__/g, '')
-	if(typeof(drop_cache) == 'function'){
-		post = drop_cache
-		drop_cache = false }
+function(name, pre, post){
 	var func = async function(path, ...args){
-		var store = this.substore(path)
+		path = pre ?
+			await pre.call(this, path, ...args)
+			: path
 
-		var res = 
-			store == null ?
-				object.parentCall(MetaStore[meth], this, path, ...args)
-				: this.data[store][target](
-					// NOTE: we are normalizing for root/non-root paths...
-					path.slice(path.indexOf(store)+store.length), 
-					...args) 
+		var p = this.substore(path)
+		if(p){
+			var res = this.substores[p][name](
+				path.slice(path.indexOf(p)+p.length),
+				...args) 
+		} else {
+			var res = object.parentCall(MetaStore[name], this, ...arguments) } 
 
-		if(drop_cache){
-			delete this.__substores }
-		post 
-			&& (res = post.call(this, await res, store, path, ...args))
-		return res} 
-	Object.defineProperty(func, 'name', {value: meth})
+		return post ?
+			post.call(this, await res, path, ...args)
+			: res }
+	Object.defineProperty(func, 'name', {value: name})
 	return func }
 
-
-// XXX this gets stuff from .data, can we avoid this???
-// 		...this can restrict this to being in-memory...
 // XXX not sure about the name...
 // XXX should this be a mixin???
 var MetaStore =
 module.MetaStore = {
 	__proto__: BaseStore,
 
-	//data: undefined,
+	//
+	// Format:
+	// 	{
+	// 		<path>: <store>,
+	// 		...
+	// 	}
+	//
+	substores: undefined,
 
-	__substores: undefined,
-	get substores(){
-		return this.__substores 
-			?? (this.__substores = Object.entries(this.data)
-				.filter(function([path, value]){
-					return object.childOf(value, BaseStore) })
-				.map(function([path, _]){
-					return path })) },
 	// XXX do we need to account for trailing '/' here???
 	substore: function(path){
 		path = pwpath.normalize(path, 'string')
-		if(this.substores.includes(path)){
+		if(path in (this.substores ?? {})){
 			return path }
 		var root = path[0] == '/'
-		var store = this.substores
+		var store = Object.keys(this.substores ?? {})
 			// normalize store paths to the given path...
 			.filter(function(p){
 				return path.startsWith(
@@ -478,43 +572,85 @@ module.MetaStore = {
 			undefined
 			: store },
 	getstore: function(path){
-		return this.data[this.substore(path)] },
+		return (this.substores ?? {})[this.substore(path)] },
 	// XXX do we need to account for trailing '/' here???
 	isStore: function(path){
+		if(!this.substores){
+			return false }
 		path = pwpath.normalize(path, 'string')
 		path = path[0] == '/' ?
 			path.slice(1)
 			: path
-		return this.substores.includes(path)
-			|| this.substores.includes('/'+ path) },
-	
-	// XXX this depends on .data having keys...
-	__paths__: async function(){
-		var that = this
-		var data = this.data
-		//return Object.keys(data)
-		return Promise.iter(Object.keys(data)
-			.map(function(path){
-				return object.childOf(data[path], BaseStore) ?
-					data[path].paths()
-						.iter()
-						.map(function(s){
-							return pwpath.join(path, s) })
-				: path }))
-			.flat() },
-	// XXX revise...
-	__exists__: metaProxy('__exists__', 
-		// normalize path...
-		function(res, store, path){
-			return (store && res) ?
-				path
-	   			: res }),
-	__get__: metaProxy('__get__'),
-	__delete__: metaProxy('__delete__', true),
-	// XXX BUG: this does not create stuff in sub-store...
-	__update__: metaProxy('__update__', true),
+		return !!this.substores[path]
+			|| !!this.substores['/'+ path] },
 
+	// NOTE: we are using level2 API here to enable mixing this with 
+	// 		store adapters that can overload the level1 API to implement 
+	// 		their own stuff...
+
+	paths: async function(){
+		var that = this
+		var stores = await Promise.iter(
+				Object.entries(this.substores ?? {})
+					.map(function([path, store]){
+						return store.paths()
+								.iter()
+								.map(function(s){
+									return pwpath.join(path, s) }) }))
+			.flat()
+		return object.parentCall(MetaStore.paths, this, ...arguments)
+			.iter()
+			.concat(stores) },
+	names: async function(){
+		var that = this
+		var res = await object.parentCall(MetaStore.names, this, ...arguments)
+		await Promise.all(Object.entries(this.substores ?? {})
+			.map(async function([path, store]){
+				return Object.entries(await store.names())
+					.map(function([name, paths]){
+						res[name] = (res[name] ?? [])
+							.concat(paths
+								.map(function(s){ 
+									return pwpath.join(path, s) })) }) }))
+		return res },
+
+	exists: metaProxy('exists',
+		//async function(path){
+		//	return this.resolve(path) },
+		null,
+		function(res, path){
+			var s = this.substore(path)
+			return res == false ?
+					res
+				: s ?
+					pwpath.join(s, res)
+				: res }), 
+	get: metaProxy('get',
+		async function(path){
+			return this.resolve(path) }), 
+	metadata: metaProxy('metadata'),
+	update: async function(path, data, mode='update'){
+		data = data instanceof Promise ?
+			await data
+			: data
+		// add substore...
+		if(object.childOf(data, BaseStore)){
+			;(this.substores = this.substores ?? {})[path] = data
+			return this }
+		// add to substore...
+		var p = this.substore(path)
+		if(p){
+			this.substores[p].update(
+				// trim path...
+				path.slice(path.indexOf(p)+p.length),
+				...[...arguments].slice(1))
+			return this }
+		// add local...
+		return object.parentCall(MetaStore.update, this, ...arguments) },
+	// XXX Q: how do we delete a substore???
+	delete: metaProxy('delete'), 
 }
+
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
