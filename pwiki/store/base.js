@@ -136,6 +136,13 @@ module.BaseStore = {
 			...await this.__names(),
 		} },
 
+	// XXX sort paths based on search order into three groups:
+	// 		- non-system
+	// 			...sorted by length?
+	// 		- system 
+	// 			...sort based on system search order?
+	__sort_names: function(){},
+
 	__cache_add: function(path){
 		if(this.__paths_cache){
 			this.__paths_cache.includes(path) 

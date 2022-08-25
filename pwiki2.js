@@ -1,6 +1,14 @@
 /**********************************************************************
 * 
 *
+* XXX page search: make things invariant via .names
+* 			- if a page is in a system path and there are no alternatives 
+* 				just return it and do not search.
+* 			- if there are alternatives rank them
+* 				- check the non-system ones (common sub-path?)
+* 				- return the first system
+* 		XXX sort paths in .names
+* 		XXX remove/mark shadowed paths???
 * XXX NORMCACHE .normalize(..) cache normalized strings...
 * 		...seems to have little impact...
 * XXX MATCH limit candidates to actual page name matches -- this will 
@@ -27,8 +35,9 @@
 * 				mark the normalized string and return it as-is on 
 * 				renormalization...
 * 				...initial experiment made things slower...
-* XXX need a uniform way to track some state in links in pwiki for things 
-* 		like paging and the like with simple user/macro access (???)...
+* XXX FEATURE eed a uniform way to track some state in links in pwiki 
+* 		for things like paging and the like with simple user/macro 
+* 		access (???)...
 * 		...the simplest that comes to mind is to store in in path 
 * 		somehow:
 * 			- <path>?<arg>=<value>&...
@@ -76,6 +85,8 @@
 * 							...might be a good idea to make filters local only...
 * 						XXX slots/macros might also pose a problem...
 * 			2) all the macros that can source pages to produce generators (DONE)
+* XXX might be a good idea to parse a page into an executable/function
+* 		that would render self in a given context...
 * XXX the parser should handle all action return values, including:
 * 			- lists			-- DONE
 * 			- iterators		-- DONE

@@ -840,7 +840,6 @@ object.Constructor('Page', BasePage, {
 							base.get(this.QUOTE_ACTION_PAGE).raw
 						: await page.raw
 
-
 					page.path
 						&& depends.add(page.path)
 
@@ -1059,12 +1058,12 @@ object.Constructor('Page', BasePage, {
 						[text, join] = state.macros[name] } }
 
 				if(src){
-					var match = this.get(await base.parse(src, state))
-
 					join = _getBlock('join') 
 						?? join 
 					join = join
 						&& await base.parse(join, state)
+
+					var match = this.get(await base.parse(src, state))
 
 					// NOTE: thie does not introduce a dependency on each 
 					// 		of the iterated pages, that is handled by the 
@@ -1217,6 +1216,10 @@ object.Constructor('Page', BasePage, {
 	//
 	// NOTE: this uses .PAGE_TEMPLATE to render the page.
 	// NOTE: writing to .raw is the same as writing to .text...
+	//
+	// NOTE: .__debug_last_render_state is mainly exposed for introspection 
+	// 		and debugging, set comment it out to disable...
+	//__debug_last_render_state: undefined,
 	get text(){ return (async function(){
 		var path = pwpath.split(this.path)
 		path.at(-1)[0] == '_'
@@ -1235,6 +1238,9 @@ object.Constructor('Page', BasePage, {
 		// render template in context of page...
 		var depends = this.depends = new Set([tpl])
 		var state = {depends}
+		// this is here for debugging and introspection...
+		'__debug_last_render_state' in this
+			&& (this.__debug_last_render_state = state)
 		var data = { render_root: this }
 		return this.get(path, data)
 			.parse(
@@ -1255,7 +1261,8 @@ object.Constructor('Page', BasePage, {
 
 //---------------------------------------------------------------------
 
-var getCachedProp = function(obj, name){
+var getCachedProp = 
+function(obj, name){
 	var that = obj
 	var value = obj.cache ?
 		obj.cache[name]
@@ -1264,7 +1271,8 @@ var getCachedProp = function(obj, name){
 		&& value.then(function(value){
 			that.cache = {[name]: value} })
 	return value }
-var setCachedProp = function(obj, name, value){
+var setCachedProp = 
+function(obj, name, value){
 	return object.parentProperty(CachedPage.prototype, name).set.call(obj, value) }
 
 // XXX this is good enough on the front-side to think about making the 
