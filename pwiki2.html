@@ -131,13 +131,20 @@ require(['./browser'], function(browser){
 			//		separates the navigate and load events...
 			this.refresh() })
 		.onLoad(function(evt){
+			var that = this
 			// handle title...
 			document.querySelector('title').innerHTML = this.title
 			// scroll to anchor element...
 			this.hash
 				&& this.dom
 					.querySelector('#'+ this.hash)
-					.scrollIntoView() })
+					.scrollIntoView() 
+			// handle refresh...
+			// NOTE: we need to do this as hashchange is only triggered 
+			//		when the hash is actually changed...
+			for(var lnk of this.dom.querySelectorAll(`a[href="${window.location.hash}"]`)){
+				lnk.addEventListener('click', function(evt){
+					that.refresh() }) } })
 
 	// wait for stuff to finish...
 	browser.setup.then(function(){
