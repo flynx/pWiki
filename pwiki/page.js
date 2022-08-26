@@ -1643,6 +1643,10 @@ module.System = {
 			<hr>
 			<pre wikiwords="no"><quote filter="quote-tags" src=".."/></pre> ` },
 
+	// XXX need to also be able to list things about each store...
+	stores: function(){
+		return Object.keys(this.store.substores ?? {}) },
+
 	// page parts...
 	//
 	'line-separator': { text: '<br>' },
@@ -1651,6 +1655,7 @@ module.System = {
 	// base system pages...
 	//
 	// NOTE: these are last resort pages, preferably overloaded in /Templates.
+	//
 	RecursionError: {
 		text: 'RECURSION ERROR: @quote(../path)' },
 	NotFoundError: { 

@@ -1,6 +1,14 @@
 /**********************************************************************
 * 
 *
+* XXX BUG: for some reason pwiki.get('/TestPage').raw does nothing when 
+* 		the root store is not BaseStore...
+* 		...seems to be a problem explicitly with /TestPage, could this 
+* 		be a name clash with /Test???
+* XXX BUG service pages (*Error) now print "[ native code ]" instead of 
+* 		the path and replacing @quote(..) with @source(..) breaks things...  
+* 		...this seems to happen only if the root store is not 
+* 		MetaStore/BaseStore...
 * XXX page search: make things invariant via .names
 * 			- if a page is in a system path and there are no alternatives 
 * 				just return it and do not search.

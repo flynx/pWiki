@@ -503,7 +503,7 @@ module.BaseStore = {
 			JSON.stringify(res, options.replacer, options.space)
 			: res },
 
-	// XXX NEXT EXPERIMENTAL...
+	/*/ XXX NEXT EXPERIMENTAL...
 	nest: function(base){
 		return {
 			__proto__: base 
@@ -511,6 +511,7 @@ module.BaseStore = {
 			next: this,
 			data: {}
 		} },
+	//*/
 }
 
 

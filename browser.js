@@ -25,18 +25,27 @@ var pouchdbstore = require('./pwiki/store/pouchdb')
 //---------------------------------------------------------------------
 
 var store = 
-module.store = 
-	{ __proto__: basestore.BaseStore }
-		.nest({ __proto__: basestore.MetaStore })
+module.store = { 
+	// XXX base localstorage...
+	__proto__: localstoragestore.localStorageStore,
+	__prefix__: '--pwiki-root:',
+	data: localStorage,
+	/*/
+	__proto__: basestore.MetaStore,
+	//*/
+	
+	next: { __proto__: basestore.BaseStore },
+}
 
 module.setup = 
 Promise.all([
 	// static stores...
 	//
-	store.update('Settings', 
-		Object.create(basestore.BaseStore).load(page.Settings)),
+	//store.next.update('System', 
 	store.update('System', 
 		Object.create(basestore.BaseStore).load(page.System)),
+	store.update('Settings', 
+		Object.create(basestore.BaseStore).load(page.Settings)),
 	store.update('Test', 
 		Object.create(basestore.BaseStore).load(page.Test)),
 
