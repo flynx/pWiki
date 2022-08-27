@@ -505,6 +505,7 @@ module.Page =
 object.Constructor('Page', BasePage, {
 	__parser__: parser.parser,
 
+	NESTING_DEPTH_LIMIT: 20,
 	NESTING_RECURSION_TEST_THRESHOLD: 50,
 
 	// Filter that will isolate the page/include/.. from parent filters...
@@ -732,9 +733,14 @@ object.Constructor('Page', BasePage, {
 					if(seen.has(full)
 							// nesting path recursion...
 							|| (full.length % (this.NESTING_RECURSION_TEST_THRESHOLD || 50) == 0
-								&& pwpath.split(full).length > 3
-								&& await page.find() == await page.get('..').find()
-								&& await page.find() == await page.get('../..').find())){
+								&& (pwpath.split(full).length > 3
+									&& new Set([
+											await page.find(),
+											await page.get('..').find(),
+											await page.get('../..').find(),
+										]).size == 1
+									// XXX HACK???
+									|| pwpath.split(full).length > (this.NESTING_DEPTH_LIMIT || 20)))){
 						if(recursive == null){
 							console.warn(
 								`@${key}(..): ${

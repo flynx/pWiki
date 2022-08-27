@@ -26,7 +26,7 @@ var pouchdbstore = require('./pwiki/store/pouchdb')
 
 var store = 
 module.store = { 
-	/* XXX base localstorage...
+	// XXX base localstorage...
 	__proto__: localstoragestore.localStorageStore,
 	__prefix__: '--pwiki-root:',
 	data: localStorage,
