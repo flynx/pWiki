@@ -505,7 +505,7 @@ module.Page =
 object.Constructor('Page', BasePage, {
 	__parser__: parser.parser,
 
-	NESTING_RECURSION_THRESHOLD: 10,
+	NESTING_RECURSION_TEST_THRESHOLD: 50,
 
 	// Filter that will isolate the page/include/.. from parent filters...
 	ISOLATED_FILTERS: 'isolated',
@@ -523,11 +523,8 @@ object.Constructor('Page', BasePage, {
 	// 		not present or broken.
 	// NOTE: to force the system to fail set this to undefined.
 	NOT_FOUND_ERROR: 'NotFoundError',
-
 	RECURSION_ERROR: 'RecursionError',
-
 	NOT_FOUND_TEMPLATE_ERROR: 'NotFoundTemplateError',
-
 	QUOTE_ACTION_PAGE: 'QuoteActionPage',
 
 	// Format:
@@ -709,7 +706,7 @@ object.Constructor('Page', BasePage, {
 						?? new Set()
 
 				handler = handler 
-					?? async function(src){
+					?? async function(src, state){
 						return isolated ?
 							{data: await this.get(src)
 								.parse({
@@ -734,17 +731,18 @@ object.Constructor('Page', BasePage, {
 					// recursion detected...
 					if(seen.has(full)
 							// nesting path recursion...
-							// XXX a more general way to check would be to see if the
-							// 		path resolves to the same source (done below) and
-							// 		check if the context has changed -- i.e. if the paths
-							// 		actually contain anything...
-							|| (seen.size % (this.NESTING_RECURSION_THRESHOLD || 10) == 0
-								&& new Set([...seen]
-									.map(function(p){
-										return page.get(p).match()[0] }))
-									.size < seen.size)){
+							|| (full.length % (this.NESTING_RECURSION_TEST_THRESHOLD || 50) == 0
+								&& pwpath.split(full).length > 3
+								&& await page.find() == await page.get('..').find()
+								&& await page.find() == await page.get('../..').find())){
 						if(recursive == null){
-							yield page.get(page.RECURSION_ERROR).parse(state) 
+							console.warn(
+								`@${key}(..): ${
+									seen.has(full) ?
+										'direct'
+										: 'depth-limit'
+								} recursion detected:`, seen)
+							yield page.get(page.RECURSION_ERROR).parse() 
 							continue }
 						// have the 'recursive' arg...
 						yield base.parse(recursive, state) 
@@ -752,7 +750,7 @@ object.Constructor('Page', BasePage, {
 					seen.add(full)
 
 					// load the included page...
-					var res = await handler.call(page, full)
+					var res = await handler.call(page, full, state)
 					depends.add(full)
 
 					// NOTE: we only track recursion down and not sideways...
@@ -771,7 +769,7 @@ object.Constructor('Page', BasePage, {
 				yield* this.macros.include.call(this, 
 					'source',
 					args, body, state, 'sources', 
-					async function(src){
+					async function(src, state){
 						return this.parse(this.get(src).raw, state) }) }),
 		//
 		// 	@quote(<src>)
@@ -1657,11 +1655,11 @@ module.System = {
 	// NOTE: these are last resort pages, preferably overloaded in /Templates.
 	//
 	RecursionError: {
-		text: 'RECURSION ERROR: @quote(../path)' },
+		text: 'RECURSION ERROR: @source(../path)' },
 	NotFoundError: { 
-		text: 'NOT FOUND ERROR: @quote(./path)' },
+		text: 'NOT FOUND ERROR: @source(./path)' },
 	NotFoundTemplateError: {
-		text: 'NOT FOUND TEMPLATE ERROR: @quote(../path)' },
+		text: 'NOT FOUND TEMPLATE ERROR: @source(../path)' },
 
 	DeletingPage: {
 		text: 'Deleting: @source(../path)' },
