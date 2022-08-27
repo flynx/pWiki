@@ -83,8 +83,8 @@ function(elem){
 	iterText(elem)
 		.forEach(function(text){
 			// skip stuff...
-			if(text.parentNode.nodeName == 'a'
-					|| text.parentNode.getAttribute('wikiwords') == 'no'){
+			if(text.parentNode.nodeName.toLowerCase() == 'a'
+					|| (text.parentNode.getAttribute('wikiwords') ?? '').toLowerCase() == 'no'){
 				return }
 			var t = text.nodeValue
 			var n = setWikiWords(text.nodeValue)
