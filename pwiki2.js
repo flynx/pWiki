@@ -1,14 +1,12 @@
 /**********************************************************************
 * 
 *
-* XXX BUG: for some reason pwiki.get('/TestPage').raw does nothing when 
-* 		the root store is not BaseStore...
-* 		...the cause is:
-* 			pwiki.store.substore('/TestPage') -> 'Test'
-* 		should be:
-* 			pwiki.store.substore('/TestPage') -> undefined
-* XXX BUG service pages (*Error) now print "[ native code ]" instead of 
-* 		the path and replacing @quote(..) with @source(..) breaks things...  
+* XXX BUG with non-BaseStore root, the paths under /Test/.. report 
+* 		recursion errors when rendered by /tree...
+* 			/Test/tree	-- works fine
+* XXX BUG service pages (NotFoundError, RecursionError, ...) now print 
+* 		"[ native code ]" instead of the path and replacing @quote(..) 
+* 		with @source(..) breaks things...  
 * 		...this seems to happen only if the root store is not 
 * 		MetaStore/BaseStore...
 * XXX BUG: .get(..) does not seem to resolve to <store>.next...

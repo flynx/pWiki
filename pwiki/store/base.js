@@ -568,10 +568,13 @@ module.MetaStore = {
 		var store = Object.keys(this.substores ?? {})
 			// normalize store paths to the given path...
 			.filter(function(p){
-				return path.startsWith(
-					root ? 
-						'/'+p 
-						: p) })
+				p = root ?
+					'/'+p
+					: p
+				return path.startsWith(p)
+		   			&& (path[p.length] == null
+						|| path[p.length] == '/'
+						|| path[p.length] == '\\')})
 			.sort(function(a, b){
 				return a.length - b.length })
 			.pop() 
