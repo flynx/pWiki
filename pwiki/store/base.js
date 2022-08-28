@@ -649,7 +649,9 @@ module.MetaStore = {
 					pwpath.join(s, res)
 				: res }), 
 	get: async function(path, strict=false){
-		path = await this.resolve(path) 
+		path = await this.resolve(path, strict) 
+		if(path == undefined){
+			return }
 		var res
 		var p = this.substore(path)
 		if(p){

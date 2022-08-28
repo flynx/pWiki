@@ -1138,14 +1138,19 @@ object.Constructor('Page', BasePage, {
 	//
 	// NOTE: writing to .raw is the same as writing to .text...
 	// NOTE: when matching multiple pages this will return a list...
+	//
+	// XXX revise how we handle .strict mode...
 	get raw(){ return (async function(){
 		var data = await this.data
 		// no data...
 		// NOTE: if we hit this it means that nothing was resolved, 
 		// 		not even the System/NotFound page, i.e. something 
 		// 		went really wrong...
+		// NOTE: in .strict mode this will explicitly fail and not try 
+		// 		to recover...
 		if(data == null){
-			if(this.NOT_FOUND_ERROR){
+			if(!this.strict 
+					&& this.NOT_FOUND_ERROR){
 				var msg = this.get(this.NOT_FOUND_ERROR)
 				if(await msg.match()){
 					return msg.raw } }
@@ -1221,10 +1226,16 @@ object.Constructor('Page', BasePage, {
 	// NOTE: this uses .PAGE_TEMPLATE to render the page.
 	// NOTE: writing to .raw is the same as writing to .text...
 	//
+	// XXX revise how we handle strict mode...
+	//
 	// NOTE: .__debug_last_render_state is mainly exposed for introspection 
 	// 		and debugging, set comment it out to disable...
 	//__debug_last_render_state: undefined,
 	get text(){ return (async function(){
+		// strict mode -- break on non-existing pages...
+		if(this.strict 
+				&& !await this.resolve(true)){
+			throw new Error('NOT FOUND ERROR: '+ this.path) }
 		var path = pwpath.split(this.path)
 		path.at(-1)[0] == '_'
 			|| path.push(this.PAGE_TEMPLATE)
@@ -1509,12 +1520,13 @@ module.System = {
 	// XXX all of these should support pattern pages...
 	_text: {
 		text: '@include(. isolated join="@source(file-separator)")' },
+	// XXX /rootpath here is not relative -- makes reuse harder...
 	_view: {
 		text: object.doc`
 			<slot name="header">
 				<a href="#/list">&#9776;</a>
-				@source(./path) 
-				<a href="#@source(./path)/_edit">(edit)</a>
+				@source(/rootpath) 
+				<a href="#@source(/rootpath)/_edit">(edit)</a>
 			</slot>
 			<hr>
 			<slot name="content"></slot>
@@ -1690,10 +1702,12 @@ module.System = {
 		return (this.render_root || {}).path },
 	referrer: function(){
 		return this.referrer || this.path },
+	location: function(){
+		return this.get('..').location },
 	path: function(){
 		return this.get('..').path },
-	location: function(){
-		return this.get('..').path },
+	rootpath: function(){
+		return this.root.path },
 	resolved: async function(){
 		return this.get('..').resolve() },
 	dir: function(){

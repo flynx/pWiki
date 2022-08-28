@@ -41,8 +41,8 @@ module.setup =
 Promise.all([
 	// static stores...
 	//
-	//store.next.update('System', 
-	store.update('System', 
+	store.next.update('System', 
+	//store.update('System', 
 		Object.create(basestore.BaseStore).load(page.System)),
 	store.update('Settings', 
 		Object.create(basestore.BaseStore).load(page.Settings)),
@@ -63,7 +63,7 @@ Promise.all([
 		__proto__: pouchdbstore.PouchDBStore,
 	}),
 
-	// next testing...
+	/*/ XXX next testing...
 	store.next.update('NextPage', {
 		text: 'next page...',
 	}),
@@ -79,6 +79,7 @@ Promise.all([
 	store.next.update('System/NextTest', { 
 		text: 'next test..'
 	}),
+	//*/
 ])
 // XXX
 //typeof(Bootstrap) != 'undefined'
