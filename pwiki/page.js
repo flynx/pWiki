@@ -747,7 +747,7 @@ object.Constructor('Page', BasePage, {
 									seen.has(full) ?
 										'direct'
 										: 'depth-limit'
-								} recursion detected:`, seen)
+								} recursion detected:`, full, seen)
 							yield page.get(page.RECURSION_ERROR).parse() 
 							continue }
 						// have the 'recursive' arg...

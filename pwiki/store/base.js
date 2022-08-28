@@ -110,6 +110,7 @@ module.BaseStore = {
 	// local paths...
 	__paths: cached('paths', async function(){
 		return this.__paths__() }),
+	// NOTE: this produces an unsorted list...
 	// XXX should this also be cached???
 	paths: async function(local=false){
 		return this.__paths()
@@ -288,7 +289,11 @@ module.BaseStore = {
 						m
 							&& (!strict 
 								|| m[0] == p) 
-							&& res.add(m[0])
+							&& res.add(
+								// normalize the path elements...
+								m[0][0] == '/' ? 
+									m[0].slice(1) 
+									: m[0])
 						return res }, new Set())]
 			   .sortAs(order) }
 		// direct search...
