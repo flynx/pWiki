@@ -34,7 +34,7 @@ module.store = {
 	__proto__: basestore.MetaStore,
 	//*/
 	
-	next: { __proto__: basestore.BaseStore },
+	next: { __proto__: basestore.MetaStore },
 }
 
 module.setup = 
@@ -61,6 +61,23 @@ Promise.all([
 	}),
 	store.update('@pouch', {
 		__proto__: pouchdbstore.PouchDBStore,
+	}),
+
+	// next testing...
+	store.next.update('NextPage', {
+		text: 'next page...',
+	}),
+	store.next.update('Next', {
+		__proto__: localstoragestore.localStorageStore,
+		__prefix__: '--pwiki-next:',
+		data: localStorage,
+	}),
+	store.next.update('Next/Test', { 
+		text: 'next test..'
+	}),
+	// XXX not sure of we need this to work...
+	store.next.update('System/NextTest', { 
+		text: 'next test..'
 	}),
 ])
 // XXX

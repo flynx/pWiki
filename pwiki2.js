@@ -1,7 +1,16 @@
 /**********************************************************************
 * 
 *
-* XXX BUG: .get(..) does not seem to resolve to <store>.next...
+* XXX Q: substore shadowing vs. mixing???
+* 		should a substore completely shadow a .next stuff or should the 
+* 		layers mix???
+* 		...currently it's a bit of both, listing gets both but opening
+* 		does not see the shadowed pages...
+* 			.get(..)					-- DONE
+* 			.metadata(..)				-- 
+* 			.delete(..)
+* 			...
+* 		XXX this broke "strict"...
 * XXX page search: make things invariant via .names
 * 			- if a page is in a system path and there are no alternatives 
 * 				just return it and do not search.

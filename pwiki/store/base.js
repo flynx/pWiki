@@ -292,7 +292,7 @@ module.BaseStore = {
 						return res }, new Set())]
 			   .sortAs(order) }
 		// direct search...
-		return this.find(path) },
+		return this.find(path, strict) },
 	//
 	// 	.resolve(<path>)
 	// 		-> <path>
@@ -360,11 +360,11 @@ module.BaseStore = {
 					// NOTE: p can match a non existing page at this point, 
 					// 		this can be the result of matching a/* in a a/b/c
 					// 		and returning a a/b which can be undefined...
-					return that.get(p) })
+					return that.get(p, strict) })
 			: (await this.__get__(path) 
 				// XXX NEXT
 				?? ((this.next || {}).__get__ 
-					&& this.next.__get__(path))) },
+					&& this.next.get(path, strict))) },
 
 	//
 	// 	Get metadata...
@@ -390,7 +390,8 @@ module.BaseStore = {
 		// get...
 		path = await this.exists(path)
 		return path 
-			&& await this.__get__(path) 
+			&& (await this.__get__(path) 
+				?? await this.next.metadata(path))
 			|| undefined },
 
 	// NOTE: deleting and updating only applies to explicit matching 
@@ -523,6 +524,7 @@ module.BaseStore = {
 // be handled by nested stores.
 //
 
+// XXX see inside...
 var metaProxy = 
 function(name, pre, post){
 	var func = async function(path, ...args){
@@ -530,13 +532,15 @@ function(name, pre, post){
 			await pre.call(this, path, ...args)
 			: path
 
+		var res
 		var p = this.substore(path)
 		if(p){
+			// XXX can this be strict in all cases???
 			var res = this.substores[p][name](
 				path.slice(path.indexOf(p)+p.length),
-				...args) 
-		} else {
-			var res = object.parentCall(MetaStore[name], this, ...arguments) } 
+				...args) }
+		res = res 
+			?? object.parentCall(MetaStore[name], this, ...arguments)
 
 		return post ?
 			post.call(this, await res, path, ...args)
@@ -632,14 +636,28 @@ module.MetaStore = {
 		function(res, path){
 			var s = this.substore(path)
 			return res == false ?
-					res
+					(this.next ?
+						this.next.exists(path)
+						: res)
+					//res
 				: s ?
 					pwpath.join(s, res)
 				: res }), 
-	get: metaProxy('get',
-		async function(path){
-			return this.resolve(path) }), 
+	get: async function(path, strict=false){
+		path = await this.resolve(path) 
+		var res
+		var p = this.substore(path)
+		if(p){
+			res = await this.substores[p].get(
+				path.slice(path.indexOf(p)+p.length),
+				true) }
+		return res 
+			?? object.parentCall(MetaStore.get, this, ...arguments) },
+	// XXX can't reach .next on get but will cheerfully mess things up 
+	// 		on set (creating a local page)...
+	// 		...should copy and merge...
 	metadata: metaProxy('metadata'),
+	// NOTE: we intentionally do not delegate to .next here...
 	update: async function(path, data, mode='update'){
 		data = data instanceof Promise ?
 			await data
