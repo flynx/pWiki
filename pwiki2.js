@@ -1,11 +1,9 @@
 /**********************************************************************
 * 
 *
-* XXX Q: substore shadowing vs. mixing???
-* 		should a substore completely shadow a .next stuff or should the 
-* 		layers mix???
-* 		...currently it's a bit of both, listing gets both but opening
-* 		does not see the shadowed pages...
+* XXX revise/update sort...
+* XXX sub/nested store mixing... 
+* 		need to cortectly integrate the following store methods:
 * 			.get(..)					-- DONE
 * 			.metadata(..)				-- 
 * 			.delete(..)
