@@ -124,6 +124,9 @@ module.BaseParser = {
 			'<\\s*pwiki-comment[^>]*>.*?<\\/\\s*pwiki-comment\\s*>',
 			// <pwiki-comment .. />
 			'<\\s*pwiki-comment[^\\/>]*\\/>',
+
+			// html comments...
+			'<!--.*?-->',
 		].join('|') +')', 'smig'),
 
 
