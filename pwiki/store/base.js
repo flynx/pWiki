@@ -60,14 +60,14 @@ function(name, get, update, ...args){
 // 		- overload:
 // 			.__paths__()
 // 				-> <keys>
-// 			.__exists__(..)
+// 			.__exists__(path, ..)
 // 				-> <path>
 // 				-> false
-// 			.__get__(..)
+// 			.__get__(path, ..)
 // 				-> <data>
 // 		- optionally (for writable stores)
-// 			.__update__(..)
-// 			.__delete__(..)
+// 			.__update__(path, ..)
+// 			.__delete__(path, ..)
 // 			.load(..)
 //
 //
@@ -356,8 +356,13 @@ module.BaseStore = {
 		return this.data[key] },
 	get: async function(path, strict=false){
 		var that = this
-		//path = this.match(path, strict)
+		/* XXX ENERGETIC...
 		path = await this.resolve(path, strict)
+		/*/
+		path = path.includes('*') 
+			&& await this.isEnergetic(path)
+			|| await this.resolve(path, strict)
+		//*/
 		return path instanceof Array ?
 			// XXX should we return matched paths???
    			Promise.iter(path)
@@ -370,6 +375,12 @@ module.BaseStore = {
 				// XXX NEXT
 				?? ((this.next || {}).__get__ 
 					&& this.next.get(path, strict))) },
+
+	// XXX EXPERIMENTAL...
+	isEnergetic: async function(path){
+		var p = await this.find(path)
+		return !!(await this.get(p, true) ?? {}).energetic 
+			&& p },
 
 	//
 	// 	Get metadata...

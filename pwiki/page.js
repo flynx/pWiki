@@ -169,8 +169,10 @@ object.Constructor('BasePage', {
 	get data(){ return (async function(){
 		var that = this
 		// NOTE: we need to make sure each page gets the chance to handle 
-		// 		its context....
-		if(this.isPattern){
+		// 		its context (i.e. bind action to page)....
+		if(this.isPattern 
+				// XXX ENERGETIC...
+				&& !this.store.isEnergetic(this.path)){
 			return this
 				.map(function(page){
 					return page.data }) }
@@ -179,7 +181,6 @@ object.Constructor('BasePage', {
 		return typeof(res) == 'function' ?
 			res.bind(this)
 			: res }).call(this) },
-		//return this.store.get(this.location, !!this.strict) },
 	set data(value){
 		this.__update__(value) },
 
@@ -296,7 +297,9 @@ object.Constructor('BasePage', {
 		path = path ?
 			pwpath.relative(this.path, path)
 			: this.path
-		var paths = path.includes('*') ?
+		var paths = path.includes('*') 
+				// XXX ENERGETIC...
+				&& !await this.store.isEnergetic(path) ?
 			this.resolve(path)
 			: path
 		paths = paths instanceof Array ? 
@@ -1525,14 +1528,15 @@ module.System = {
 		text: object.doc`
 			<slot name="header">
 				<a href="#/list">&#9776;</a>
-				@source(/rootpath) 
-				<a href="#@source(/rootpath)/_edit">(edit)</a>
+				@source(./!path) 
+				<a href="#@source(./!path)/_edit">(edit)</a>
 			</slot>
 			<hr>
 			<slot name="content"></slot>
 			<hr>
 			<slot name="footer"></slot>
 
+			<!-- fill slots defaults -->
 			<slot name="content" hidden>
 				@include(. join="@source(file-separator)" recursive="")
 			</slot>` },
@@ -1612,15 +1616,17 @@ module.System = {
 				@source(../path)
 			</slot>
 			<macro src="../*" join="@source(line-separator)">
-				<a href="#@source(./path)/list">@source(./name)</a>
-				<i>
+				<a href="#@source(./path)">@source(./name)</a>
+				<sup>
 					<macro src="./isAction">
 						a
 						<else>
 							<macro src="./isStore">s</macro>
 						</else>
 					</macro>
-				</i>
+				</sup>
+				(<a href="#@source(./path)/list">@include(./*/!count)</a>)
+				&nbsp;
 				<a href="#@source(./path)/delete">&times;</a>
 			</macro>` },
 	// XXX this is really slow...
@@ -1706,6 +1712,11 @@ module.System = {
 		return this.get('..').location },
 	path: function(){
 		return this.get('..').path },
+	// XXX ENERGETIC...
+	'!path': Object.assign(
+		function(){
+			return this.get('..').path },
+		{energetic: true}),
 	rootpath: function(){
 		return this.root.path },
 	resolved: async function(){
@@ -1718,6 +1729,13 @@ module.System = {
 		var p = this.get('..')
 		return p.title 
 			?? p.name },
+	count: async function(){
+		return this.get('..').length },
+	// XXX ENERGETIC...
+	'!count': Object.assign(
+		async function(){
+			return this.get('..').length },
+		{energetic: true}),
 	ctime: async function(){
 		var date = (await this.get('..').data).ctime 
 		return date ?

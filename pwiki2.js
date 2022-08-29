@@ -1,6 +1,20 @@
 /**********************************************************************
 * 
 *
+* XXX FEATURE need to be able to call some actions on the root page 
+* 		before it gets .each()'ed...
+* 		...for things like:
+* 			- count
+* 			- unexpandedpath (name?)
+* 			- ...
+* 		this can be done in one of two ways:
+* 			- syntax
+* 				+ will enable any action to be called energetically...
+* 				- a complication...
+* 			- special actions
+* 				+ transparent
+* 				- extra concept -- might be confusing
+* 				- duplicate actions
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
 * 			<page>.text -> <page>.tags (cached on .update(..))
