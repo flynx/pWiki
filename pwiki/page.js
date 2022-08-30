@@ -166,18 +166,21 @@ object.Constructor('BasePage', {
 	// page data...
 	//
 	strict: undefined,
+	energetic: undefined,
 	get data(){ return (async function(){
 		var that = this
 		// NOTE: we need to make sure each page gets the chance to handle 
 		// 		its context (i.e. bind action to page)....
 		if(this.isPattern 
 				// XXX ENERGETIC...
-				&& !this.store.isEnergetic(this.path)){
+				&& !(this.energetic 
+					|| await this.store.isEnergetic(this.path))){
 			return this
 				.map(function(page){
 					return page.data }) }
 		// single page...
-		var res = await this.store.get(this.location, !!this.strict)
+		// XXX ENERGETIC...
+		var res = await this.store.get(this.location, !!this.strict, !!this.energetic)
 		return typeof(res) == 'function' ?
 			res.bind(this)
 			: res }).call(this) },
@@ -299,7 +302,8 @@ object.Constructor('BasePage', {
 			: this.path
 		var paths = path.includes('*') 
 				// XXX ENERGETIC...
-				&& !await this.store.isEnergetic(path) ?
+				&& !(this.energetic
+					|| await this.store.isEnergetic(path)) ?
 			this.resolve(path)
 			: path
 		paths = paths instanceof Array ? 
@@ -1527,9 +1531,9 @@ module.System = {
 	_view: {
 		text: object.doc`
 			<slot name="header">
-				<a href="#/list">&#9776;</a>
-				@source(./!path) 
-				<a href="#@source(./!path)/_edit">(edit)</a>
+				<a href="#/list">&#9776</a>
+				@source(./path/!) 
+				<a href="#@source(./path/!)/_edit">(edit)</a>
 			</slot>
 			<hr>
 			<slot name="content"></slot>
@@ -1611,7 +1615,7 @@ module.System = {
 	list: {
 		text: object.doc`
 			<slot name="header">
-				/list
+				<a href="#/list">&#9776</a>
 				<a href="#@source(../../path)/list">&#x21D1;</a>
 				@source(../path)
 			</slot>
@@ -1625,7 +1629,7 @@ module.System = {
 						</else>
 					</macro>
 				</sup>
-				(<a href="#@source(./path)/list">@include(./*/!count)</a>)
+				(<a href="#@source(./path)/list">@include(./*/count/!)</a>)
 				&nbsp;
 				<a href="#@source(./path)/delete">&times;</a>
 			</macro>` },
@@ -1712,11 +1716,6 @@ module.System = {
 		return this.get('..').location },
 	path: function(){
 		return this.get('..').path },
-	// XXX ENERGETIC...
-	'!path': Object.assign(
-		function(){
-			return this.get('..').path },
-		{energetic: true}),
 	rootpath: function(){
 		return this.root.path },
 	resolved: async function(){
@@ -1731,11 +1730,6 @@ module.System = {
 			?? p.name },
 	count: async function(){
 		return this.get('..').length },
-	// XXX ENERGETIC...
-	'!count': Object.assign(
-		async function(){
-			return this.get('..').length },
-		{energetic: true}),
 	ctime: async function(){
 		var date = (await this.get('..').data).ctime 
 		return date ?
@@ -1746,6 +1740,13 @@ module.System = {
 		return date ?
 			(new Date(date)).getTimeStamp()
 			: date },
+
+	// XXX ENERGETIC -- a better name???
+	// XXX test this with pages...
+	'!': Object.assign(
+		async function(){
+			return this.get('..', {energetic: true}).raw },
+		{energetic: true}),
 
 	// XXX EXPERIMENTAL -- page types...
 	type: async function(){

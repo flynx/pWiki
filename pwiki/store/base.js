@@ -354,13 +354,15 @@ module.BaseStore = {
 	// XXX should this return a map for pattern matches???
 	__get__: async function(key){
 		return this.data[key] },
-	get: async function(path, strict=false){
+	get: async function(path, strict=false, energetic=false){
 		var that = this
 		/* XXX ENERGETIC...
 		path = await this.resolve(path, strict)
 		/*/
 		path = path.includes('*') 
-			&& await this.isEnergetic(path)
+			&& (energetic == true ?
+				await this.find(path)
+				: await this.isEnergetic(path))
 			|| await this.resolve(path, strict)
 		//*/
 		return path instanceof Array ?
