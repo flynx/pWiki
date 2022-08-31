@@ -1,7 +1,7 @@
 /**********************************************************************
 * 
 *
-* XXX ENERGETIC do we need to make this a path syntax thing???
+* XXX ENERGETIC: Q: do we need to make this a path syntax thing???
 * 		...i.e. 
 * 			/some/path/action/! (current) 
 * 		vs.
