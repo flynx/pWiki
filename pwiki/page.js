@@ -25,7 +25,7 @@ var relProxy =
 function(name){
 	var func = function(path='.', ...args){
 		return this.store[name](
-			pwpath.relative(this.location, path), 
+			pwpath.relative(this.path, path), 
 			...args) } 
 	Object.defineProperty(func, 'name', {value: name})
 	return func } 
@@ -36,7 +36,7 @@ function(name){
 			strict = path
 			path = '.' }
 		return this.store[name](
-			pwpath.relative(this.location, path), 
+			pwpath.relative(this.path, path), 
 			strict) } 
 	Object.defineProperty(func, 'name', {value: name})
 	return func }
@@ -136,9 +136,14 @@ object.Constructor('BasePage', {
 	// .path is a proxy to .location
 	// XXX do we need this???
 	get path(){
-		return this.location },
+		return pwpath.splitArgs(this.location).path },
 	set path(value){
 		this.location = value },
+
+	get args(){
+		return pwpath.splitArgs(this.location).args },
+	set args(args){
+		this.location = this.path +':'+ pwpath.obj2args(args) },
 
 	// XXX do we need this...
 	get resolvedPath(){
@@ -146,22 +151,22 @@ object.Constructor('BasePage', {
 
 	// XXX should these be writable???
 	get name(){
-		return pwpath.basename(this.location) },
+		return pwpath.basename(this.path) },
 	//set name(value){ },
 	get dir(){
-		return pwpath.dirname(this.location) },
+		return pwpath.dirname(this.path) },
 	//set dir(value){ },
 	get isPattern(){
-		return this.location.includes('*') },
+		return this.path.includes('*') },
 	
 	// store interface...
 	//
 	// XXX we are only doing modifiers here...
 	// 		...these ar mainly used to disable writing in .ro(..)
 	__update__: function(data){
-		return this.store.update(this.location, data) },
+		return this.store.update(this.path, data) },
 	__delete__: function(path='.'){
-		return this.store.delete(pwpath.relative(this.location, path)) },
+		return this.store.delete(pwpath.relative(this.path, path)) },
 
 	// page data...
 	//
@@ -180,7 +185,7 @@ object.Constructor('BasePage', {
 					return page.data }) }
 		// single page...
 		// XXX ENERGETIC...
-		var res = await this.store.get(this.location, !!this.strict, !!this.energetic)
+		var res = await this.store.get(this.path, !!this.strict, !!this.energetic)
 		return typeof(res) == 'function' ?
 			res.bind(this)
 			: res }).call(this) },
@@ -192,7 +197,7 @@ object.Constructor('BasePage', {
 	// NOTE: in the general case this is the same as .data but in also allows
 	// 		storing of data (metadata) for pattern paths...
 	get metadata(){
-		return this.store.metadata(this.location) },
+		return this.store.metadata(this.path) },
 	set metadata(value){
 		this.__update__(value) },
 
@@ -206,7 +211,7 @@ object.Constructor('BasePage', {
 	// number of matching pages...
 	// NOTE: this can be both sync and async...
 	get length(){
-		var p = this.resolve(this.location)
+		var p = this.resolve(this.path)
 		return p instanceof Array ?
 				p.length
 			: p instanceof Promise ?
@@ -225,7 +230,7 @@ object.Constructor('BasePage', {
 		if(path === true || path === false){
 			strict = path
 			path = '.' }
-		path = pwpath.relative(this.location, path)
+		path = pwpath.relative(this.path, path)
 		var res = await this.store.match(path, strict) 
 		return res.length == 0 ?
 			// XXX are we going outside of match semantics here???
@@ -273,7 +278,7 @@ object.Constructor('BasePage', {
 			strict = path
 			path = '.' }
 		return this.store.find(
-			pwpath.relative(this.location, path), strict) },
+			pwpath.relative(this.path, path), strict) },
 
 	//
 	// 	.get(<path>[, <data>])
@@ -288,7 +293,7 @@ object.Constructor('BasePage', {
 				location: path, 
 				...data,
 				referrer: data.referrer 
-					//?? this.location,
+					//?? this.path,
 					?? this.referrer,
 				strict,
 			}) },
@@ -613,6 +618,18 @@ object.Constructor('Page', BasePage, {
 	//
 	// XXX ASYNC make these support async page getters...
 	macros: {
+		//
+		//	@arg(<name>[ <default>][ local])
+		//	@arg(name=<name>[ default=<value>][ local])
+		//
+		arg: Macro(
+			['name', 'default', ['local']],
+			function(args){
+				return this.args[args.name] 
+					|| (!args.local 
+						&& this.root
+						&& this.root.args[args.name])
+					|| args.default }),
 		//
 		// 	@filter(<filter-spec>)
 		// 	<filter <filter-spec>/>

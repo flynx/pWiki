@@ -108,22 +108,22 @@ require(['./browser'], function(browser){
 		evt.preventDefault()
 		var [path, hash] = location.hash.slice(1).split('#')
 		path = path.trim() == '' ? 
-			pwiki.path
+			pwiki.location
 			//'/'
 			: path
 		// treat links as absolute unless explicitly relative...
 		path = /^\.\.?([\\\/].*)?$/.test(path) ?
 			path
 			: '/'+path
-		pwiki.path = [path, hash] })
+		pwiki.location = [path, hash] })
 	pwiki
 		.onNavigate(function(){
 			// NOTE: we do not need to directly update location.hash here as
 			//		that will push an extra history item...
 			history.replaceState(
-				{path: this.path}, 
+				{path: this.location}, 
 				this.title, 
-				'#'+this.path 
+				'#'+this.location 
 					+(this.hash ? 
 						'#'+this.hash 
 						: ''))
@@ -150,7 +150,7 @@ require(['./browser'], function(browser){
 	browser.setup.then(function(){
 
 		// show current page...
-		pwiki.path = location.hash.slice(1)
+		pwiki.location = location.hash.slice(1)
 
 	}) }) 
 

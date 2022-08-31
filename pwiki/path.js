@@ -271,7 +271,7 @@ module = {
 
 	// XXX EXPERIMENTAL...
 	//
-	//	.splitSrgs(<path>)
+	//	.splitArgs(<path>)
 	//		-> <spec>
 	//
 	// Format:
@@ -298,15 +298,27 @@ module = {
 	// 		or this scheme will not work...
 	splitArgs: function(path){
 		path = this.normalize(path, 'string')
-		var [path, ...args] = path.split(/:/g)
+		var [path, ...args] = path.split(/(?<!\\):/g)
 
 		return {
 			path,
 			args: args.reduce(function(res, arg){
-				var [name, value] = arg.split('=')
+				var [name, value] = arg.split(/=(.*)/)
 				res[name] = value ?? true
 				return res }, {}),
 		} },
+	obj2args: function(args){
+		return args instanceof Object ?
+			Object.entries(args)
+				.map(function([key, value]){
+					return value === true ?
+							key
+						//: value === false ?
+					   	//	[]	
+						: key +':'+ (value.toString().replace(/:/g, '\\:'))
+				})
+				.join(':') 
+			: args },
 }
 
 
