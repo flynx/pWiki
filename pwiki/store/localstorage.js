@@ -20,8 +20,7 @@ var base = require('./base')
 // XXX EXPERIMENTAL, needs testing in browser...
 var localStorageStore =
 module.localStorageStore = {
-	//__proto__: base.BaseStore,
-	__proto__: base.MetaStore,
+	__proto__: base.Store,
 	__prefix__: '--pwiki:',
 
 	// XXX add caching of unserialized data???

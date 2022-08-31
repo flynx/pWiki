@@ -25,17 +25,23 @@ var pouchdbstore = require('./pwiki/store/pouchdb')
 //---------------------------------------------------------------------
 
 var store = 
-module.store = { 
-	// XXX base localstorage...
+/* XXX the store cache is not working correctly yet -- should be global 
+// 		and not local to a specific store...
+// 		...i.e. likely like MetaStore, it should be Level-2...
+module.store = object.mixin({ 
 	__proto__: localstoragestore.localStorageStore,
 	__prefix__: '--pwiki-root:',
 	data: localStorage,
-	/*/
-	__proto__: basestore.MetaStore,
-	//*/
-	
-	next: { __proto__: basestore.MetaStore },
+	next: { __proto__: basestore.Store },
+}, basestore.CachedStoreMixin)
+/*/
+module.store = { 
+	__proto__: localstoragestore.localStorageStore,
+	__prefix__: '--pwiki-root:',
+	data: localStorage,
+	next: { __proto__: basestore.Store },
 }
+//*/
 
 module.setup = 
 Promise.all([

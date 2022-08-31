@@ -20,8 +20,7 @@ var PouchDB = require('pouchdb')
 
 var PouchDBStore =
 module.PouchDBStore = {
-	//__proto__: base.BaseStore,
-	__proto__: base.MetaStore,
+	__proto__: base.Store,
 
 	// XXX should this be __path__???
 	// 		...this sets the path where the store is created...

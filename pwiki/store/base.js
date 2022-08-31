@@ -704,52 +704,54 @@ module.MetaStore = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+// XXX should this be a level-1 or level-2???
 // XXX might be a fun idea to actually use this as a backend for BaseStore...
 // XXX make this a mixin...
 // XXX add cache invalidation strategies...
 // 		- timeout
 // 		- count
 // XXX TEST...
-var CachedStore =
-module.CachedStore = {
-	__proto__: MetaStore,
+var CachedStoreMixin =
+module.CachedStoreMixin = {
+	//__proto__: MetaStore,
 	
 	// format:
 	// 	{
 	// 		<path>: <value>,
 	// 	}
-	__cache: undefined,
-	__paths: undefined,
+	__cache_data: undefined,
+	get __cache(){
+		return (this.__cache_data = this.__cache_data ?? {}) },
+	set __cache(value){
+		this.__cache_data = value },
 
 	resetCache: function(){
-		delete this.__paths 
-		delete this.__cache
+		delete this.__cache_data
 		return this },
 
-	__paths__: function(){
-		return this.__paths 
-			?? (this.__paths = 
-				object.parentCall(CachedStore.__paths__, this)) },
 	__exists__: async function(path){
-		return path in this.cache
-			|| object.parentCall(CachedStore.__exists__, this, path) },
+		return path in this.__cache
+			|| object.parentCall(CachedStoreMixin.__exists__, this, ...arguments) },
 	__get__: async function(path){
-		return this.cache[path] 
-			?? (this.cache[path] = 
-				object.parentCall(CachedStore.__get__, this, path, ...args)) },
+		return this.__cache[path] 
+			?? (this.__cache[path] = 
+				await object.parentCall(CachedStoreMixin.__get__, this, ...arguments)) },
 	__update__: async function(path, data){
-		this.__paths.includes(path)
-			|| this.__paths.push(path)
+		// XXX this is wrong???
 		this.__cache[path] = data
-		return object.parentCall(CachedStore.__update__, this, path, data) },
+		return object.parentCall(CachedStoreMixin.__update__, this, ...arguments) },
 	__delete__: async function(path){
-		var i = this.__paths.indexOf(path)
-		i > 0
-			&& this.__paths.splice(i, 1)
 		delete this.__cache[path]
-		return object.parentCall(CachedStore.__delete__, this, path) },
+		return object.parentCall(CachedStoreMixin.__delete__, this, ...arguments) },
 }
 
+
+
+//---------------------------------------------------------------------
+
+var Store =
+module.Store =
+	MetaStore
 
 
 

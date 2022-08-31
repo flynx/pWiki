@@ -520,8 +520,7 @@ module.backup = {
 // XXX add monitor API + cache + live mode (auto on when lock detected)...
 var FileStoreRO =
 module.FileStoreRO = {
-	//__proto__: base.BaseStore,
-	__proto__: base.MetaStore,
+	__proto__: base.Store,
 
 	// XXX
 	__path__: 'data/fs',
