@@ -269,7 +269,6 @@ module = {
 			: [name, ...this.ALTERNATIVE_PAGES] },
 
 
-	// XXX EXPERIMENTAL...
 	//
 	//	.splitArgs(<path>)
 	//		-> <spec>
@@ -284,8 +283,6 @@ module = {
 	// 	}
 	//
 	// Syntax:
-	// 		<path>/<name>:<value>/<name>:<value>/../action
-	// XXX or?
 	// 		<path> ::= <path>:<args>
 	// 		<args> ::=
 	// 			<arg> | <arg>:<args>
@@ -304,7 +301,7 @@ module = {
 			path,
 			args: args.reduce(function(res, arg){
 				var [name, value] = arg.split(/=(.*)/)
-				res[name] = value ?? true
+				res[name.trim()] = value ?? true
 				return res }, {}),
 		} },
 	obj2args: function(args){
@@ -313,12 +310,15 @@ module = {
 				.map(function([key, value]){
 					return value === true ?
 							key
-						//: value === false ?
-					   	//	[]	
-						: key +':'+ (value.toString().replace(/:/g, '\\:'))
-				})
+						: key +'='+ ((value + '').replace(/:/g, '\\:')) })
 				.join(':') 
 			: args },
+	joinArgs: function(path, args={}){
+		path = this.join(path)
+		args = this.obj2args(args)
+		return args == '' ?
+			path
+			: path +':'+ args },
 }
 
 

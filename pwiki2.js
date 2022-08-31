@@ -1,17 +1,13 @@
 /**********************************************************************
 * 
 *
+* XXX ASAP prevent paths from using reserved chars like: ":", "#", ...
 * XXX FEATURE list macro paging...
 * 		...should this be macro level or handled in .each()
 * 		what mode?
 * 			- count + block-offset (preferred)
 * 			- count + elem-offset
 * 			- from + to
-* XXX what should page caching use?
-* 		 	- .path (current)
-* 		 	- .location
-* 		 	- .path + normalized .args
-* 		 ...should this be configurable???
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
 * 			<page>.text -> <page>.tags (cached on .update(..))
@@ -157,6 +153,9 @@
 * 			- get 									-- 
 * 			- download								--
 * 			- upload								--
+* 	- tags
+* 		- get tags from page						-- 
+* 		- show tagged pages							-- 
 * 	- search
 * 		- paths
 * 		- text

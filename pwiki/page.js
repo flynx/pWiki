@@ -122,14 +122,20 @@ object.Constructor('BasePage', {
 	// XXX should this be able to prevent navigation???
 	onBeforeNavigate: types.event.Event('beforeNavigate'),
 	onNavigate: types.event.Event('navigate',
-		function(handle, path){
-			this.onBeforeNavigate(path)
+		function(handle, location){
+			this.onBeforeNavigate(location)
 			this.referrer = this.location
+			var {path, args} = pwpath.splitArgs(location)
 			var cur = this.__location = 
 				this.resolvePathVars(
-					pwpath.relative(
-						this.location, 
-						path))
+					// NOTE: this is done instead of simply assigning 
+					// 		location as-is to normalize the paths and 
+					// 		arguments...
+					pwpath.joinArgs(
+						pwpath.relative(
+							this.path, 
+							path),
+						pwpath.obj2args(args)))
 			// trigger handlers...
 			handle() }),
 
@@ -1331,6 +1337,13 @@ function(obj, name, value){
 var CachedPage =
 module.CachedPage =
 object.Constructor('CachedPage', Page, {
+	// Sets what to use for cache id...
+	//
+	// Can be:
+	// 		'location' (default)
+	// 		'path'
+	cache_id: 'location',
+
 	// NOTE: set this to null/undefined/0 to disable...
 	cache_timeout: '20m',
 
@@ -1343,21 +1356,21 @@ object.Constructor('CachedPage', Page, {
 		;(this.root ?? this).__cachestore = value },
 	
 	get cache(){
-		this.checkCache(this.path)
-		return ((this.cachestore ?? {})[this.path] ?? {}).value },
+		this.checkCache(this[this.cache_id])
+		return ((this.cachestore ?? {})[this[this.cache_id]] ?? {}).value },
 	// XXX check * paths for matches...
 	set cache(value){
 		if(this.cachestore === false 
 				|| this.cache == value){
 			return }
-		var path = this.path
+		var id = this[this.cache_id ?? 'location']
 		// clear...
 		if(value == null){
-			delete (this.cachestore ?? {})[path]
+			delete (this.cachestore ?? {})[id]
 		// set...
 		} else {
-			var prev = ((this.cachestore = this.cachestore ?? {})[path] ?? {}).value ?? {}
-			;(this.cachestore = this.cachestore ?? {})[path] = {
+			var prev = ((this.cachestore = this.cachestore ?? {})[id] ?? {}).value ?? {}
+			;(this.cachestore = this.cachestore ?? {})[id] = {
 				created: Date.now(),
 				// XXX
 				valid: undefined,
@@ -1373,7 +1386,7 @@ object.Constructor('CachedPage', Page, {
 			// 		i.e. if we match * as a single path item then we might 
 			// 		miss creating a subtree (ex: /tree), while matching 
 			// 		/* to anything will give us lots of false positives...
-			if(key != path && deps.has(path)){
+			if(key != id && deps.has(id)){
 				delete this.cachestore[key] } } },
 
 	checkCache: function(...paths){
@@ -1665,12 +1678,12 @@ module.System = {
 	tree: {
 		text: object.doc`
 			<macro src="../*">
-				<div class="item">
-					<a href="#@source(./path)">@source(./name)</a>
-					<span class="show-on-hover">
-						<a href="#@source(./path)/info">&#128712;</a>
-						<a href="#@source(./path)/delete">&times;</a>
-					</span>
+				<div>
+					<div class="item">
+						<a href="#@source(./path)">@source(./name)</a>
+						<a class="show-on-hover" href="#@source(./path)/info">&#128712;</a>
+						<a class="show-on-hover" href="#@source(./path)/delete">&times;</a>
+					</div>
 					<div style="padding-left: 30px">
 						@source(./tree)
 					</div>
