@@ -1,40 +1,17 @@
 /**********************************************************************
 * 
 *
-* XXX FEATURE add a uniform way to track some state in links in pwiki 
-* 		for things like paging and the like with simple user/macro 
-* 		access (???)...
-* 		...the simplest that comes to mind is to store in in path 
-* 		somehow:
-* 			- <path>?<arg>=<value>&...
-* 				traditional "query string"...
-* 			- <path>/<arg>:<valu>/<arg>:<value>/.../<action>
-* 				stack-style arguments...
-* 				+ simple to implement
-* 				- goes through page search???
-* 			- <path>:<value>:<name>=<value>:...
-* 			- ...
-* 		the general idea is to be:
-* 			- flexible enough to allow the basics done
-* 			- restrictive enough to prevent misuse
-* 		...the rest of the state can simply be stored in the root pwiki 
-* 		object in one of the following ways:
-* 			- directly (attrs/dict)
-* 			- a special page 
-* 				- virtual (path-specific)
-* 					e.g.
-* 						/some/path/@state/page -> 4
-* 					...might be fun to implement a basic json editor
-* 					and viewer with this api...
-* 					...controlled via js 
-* 					...or special actions:
-* 						/some/path/@state/page/next (increment)
-* 						/some/path/@state/page/prev (decrement)
-* 						/some/path/@state/page=10	(assign)
-* 						...
-* 				- session
-* 				- stored (config)
-* 		...css selector as path....
+* XXX FEATURE list macro paging...
+* 		...should this be macro level or handled in .each()
+* 		what mode?
+* 			- count + block-offset (preferred)
+* 			- count + elem-offset
+* 			- from + to
+* XXX what should page caching use?
+* 		 	- .path (current)
+* 		 	- .location
+* 		 	- .path + normalized .args
+* 		 ...should this be configurable???
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
 * 			<page>.text -> <page>.tags (cached on .update(..))

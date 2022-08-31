@@ -106,7 +106,7 @@ require(['./browser'], function(browser){
 	// handle location.hash/history (both directions)
 	window.addEventListener('hashchange', function(evt){
 		evt.preventDefault()
-		var [path, hash] = location.hash.slice(1).split('#')
+		var [path, hash] = decodeURI(location.hash).slice(1).split('#')
 		path = path.trim() == '' ? 
 			pwiki.location
 			//'/'
@@ -142,7 +142,7 @@ require(['./browser'], function(browser){
 			// handle refresh...
 			// NOTE: we need to do this as hashchange is only triggered 
 			//		when the hash is actually changed...
-			for(var lnk of this.dom.querySelectorAll(`a[href="${window.location.hash}"]`)){
+			for(var lnk of this.dom.querySelectorAll(`a[href="${location.hash}"]`)){
 				lnk.addEventListener('click', function(evt){
 					that.refresh() }) } })
 
@@ -150,7 +150,7 @@ require(['./browser'], function(browser){
 	browser.setup.then(function(){
 
 		// show current page...
-		pwiki.location = location.hash.slice(1)
+		pwiki.location = decodeURI(location.hash).slice(1)
 
 	}) }) 
 

@@ -619,8 +619,14 @@ object.Constructor('Page', BasePage, {
 	// XXX ASYNC make these support async page getters...
 	macros: {
 		//
+		//	@(<name>[ <default>][ local])
+		//	@(name=<name>[ default=<default>][ local])
+		//
 		//	@arg(<name>[ <default>][ local])
 		//	@arg(name=<name>[ default=<value>][ local])
+		//
+		//	<arg <name>[ <default>][ local]/>
+		//	<arg name=<name>[ default=<value>][ local]/>
 		//
 		arg: Macro(
 			['name', 'default', ['local']],
@@ -630,6 +636,11 @@ object.Constructor('Page', BasePage, {
 						&& this.root
 						&& this.root.args[args.name])
 					|| args.default }),
+		// alias to @arg(..)...
+		'': Macro( 
+			['name', 'default', ['local']],
+			function(args){
+				return this.macros.arg.call(this, args) }),
 		//
 		// 	@filter(<filter-spec>)
 		// 	<filter <filter-spec>/>

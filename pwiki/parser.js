@@ -33,24 +33,20 @@ module.BaseParser = {
 	// 	STOP -- '\\>' or ')'
 	// 	PREFIX -- 'inline' or 'elem'
 	//
-	// XXX quote escaping???
-	// 		/(?<quote>['"])(\\\k<quote>|[^\1])*\k<quote>/
-	// 		...this will work but we'll also need to remove the \ in the 
-	// 		final string...
 	MACRO_ARGS: ['(\\s*(',[
 				// arg='val' | arg="val" | arg=val
 				'(?<PREFIXArgName>[a-z-]+)\\s*=\\s*(?<PREFIXArgValue>'+([
 					// XXX CHROME/NODE BUG: this does not work yet...
 					//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
-					"'(?<PREFIXSingleQuotedValue>[^']*)'",
-					'"(?<PREFIXDoubleQuotedValue>[^"]*)"',
+					'"(?<PREFIXDoubleQuotedValue>(\\"|[^"])*?)"',
+					"'(?<PREFIXSingleQuotedValue>(\\'|[^'])*?)'",
 					'(?<PREFIXValue>[^\\sSTOP\'"]+)',
 				].join('|'))+')',
 				// "arg" | 'arg'
 				// XXX CHROME/NODE BUG: this does not work yet...
 				//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
-				'"(?<PREFIXDoubleQuotedArg>[^"]*)"',
-				"'(?<PREFIXSingleQuotedArg>[^']*)'",
+				'"(?<PREFIXDoubleQuotedArg>(\\"|[^"])*?)"',
+				"'(?<PREFIXSingleQuotedArg>(\\'|[^'])*?)'",
 				// arg
 				// NOTE: this is last because it could eat up parts of 
 				// 		the above alternatives...
@@ -77,15 +73,15 @@ module.BaseParser = {
 	//
 	// needs:
 	// 	MACROS
-	// 	INLINE_ARGS -- MACRO_ARGS.replace(/STOP/, ')') 
-	// 	ARGS -- MACRO_ARGS.replace(/STOP/, '\\/>') 
+	// 	INLINE_ARGS
+	// 	UNNAMED_ARGS
+	// 	ARGS
 	//
-	// XXX BUG: this fails to match inline macros with non-empty args @moo(a)
-	// 		...the problem seems to be with the lack of whitespace 
-	// 		between ( and the first arg -- @moo( a) is matched fine...
 	MACRO: '('+([
 			// @macro(arg ..)
 			'\\\\?@(?<nameInline>MACROS)\\((?<argsInline>INLINE_ARGS)\\)',
+			// @(arg ..)
+			'\\\\?@\\((?<argsUnnamed>UNNAMED_ARGS)\\)',
 			// <macro ..> | <macro ../>
 			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>ARGS)?\\s*/?>',
 			// </macro>
@@ -102,9 +98,15 @@ module.BaseParser = {
 	//
 	buildMacroPattern: function(macros=['MACROS'], regexp='smig'){
 		var pattern = this.MACRO
-			.replace(/MACROS/g, macros.join('|'))
+			.replace(/MACROS/g, 
+				macros
+					.filter(function(m){ 
+						return m.length > 0 })
+					.join('|'))
 			.replace(/INLINE_ARGS/g,
 				this.buildArgsPattern('inline', ')', false) +'*')
+			.replace(/UNNAMED_ARGS/g,
+				this.buildArgsPattern('unnamed', ')', false) +'*')
 			.replace(/ARGS/g, 
 				this.buildArgsPattern('elem', '\\/>', false) +'*')
 		return regexp ?
@@ -264,30 +266,42 @@ module.BaseParser = {
 				var args = {}
 				var i = -1
 				for(var {groups} 
-						of (cur.argsInline ?? cur.argsOpen ?? '')
+						of (cur.argsInline 
+								?? cur.argsUnnamed
+								?? cur.argsOpen 
+								?? '')
 							.matchAll(macro_args_pattern)){
 					i++
 					args[groups.elemArgName 
 							?? groups.inlineArgName 
+							?? groups.unnamedArgName 
 							?? i] =
-						groups.elemSingleQuotedValue 
-							?? groups.inlineSingleQuotedValue
-							?? groups.elemDoubleQuotedValue
-							?? groups.inlineDoubleQuotedValue
-							?? groups.elemValue
-							?? groups.inlineValue
-							?? groups.elemSingleQuotedArg
-							?? groups.inlineSingleQuotedArg
-							?? groups.elemDoubleQuotedArg
-							?? groups.inlineDoubleQuotedArg
-							?? groups.elemArg
-							?? groups.inlineArg }
+						(groups.elemSingleQuotedValue 
+								?? groups.inlineSingleQuotedValue
+								?? groups.unnamedSingleQuotedValue
+								?? groups.elemDoubleQuotedValue
+								?? groups.inlineDoubleQuotedValue
+								?? groups.unnamedDoubleQuotedValue
+								?? groups.elemValue
+								?? groups.inlineValue
+								?? groups.unnamedValue
+								?? groups.elemSingleQuotedArg
+								?? groups.inlineSingleQuotedArg
+								?? groups.unnamedSingleQuotedArg
+								?? groups.elemDoubleQuotedArg
+								?? groups.inlineDoubleQuotedArg
+								?? groups.unnamedDoubleQuotedArg
+								?? groups.elemArg
+								?? groups.inlineArg
+								?? groups.unnamedArg)
+							.replace(/\\(["'])/g, '$1') }
 
 				// macro-spec...
 				yield {
 					name: (cur.nameInline 
 							?? cur.nameOpen 
-							?? cur.nameClose)
+							?? cur.nameClose
+							?? '')
 						.toLowerCase(),
 					type: match[0] == '@' ?
 							'inline'
