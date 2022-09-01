@@ -1,16 +1,6 @@
 /**********************************************************************
 * 
 *
-* XXX might be a good idea to make some methods that only access the 
-* 		index sync -- this will make the store unusable while indexing 
-* 		though...
-* XXX ASAP prevent paths from using reserved chars like: ":", "#", ...
-* XXX FEATURE list macro paging...
-* 		...should this be macro level or handled in .each()
-* 		what mode?
-* 			- count + block-offset (preferred)
-* 			- count + elem-offset
-* 			- from + to
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
 * 			<page>.text -> <page>.tags (cached on .update(..))
@@ -21,10 +11,17 @@
 * 		- path integration...
 * 			i.e. a way to pass tags through path...
 * 				/some/path:tags=a,b,c
+* XXX FEATURE list macro paging...
+* 		...should this be macro level or handled in .each()
+* 		what mode?
+* 			- count + block-offset (preferred)
+* 			- count + elem-offset
+* 			- from + to
 * XXX revise/update sort...
 * XXX fs store: metadata and cache...
-* XXX sub/nested store mixing... 
-* 		need to cortectly integrate the following store methods:
+* XXX prevent paths from using reserved chars like: ":", "#", ...
+* XXX ASAP: MetaStore: need to correctly integrate the following store 
+* 		methods:
 * 			.get(..)					-- DONE
 * 			.metadata(..)				-- 
 * 			.delete(..)
@@ -37,6 +34,9 @@
 * 			/some/path/!action
 * 			..."!" is removed before the <store>.__<name>__(..) calls...
 * XXX ENERGETIC revise naming...
+* XXX OPTIMIZE might be a good idea to make some methods that only access 
+* 		the index sync -- this will make the store unusable while indexing 
+* 		though...
 * XXX OPTIMIZE might be a good idea to move stuff down the stack to Store:
 * 			.each()	-> .store.each(<path>)
 * 		...this will enable ups to optimize page loading on a store 
