@@ -55,6 +55,53 @@ function(name, get, update, ...args){
 // Store...
 
 //
+// API levels:
+// 	Level 1 -- implementation API
+// 		This level is the base API, this is used by all other Levels.
+// 		This is the only level that needs to be fully overloaded by store 
+// 		implementations (no super calls necessary).
+// 		The base methods that need to be overloaded for the store to work:
+// 			.__paths__()
+// 				-> <keys>
+// 			.__exists__(path, ..)
+// 				-> <path>
+// 				-> false
+// 			.__get__(path, ..)
+// 				-> <data>
+// 		Optional for r/w stores:
+// 			.__update__(path, ..)
+// 			.__delete__(path, ..)
+// 	Level 2 -- feature API
+// 		This can use Level 1 and Level 2 internally.
+// 		When overloading it is needed to to call the super method to 
+// 		retain base functionality.
+// 		All overloading here is optional.
+// 			.paths()
+// 				-> <path-list>
+// 			.names()
+// 				-> <name-index>
+// 			.exists(<path>)
+// 				-> <real-path>
+// 				-> false
+// 			.get(<path>)
+// 				-> <data>
+// 				-> undefined
+// 			.metadata(<path>[, <data>])
+// 				-> <store> -- on write
+// 				-> <data>
+// 				-> undefined
+// 			.update(<path>, <data>)
+// 				-> <store>
+// 			.delete(<path>)
+// 				-> <store>
+// 			.load(..)
+// 				-> <store>
+// 			.json(..)
+// 				-> <json>
+// 	Level 3
+// 		...
+//
+//
 // To create a store adapter:
 // 		- inherit from BaseStore
 // 		- overload:
