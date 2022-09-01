@@ -3,9 +3,14 @@
 *
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
-* 			<page>.text -> <page>.tags (cached on .update(..))
+* 			- <page>.text -> <page>.tags (cached on .update(..))
+* 			- manual
 * 		- a way to list tags -- folder like?
 * 		- tag cache <store>.tags
+* 			format:
+* 				{
+* 					<tag>: [<path>, ...],
+* 				}
 * 		- tag-path filtering...
 * 			i.e. only show tags within a specific path/pattern...
 * 		- path integration...
