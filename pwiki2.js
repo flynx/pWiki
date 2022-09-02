@@ -1,6 +1,8 @@
 /**********************************************************************
 * 
 *
+* XXX do we need something like /System/Actions/.. for fast actions called 
+* 		in the same way as direct page actions???
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
 * 			- <page>.text -> <page>.tags (cached on .update(..))

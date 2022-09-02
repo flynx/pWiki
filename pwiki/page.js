@@ -55,6 +55,22 @@ object.Constructor('BasePage', {
 	// a base page to be used as a base for cloning if root is of a 
 	// different "class"...
 	//__clone_proto__: undefined,
+
+	actions: new Set([
+		'location',
+		'referrer',
+		'path',
+		'name',
+		'dir',
+		'resolved',
+		'rootpath',
+		'renderer',
+		'length',
+		'type',
+		'ctime',
+		'mtime',
+	]),
+
 	
 	// NOTE: this can be inherited...
 	//store: undefined,
@@ -171,6 +187,17 @@ object.Constructor('BasePage', {
 	//set dir(value){ },
 	get isPattern(){
 		return this.path.includes('*') },
+
+	get ctime(){ return async function(){
+		var t = ((await this.data) ?? {}).ctime
+		return t ?
+			new Date(t).getTimeStamp()
+			: t }.call(this) },
+	get mtime(){ return async function(){
+		var t = ((await this.data) ?? {}).mtime
+		return t ?
+			new Date(t).getTimeStamp()
+			: t }.call(this) },
 	
 	// store interface...
 	//
@@ -181,24 +208,58 @@ object.Constructor('BasePage', {
 	__delete__: function(path='.'){
 		return this.store.delete(pwpath.relative(this.path, path)) },
 
+	//* XXX
+	__energetic: undefined,
+	get energetic(){ return async function(){
+		return this.__energetic === true
+			|| ((this.actions 
+				&& this.actions.has(this.name) 
+				&& !!this[this.name].energetic)
+			|| !!await this.store.isEnergetic(this.path)) }.call(this) },
+	set energetic(value){
+		this.__energetic = value },
+	//*/
+
 	// page data...
 	//
 	strict: undefined,
-	energetic: undefined,
+	//energetic: undefined,
 	get data(){ return (async function(){
+		// direct actions...
+		if(this.actions 
+				&& this.actions.has(this.name)){
+			var name = this.name
+			var page = this.get('..')
+			var res = (this.isPattern 
+					&& !await this.energetic
+					//&& !page[name].energetic) ?
+					&& !await page.energetic) ?
+				page
+					.map(function(page){
+						var res = page[name] 
+						return typeof(res) == 'function' ?
+							res.bind(page)
+							: function(){ 
+								return res } })
+				: page[name] 
+			return typeof(res) == 'function' ?
+				res.bind(page)
+				: function(){ 
+					return res } }
+
 		var that = this
 		// NOTE: we need to make sure each page gets the chance to handle 
 		// 		its context (i.e. bind action to page)....
 		if(this.isPattern 
 				// XXX ENERGETIC...
-				&& !(this.energetic 
+				&& !(await this.energetic 
 					|| await this.store.isEnergetic(this.path))){
 			return this
 				.map(function(page){
 					return page.data }) }
 		// single page...
 		// XXX ENERGETIC...
-		var res = await this.store.get(this.path, !!this.strict, !!this.energetic)
+		var res = await this.store.get(this.path, !!this.strict, !!await this.energetic)
 		return typeof(res) == 'function' ?
 			res.bind(this)
 			: res }).call(this) },
@@ -320,7 +381,8 @@ object.Constructor('BasePage', {
 			: this.path
 		var paths = path.includes('*') 
 				// XXX ENERGETIC...
-				&& !(this.energetic
+				&& !(await this.energetic
+					// XXX test if energetic action...
 					|| await this.store.isEnergetic(path)) ?
 			this.resolve(path)
 			: path
@@ -1152,21 +1214,17 @@ object.Constructor('Page', BasePage, {
 	//
 	// NOTE: these can not be overloaded. 
 	// 		(XXX should this be so?)
+	// XXX should this be an object???
 	actions: new Set([
-		'location',
-		'referrer',
-		'path',
-		'name',
-		'dir',
-		'resolved',
-		'rootpath',
-		'renderer',
-		'length',
-		'type',
+		...module.BasePage.prototype.actions,
 
-		//'ctime',
-		//'mtime',
+		'!',
 	]),
+
+	'!': Object.assign(
+		function(){
+			return this.get('.', {energetic: true}).raw },
+		{energetic: true}),
 
 	// events...
 	//
@@ -1215,25 +1273,6 @@ object.Constructor('Page', BasePage, {
 	//
 	// XXX revise how we handle .strict mode...
 	get raw(){ return (async function(){
-		// direct actions...
-		if(this.actions 
-				&& this.actions.has(this.name)){
-			var name = this.name
-			var page = this.get('..')
-			var res = (this.isPattern 
-					&& !this.energetic) ?
-				page
-					.each()
-					.map(function(page){
-						var res = page[name] 
-						return typeof(res) == 'function' ?
-							res.call(page)
-							: res })
-				: page[this.name] 
-			return typeof(res) == 'function' ?
-				res.call(page)	
-				: res }
-
 		var data = await this.data
 		// no data...
 		// NOTE: if we hit this it means that nothing was resolved, 
@@ -1291,7 +1330,8 @@ object.Constructor('Page', BasePage, {
 			path: typeof(args[0]) == 'string' ?
 				args.shift()
 				: '.',
-			strict: args.shift() ?? false,
+			strict: args.shift() 
+				?? false,
 		}
 
 		var page = this.get(path, strict)
@@ -1806,27 +1846,7 @@ module.System = {
 
 	// page actions...
 	//
-
-	// metadata...
-	//
-	ctime: async function(){
-		var date = (await this.get('..').data).ctime 
-		return date ?
-			(new Date(date)).getTimeStamp()
-			: date },
-	mtime: async function(){
-		var date = (await this.get('..').data).mtime 
-		return date ?
-			(new Date(date)).getTimeStamp()
-			: date },
-
-	// XXX ENERGETIC -- a better name???
-	// XXX test this with pages...
-	'!': Object.assign(
-		async function(){
-			return this.get('..', {energetic: true}).raw },
-		{energetic: true}),
-
+	
 	// XXX EXPERIMENTAL -- page types...
 	isAction: async function(){
 		return await this.get('..').type == 'action' ?

@@ -371,16 +371,15 @@ module.BaseStore = {
 			// normalize trailing '/'...
 			path.at(-1) == ''
 				&& path.pop()
-			// match basedir and addon basename to the result...
-			var name = path.at(-1)
-			if(name 
-					&& name != '' 
-					&& !name.includes('*')){
-				path.pop()
-				//path.push('')
-				return (await this.match(path.join('/'), strict))
+			var p = path.slice()
+			var tail = []
+			while(!p.at(-1).includes('*')){
+				tail.unshift(p.pop()) }
+			tail = tail.join('/')
+			if(tail.length > 0){
+				return (await this.match(p.join('/'), strict))
 					.map(function(p){
-						return pwpath.join(p, name) }) } }
+						return pwpath.join(p, tail) }) } }
 		// direct...
 		return this.match(path, strict) },
 	// 
@@ -459,7 +458,8 @@ module.BaseStore = {
 		path = await this.exists(path)
 		return path 
 			&& (await this.__get__(path) 
-				?? await this.next.metadata(path))
+				?? (this.next 
+					&& await this.next.metadata(path)))
 			|| undefined },
 
 	// NOTE: deleting and updating only applies to explicit matching 
