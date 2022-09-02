@@ -151,9 +151,16 @@ object.Constructor('BasePage', {
 	set args(args){
 		this.location = this.path +':'+ pwpath.obj2args(args) },
 
-	// XXX do we need this...
-	get resolvedPath(){
-		return this.match() },
+	// NOTE: these are mostly here as helpers to be accessed via page 
+	// 		actions...
+	// XXX should these be here or in Page???
+	// XXX should this call .match(..) or .resolve(..)???
+	get resolved(){
+		return this.resolve() },
+	get rootpath(){
+		return this.root ? 
+			this.root.path 
+			: this.path },
 
 	// XXX should these be writable???
 	get name(){
@@ -574,6 +581,9 @@ object.Constructor('Page', BasePage, {
 	// NOTE: for manual rendering (.parse(..), ... etc.) this has to be 
 	// 		setup manually.
 	render_root: undefined,
+
+	get renderer(){
+		return (this.render_root || {}).path },
 
 	//
 	// 	<filter>(<source>)
@@ -1135,6 +1145,29 @@ object.Constructor('Page', BasePage, {
 		'join': ['macro'],
 	},
 
+	// direct actions...
+	//
+	// These are evaluated directly without the need to go through the 
+	// whole page acquisition process...
+	//
+	// NOTE: these can not be overloaded. 
+	// 		(XXX should this be so?)
+	actions: new Set([
+		'location',
+		'referrer',
+		'path',
+		'name',
+		'dir',
+		'resolved',
+		'rootpath',
+		'renderer',
+		'length',
+		'type',
+
+		//'ctime',
+		//'mtime',
+	]),
+
 	// events...
 	//
 	// NOTE: textUpdate event will not get triggered if text is updated 
@@ -1182,6 +1215,25 @@ object.Constructor('Page', BasePage, {
 	//
 	// XXX revise how we handle .strict mode...
 	get raw(){ return (async function(){
+		// direct actions...
+		if(this.actions 
+				&& this.actions.has(this.name)){
+			var name = this.name
+			var page = this.get('..')
+			var res = (this.isPattern 
+					&& !this.energetic) ?
+				page
+					.each()
+					.map(function(page){
+						var res = page[name] 
+						return typeof(res) == 'function' ?
+							res.call(page)
+							: res })
+				: page[this.name] 
+			return typeof(res) == 'function' ?
+				res.call(page)	
+				: res }
+
 		var data = await this.data
 		// no data...
 		// NOTE: if we hit this it means that nothing was resolved, 
@@ -1471,6 +1523,13 @@ object.Constructor('pWikiPageElement', Page, {
 	set __clone_proto__(value){
 		this.__clone_proto = value },
 	
+	actions: new Set([
+		...CachedPage.prototype.actions,
+
+		'title',
+		'hash'
+	]),
+
 	// NOTE: setting location will reset .hash set it directly via either
 	// 		one of:
 	// 			.location = [path, hash]
@@ -1496,6 +1555,7 @@ object.Constructor('pWikiPageElement', Page, {
 			.set.call(this, value) },
 
 	// XXX this is not persistent, is this what we want???
+	// XXX should this default to .path or to .name???
 	get title(){
 		return this.dom.getAttribute('title')
 			|| (this.dom.querySelector('h1') || {}).innerText
@@ -1670,7 +1730,7 @@ module.System = {
 						</else>
 					</macro>
 				</sup>
-				(<a href="#@source(./path)/list">@include(./*/count/!)</a>)
+				(<a href="#@source(./path)/list">@include(./*/length/!)</a>)
 				&nbsp;
 				<a href="#@source(./path)/delete">&times;</a>
 			</macro>` },
@@ -1749,28 +1809,6 @@ module.System = {
 
 	// metadata...
 	//
-	renderer: function(){
-		return (this.render_root || {}).path },
-	referrer: function(){
-		return this.referrer || this.path },
-	location: function(){
-		return this.get('..').location },
-	path: function(){
-		return this.get('..').path },
-	rootpath: function(){
-		return this.root.path },
-	resolved: async function(){
-		return this.get('..').resolve() },
-	dir: function(){
-		return this.get('..').dir },
-	name: function(){
-		return this.get('..').name },
-	title: function(){
-		var p = this.get('..')
-		return p.title 
-			?? p.name },
-	count: async function(){
-		return this.get('..').length },
 	ctime: async function(){
 		var date = (await this.get('..').data).ctime 
 		return date ?
@@ -1790,8 +1828,6 @@ module.System = {
 		{energetic: true}),
 
 	// XXX EXPERIMENTAL -- page types...
-	type: async function(){
-		return await this.get('..').type },
 	isAction: async function(){
 		return await this.get('..').type == 'action' ?
 			'action'

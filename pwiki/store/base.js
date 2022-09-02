@@ -368,13 +368,16 @@ module.BaseStore = {
 		if(path.includes('*') 
 				|| path.includes('**')){
 			path = pwpath.split(path)
+			// normalize trailing '/'...
+			path.at(-1) == ''
+				&& path.pop()
 			// match basedir and addon basename to the result...
-			var name = path[path.length-1]
+			var name = path.at(-1)
 			if(name 
 					&& name != '' 
 					&& !name.includes('*')){
 				path.pop()
-				path.push('')
+				//path.push('')
 				return (await this.match(path.join('/'), strict))
 					.map(function(p){
 						return pwpath.join(p, name) }) } }
@@ -751,6 +754,16 @@ module.MetaStore = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+// XXX not used...
+var cacheProxy = function(name){
+	var func = function(path, ...args){
+		var cache = (this.root ?? this).cache
+		return cache[path] 
+			?? (cache[path] = 
+				object.parentCall(CachedStore[name], this, ...arguments)) }
+	Object.defineProperty(func, 'name', {value: name})
+	return func }
+
 // XXX should this be a level-1 or level-2???
 // XXX might be a fun idea to actually use this as a backend for BaseStore...
 // XXX make this a mixin...
@@ -758,38 +771,45 @@ module.MetaStore = {
 // 		- timeout
 // 		- count
 // XXX TEST...
-var CachedStoreMixin =
-module.CachedStoreMixin = {
-	//__proto__: MetaStore,
-	
-	// format:
-	// 	{
-	// 		<path>: <value>,
-	// 	}
-	__cache_data: undefined,
-	get __cache(){
-		return (this.__cache_data = this.__cache_data ?? {}) },
-	set __cache(value){
+var CachedStore =
+module.CachedStore = {
+	__proto__: MetaStore,
+
+	__cache: undefined,
+	get cache(){
+		return (this.__cache = this.__cache ?? {}) },
+	set cache(value){
 		this.__cache_data = value },
 
-	resetCache: function(){
-		delete this.__cache_data
+	clearCache: function(){
+		this.cache = {} 
 		return this },
 
-	__exists__: async function(path){
-		return path in this.__cache
-			|| object.parentCall(CachedStoreMixin.__exists__, this, ...arguments) },
-	__get__: async function(path){
-		return this.__cache[path] 
-			?? (this.__cache[path] = 
-				await object.parentCall(CachedStoreMixin.__get__, this, ...arguments)) },
-	__update__: async function(path, data){
-		// XXX this is wrong???
-		this.__cache[path] = data
-		return object.parentCall(CachedStoreMixin.__update__, this, ...arguments) },
-	__delete__: async function(path){
-		delete this.__cache[path]
-		return object.parentCall(CachedStoreMixin.__delete__, this, ...arguments) },
+	exists: async function(path){
+		return path in this.cache
+			|| object.parentCall(CachedStore.exists, this, ...arguments) },
+	// XXX this sometimes caches promises...
+	get: async function(path){
+		return this.cache[path] 
+			?? (this.cache[path] = 
+				await object.parentCall(CachedStore.get, this, ...arguments)) },
+	update: async function(path, data){
+		this.cache[path] = data
+		return object.parentCall(CachedStore.update, this, ...arguments) },
+	/* XXX
+	metadata: async function(path, data){
+		if(data){
+			// XXX this is wrong -- get merged data...
+			this.cache[path] = data
+		 	return object.parentCall(CachedStore.metadata, this, ...arguments) 
+		} else {
+			return this.cache[path] 
+				?? (this.cache[path] = 
+					await object.parentCall(CachedStore.metadata, this, ...arguments)) } },
+	//*/
+	delete: async function(path){
+		delete this.cache[path]
+		return object.parentCall(CachedStore.delete, this, ...arguments) },
 }
 
 
@@ -798,7 +818,8 @@ module.CachedStoreMixin = {
 
 var Store =
 module.Store =
-	MetaStore
+	//MetaStore
+	CachedStore
 
 
 
