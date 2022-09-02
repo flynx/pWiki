@@ -208,7 +208,6 @@ object.Constructor('BasePage', {
 	__delete__: function(path='.'){
 		return this.store.delete(pwpath.relative(this.path, path)) },
 
-	//* XXX
 	__energetic: undefined,
 	get energetic(){ return async function(){
 		return this.__energetic === true
@@ -218,12 +217,10 @@ object.Constructor('BasePage', {
 			|| !!await this.store.isEnergetic(this.path)) }.call(this) },
 	set energetic(value){
 		this.__energetic = value },
-	//*/
 
 	// page data...
 	//
 	strict: undefined,
-	//energetic: undefined,
 	get data(){ return (async function(){
 		// direct actions...
 		if(this.actions 
@@ -231,9 +228,8 @@ object.Constructor('BasePage', {
 			var name = this.name
 			var page = this.get('..')
 			var res = (this.isPattern 
-					&& !await this.energetic
-					//&& !page[name].energetic) ?
-					&& !await page.energetic) ?
+					&& !this.__energetic
+					&& !page[name].energetic) ?
 				page
 					.map(function(page){
 						var res = page[name] 
@@ -252,8 +248,7 @@ object.Constructor('BasePage', {
 		// 		its context (i.e. bind action to page)....
 		if(this.isPattern 
 				// XXX ENERGETIC...
-				&& !(await this.energetic 
-					|| await this.store.isEnergetic(this.path))){
+				&& !await this.energetic){
 			return this
 				.map(function(page){
 					return page.data }) }
