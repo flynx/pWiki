@@ -779,23 +779,27 @@ module.CachedStore = {
 	get cache(){
 		return (this.__cache = this.__cache ?? {}) },
 	set cache(value){
-		this.__cache_data = value },
+		this.__cache = value },
 
 	clearCache: function(){
 		this.cache = {} 
 		return this },
 
 	exists: async function(path){
-		return path in this.cache
-			|| object.parentCall(CachedStore.exists, this, ...arguments) },
+		return path in this.cache ?
+			path
+			: object.parentCall(CachedStore.exists, this, ...arguments) },
 	// XXX this sometimes caches promises...
 	get: async function(path){
 		return this.cache[path] 
 			?? (this.cache[path] = 
 				await object.parentCall(CachedStore.get, this, ...arguments)) },
 	update: async function(path, data){
-		this.cache[path] = data
-		return object.parentCall(CachedStore.update, this, ...arguments) },
+		var that = this
+		var res = object.parentCall(CachedStore.update, this, ...arguments) 
+		res.then(async function(){
+			that.cache[path] = await that.get(path) })
+		return res },
 	/* XXX
 	metadata: async function(path, data){
 		if(data){

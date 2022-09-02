@@ -62,6 +62,7 @@ object.Constructor('BasePage', {
 		'path',
 		'name',
 		'dir',
+		'title',
 		'resolved',
 		'rootpath',
 		'renderer',
@@ -185,6 +186,13 @@ object.Constructor('BasePage', {
 	get dir(){
 		return pwpath.dirname(this.path) },
 	//set dir(value){ },
+
+	get title(){ return async function(){
+		return (await this.data).title 
+			?? this.path }.call(this) },
+	set title(value){
+		this.__update__({title: value}) },
+
 	get isPattern(){
 		return this.path.includes('*') },
 
@@ -230,16 +238,18 @@ object.Constructor('BasePage', {
 			var res = (this.isPattern 
 					&& !this.__energetic
 					&& !page[name].energetic) ?
-				page
+				await page
 					.map(function(page){
 						var res = page[name] 
 						return typeof(res) == 'function' ?
 							res.bind(page)
 							: function(){ 
 								return res } })
-				: page[name] 
+				: await page[name] 
 			return typeof(res) == 'function' ?
-				res.bind(page)
+					res.bind(page)
+				: res instanceof Array ?
+					res
 				: function(){ 
 					return res } }
 
@@ -1561,7 +1571,6 @@ object.Constructor('pWikiPageElement', Page, {
 	actions: new Set([
 		...CachedPage.prototype.actions,
 
-		'title',
 		'hash'
 	]),
 
@@ -1589,14 +1598,19 @@ object.Constructor('pWikiPageElement', Page, {
 		object.parentProperty(pWikiPageElement.prototype, 'location')
 			.set.call(this, value) },
 
-	// XXX this is not persistent, is this what we want???
+	/*/ XXX this is not persistent, is this what we want???
 	// XXX should this default to .path or to .name???
 	get title(){
 		return this.dom.getAttribute('title')
 			|| (this.dom.querySelector('h1') || {}).innerText
-			|| this.path },
+			|| this.path 
+			|| object.parentProperty(pWikiPageElement.prototype, 'title')
+				.get.call(this) },
 	set title(value){
-		this.dom.setAttribute('title', value) },
+		this.dom.setAttribute('title', value) 
+		object.parentProperty(pWikiPageElement.prototype, 'title')
+			.set.call(this, value) },
+	//*/
 
 	// events...
 	//
@@ -1984,7 +1998,6 @@ module.Test = {
 				./tree <br>
 				./**/path <br> ` },
 }
-
 // Generate pages...
 PAGES=100
 for(var i=0; i<PAGES; i++){
