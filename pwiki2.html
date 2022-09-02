@@ -36,6 +36,47 @@
 	opacity: 0.8;
 }
 
+/* Spinner... */
+.spinner {
+	position: absolute;
+	display: flex;
+	text-align: center;
+	left: 50%;
+	top: 50%;
+	width: 100px;
+	height: 100px;
+	margin-top: -50px;
+	margin-left: -50px;
+	white-space: nowrap;
+
+	animation: fadein 2s 1;
+}
+.spinner span {
+	position: relative;
+	display: inline-block;
+	font-size: 2em;
+
+	animation: loading 2s infinite ;
+	animation-delay: calc(0.2s * var(--i));
+}
+@keyframes fadein {
+	from {
+		opacity: 0;
+	}
+	50% {
+		opacity: 0.8;
+	}
+	to {
+		opacity: 1;
+	}
+}
+@keyframes loading {
+	0%, 60% {
+		transform: rotateY(360deg);
+	}
+}
+
+
 </style>
 
 <!-- XXX do we need this??? -->
@@ -44,6 +85,8 @@
 <!--script data-main="pwiki2" src="ext-lib/require.js"></script-->
 <script src="ext-lib/require.js"></script>
 <script>
+
+var DEBUG = true
 
 
 var makeFallbacks = 
@@ -129,7 +172,11 @@ require(['./browser'], function(browser){
 						: ''))
 			// NOTE: we are intentionally not awaiting for this -- this 
 			//		separates the navigate and load events...
-			this.refresh() })
+			var t = Date.now()
+			this.refresh() 
+				.then(function(){
+					DEBUG 
+						&& console.log(`## ${pwiki.path} (${Date.now() - t}ms)`) }) })
 		.onLoad(function(evt){
 			var that = this
 			// handle title...
@@ -193,7 +240,15 @@ var exportData = async function(){
 <body>
 
 <!-- XXX need to add something passive but animated here... -->
-<div id="pWiki"><div class="spinner">Loading...</div></div>
+<div id="pWiki">
+	<div class="spinner">
+		<span style="--i:0">p</span>
+		<span style="--i:1">W</span>
+		<span style="--i:2">i</span>
+		<span style="--i:3">k</span>
+		<span style="--i:4">i</span>
+	</div>
+</div>
 
 </body>
 </html>

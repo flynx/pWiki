@@ -1842,6 +1842,20 @@ module.System = {
 	// page actions...
 	//
 	
+	// XXX this does not work as energetic...
+	// XXX for some reason this is called twice...
+	time: async function(){
+			var t = Date.now()
+			var text = await this.get('../_text').text
+			var time = Date.now() - t
+
+			console.log('RENDER TIME:', time)
+
+			return object.doc`
+			Time to render: ${time}ms <br>
+			<ht>
+			${text}`},
+	
 	// XXX EXPERIMENTAL -- page types...
 	isAction: async function(){
 		return await this.get('..').type == 'action' ?
@@ -1856,7 +1870,7 @@ module.System = {
 	// utils...
 	//
 	// XXX System/subpaths
-	// XXX
+	/*/ XXX
 	links: function(){
 		// XXX
 		return '' },
@@ -1866,6 +1880,7 @@ module.System = {
 	// XXX pages linking to us...
 	LinksFrom: function(){
 		return (this.get('..').data || {})['from'] ?? [] },
+	//*/	
 
 
 	// actions...
@@ -1961,7 +1976,20 @@ module.Test = {
 			<br><br>
 			<macro name="list" src="/Test/*" join=",<br>"/>
 		`},
+
+	Subtree: {
+		text: object.doc`
+			This is here to test the performance of macros:<br>
+				./list <br>
+				./tree <br>
+				./**/path <br> ` },
 }
+
+// Generate pages...
+PAGES=100
+for(var i=0; i<PAGES; i++){
+	Test['Subtree/Page'+i] = {text: 'page: '+i} }
+
 
 var Settings =
 module.Settings = {
