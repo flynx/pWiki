@@ -368,9 +368,6 @@ module.BaseStore = {
 		if(path.includes('*') 
 				|| path.includes('**')){
 			path = pwpath.split(path)
-			// normalize trailing '/'...
-			path.at(-1) == ''
-				&& path.pop()
 			var p = path.slice()
 			var tail = []
 			while(!p.at(-1).includes('*')){
@@ -631,7 +628,6 @@ module.MetaStore = {
 	//
 	substores: undefined,
 
-	// XXX do we need to account for trailing '/' here???
 	substore: function(path){
 		path = pwpath.normalize(path, 'string')
 		if(path in (this.substores ?? {})){
@@ -656,7 +652,6 @@ module.MetaStore = {
 			: store },
 	getstore: function(path){
 		return (this.substores ?? {})[this.substore(path)] },
-	// XXX do we need to account for trailing '/' here???
 	isStore: function(path){
 		if(!this.substores){
 			return false }
@@ -786,9 +781,10 @@ module.CachedStore = {
 		return this },
 
 	exists: async function(path){
-		return path in this.cache ?
-			path
-			: object.parentCall(CachedStore.exists, this, ...arguments) },
+		return (path in this.cache ?
+				path
+				: false)
+			|| object.parentCall(CachedStore.exists, this, ...arguments) },
 	// XXX this sometimes caches promises...
 	get: async function(path){
 		return this.cache[path] 
@@ -796,7 +792,9 @@ module.CachedStore = {
 				await object.parentCall(CachedStore.get, this, ...arguments)) },
 	update: async function(path, data){
 		var that = this
+		delete this.cache[path]
 		var res = object.parentCall(CachedStore.update, this, ...arguments) 
+		// re-cache in the background...
 		res.then(async function(){
 			that.cache[path] = await that.get(path) })
 		return res },

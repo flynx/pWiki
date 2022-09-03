@@ -26,6 +26,17 @@
 
 <style>
 
+body {
+	font-size: 1.1em;
+}
+
+a {
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+
 .show-on-hover {
 	opacity: 0;
 }
@@ -160,6 +171,8 @@ require(['./browser'], function(browser){
 			: '/'+path
 		pwiki.location = [path, hash] })
 	pwiki
+		.onBeforeNavigate(function(){
+			saveNow() })
 		.onNavigate(function(){
 			// NOTE: we do not need to directly update location.hash here as
 			//		that will push an extra history item...
@@ -207,7 +220,9 @@ require(['./browser'], function(browser){
 var SAVE_TIMEOUT = 5000
 var SAVE_QUEUE = {}
 var saveContent = function(path, text){
-	SAVE_QUEUE[path] = text }
+	SAVE_QUEUE[path] = text 
+	// clear editor page cache...
+	pwiki.cache = null }
 var saveNow = function(){
 	var queue = Object.entries(SAVE_QUEUE)
 	SAVE_QUEUE = {}
