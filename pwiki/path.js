@@ -104,6 +104,9 @@ module = {
 				// NOTE: the last '>>' will be retained...
 				: res.push(e)
 				return res }, []) 
+		// clear the trailing '/'...
+		path.at(-1) == ''
+			&& path.pop()
 		/*/ XXX NORMCACHE...
 		var res = format == 'string' ?
 			// special case: root -> keep '/'
