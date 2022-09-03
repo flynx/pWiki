@@ -173,12 +173,15 @@ require(['./browser'], function(browser){
 	pwiki
 		.onBeforeNavigate(function(){
 			saveNow() })
-		.onNavigate(function(){
+		.onNavigate(async function(){
 			// NOTE: we do not need to directly update location.hash here as
 			//		that will push an extra history item...
 			history.replaceState(
 				{path: this.location}, 
-				this.title, 
+				// XXX TITLE .title must be sync as history will not wait for 
+				//		the value even it await is given...
+				//this.title, 
+				this.path,
 				'#'+this.location 
 					+(this.hash ? 
 						'#'+this.hash 

@@ -187,11 +187,16 @@ object.Constructor('BasePage', {
 		return pwpath.dirname(this.path) },
 	//set dir(value){ },
 
-	get title(){ return async function(){
-		return (await this.data).title 
-			?? this.path }.call(this) },
+	/*/ XXX TITLE...
+	// NOTE: .__title is intentionally not persistent...
+	__title: undefined,
+	get title(){
+		return this.__title
+			?? this.path },
 	set title(value){
+		this.__title = value
 		this.__update__({title: value}) },
+	//*/
 
 	get isPattern(){
 		return this.path.includes('*') },
@@ -265,6 +270,11 @@ object.Constructor('BasePage', {
 		// single page...
 		// XXX ENERGETIC...
 		var res = await this.store.get(this.path, !!this.strict, !!await this.energetic)
+		/*/ XXX TITLE...
+		// load the title if set...
+		res.title 
+			?? (this.__title = res.title)
+		//*/
 		return typeof(res) == 'function' ?
 			res.bind(this)
 			: res }).call(this) },

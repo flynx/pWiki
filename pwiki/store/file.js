@@ -9,6 +9,7 @@
 
 var fs = require('fs')
 var glob = require('glob')
+var cp = require('child_process')
 
 var object = require('ig-object')
 var types = require('ig-types')
@@ -16,6 +17,8 @@ var types = require('ig-types')
 var pwpath = require('../path')
 
 var base = require('./base')
+
+
 
 
 //---------------------------------------------------------------------
@@ -97,7 +100,8 @@ async function(base, sub, options){
 var mkdir = 
 module.mkdir =
 async function(base, sub, options){
-	if(typeof(sub) != 'string'){
+	if(typeof(sub) != 'string' 
+			&& !(sub instanceof Array)){
 		options = sub ?? options
 		sub = base 
 		base = null }
@@ -146,7 +150,7 @@ async function(base, sub, data, options){
 			target = pwpath.join(target, index) } 
 	// create path / parts of path...
 	} else {
-		var levels = pwpath.split(target)
+		var levels = pwpath.split(sub)
 		levels.pop()
 		// ensure the parent dir exists...
 		await module.mkdir(
@@ -524,9 +528,15 @@ module.FileStoreRO = {
 
 	// XXX
 	__path__: 'data/fs',
+	__pwiki_path__: '/.pwiki/',
+	__metadata_path__: '$PWIKI/metadata',
 
 	// XXX should this be "index" or ".index"???
 	__directory_text__: '.index',
+
+	expandPWikiPath: function(...path){
+		return pwpath.join(...path)
+			.replace(/\$PWIKI/, this.__pwiki_path__) },
 
 	// XXX do we remove the extension???
 	// XXX cache???
@@ -548,12 +558,14 @@ module.FileStoreRO = {
 			&& path },
 	__get__: async function(path){
 		var p = pwpath.join(this.__path__, path)
+		var m = this.expandPWikiPath(this.__path__, this.__metadata_path__, path)
 		var {atimeMs, mtimeMs, ctimeMs, birthtimeMs} = await fs.promises.stat(p)
 		return {
 			atime: atimeMs,
 			mtime: mtimeMs,
 			ctime: ctimeMs,
-			text: await module.read(p, {index: this.__directory_text__})
+			text: await module.read(p, {index: this.__directory_text__}),
+			...JSON.parse(await module.read(m, {index: this.__directory_text__}) || '{}'),
 		} },
 
 	__update__: function(){},
@@ -569,12 +581,14 @@ module.FileStore = {
 
 	// XXX
 	__path__: 'data/fs',
-	__backup_path__: '/.pwiki/backup',
-	__lock_path__: '/.pwiki/lock',
+	__pwiki_path__: '/.pwiki',
+	__backup_path__: '$PWIKI/backup',
+	__lock_path__: '$PWIKI/lock',
 
-	// XXX should this be "index" or ".index"???
 	__directory_text__: '.index',
 
+	// prevent more than one handler to write to a store...
+	//
 	__clear_lock__: [
 		`SIGINT`, 
 		`SIGUSR1`, 
@@ -586,17 +600,20 @@ module.FileStore = {
 		//`uncaughtException`, 
 	],
 	__exit_lock_handler: undefined,
-	// prevent more than one handler to write to a store...
 	ensureLock: async function(){
 		var that = this
-		var lock = this.__path__ + this.__lock_path__
+		var lock = this.expandPWikiPath(this.__path__, this.__lock_path__)
 		// check lock...
 		if(fs.existsSync(lock)){
 			if(await module.read(lock) != process.pid){
 				throw new Error('attempting to write to a locked store:', this.__path__) }
 		// set lock...
 		} else {
-			module.update(lock, `${process.pid}`) 
+			await module.update(lock, `${process.pid}`) 
+			// keep the pwiki dir hidden on windows...
+			if(process.platform == 'win32'){
+				cp.execSync('attrib +h '+ 
+					this.expandPWikiPath(this.__path__, this.__pwiki_path__)) }
 			this.__exit_lock_handler = 
 				this.__exit_lock_handler 
 					// NOTE: this must be sync as deferred calls might 
@@ -611,12 +628,25 @@ module.FileStore = {
 	// XXX do we write all the data or only the .text???
 	__update__: async function(path, data, mode='update'){
 		this.ensureLock()
+		// metadata...
+		module.update(
+			this.__path__,
+			this.expandPWikiPath(this.__metadata_path__, path),
+			JSON.stringify(data),
+			{index: this.__directory_text__})
+		// text...
 		return module.update(
 			this.__path__, path, 
 			data.text, 
 			{index: this.__directory_text__}) },
     __delete__: async function(path){
 		this.ensureLock()
+		// metadata...
+		module.clear(
+			this.__path__,
+			this.expandPWikiPath(this.__metadata_path__, path),
+			{index: this.__directory_text__})
+		// text...
 		return module.clear(
 			this.__path__, path, 
 			{index: this.__directory_text__}) },
@@ -634,7 +664,7 @@ module.FileStore = {
 			this.__path__, path, 
 			{
 				index: this.__directory_text__,
-				backup: this.__backup_path__,
+				backup: this.expandPWikiPath(this.__backup_path__),
 				...options,
 			}) },
 	restore: async function(path='**', options={}){
@@ -643,7 +673,7 @@ module.FileStore = {
 			this.__path__, path, 
 			{
 				index: this.__directory_text__,
-				backup: this.__backup_path__,
+				backup: this.expandPWikiPath(this.__backup_path__),
 				...options,
 			}) },
 }
