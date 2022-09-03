@@ -178,10 +178,7 @@ require(['./browser'], function(browser){
 			//		that will push an extra history item...
 			history.replaceState(
 				{path: this.location}, 
-				// XXX TITLE .title must be sync as history will not wait for 
-				//		the value even it await is given...
-				//this.title, 
-				this.path,
+				'',
 				'#'+this.location 
 					+(this.hash ? 
 						'#'+this.hash 
@@ -196,7 +193,7 @@ require(['./browser'], function(browser){
 		.onLoad(function(evt){
 			var that = this
 			// handle title...
-			document.querySelector('title').innerHTML = this.title
+			document.querySelector('title').innerHTML = this.path
 			// scroll to anchor element...
 			this.hash
 				&& this.dom

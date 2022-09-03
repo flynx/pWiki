@@ -91,7 +91,7 @@ object.Constructor('BasePage', {
 	// XXX EXPERIMENTAL...
 	path_vars: {
 		NOW: function(){
-			return Date.now() },
+			return Date.timeStamp() },
 		PATH: function(){
 			return this.path },
 		NAME: function(){
@@ -135,9 +135,16 @@ object.Constructor('BasePage', {
 
 	// events...
 	//
+	//__beforenavigate__: function(location){ .. },
+	//
+	//__navigate__: function(){ .. },
+	//
 	// XXX revise naming...
 	// XXX should this be able to prevent navigation???
-	onBeforeNavigate: types.event.Event('beforeNavigate'),
+	onBeforeNavigate: types.event.Event('beforeNavigate',
+		function(_, location){
+			'__beforenavigate__' in this
+				&& this.__beforenavigate__(location) }),
 	onNavigate: types.event.Event('navigate',
 		function(handle, location){
 			this.onBeforeNavigate(location)
@@ -154,6 +161,8 @@ object.Constructor('BasePage', {
 							path),
 						pwpath.obj2args(args)))
 			// trigger handlers...
+			'__navigate__' in this
+				&& this.__navigate__()
 			handle() }),
 
 	// .path is a proxy to .location
@@ -1543,6 +1552,23 @@ object.Constructor('CachedPage', Page, {
 		return getCachedProp(this, 'text') },
 	set text(value){
 		return setCachedProp(this, 'text', value) },
+
+
+	/*/ XXX PREVIEW EXPERIMENTAL...
+	// 		...this can be usefull for partial rendering and then on the 
+	// 		js level filling in the details...
+	__preview_size__: 100,
+	get preview(){
+		var text = this.text
+		if(text instanceof Promise){
+			text.then(function(text){
+				this.onPreviewReady() })
+			// return a placeholder for the upcoming data...
+			return '...' }
+		return text.slice(0, this.__preview_size__ || 100) },
+	onPreviewReady: types.event.Event('onPreviewReady'),
+	//*/
+
 })
 
 
@@ -1693,7 +1719,7 @@ module.System = {
 			<slot name="header">
 				<a href="#/list">&#9776</a>
 				@source(./path/!) 
-				<a href="#@source(./path/!)/_edit">(edit)</a>
+				<a href="#@source(./path/!)/_edit">&#9998;</a>
 			</slot>
 			<hr>
 			<slot name="content"></slot>
