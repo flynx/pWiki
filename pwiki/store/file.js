@@ -80,6 +80,7 @@ async function(base, sub, options){
 		base = null }
 	var {index} = getOpts(options)
 
+	sub = pwpath.sanitize(sub)
 	var target = encode(
 		base ?
 			pwpath.join(base, sub)
@@ -99,6 +100,7 @@ async function(base, sub, options){
 		base = null }
 	var {index} = getOpts(options)
 
+	sub = pwpath.sanitize(sub)
 	var target = encode(
 		base ?
 			pwpath.join(base, sub)
@@ -124,6 +126,7 @@ async function(base, sub, options){
 		base = null }
 	var {index, verbose} = getOpts(options)
 
+	sub = pwpath.sanitize(sub)
 	var levels = pwpath.split(sub)
 	for(var level of levels){
 		base = encode(
@@ -147,7 +150,6 @@ async function(base, sub, options){
 		await fs.promises.mkdir(base, {recursive: true}) 
 		await fs.promises.rename(base +'.pwiki-bak', base +'/'+ index) }
 	return base }
-// XXX metadata???
 var update = 
 module.update =
 async function(base, sub, data, options){
@@ -158,6 +160,7 @@ async function(base, sub, data, options){
 		base = null }
 	var {index} = getOpts(options)
 
+	sub = pwpath.sanitize(sub)
 	var target = encode(
 		base ?
 			pwpath.join(base, sub)
@@ -196,6 +199,7 @@ async function(base, sub, options){
 		base = '' }
 	var {index} = getOpts(options)
 
+	sub = pwpath.sanitize(sub)
 	// remove leaf...
 	var target = encode(
 		base == '' ?
@@ -264,8 +268,7 @@ async function(base, options){
 						await fs.promises.rename(path +'/'+ index, path+'.pwiki-bak') 
 						await fs.promises.rmdir(path) 
 						await fs.promises.rename(path +'.pwiki-bak', path)
-						continue }
-				} } }) }
+						continue } } } }) }
 
 // XXX backup metadata...
 // 		- date

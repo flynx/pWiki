@@ -137,7 +137,7 @@ function(name, get, update, ...args){
 var BaseStore = 
 module.BaseStore = {
 
-	// XXX NEXT revise naming...
+	// XXX revise naming...
 	next: undefined,
 
 	// NOTE: .data is not part of the spec and can be implementation-specific,
@@ -236,24 +236,35 @@ module.BaseStore = {
 		return path in this.data
 				&& path },
 	exists: async function(path){
+		// XXX SANITIZE...
+		path = pwpath.sanitize(path, 'string')
+		/*/
 		path = pwpath.normalize(path, 'string')
+		//*/
 		return (await this.__exists__(path))
 			// NOTE: all paths at this point and in store are 
 			// 		absolute, so we check both with the leading 
 			// 		'/' and without it to make things a bit more 
 			// 		relaxed and return the actual matching path...
+			// XXX SANITIZE...
+			|| (await this.__exists__('/'+ path))
+			/*/
 			|| (await this.__exists__(
 				path[0] == '/' ? 
 					path.slice(1) 
 					: ('/'+ path)))
-			// XXX NEXT
+			//*/
 			// delegate to .next...
 			|| ((this.next || {}).__exists__
 				&& (await this.next.__exists__(path)
+					// XXX SANITIZE...
+					|| await this.next.__exists__('/'+path)))
+					/*/
 					|| await this.next.__exists__(
 						path[0] == '/' ?
 							path.slice(1)
 							: ('/'+ path)))) 
+					//*/
 			// normalize the output...
 			|| false },
 	// find the closest existing alternative path...
@@ -405,6 +416,9 @@ module.BaseStore = {
 		/* XXX ENERGETIC...
 		path = await this.resolve(path, strict)
 		/*/
+		// XXX SANITIZE...
+		path = pwpath.sanitize(path, 'string')
+		//*/
 		path = path.includes('*') 
 			&& (energetic == true ?
 				await this.find(path)
@@ -420,7 +434,6 @@ module.BaseStore = {
 					// 		and returning a a/b which can be undefined...
 					return that.get(p, strict) })
 			: (await this.__get__(path) 
-				// XXX NEXT
 				?? ((this.next || {}).__get__ 
 					&& this.next.get(path, strict))) },
 
@@ -473,7 +486,11 @@ module.BaseStore = {
 			return this }
 		var exists = await this.exists(path) 
 		path = exists
+			// XXX SANITIZE...
+			|| pwpath.sanitize(path, 'string')
+			/*/
 			|| pwpath.normalize(path, 'string')
+			//*/
 		data = data instanceof Promise ?
 			await data
 			: data
@@ -568,16 +585,6 @@ module.BaseStore = {
 				&& typeof(res) != 'string') ?
 			JSON.stringify(res, options.replacer, options.space)
 			: res },
-
-	/*/ XXX NEXT EXPERIMENTAL...
-	nest: function(base){
-		return {
-			__proto__: base 
-				?? BaseStore,
-			next: this,
-			data: {}
-		} },
-	//*/
 }
 
 

@@ -129,6 +129,22 @@ module = {
 				: path.join('/'))
 			: path },
 		//*/
+	sanitize: function(path, format='auto'){
+		format = format == 'auto' ?
+			(path instanceof Array ?
+				'array'
+				: 'string')
+			: format
+		path = this.split(path)
+		;(path[0] == ''
+				|| path[0] == '.'
+				|| path[0] == '..')
+			&& path.shift()
+		path.at(-1) == ''
+			&& path.pop()
+		return format == 'string' ?
+			path.join('/')
+			: path },
 	split: function(path){
 		return this.normalize(path, 'array') },
 	join: function(...parts){

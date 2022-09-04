@@ -44,7 +44,6 @@ function(name){
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-// XXX PATH_VARS
 // XXX FUNC need to handle functions in store...
 var BasePage =
 module.BasePage = 
@@ -88,7 +87,6 @@ object.Constructor('BasePage', {
 	// 		other places path variables can be resolved:
 	// 			- navigation (below)
 	// 			- macro expansion...
-	// XXX EXPERIMENTAL...
 	path_vars: {
 		NOW: function(){
 			return Date.timeStamp() },
@@ -607,7 +605,6 @@ function(spec, func){
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-// XXX PATH_VARS need to handle path variables...
 // XXX filters (and macros?) should be features for simpler plugin handlng (???)
 // XXX STUB filters...
 // XXX rename to pWikiPage???
@@ -1552,23 +1549,6 @@ object.Constructor('CachedPage', Page, {
 		return getCachedProp(this, 'text') },
 	set text(value){
 		return setCachedProp(this, 'text', value) },
-
-
-	/*/ XXX PREVIEW EXPERIMENTAL...
-	// 		...this can be usefull for partial rendering and then on the 
-	// 		js level filling in the details...
-	__preview_size__: 100,
-	get preview(){
-		var text = this.text
-		if(text instanceof Promise){
-			text.then(function(text){
-				this.onPreviewReady() })
-			// return a placeholder for the upcoming data...
-			return '...' }
-		return text.slice(0, this.__preview_size__ || 100) },
-	onPreviewReady: types.event.Event('onPreviewReady'),
-	//*/
-
 })
 
 
