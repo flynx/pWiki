@@ -1,6 +1,34 @@
 /**********************************************************************
 * 
 *
+* XXX ARGS: arg passing is a mess...
+* 		- need a consistent way to access args
+* 			- global
+* 				.root.args?
+* 			- render root
+* 			- local
+* 		use:
+* 			testDirect		- direct action
+* 			testDirect!		- energetic direct action
+* 			testPage		- page
+* 			testAction		- page action
+* 			testAction!		- energetic page action
+* 		examples:
+* 			// root path: /System/testAction:a:b:c
+* 			await pwiki.get('/path/testDirect:x:y:z').raw
+* 				- x y z -- not seen at all (XXX)
+* 				- a b c -- seen .renderer and .root
+* 			await pwiki.get('/path/testAction:x:y:z').raw
+* 				- x y z -- seen local
+* 				- a b c -- seen .renderer and .root
+* 			await pwiki.get('/path/testDirect:x:y:z').text
+* 				- x y z -- seen .renderer
+* 				- a b c -- seen .root
+* 			await pwiki.get('/path/testAction:x:y:z').text 
+* 				(same as for testDirect+text)
+* 				- x y z -- seen .renderer
+* 				- a b c -- seen .root
+* XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
 * 			- <page>.text -> <page>.tags (cached on .update(..))

@@ -64,7 +64,6 @@ object.Constructor('BasePage', {
 		'title',
 		'resolved',
 		'rootpath',
-		'renderer',
 		'length',
 		'type',
 		'ctime',
@@ -106,7 +105,6 @@ object.Constructor('BasePage', {
 			return context.index },
 		//*/
 	},
-
 	resolvePathVars: function(path, context={}){
 		var that = this
 		return Object.entries(this.path_vars)
@@ -663,10 +661,11 @@ object.Constructor('Page', BasePage, {
 	//
 	// NOTE: for manual rendering (.parse(..), ... etc.) this has to be 
 	// 		setup manually.
-	render_root: undefined,
-
+	//renderer: undefined,
 	get renderer(){
-		return (this.render_root || {}).path },
+		return this.__render_root ?? this },
+	set renderer(value){
+		this.__render_root = value },
 
 	//
 	// 	<filter>(<source>)
@@ -735,11 +734,13 @@ object.Constructor('Page', BasePage, {
 						&& this.root
 						&& this.root.args[args.name])
 					|| args.default }),
-		// alias to @arg(..)...
 		'': Macro( 
 			['name', 'default', ['local']],
 			function(args){
 				return this.macros.arg.call(this, args) }),
+		// XXX do we need this???
+		'args': function(){
+			return pwpath.obj2args(this.args) },
 		//
 		// 	@filter(<filter-spec>)
 		// 	<filter <filter-spec>/>
@@ -1240,11 +1241,33 @@ object.Constructor('Page', BasePage, {
 		...module.BasePage.prototype.actions,
 
 		'!',
+
+		// XXX DEBUG -- remove these...
+		'testDirect',
+		'testDirect!',	
 	]),
 
 	'!': Object.assign(
 		function(){
 			return this.get('.', {energetic: true}).raw },
+		{energetic: true}),
+
+	// XXX DEBUG -- remove these...
+	testDirect: function(){
+		console.log('testDirect:', this.location, 
+			this.args,
+			(this.renderer ?? {}).args,
+			(this.root ?? {}).args)
+		console.log('          :', this, this.renderer) 
+		return this.location },
+	'testDirect!': Object.assign(
+		function(){
+			console.log('testDirect!:', this.location,
+				this.args,
+				(this.renderer ?? {}).args,
+				(this.root ?? {}).args)
+			console.log('           :', this, this.renderer)
+			return this.location },
 		{energetic: true}),
 
 	// events...
@@ -1273,7 +1296,6 @@ object.Constructor('Page', BasePage, {
 			state = text
 			text = null }
 		state = state ?? {}
-
 		return this.__parser__.parse(this, text, state) },
 
 	// true if page has an array value but is not a pattern page...
@@ -1389,14 +1411,14 @@ object.Constructor('Page', BasePage, {
 		// strict mode -- break on non-existing pages...
 		if(this.strict 
 				&& !await this.resolve(true)){
-			throw new Error('NOT FOUND ERROR: '+ this.path) }
+			throw new Error('NOT FOUND ERROR: '+ this.location) }
+
 		var path = pwpath.split(this.path)
 		path.at(-1)[0] == '_'
 			|| path.push(this.PAGE_TEMPLATE)
-
 		var tpl = pwpath.join(path)
 		var tpl_name = path.pop()
-		path = pwpath.join(path)
+		path = pwpath.joinArgs(path, this.args)
 
 		// get the template relative to the top most pattern...
 		tpl = await this.get(tpl).find(true)
@@ -1410,7 +1432,7 @@ object.Constructor('Page', BasePage, {
 		// this is here for debugging and introspection...
 		'__debug_last_render_state' in this
 			&& (this.__debug_last_render_state = state)
-		var data = { render_root: this }
+		var data = { renderer: this }
 		return this.get(path, data)
 			.parse(
 				this.get('/'+tpl, data).raw, 
@@ -1419,10 +1441,10 @@ object.Constructor('Page', BasePage, {
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
 
-	// pass on .render_root to clones...
+	// pass on .renderer to clones...
 	clone: function(data={}, ...args){
-		this.render_root
-			&& (data = {render_root: this.render_root, ...data})
+		this.renderer
+			&& (data = {renderer: this.renderer, ...data})
 		return object.parentCall(Page.prototype.clone, this, data, ...args) },
 })
 
@@ -1635,15 +1657,15 @@ object.Constructor('pWikiPageElement', Page, {
 		this.dom.dispatchEvent(this.__pWikiLoadedDOMEvent) }),
 
 	// XXX CACHE...
-	__last_refresh_path: undefined,
+	__last_refresh_location: undefined,
 	refresh: async function(full=false){
 		// drop cache if re-refreshing or when full refresh requested...
 		// XXX CACHE...
 		;(full
-				|| this.__last_refresh_path == this.path)	
+				|| this.__last_refresh_location == this.location)	
 			&& this.cache 
 			&& (this.cache = null)
-		this.__last_refresh_path = this.path
+		this.__last_refresh_location = this.location
 		var dom = this.dom
 		dom.innerHTML = await this.text 
 		for(var filter of Object.values(this.domFilters)){
@@ -1741,6 +1763,12 @@ module.System = {
 			'@source(./path)'
 			+'<hr>'
 			+'<macro src="." join="@source(file-separator)">'
+				+'<h1 '
+						+'contenteditable '
+						// XXX need to make this savable...
+						+'oninput="saveContent(\'@source(./path)/name\')">' 
+					+'@source(./name)'
+				+'</h1>'
 				+'<pre class="editor" '
 						+'wikiwords="no" '
 						+'contenteditable '
@@ -1755,6 +1783,11 @@ module.System = {
 			<slot name="header">@source(../path)</slot>
 			<slot name="content">
 				<macro src=".." join="@source(file-separator)">
+					<h1 class="title-editor"
+							contenteditable 
+							oninput="saveContent(\'@source(./path)/name\')">
+						@source(./name)
+					</h1>
 					<pre class="editor"
 							wikiwords="no"
 							contenteditable
@@ -1762,17 +1795,6 @@ module.System = {
 					><quote filter="quote-tags" src="."/></pre> 
 				</macro>
 			</slot>`},
-
-	// XXX this does not yet work...
-	// XXX "_test" breaks differently than "test"
-	//_test: {
-	test: {
-		text: object.doc`
-			@source(_view)
-			<slot name="header">HEADER</slot>
-			<slot name="content">CONTENT</slot>
-			<slot name="footer">FOOTER</slot> `},
-
 
 	// XXX debug...
 	_path: {text: '@source(./path join=" ")'},
@@ -1824,8 +1846,6 @@ module.System = {
 				(<a href="#@source(../resolved)/edit">edit</a>)<br>
 			Referrer: @source(../referrer)
 				(<a href="#@source(../referrer)/edit">edit</a>)<br>
-			Renderer: @source(../renderer)
-				(<a href="#@source(../renderer)/edit">edit</a>)<br>
 
 			type: @source(../type)<br>
 
@@ -1872,6 +1892,7 @@ module.System = {
 	// page actions...
 	//
 	
+	/* XXX broken... 
 	// XXX this does not work as energetic...
 	// XXX for some reason this is called twice...
 	time: async function(){
@@ -1885,6 +1906,7 @@ module.System = {
 			Time to render: ${time}ms <br>
 			<ht>
 			${text}`},
+	//*/
 	
 	// XXX EXPERIMENTAL -- page types...
 	isAction: async function(){
@@ -1897,20 +1919,29 @@ module.System = {
 			: undefined },
 
 
-	// utils...
-	//
-	// XXX System/subpaths
-	/*/ XXX
-	links: function(){
-		// XXX
-		return '' },
-	// XXX links to pages...
-	LinksTo: function(){
-		return (this.get('..').data || {}).to ?? [] },
-	// XXX pages linking to us...
-	LinksFrom: function(){
-		return (this.get('..').data || {})['from'] ?? [] },
-	//*/	
+	// XXX DEBUG -- remove these...
+	testPage: {
+		text: object.doc`<pre>
+			location: @source(./location)
+			path: @source(./path)
+			args: <args/>
+		</pre>`},
+	testAction: function(){
+		console.log('testAction:', this.location, 
+			this.args, 
+			(this.renderer ?? {}).args, 
+			(this.root ?? {}).args)
+		console.log('          :', this, this.renderer)
+		return this.location },
+	'testAction!': Object.assign(
+		function(){
+			console.log('testAction!:', this.location,
+				this.args, 
+				(this.renderer ?? {}).args, 
+				(this.root ?? {}).args)
+			console.log('           :', this, this.renderer)
+			return this.location },
+		{energetic: true}),
 
 
 	// actions...
@@ -1923,20 +1954,37 @@ module.System = {
 		target.delete()
 
 		// redirect...
-		this.render_root
-			&& (this.render_root.location = this.referrer)
+		this.renderer
+			&& (this.renderer.location = this.referrer)
 		// show info about the delete operation...
 		return target.get('DeletingPage/_text').text },
 
 	// XXX copy/move/...
-	// 		...need arguments
+	// XXX do we need this as a page action???
+	move: function(){
+		var from = this.get('..')
+		// XXX this is ugly...
+		// 		...need to standardize how we get arguments when rendering....
+		var to = this.args.to 
+			|| (this.renderer || {args:{}}).args.to
+
+		console.log('MOVE:', from.path, to)
+		// XXX
+		if(to){
+			// XXX move...
+		}
+		// redirect...
+		this.renderer
+			&& (this.renderer.location = this.referrer)
+		// XXX if we return undefined here this will not fully redirect, 
+		// 		keeping the move page open but setting the url to the 
+		// 		redirected page...
+		return '' },
 
 	// XXX System/back
 	// XXX System/forward
 	// XXX System/sort
 	// XXX System/reverse
-	
-
 }
 
 var Test =
