@@ -15,9 +15,7 @@ var object = require('ig-object')
 var types = require('ig-types')
 
 var pwpath = require('../path')
-
 var base = require('./base')
-
 
 
 
@@ -40,12 +38,29 @@ var FILESTORE_OPTIONS = {
 	verbose: true,
 }
 
+
 var getOpts = 
 function(opts){
 	return {
 		...FILESTORE_OPTIONS,
 		...(opts ?? {}),
 	} }
+
+
+var encode = 
+module.encode =
+function(str){
+	return str.replace(/[^\w .\\\/_\-]/gi, 
+		function(c){
+			return `%${c
+				.charCodeAt(0)
+				.toString(16)
+				.toUpperCase()}` }) }
+var decode =
+module.decode =
+function(str){
+	return decodeURIComponent(str) }
+
 
 //	func(base[, options])
 //		-> true/false
@@ -65,9 +80,10 @@ async function(base, sub, options){
 		base = null }
 	var {index} = getOpts(options)
 
-	var target = base ?
-		pwpath.join(base, sub)
-		: sub
+	var target = encode(
+		base ?
+			pwpath.join(base, sub)
+			: sub)
 	if(!fs.existsSync(target)){
 		return false }
 	var stat = await fs.promises.stat(target)
@@ -83,9 +99,10 @@ async function(base, sub, options){
 		base = null }
 	var {index} = getOpts(options)
 
-	var target = base ?
-		pwpath.join(base, sub)
-		: sub
+	var target = encode(
+		base ?
+			pwpath.join(base, sub)
+			: sub)
 	if(!fs.existsSync(target)){
 		return undefined }
 	// handle dir text...
@@ -109,9 +126,10 @@ async function(base, sub, options){
 
 	var levels = pwpath.split(sub)
 	for(var level of levels){
-		base = base == null ?
-			level
-			: pwpath.join(base, level)
+		base = encode(
+			base == null ?
+				level
+				: pwpath.join(base, level))
 		// nothing exists -- create dir and continue...
 		if(!fs.existsSync(base)){
 			verbose 
@@ -140,9 +158,10 @@ async function(base, sub, data, options){
 		base = null }
 	var {index} = getOpts(options)
 
-	var target = base ?
-		pwpath.join(base, sub)
-		: sub
+	var target = encode(
+		base ?
+			pwpath.join(base, sub)
+			: sub)
 	// path already exists...
 	if(fs.existsSync(target)){
 		var stat = await fs.promises.stat(target)
@@ -176,9 +195,10 @@ async function(base, sub, options){
 	var {index} = getOpts(options)
 
 	// remove leaf...
-	var target = base == '' ?
-		sub
-		: pwpath.join(base, sub)
+	var target = encode(
+		base == '' ?
+			sub
+			: pwpath.join(base, sub))
 	// dir...
 	if(fs.existsSync(target)){
 		var stat = await fs.promises.stat(target)
@@ -198,8 +218,9 @@ async function(base, sub, options){
 		} else {
 			await fs.promises.rm(target) } }
 	// cleanup path -- remove empty dirs... (XXX ???)
-	var levels = pwpath.split(sub)
+	var levels = pwpath.split(encode(sub))
 		.slice(0, -1)
+	base = encode(base)
 	while(levels.length > 0){
 		var cur = pwpath.join(base, ...levels)
 		if(fs.existsSync(cur)){
@@ -216,7 +237,7 @@ module.cleanup =
 async function(base, options){
 	var {index, clearEmptyDir, dirToFile, verbose} = getOpts(options)
 
-	glob(pwpath.join(base, '**/*'))
+	glob(pwpath.join(encode(base), '**/*'))
 		.on('end', async function(paths){
 			paths
 				.sort(function(a, b){
@@ -548,7 +569,7 @@ module.FileStoreRO = {
 					Promise.all(paths
 							.map(async function(path){
 								return await module.exists(path) ?
-									path
+									decode(path)
 										.slice(that.__path__.length)
 									: [] }))
 						.then(function(paths){
