@@ -169,6 +169,8 @@ async function(base, sub, data, options){
 			target = pwpath.join(target, index) } 
 	// create path / parts of path...
 	} else {
+		// NOTE: no need to encode stuff here as it will be taken care 
+		// 		of by .mkdir(..)
 		var levels = pwpath.split(sub)
 		levels.pop()
 		// ensure the parent dir exists...
