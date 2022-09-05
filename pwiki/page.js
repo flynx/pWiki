@@ -1258,7 +1258,7 @@ object.Constructor('Page', BasePage, {
 			this.args,
 			(this.renderer ?? {}).args,
 			(this.root ?? {}).args)
-		console.log('          :', this, this.renderer) 
+		//console.log('          :', this, this.renderer) 
 		return this.location },
 	'testDirect!': Object.assign(
 		function(){
@@ -1266,7 +1266,7 @@ object.Constructor('Page', BasePage, {
 				this.args,
 				(this.renderer ?? {}).args,
 				(this.root ?? {}).args)
-			console.log('           :', this, this.renderer)
+			//console.log('           :', this, this.renderer)
 			return this.location },
 		{energetic: true}),
 
@@ -1931,7 +1931,7 @@ module.System = {
 			this.args, 
 			(this.renderer ?? {}).args, 
 			(this.root ?? {}).args)
-		console.log('          :', this, this.renderer)
+		//console.log('          :', this, this.renderer)
 		return this.location },
 	'testAction!': Object.assign(
 		function(){
@@ -1939,7 +1939,7 @@ module.System = {
 				this.args, 
 				(this.renderer ?? {}).args, 
 				(this.root ?? {}).args)
-			console.log('           :', this, this.renderer)
+			//console.log('           :', this, this.renderer)
 			return this.location },
 		{energetic: true}),
 

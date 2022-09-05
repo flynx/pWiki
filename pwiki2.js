@@ -14,20 +14,34 @@
 * 			testAction		- page action
 * 			testAction!		- energetic page action
 * 		examples:
+* 			// NOTE: .text is redered via _view and thus is on a different
+*			//		level to .raw...
+*			// XXX for .text and .parse(..), the action is called twice...
 * 			// root path: /System/testAction:a:b:c
 * 			await pwiki.get('/path/testDirect:x:y:z').raw
-* 				- x y z -- not seen at all (XXX)
-* 				- a b c -- seen .renderer and .root
+* 				.args			- empty
+* 				.renderer.args	- a b c
+* 				.root.args		- a b c
 * 			await pwiki.get('/path/testAction:x:y:z').raw
-* 				- x y z -- seen local
-* 				- a b c -- seen .renderer and .root
+* 				.args			- x y z 
+* 				.renderer.args	- a b c
+* 				.root.args		- a b c
 * 			await pwiki.get('/path/testDirect:x:y:z').text
-* 				- x y z -- seen .renderer
-* 				- a b c -- seen .root
+* 				.args			- empty
+* 				.renderer.args	- x y z
+* 				.root.args		- a b c
 * 			await pwiki.get('/path/testAction:x:y:z').text 
-* 				(same as for testDirect+text)
-* 				- x y z -- seen .renderer
-* 				- a b c -- seen .root
+* 				.args			- empty
+* 				.renderer.args	- x y z
+* 				.root.args		- a b c
+* 			await pwiki.get('/path/testDirect:x:y:z').parse('@include(.)') 
+* 				.args			- empty
+* 				.renderer.args	- a b c
+* 				.root.args		- a b c
+* 			await pwiki.get('/path/testAction:x:y:z').parse('@include(.)') 
+* 				.args			- empty
+* 				.renderer.args	- a b c
+* 				.root.args		- a b c
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
