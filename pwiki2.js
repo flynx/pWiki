@@ -1,6 +1,9 @@
 /**********************************************************************
 * 
 *
+* XXX BUG: this does not call the args macro...
+* 			await pwiki.get('/path/testDirect:x:y:z').parse('<args/>')
+* 		...syntax checking is done correctly though...
 * XXX ARGS: arg passing is a mess...
 * 		- need a consistent way to access args
 * 			- global
@@ -19,10 +22,9 @@
 *			// XXX for .text and .parse(..), the action is called twice...
 * 			// root path: /System/testAction:a:b:c
 * 			await pwiki.get('/path/testDirect:x:y:z').raw
-* 				.args			- empty
+* 				.args			- x y z
 * 				.renderer.args	- a b c
 * 				.root.args		- a b c
-* 				XXX seem to be losing args on this path...
 * 			await pwiki.get('/path/testAction:x:y:z').raw
 * 				.args			- x y z 
 * 				.renderer.args	- a b c
@@ -31,6 +33,8 @@
 * 				.args			- empty
 * 				.renderer.args	- x y z
 * 				.root.args		- a b c
+* 				XXX args should be local...
+* 					... @include(.:$ARGS) not working???
 * 				XXX triggered twice...
 * 			await pwiki.get('/path/testAction:x:y:z').text 
 * 				.args			- empty

@@ -95,6 +95,8 @@ object.Constructor('BasePage', {
 			return this.name },
 		DIR: function(){
 			return this.dir },
+		ARGS: function(){
+			return pwpath.obj2args(this.args) },
 		//TITLE: function(){
 		//	return this.title },
 
@@ -161,8 +163,6 @@ object.Constructor('BasePage', {
 				&& this.__navigate__()
 			handle() }),
 
-	// .path is a proxy to .location
-	// XXX do we need this???
 	get path(){
 		return pwpath.splitArgs(this.location).path },
 	set path(value){
@@ -171,7 +171,11 @@ object.Constructor('BasePage', {
 	get args(){
 		return pwpath.splitArgs(this.location).args },
 	set args(args){
-		this.location = this.path +':'+ pwpath.obj2args(args) },
+		args = pwpath.obj2args(args) ?? ''
+		this.location = 
+			args == '' ? 
+				'.'
+				: '.:'+ args },
 
 	// NOTE: these are mostly here as helpers to be accessed via page 
 	// 		actions...
@@ -244,7 +248,7 @@ object.Constructor('BasePage', {
 		if(this.actions 
 				&& this.actions.has(this.name)){
 			var name = this.name
-			var page = this.get('..')
+			var page = this.get('..', {args: this.args})
 			var res = (this.isPattern 
 					&& !this.__energetic
 					&& !page[name].energetic) ?
@@ -281,7 +285,8 @@ object.Constructor('BasePage', {
 			?? (this.__title = res.title)
 		//*/
 		return typeof(res) == 'function' ?
-			res.bind(this)
+			//res.bind(this)
+			res.bind(this.get('..', {args: this.args}))
 			: res }).call(this) },
 	set data(value){
 		this.__update__(value) },
@@ -726,20 +731,32 @@ object.Constructor('Page', BasePage, {
 		//	<arg <name>[ <default>][ local]/>
 		//	<arg name=<name>[ default=<value>][ local]/>
 		//
+		// Resolution order:
+		// 		- local
+		// 		- .renderer
+		// 		- .root
+		//
 		arg: Macro(
 			['name', 'default', ['local']],
 			function(args){
-				return this.args[args.name] 
+				var v = this.args[args.name] 
 					|| (!args.local 
-						&& this.root
-						&& this.root.args[args.name])
+						&& (this.renderer
+							&& this.renderer.args[args.name])
+						|| (this.root
+							&& this.root.args[args.name]))
+				v = v === true ?
+					args.name
+					: v
+				return v
 					|| args.default }),
 		'': Macro( 
 			['name', 'default', ['local']],
 			function(args){
 				return this.macros.arg.call(this, args) }),
 		// XXX do we need this???
-		'args': function(){
+		args: function(){
+			console.log('!!!!')
 			return pwpath.obj2args(this.args) },
 		//
 		// 	@filter(<filter-spec>)
@@ -1418,7 +1435,7 @@ object.Constructor('Page', BasePage, {
 			|| path.push(this.PAGE_TEMPLATE)
 		var tpl = pwpath.join(path)
 		var tpl_name = path.pop()
-		path = pwpath.joinArgs(path, this.args)
+		//path = pwpath.joinArgs(path, this.args)
 
 		// get the template relative to the top most pattern...
 		tpl = await this.get(tpl).find(true)
@@ -1432,7 +1449,11 @@ object.Constructor('Page', BasePage, {
 		// this is here for debugging and introspection...
 		'__debug_last_render_state' in this
 			&& (this.__debug_last_render_state = state)
-		var data = { renderer: this }
+		//var data = { renderer: this }
+		var data = { 
+			renderer: this, 
+			args: this.args, 
+		}
 		return this.get(path, data)
 			.parse(
 				this.get('/'+tpl, data).raw, 
@@ -1714,7 +1735,7 @@ module.System = {
 	//
 	// XXX all of these should support pattern pages...
 	_text: {
-		text: '@include(. isolated join="@source(file-separator)")' },
+		text: '@include(.:$ARGS isolated join="@source(file-separator)")' },
 	// XXX /rootpath here is not relative -- makes reuse harder...
 	_view: {
 		text: object.doc`
@@ -1730,7 +1751,7 @@ module.System = {
 
 			<!-- fill slots defaults -->
 			<slot name="content" hidden>
-				@include(. join="@source(file-separator)" recursive="")
+				@include(.:$ARGS join="@source(file-separator)" recursive="")
 			</slot>` },
 	// XXX add join...
 	_raw: {
