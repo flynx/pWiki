@@ -22,6 +22,7 @@
 * 				.args			- empty
 * 				.renderer.args	- a b c
 * 				.root.args		- a b c
+* 				XXX seem to be losing args on this path...
 * 			await pwiki.get('/path/testAction:x:y:z').raw
 * 				.args			- x y z 
 * 				.renderer.args	- a b c
@@ -30,18 +31,24 @@
 * 				.args			- empty
 * 				.renderer.args	- x y z
 * 				.root.args		- a b c
+* 				XXX triggered twice...
 * 			await pwiki.get('/path/testAction:x:y:z').text 
 * 				.args			- empty
 * 				.renderer.args	- x y z
 * 				.root.args		- a b c
+* 				XXX triggered twice...
 * 			await pwiki.get('/path/testDirect:x:y:z').parse('@include(.)') 
 * 				.args			- empty
 * 				.renderer.args	- a b c
 * 				.root.args		- a b c
+* 				XXX seem to be losing args on this path...
+* 				XXX triggered twice...
 * 			await pwiki.get('/path/testAction:x:y:z').parse('@include(.)') 
 * 				.args			- empty
 * 				.renderer.args	- a b c
 * 				.root.args		- a b c
+* 				XXX seem to be losing args on this path...
+* 				XXX triggered twice...
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
