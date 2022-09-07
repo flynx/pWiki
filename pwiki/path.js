@@ -315,7 +315,6 @@ module = {
 	splitArgs: function(path){
 		path = this.normalize(path, 'string')
 		var [path, ...args] = path.split(/(?<!\\):/g)
-
 		return {
 			path,
 			args: args.reduce(function(res, arg){

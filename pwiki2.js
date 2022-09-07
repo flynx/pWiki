@@ -19,6 +19,7 @@
 * 		examples:
 * 			// NOTE: .text is redered via _view and thus is on a different
 *			//		level to .raw...
+* 			// XXX should renderer.args be the same in .text and .parse(..)???
 *			// XXX for .text and .parse(..), the action is called twice...
 * 			// root path: /System/testAction:a:b:c
 * 			await pwiki.get('/path/testDirect:x:y:z').raw
@@ -29,28 +30,23 @@
 * 				.args			- x y z 
 * 				.renderer.args	- a b c
 * 				.root.args		- a b c
-* 			await pwiki.get('/path/testDirect:x:y:z').parse('@include(.)') 
-* 				.args			- empty
+* 			await pwiki.get('/path/testDirect:x:y:z').parse('@include(.:$ARGS)') 
+* 				.args			- x y z
 * 				.renderer.args	- a b c
 * 				.root.args		- a b c
-* 				XXX losing args on this path...
 * 				XXX triggered twice...
-* 			await pwiki.get('/path/testAction:x:y:z').parse('@include(.)') 
-* 				.args			- empty
+* 			await pwiki.get('/path/testAction:x:y:z').parse('@include(.:$ARGS)') 
+* 				.args			- x y z
 * 				.renderer.args	- a b c
 * 				.root.args		- a b c
-* 				XXX losing args on this path...
 * 				XXX triggered twice...
-* 			XXX .text uses .parse(..) internally...
 * 			await pwiki.get('/path/testDirect:x:y:z').text
-* 				.args			- empty
+* 				.args			- x y z
 * 				.renderer.args	- x y z
 * 				.root.args		- a b c
-* 				XXX args should be local...
-* 					... @include(.:$ARGS) not working???
 * 				XXX triggered twice...
 * 			await pwiki.get('/path/testAction:x:y:z').text 
-* 				.args			- empty
+* 				.args			- x y z
 * 				.renderer.args	- x y z
 * 				.root.args		- a b c
 * 				XXX triggered twice...

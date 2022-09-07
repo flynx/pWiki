@@ -23,7 +23,7 @@ var markdown = require('./filters/markdown')
 
 var relProxy = 
 function(name){
-	var func = function(path='.', ...args){
+	var func = function(path='.:$ARGS', ...args){
 		return this.store[name](
 			pwpath.relative(this.path, path), 
 			...args) } 
@@ -31,10 +31,10 @@ function(name){
 	return func } 
 var relMatchProxy = 
 function(name){
-	var func = function(path='.', strict=this.strict){
+	var func = function(path='.:$ARGS', strict=this.strict){
 		if(path === true || path === false){
 			strict = path
-			path = '.' }
+			path = '.:$ARGS' }
 		return this.store[name](
 			pwpath.relative(this.path, path), 
 			strict) } 
@@ -372,6 +372,7 @@ object.Constructor('BasePage', {
 	// 		-> path
 	// 		-> undefined
 	//
+	// XXX ARGS preserve args...
 	find: function(path='.', strict=false){
 		if(path === true || path === false){
 			strict = path
@@ -403,7 +404,7 @@ object.Constructor('BasePage', {
 		// 		we really have to...
 		path = path ?
 			pwpath.relative(this.path, path)
-			: this.path
+			: this.location
 		var paths = path.includes('*') 
 				// XXX ENERGETIC...
 				&& !(await this.energetic
@@ -844,7 +845,8 @@ object.Constructor('Page', BasePage, {
 					key = key ?? 'included' }
 				var base = this.get(this.path.split(/\*/).shift())
 				var src = args.src
-					&& await base.parse(args.src, state)
+					//&& await base.parse(args.src, state)
+					&& this.resolvePathVars(await base.parse(args.src, state))
 				if(!src){
 					return }
 				var recursive = args.recursive ?? body
@@ -875,7 +877,8 @@ object.Constructor('Page', BasePage, {
 						yield join }
 					first = false
 
-					var full = page.path
+					//var full = page.path
+					var full = page.location
 
 					// handle recursion...
 					var parent_seen = 'seen' in state
@@ -1266,7 +1269,7 @@ object.Constructor('Page', BasePage, {
 
 	'!': Object.assign(
 		function(){
-			return this.get('.', {energetic: true}).raw },
+			return this.get('.:$ARGS', {energetic: true}).raw },
 		{energetic: true}),
 
 	// XXX DEBUG -- remove these...
@@ -1314,17 +1317,6 @@ object.Constructor('Page', BasePage, {
 			text = null }
 		state = state ?? {}
 		return this.__parser__.parse(this, text, state) },
-
-	// true if page has an array value but is not a pattern page...
-	//
-	// XXX the split into pattern and array pages feels a bit overcomplicated...
-	// 		...can we merge the two and simplify things???
-	// XXX EXPERIMENTAL
-	get isArray(){ return (async function(){
-		return !this.isPattern 
-			// NOTE: we can't only use .data here as it can be a function 
-			// 		that will return an array...
-			&& await this.raw instanceof Array }).call(this) },
 
 	// raw page text...
 	//
@@ -1379,7 +1371,7 @@ object.Constructor('Page', BasePage, {
 	// 		actions...
 	//
 	// XXX revise name...
-	asPages: async function*(path='.', strict=false, noexpandactions=false){
+	asPages: async function*(path='.:$ARGS', strict=false, noexpandactions=false){
 		// options...
 		var args = [...arguments]
 		var opts = typeof(args.at(-1)) == 'object' ?
@@ -1389,7 +1381,7 @@ object.Constructor('Page', BasePage, {
 			...opts,
 			path: typeof(args[0]) == 'string' ?
 				args.shift()
-				: '.',
+				: '.:$ARGS',
 			strict: args.shift() 
 				?? false,
 		}

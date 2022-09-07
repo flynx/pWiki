@@ -241,7 +241,8 @@ module.BaseStore = {
 		/*/
 		path = pwpath.normalize(path, 'string')
 		//*/
-		return (await this.__exists__(path))
+		var {path, args} = pwpath.splitArgs(path)
+		var res = (await this.__exists__(path))
 			// NOTE: all paths at this point and in store are 
 			// 		absolute, so we check both with the leading 
 			// 		'/' and without it to make things a bit more 
@@ -266,10 +267,15 @@ module.BaseStore = {
 							: ('/'+ path)))) 
 					//*/
 			// normalize the output...
-			|| false },
+			|| false 
+		if(!res){
+			return false }
+		return pwpath.joinArgs(res, args) },
 	// find the closest existing alternative path...
 	// XXX CACHED....
 	find: async function(path, strict=false){
+		var {path, args} = pwpath.splitArgs(path)
+		args = pwpath.joinArgs('', args)
 		// build list of existing page candidates...
 		var names = await this.names()
 		var pages = new Set(
@@ -280,12 +286,12 @@ module.BaseStore = {
 		// select accessible candidate...
 		for(var p of pwpath.paths(path, !!strict)){
 			if(pages.has(p)){
-				return p }
+				return p+args }
 			p = p[0] == '/' ? 
 				p.slice(1) 
 				: '/'+p
 			if(pages.has(p)){
-				return p } } },
+				return p+args } } },
 	/*/
 	find: async function(path, strict=false){
 		for(var p of pwpath.paths(path, !!strict)){
@@ -317,12 +323,14 @@ module.BaseStore = {
 		if(path.includes('*') 
 				|| path.includes('**')){
 			var order = (this.metadata(path) ?? {}).order || []
+			var {path, args} = pwpath.splitArgs(path)
+			args = pwpath.joinArgs('', args)
 			// NOTE: we are matching full paths only here so leading and 
 			// 		trainling '/' are optional...
 			// NOTE: we ensure that we match full names and always split 
 			// 		at '/' only...
 			var pattern = new RegExp(`^\\/?${
-					pwpath.normalize(path, 'string')
+					path
 						.replace(/^\/|\/$/g, '')
 						.replace(/\//g, '\\/')
 						.replace(/\*\*/g, '.*')
@@ -353,7 +361,9 @@ module.BaseStore = {
 									m[0].slice(1) 
 									: m[0])
 						return res }, new Set())]
-			   .sortAs(order) }
+				.sortAs(order)
+				.map(function(p){
+					return p+args })}
 		// direct search...
 		return this.find(path, strict) },
 	//
@@ -378,8 +388,9 @@ module.BaseStore = {
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
-			path = pwpath.split(path)
-			var p = path.slice()
+			var p = pwpath.splitArgs(path)
+			var args = pwpath.joinArgs('', p.args)
+			p = pwpath.split(p.path)
 			var tail = []
 			while(!p.at(-1).includes('*')){
 				tail.unshift(p.pop()) }
@@ -387,7 +398,7 @@ module.BaseStore = {
 			if(tail.length > 0){
 				return (await this.match(p.join('/'), strict))
 					.map(function(p){
-						return pwpath.join(p, tail) }) } }
+						return pwpath.join(p, tail) + args }) } }
 		// direct...
 		return this.match(path, strict) },
 	// 
@@ -419,6 +430,7 @@ module.BaseStore = {
 		// XXX SANITIZE...
 		path = pwpath.sanitize(path, 'string')
 		//*/
+		var path = pwpath.splitArgs(path).path
 		path = path.includes('*') 
 			&& (energetic == true ?
 				await this.find(path)
@@ -461,6 +473,7 @@ module.BaseStore = {
 	// NOTE: setting/removing metadata is done via .update(..) / .delete(..)
 	// NOTE: this uses .__get__(..) internally...
 	metadata: async function(path, ...args){
+		path = pwpath.splitArgs(path).path
 		// set...
 		if(args.length > 0){
 			return this.update(path, ...args) }
@@ -491,6 +504,7 @@ module.BaseStore = {
 			/*/
 			|| pwpath.normalize(path, 'string')
 			//*/
+		path = pwpath.splitArgs(path).path
 		data = data instanceof Promise ?
 			await data
 			: data
@@ -517,6 +531,7 @@ module.BaseStore = {
 		// read-only...
 		if(this.__delete__ == null){
 			return this }
+		path = pwpath.splitArgs(path).path
 		path = await this.exists(path)
 		if(path){
 			await this.__delete__(path)
