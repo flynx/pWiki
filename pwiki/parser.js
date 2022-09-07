@@ -83,7 +83,7 @@ module.BaseParser = {
 			// @(arg ..)
 			'\\\\?@\\((?<argsUnnamed>UNNAMED_ARGS)\\)',
 			// <macro ..> | <macro ../>
-			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>ARGS)?\\s*/?>',
+			'<\\s*(?<nameOpen>MACROS)(?<argsOpen>\\sARGS)?\\s*/?>',
 			// </macro>
 			'</\\s*(?<nameClose>MACROS)\\s*>',
 		].join('|'))+')',

@@ -1,55 +1,28 @@
 /**********************************************************************
 * 
 *
-* XXX BUG: this does not call the args macro...
-* 			await pwiki.get('/path/testDirect:x:y:z').parse('<args/>')
-* 		...syntax checking is done correctly though...
-* XXX ARGS: arg passing is a mess...
-* 		- need a consistent way to access args
-* 			- global
-* 				.root.args?
-* 			- render root
-* 			- local
-* 		use:
-* 			testDirect		- direct action
-* 			testDirect!		- energetic direct action
-* 			testPage		- page
-* 			testAction		- page action
-* 			testAction!		- energetic page action
-* 		examples:
-* 			// NOTE: .text is redered via _view and thus is on a different
-*			//		level to .raw...
-* 			// XXX should renderer.args be the same in .text and .parse(..)???
-*			// XXX for .text and .parse(..), the action is called twice...
+* XXX BUG?: the action is called twice here:
+* 			await pwiki.get('/path/testDirect:x:y:z').parse('@include(.:$ARGS)') 
+* 		and:
+* 			await pwiki.get('/path/testDirect:x:y:z').text
+* XXX ARGS: should the arg locations in these be the same???
 * 			// root path: /System/testAction:a:b:c
 * 			await pwiki.get('/path/testDirect:x:y:z').raw
 * 				.args			- x y z
-* 				.renderer.args	- a b c
-* 				.root.args		- a b c
-* 			await pwiki.get('/path/testAction:x:y:z').raw
-* 				.args			- x y z 
-* 				.renderer.args	- a b c
+* 				.renderer.args	- a b c (XXX seems logical)
 * 				.root.args		- a b c
 * 			await pwiki.get('/path/testDirect:x:y:z').parse('@include(.:$ARGS)') 
 * 				.args			- x y z
-* 				.renderer.args	- a b c
+* 				.renderer.args	- a b c (XXX odd)
 * 				.root.args		- a b c
-* 				XXX triggered twice...
-* 			await pwiki.get('/path/testAction:x:y:z').parse('@include(.:$ARGS)') 
-* 				.args			- x y z
-* 				.renderer.args	- a b c
-* 				.root.args		- a b c
-* 				XXX triggered twice...
 * 			await pwiki.get('/path/testDirect:x:y:z').text
 * 				.args			- x y z
-* 				.renderer.args	- x y z
+* 				.renderer.args	- x y z (XXX logical)
 * 				.root.args		- a b c
-* 				XXX triggered twice...
-* 			await pwiki.get('/path/testAction:x:y:z').text 
-* 				.args			- x y z
-* 				.renderer.args	- x y z
-* 				.root.args		- a b c
-* 				XXX triggered twice...
+* 		...this essentially boils down to how .renderer is handled...
+* 		currently it is inherited and since all pages are clones of the 
+* 		root page and the root is rendered it is always the .renderer 
+* 		unless we explicitly reassign it (.text)
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter

@@ -24,6 +24,7 @@ var markdown = require('./filters/markdown')
 var relProxy = 
 function(name){
 	var func = function(path='.:$ARGS', ...args){
+		path = this.resolvePathVars(path)
 		return this.store[name](
 			pwpath.relative(this.path, path), 
 			...args) } 
@@ -35,6 +36,7 @@ function(name){
 		if(path === true || path === false){
 			strict = path
 			path = '.:$ARGS' }
+		path = this.resolvePathVars(path)
 		return this.store[name](
 			pwpath.relative(this.path, path), 
 			strict) } 
@@ -755,9 +757,7 @@ object.Constructor('Page', BasePage, {
 			['name', 'default', ['local']],
 			function(args){
 				return this.macros.arg.call(this, args) }),
-		// XXX do we need this???
 		args: function(){
-			console.log('!!!!')
 			return pwpath.obj2args(this.args) },
 		//
 		// 	@filter(<filter-spec>)
@@ -1859,6 +1859,7 @@ module.System = {
 				(<a href="#@source(../resolved)/edit">edit</a>)<br>
 			Referrer: @source(../referrer)
 				(<a href="#@source(../referrer)/edit">edit</a>)<br>
+			Args: <args/><br>
 
 			type: @source(../type)<br>
 
