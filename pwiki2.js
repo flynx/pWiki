@@ -29,18 +29,6 @@
 * 				.args			- x y z 
 * 				.renderer.args	- a b c
 * 				.root.args		- a b c
-* 			await pwiki.get('/path/testDirect:x:y:z').text
-* 				.args			- empty
-* 				.renderer.args	- x y z
-* 				.root.args		- a b c
-* 				XXX args should be local...
-* 					... @include(.:$ARGS) not working???
-* 				XXX triggered twice...
-* 			await pwiki.get('/path/testAction:x:y:z').text 
-* 				.args			- empty
-* 				.renderer.args	- x y z
-* 				.root.args		- a b c
-* 				XXX triggered twice...
 * 			await pwiki.get('/path/testDirect:x:y:z').parse('@include(.)') 
 * 				.args			- empty
 * 				.renderer.args	- a b c
@@ -52,6 +40,19 @@
 * 				.renderer.args	- a b c
 * 				.root.args		- a b c
 * 				XXX losing args on this path...
+* 				XXX triggered twice...
+* 			XXX .text uses .parse(..) internally...
+* 			await pwiki.get('/path/testDirect:x:y:z').text
+* 				.args			- empty
+* 				.renderer.args	- x y z
+* 				.root.args		- a b c
+* 				XXX args should be local...
+* 					... @include(.:$ARGS) not working???
+* 				XXX triggered twice...
+* 			await pwiki.get('/path/testAction:x:y:z').text 
+* 				.args			- empty
+* 				.renderer.args	- x y z
+* 				.root.args		- a b c
 * 				XXX triggered twice...
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX FEATURE tags and accompanying API...
