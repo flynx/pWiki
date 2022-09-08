@@ -15,6 +15,8 @@
 * 				.args			- x y z
 * 				.renderer.args	- a b c (XXX odd)
 * 				.root.args		- a b c
+* 				XXX should parse .get('.:$ARGS', {renderer: ...}) ???
+* 					...or should it set/reset .renderer on this???
 * 			await pwiki.get('/path/testDirect:x:y:z').text
 * 				.args			- x y z
 * 				.renderer.args	- x y z (XXX logical)
