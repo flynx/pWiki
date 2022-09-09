@@ -424,7 +424,6 @@ object.Constructor('BasePage', {
 			[await this.find(path)]
 			: paths
 		//*/
-
 		for(var path of paths){
 			yield this.get('/'+ path) } },
 	[Symbol.asyncIterator]: async function*(){
@@ -837,7 +836,8 @@ object.Constructor('Page', BasePage, {
 		// 		not 100% correct manner focusing on path depth and ignoring
 		// 		the context, this potentially can lead to false positives.
 		include: Macro(
-			['src', 'recursive', 'join', ['strict', 'nonstrict', 'isolated']],
+			['src', 'recursive', 'join', 
+				['strict', 'nonstrict', 'isolated', 'all']],
 			async function*(args, body, state, key='included', handler){
 				var macro = 'include'
 				if(typeof(args) == 'string'){
@@ -924,7 +924,10 @@ object.Constructor('Page', BasePage, {
 		// 		include is rendered in the context of its page but with
 		// 		the same state...
 		source: Macro(
-			['src'],
+			// XXX should this have the same args as include???
+			['src', 'recursive', 'join', 
+				['strict', 'nonstrict', 'isolated', 'all']],
+			//['src'],
 			async function*(args, body, state){
 				yield* this.macros.include.call(this, 
 					'source',
@@ -952,7 +955,8 @@ object.Constructor('Page', BasePage, {
 		//
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: Macro(
-			['src', 'filter', 'text', 'join', ['expandactions']],
+			['src', 'filter', 'text', 'join', 
+				['expandactions', 'all']],
 			async function*(args, body, state){
 				var src = args.src //|| args[0]
 				var base = this.get(this.path.split(/\*/).shift())
@@ -1157,11 +1161,13 @@ object.Constructor('Page', BasePage, {
 		//
 		// XXX SORT sorting not implemented yet....
 		macro: Macro(
-			['name', 'src', 'sort', 'text', 'join', 'else', ['strict', 'nonstrict']],
+			['name', 'src', 'sort', 'text', 'join', 'else', 
+				['strict', 'nonstrict', 'all']],
 			async function*(args, body, state){
 				var that = this
 				var name = args.name //?? args[0]
 				var src = args.src
+				var all = args.all
 				var base = this.get(this.path.split(/\*/).shift())
 				var sort = (args.sort ?? '')
 					.split(/\s+/g)
@@ -1819,7 +1825,7 @@ module.System = {
 				<a href="#@source(../../path)/list">&#x21D1;</a>
 				@source(../path)
 			</slot>
-			<macro src="../*" join="@source(line-separator)">
+			<macro src="../*:@(all)" join="@source(line-separator)">
 				<a href="#@source(./path)">@source(./name)</a>
 				<sup>
 					<macro src="./isAction">
@@ -1836,7 +1842,7 @@ module.System = {
 	// XXX this is really slow...
 	tree: {
 		text: object.doc`
-			<macro src="../*">
+			<macro src="../*:@(all)">
 				<div>
 					<div class="item">
 						<a href="#@source(./path)">@source(./name)</a>
@@ -1844,12 +1850,12 @@ module.System = {
 						<a class="show-on-hover" href="#@source(./path)/delete">&times;</a>
 					</div>
 					<div style="padding-left: 30px">
-						@source(./tree)
+						@source("./tree:@(all)")
 					</div>
 				</div>
 			</macro>` },
 	all: {
-		text: `@include(../**/path join="@source(line-separator)")`},
+		text: `@include("../**/path:@(all)" join="@source(line-separator)")`},
 	info: {
 		text: object.doc`
 			Path: @source(../path) 
@@ -2011,6 +2017,10 @@ module.Test = {
 		yield* [...'abcdef'] },
 	'list/static': {
 		text: [...'abcdef'] },
+
+	// this is shown by most listers by adding an :all argument to the url...
+	'.hidden': {
+		text: 'Hidden page...' },
 
 	slots: {
 		text: object.doc`

@@ -324,6 +324,7 @@ module.BaseStore = {
 				|| path.includes('**')){
 			var order = (this.metadata(path) ?? {}).order || []
 			var {path, args} = pwpath.splitArgs(path)
+			var all = args.all
 			args = pwpath.joinArgs('', args)
 			// NOTE: we are matching full paths only here so leading and 
 			// 		trainling '/' are optional...
@@ -350,6 +351,9 @@ module.BaseStore = {
 					.reduce(function(res, p){
 						// skip metadata paths...
 						if(p.includes('*')){
+							return res }
+						if(pwpath.basename(p)[0] == '.' 
+								&& !all){
 							return res }
 						var m = p.match(pattern)
 						m
@@ -389,6 +393,7 @@ module.BaseStore = {
 		if(path.includes('*') 
 				|| path.includes('**')){
 			var p = pwpath.splitArgs(path)
+			var all = p.args.all
 			var args = pwpath.joinArgs('', p.args)
 			p = pwpath.split(p.path)
 			var tail = []
@@ -396,8 +401,12 @@ module.BaseStore = {
 				tail.unshift(p.pop()) }
 			tail = tail.join('/')
 			if(tail.length > 0){
-				return (await this.match(p.join('/'), strict))
+				return (await this.match(
+						p.join('/') + (all ? ':all' : ''), 
+						strict))
 					.map(function(p){
+						all &&
+							(p = p.replace(/:all/, ''))
 						return pwpath.join(p, tail) + args }) } }
 		// direct...
 		return this.match(path, strict) },
