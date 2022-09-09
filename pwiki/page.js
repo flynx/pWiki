@@ -837,7 +837,7 @@ object.Constructor('Page', BasePage, {
 		// 		the context, this potentially can lead to false positives.
 		include: Macro(
 			['src', 'recursive', 'join', 
-				['strict', 'nonstrict', 'isolated', 'all']],
+				['strict', 'nonstrict', 'isolated']],
 			async function*(args, body, state, key='included', handler){
 				var macro = 'include'
 				if(typeof(args) == 'string'){
@@ -926,7 +926,7 @@ object.Constructor('Page', BasePage, {
 		source: Macro(
 			// XXX should this have the same args as include???
 			['src', 'recursive', 'join', 
-				['strict', 'nonstrict', 'isolated', 'all']],
+				['strict', 'nonstrict', 'isolated']],
 			//['src'],
 			async function*(args, body, state){
 				yield* this.macros.include.call(this, 
@@ -956,7 +956,7 @@ object.Constructor('Page', BasePage, {
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: Macro(
 			['src', 'filter', 'text', 'join', 
-				['expandactions', 'all']],
+				['expandactions']],
 			async function*(args, body, state){
 				var src = args.src //|| args[0]
 				var base = this.get(this.path.split(/\*/).shift())
@@ -1162,7 +1162,7 @@ object.Constructor('Page', BasePage, {
 		// XXX SORT sorting not implemented yet....
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else', 
-				['strict', 'nonstrict', 'all']],
+				['strict', 'nonstrict']],
 			async function*(args, body, state){
 				var that = this
 				var name = args.name //?? args[0]
@@ -2094,7 +2094,6 @@ module.Test = {
 PAGES=100
 for(var i=0; i<PAGES; i++){
 	Test['Subtree/Page'+i] = {text: 'page: '+i} }
-
 
 var Settings =
 module.Settings = {
