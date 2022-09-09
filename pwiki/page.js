@@ -1383,21 +1383,13 @@ object.Constructor('Page', BasePage, {
 	// 		actions...
 	//
 	// XXX revise name...
-	// XXX NOEXPANDACTION
 	asPages: async function*(path='.:$ARGS', strict=false){
-	/*/
-	asPages: async function*(path='.:$ARGS', strict=false, noexpandactions=false){
-	//*/
 		// options...
 		var args = [...arguments]
 		var opts = typeof(args.at(-1)) == 'object' ?
 			args.pop()
 			: {}
-		// XXX NOEXPANDACTION
 		var {path, strict} = {
-		/*/
-		var {path, strict, noexpandactions} = {
-		//*/
 			...opts,
 			path: typeof(args[0]) == 'string' ?
 				args.shift()
@@ -1412,7 +1404,6 @@ object.Constructor('Page', BasePage, {
 			yield* page
 		// handle lists in pages (actions, ... etc.)...
 		} else {
-			// XXX NOEXPANDACTION
 			var data = await page.data
 			data = typeof(data) == 'function' ?
 					data
@@ -1427,21 +1418,6 @@ object.Constructor('Page', BasePage, {
 				return }
 
 			yield page } },
-			/*/
-			if(noexpandactions 
-					&& await page.type == 'action'){
-				//yield this.get(this.QUOTE_ACTION_PAGE)
-				yield page 
-				return }
-			var raw = await page.raw
-			if(raw == null){
-				return }
-			yield* raw instanceof Array ?
-				raw
-					.map(function(p){
-						return page.virtual({text: p}) })
-				: [page] } },
-			//*/
 
 	// expanded page text...
 	//

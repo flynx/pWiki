@@ -1,9 +1,13 @@
 /**********************************************************************
 * 
 *
-* XXX add support for generator actions...
 * XXX BUG CHROME: can't .get(..) a generator...
-* 		https://bugs.chromium.org/p/chromium/issues/detail?id=1361981
+* 			https://bugs.chromium.org/p/chromium/issues/detail?id=1361981
+* 		when done test:
+* 			.get('/test/list/generator').asPages()
+* 			.get('/test/list/generator').raw
+* 			.get('/test/list/generator').data
+* 			.get('/test/list/generator').text
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
