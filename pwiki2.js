@@ -5,26 +5,6 @@
 * 			await pwiki.get('/path/testDirect:x:y:z').parse('@include(.:$ARGS)') 
 * 		and:
 * 			await pwiki.get('/path/testDirect:x:y:z').text
-* XXX ARGS: should the arg locations in these be the same???
-* 			// root path: /System/testAction:a:b:c
-* 			await pwiki.get('/path/testDirect:x:y:z').raw
-* 				.args			- x y z
-* 				.renderer.args	- a b c (XXX seems logical)
-* 				.root.args		- a b c
-* 			await pwiki.get('/path/testDirect:x:y:z').parse('@include(.:$ARGS)') 
-* 				.args			- x y z
-* 				.renderer.args	- a b c (XXX odd)
-* 				.root.args		- a b c
-* 				XXX should parse .get('.:$ARGS', {renderer: ...}) ???
-* 					...or should it set/reset .renderer on this???
-* 			await pwiki.get('/path/testDirect:x:y:z').text
-* 				.args			- x y z
-* 				.renderer.args	- x y z (XXX logical)
-* 				.root.args		- a b c
-* 		...this essentially boils down to how .renderer is handled...
-* 		currently it is inherited and since all pages are clones of the 
-* 		root page and the root is rendered it is always the .renderer 
-* 		unless we explicitly reassign it (.text)
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter

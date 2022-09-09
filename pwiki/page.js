@@ -1306,6 +1306,9 @@ object.Constructor('Page', BasePage, {
 
 	// page parser...
 	//
+	// NOTE: .__debug_last_render_state is mainly exposed for introspection 
+	// 		and debugging, set comment it out to disable...
+	//__debug_last_render_state: undefined,
 	parse: async function(text, state){
 		var that = this
 		text = await text
@@ -1316,7 +1319,17 @@ object.Constructor('Page', BasePage, {
 			state = text
 			text = null }
 		state = state ?? {}
-		return this.__parser__.parse(this, text, state) },
+		// this is here for debugging and introspection...
+		'__debug_last_render_state' in this
+			&& (this.__debug_last_render_state = state)
+		// parse...
+		return this.__parser__.parse(
+			this.get('.', {
+				renderer: this,
+				args: this.args, 
+			}), 
+			text, 
+			state) },
 
 	// raw page text...
 	//
@@ -1412,10 +1425,6 @@ object.Constructor('Page', BasePage, {
 	// NOTE: writing to .raw is the same as writing to .text...
 	//
 	// XXX revise how we handle strict mode...
-	//
-	// NOTE: .__debug_last_render_state is mainly exposed for introspection 
-	// 		and debugging, set comment it out to disable...
-	//__debug_last_render_state: undefined,
 	get text(){ return (async function(){
 		// strict mode -- break on non-existing pages...
 		if(this.strict 
@@ -1427,7 +1436,6 @@ object.Constructor('Page', BasePage, {
 			|| path.push(this.PAGE_TEMPLATE)
 		var tpl = pwpath.join(path)
 		var tpl_name = path.pop()
-		//path = pwpath.joinArgs(path, this.args)
 
 		// get the template relative to the top most pattern...
 		tpl = await this.get(tpl).find(true)
@@ -1438,18 +1446,9 @@ object.Constructor('Page', BasePage, {
 		// render template in context of page...
 		var depends = this.depends = new Set([tpl])
 		var state = {depends}
-		// this is here for debugging and introspection...
-		'__debug_last_render_state' in this
-			&& (this.__debug_last_render_state = state)
-		//var data = { renderer: this }
-		var data = { 
-			renderer: this, 
-			args: this.args, 
-		}
-		return this.get(path, data)
-			.parse(
-				this.get('/'+tpl, data).raw, 
-				state) }).call(this) },
+		// do the parse...
+		return this
+			.parse(this.get('/'+tpl).raw, state) }).call(this) },
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
