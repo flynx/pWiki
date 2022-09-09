@@ -1,10 +1,9 @@
 /**********************************************************************
 * 
 *
-* XXX BUG?: the action is called twice here:
-* 			await pwiki.get('/path/testDirect:x:y:z').parse('@include(.:$ARGS)') 
-* 		and:
-* 			await pwiki.get('/path/testDirect:x:y:z').text
+* XXX add support for generator actions...
+* XXX BUG CHROME: can't .get(..) a generator...
+* 		https://bugs.chromium.org/p/chromium/issues/detail?id=1361981
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter

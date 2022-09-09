@@ -845,8 +845,8 @@ object.Constructor('Page', BasePage, {
 					key = key ?? 'included' }
 				var base = this.get(this.path.split(/\*/).shift())
 				var src = args.src
-					//&& await base.parse(args.src, state)
-					&& this.resolvePathVars(await base.parse(args.src, state))
+					&& this.resolvePathVars(
+						await base.parse(args.src, state))
 				if(!src){
 					return }
 				var recursive = args.recursive ?? body
@@ -884,7 +884,6 @@ object.Constructor('Page', BasePage, {
 					var parent_seen = 'seen' in state
 					var seen = state.seen = 
 						new Set(state.seen ?? [])
-					// recursion detected...
 					if(seen.has(full)
 							// nesting path recursion...
 							|| (full.length % (this.NESTING_RECURSION_TEST_THRESHOLD || 50) == 0
@@ -1384,13 +1383,21 @@ object.Constructor('Page', BasePage, {
 	// 		actions...
 	//
 	// XXX revise name...
+	// XXX NOEXPANDACTION
+	asPages: async function*(path='.:$ARGS', strict=false){
+	/*/
 	asPages: async function*(path='.:$ARGS', strict=false, noexpandactions=false){
+	//*/
 		// options...
 		var args = [...arguments]
 		var opts = typeof(args.at(-1)) == 'object' ?
 			args.pop()
 			: {}
+		// XXX NOEXPANDACTION
+		var {path, strict} = {
+		/*/
 		var {path, strict, noexpandactions} = {
+		//*/
 			...opts,
 			path: typeof(args[0]) == 'string' ?
 				args.shift()
@@ -1400,8 +1407,27 @@ object.Constructor('Page', BasePage, {
 		}
 
 		var page = this.get(path, strict)
+		// each...
+		if(page.isPattern){
+			yield* page
 		// handle lists in pages (actions, ... etc.)...
-		if(!page.isPattern){
+		} else {
+			// XXX NOEXPANDACTION
+			var data = await page.data
+			data = typeof(data) == 'function' ?
+					data
+				: 'text' in data ?
+					data.text
+				: null
+			if(data instanceof Array
+					|| data instanceof types.Generator){
+				yield* data
+					.map(function(p){
+						return page.virtual({text: p}) })
+				return }
+
+			yield page } },
+			/*/
 			if(noexpandactions 
 					&& await page.type == 'action'){
 				//yield this.get(this.QUOTE_ACTION_PAGE)
@@ -1414,10 +1440,8 @@ object.Constructor('Page', BasePage, {
 				raw
 					.map(function(p){
 						return page.virtual({text: p}) })
-				: [page] 
-		// each...
-		} else {
-			yield* page } },
+				: [page] } },
+			//*/
 
 	// expanded page text...
 	//
@@ -2002,9 +2026,14 @@ module.System = {
 
 var Test =
 module.Test = {
-	'list/action': function(){
-		return [...'abcdef'] },
-	'list/statuc': {
+	// XXX do we support this???
+	//'list/action': function(){
+	//	return [...'abcdef'] },
+	// XXX BUG CHROME: this hangs under chrome...
+	// 		(see: pwiki2.js)
+	'list/generator': function*(){
+		yield* [...'abcdef'] },
+	'list/static': {
 		text: [...'abcdef'] },
 
 	slots: {
