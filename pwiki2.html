@@ -81,8 +81,8 @@ body.loading .page.spinner {
 	animation: fadein 1s 1;
 }
 body.loading .page.spinner span {
-	font-size: 1.5em;
-	animation: loading 3s infinite ;
+	font-size: 4em;
+	animation: loading 2s infinite ;
 	animation-delay: calc(0.2s * var(--i));
 }
 @keyframes fadein {
@@ -232,8 +232,7 @@ require(['./browser'], function(browser){
 		pwiki.location = decodeURI(location.hash).slice(1) }) }) 
 
 
-// XXX make this a 2 stage save -- first cache and then save to store...
-// XXX versioning???
+// XXX versioning??
 var SAVE_TIMEOUT = 5000
 var SAVE_QUEUE = {}
 var saveContent = 
@@ -291,16 +290,9 @@ var exportData = async function(){
 </div>
 
 <div class="page spinner">
-	<span style="--i:0">l</span>
-	<span style="--i:1">o</span>
-	<span style="--i:2">a</span>
-	<span style="--i:3">d</span>
-	<span style="--i:4">i</span>
-	<span style="--i:5">n</span>
-	<span style="--i:6">g</span>
-	<span style="--i:7">.</span>
-	<span style="--i:8">.</span>
-	<span style="--i:9">.</span>
+	<span style="--i:0">.</span>
+	<span style="--i:1">.</span>
+	<span style="--i:2">.</span>
 </div>
 
 </body>
