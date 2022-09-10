@@ -8,11 +8,18 @@
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX the parser should handle all action return values, including:
 * 			- lists			-- XXX
-* 			- iterators		-- XXX
 * 			- strings		-- DONE
 * 			- numbers		-- DONE
 * 			- misc:
 * 				dates		-- ???
+* 		note that an action returning a list is not the same as a list
+* 		stoted in <data>.text -- since we can't identify what an action
+* 		returns without calling it, and we only call actions on 
+* 		.raw/.text/.parse(..), we can't iterate over such results.
+* 		Q: can we make a list reder as a list of pages??
+* 			...likely no...
+* 			...would depend on where we iterate pages and on whether 
+* 			we can/should reach that spot from within the parser...
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
 * 			- <page>.text -> <page>.tags (cached on .update(..))
