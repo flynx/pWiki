@@ -2,12 +2,19 @@
 * 
 *
 * XXX BUG CHROME: can't .get(..) a generator...
+* 		affected code:
+* 			BaseStore's .get(..)
+* 		bug report:
 * 			https://bugs.chromium.org/p/chromium/issues/detail?id=1361981
 * 		when done test:
 * 			.get('/test/list/generator').asPages()
 * 			.get('/test/list/generator').raw
 * 			.get('/test/list/generator').data
 * 			.get('/test/list/generator').text
+* 		potential temporaty fix:
+* 			wrap all .__get__(..) call in an async function testing if 
+* 			it's return value is a generator function (return) or anything 
+* 			else (await)...
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter

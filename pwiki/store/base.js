@@ -454,6 +454,9 @@ module.BaseStore = {
 					// 		this can be the result of matching a/* in a a/b/c
 					// 		and returning a a/b which can be undefined...
 					return that.get(p, strict) })
+			// XXX BUG CHROME: this hangs on Chrome when getting a 
+			// 		generator function...
+			// 		...should not require any editing when bug fixed.
 			: (await this.__get__(path) 
 				?? ((this.next || {}).__get__ 
 					&& this.next.get(path, strict))) },
