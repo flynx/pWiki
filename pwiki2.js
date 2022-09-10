@@ -1,8 +1,6 @@
 /**********************************************************************
 * 
 *
-* XXX BUG: '@include(@(arg))' does not parse correctly while @include("@(arg)") does...
-* 		...likely due to the regexp not counting the brace balance...
 * XXX BUG CHROME: can't .get(..) a generator...
 * 			https://bugs.chromium.org/p/chromium/issues/detail?id=1361981
 * 		when done test:
@@ -313,6 +311,10 @@
 * 			(see: pwiki/page.js: Page.macros.include(..) notes)
 * 		- slot <content/> order -- 
 * 			(see: page.js: Page's .macros.slot(..) notes)
+* 		- arguments in macros that contain macros must be in quotes, e.g.
+* 				@include("./*:@(all)")
+* 			otherwise the macro will end on the first ')'...
+* 		- :all argument to all pattern paths...
 *
 *
 * XXX weaknesses to review:
