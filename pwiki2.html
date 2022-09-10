@@ -60,6 +60,9 @@ a:hover {
 	margin-left: -50px;
 	white-space: nowrap;
 
+	background: transparent;
+	pointer-events: none;
+
 	animation: fadein 2s 1;
 }
 .spinner span {
@@ -68,6 +71,18 @@ a:hover {
 	font-size: 2em;
 
 	animation: loading 2s infinite ;
+	animation-delay: calc(0.2s * var(--i));
+}
+body:not(.loading) .page.spinner {
+	display: none;
+}
+body.loading .page.spinner {
+	opacity: 0.9;
+	animation: fadein 1s 1;
+}
+body.loading .page.spinner span {
+	font-size: 1.5em;
+	animation: loading 3s infinite ;
 	animation-delay: calc(0.2s * var(--i));
 }
 @keyframes fadein {
@@ -169,7 +184,10 @@ require(['./browser'], function(browser){
 		path = /^\.\.?([\\\/].*)?$/.test(path) ?
 			path
 			: '/'+path
-		pwiki.location = [path, hash] })
+		startSpinner()
+		// NOTE: setTimeout(..) to allow the spinner to start...
+		setTimeout(function(){
+			pwiki.location = [path, hash] }, 0) })
 	pwiki
 		.onBeforeNavigate(function(){
 			saveNow() })
@@ -192,6 +210,8 @@ require(['./browser'], function(browser){
 						&& console.log(`## ${pwiki.path} (${Date.now() - t}ms)`) }) })
 		.onLoad(function(evt){
 			var that = this
+			// stop spinner...
+			stopSpinner()
 			// handle title...
 			document.querySelector('title').innerHTML = this.path
 			// scroll to anchor element...
@@ -208,11 +228,8 @@ require(['./browser'], function(browser){
 
 	// wait for stuff to finish...
 	browser.setup.then(function(){
-
 		// show current page...
-		pwiki.location = decodeURI(location.hash).slice(1)
-
-	}) }) 
+		pwiki.location = decodeURI(location.hash).slice(1) }) }) 
 
 
 // XXX make this a 2 stage save -- first cache and then save to store...
@@ -233,6 +250,12 @@ var saveNow =
 				console.log('saving changes to:', path)
 				pwiki.get(path).raw = text }) }
 setInterval(saveNow, 5000)
+
+// loading spinner...
+window.startSpinner = function(){
+	document.body.classList.add('loading') }
+window.stopSpinner = function(){
+	document.body.classList.remove('loading') }
 
 
 // XXX
@@ -265,6 +288,19 @@ var exportData = async function(){
 		<span style="--i:3">k</span>
 		<span style="--i:4">i</span>
 	</div>
+</div>
+
+<div class="page spinner">
+	<span style="--i:0">l</span>
+	<span style="--i:1">o</span>
+	<span style="--i:2">a</span>
+	<span style="--i:3">d</span>
+	<span style="--i:4">i</span>
+	<span style="--i:5">n</span>
+	<span style="--i:6">g</span>
+	<span style="--i:7">.</span>
+	<span style="--i:8">.</span>
+	<span style="--i:9">.</span>
 </div>
 
 </body>
