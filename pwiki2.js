@@ -1,6 +1,8 @@
 /**********************************************************************
 * 
 *
+* XXX changing the URL does not start the spinner...
+* XXX HIDE revise .hide_paths...
 * XXX Q: can we access fs from a pwa???
 * XXX start writing docs in pwiki
 * 		- WYSIWYG markdown editor/viewer (ASAP)
@@ -20,6 +22,17 @@
 * 			...likely no...
 * 			...would depend on where we iterate pages and on whether 
 * 			we can/should reach that spot from within the parser...
+* XXX page access mothods (.get(..) / .__get__(..) via path + args)
+* 			- path	   			 -- DONE
+* 			- tags	   			 -- 
+* 			- search   			 -- 
+* 		Syntax:
+* 			/path/to/*:tags=a,b,c:search=some text
+* 			+--------+ . . . . . . . . . . . . . . . .  path           
+* 			           +--------+ . . . . . . . . . . . tags
+* 			                      +--------------+ . .  search
+*		order is not relevant here...
+*		each of the methods narrows down the previous' results
 * XXX FEATURE tags and accompanying API...
 * 		- add tags to page -- macro/filter
 * 			- <page>.text -> <page>.tags (cached on .update(..))

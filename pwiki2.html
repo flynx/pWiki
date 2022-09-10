@@ -224,7 +224,9 @@ require(['./browser'], function(browser){
 			//		when the hash is actually changed...
 			for(var lnk of this.dom.querySelectorAll(`a[href="${location.hash}"]`)){
 				lnk.addEventListener('click', function(evt){
-					that.refresh() }) } })
+					startSpinner()
+					setTimeout(function(){
+						that.refresh() }, 0) }) } })
 
 	// wait for stuff to finish...
 	browser.setup.then(function(){

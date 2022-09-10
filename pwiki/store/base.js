@@ -140,6 +140,11 @@ module.BaseStore = {
 	// XXX revise naming...
 	next: undefined,
 
+	// XXX HIDE name??
+	hide_paths: [
+		'System',
+	],
+
 	// NOTE: .data is not part of the spec and can be implementation-specific,
 	// 		only .__<name>__(..) use it internally... (XXX check this)
 	__data: undefined,
@@ -319,6 +324,7 @@ module.BaseStore = {
 	// match all sub-paths.
 	//
 	match: async function(path, strict=false){
+		var that = this
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
@@ -352,7 +358,13 @@ module.BaseStore = {
 						// skip metadata paths...
 						if(p.includes('*')){
 							return res }
-						if(pwpath.basename(p)[0] == '.' 
+						if((pwpath.basename(p)[0] == '.' 
+									// XXX CACHE this???
+									|| (that.hide_paths
+										&& that.hide_paths
+											.reduce(function(res, h){
+												return res === true
+													|| p.startsWith(h) }, false)))
 								&& !all){
 							return res }
 						var m = p.match(pattern)
