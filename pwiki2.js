@@ -1,8 +1,16 @@
 /**********************************************************************
 * 
 *
-* XXX changing the URL does not start the spinner...
-* XXX HIDE revise .hide_paths...
+* XXX BUG: .hide_paths: 
+*		- hidden dir should hide all the children 					-- BROKEN
+*			(see /.hidden/suppage)
+*		- listing a hidden subtree should work regardless of :all	-- BROKEN
+*			(see: /.hidden/tree)
+* XXX BUG: changing the URL does not start the spinner...
+* 		chech:
+* 			- url (hashchange)
+* 			- click link
+* 			- history back/foreward
 * XXX Q: can we access fs from a pwa???
 * XXX start writing docs in pwiki
 * 		- WYSIWYG markdown editor/viewer (ASAP)

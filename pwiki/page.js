@@ -2021,6 +2021,10 @@ module.Test = {
 	// this is shown by most listers by adding an :all argument to the url...
 	'.hidden': {
 		text: 'Hidden page...' },
+	'.hidden/subpage': {
+		text: 'visible subpage...' },
+	'.hidden/.hidden': {
+		text: 'hidden subpage...' },
 
 	slots: {
 		text: object.doc`

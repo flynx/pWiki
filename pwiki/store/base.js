@@ -358,6 +358,9 @@ module.BaseStore = {
 						// skip metadata paths...
 						if(p.includes('*')){
 							return res }
+						// XXX HIDE .hide_paths
+						if(pwpath.basename(p)[0] == '.' 
+						/*/
 						if((pwpath.basename(p)[0] == '.' 
 									// XXX CACHE this???
 									|| (that.hide_paths
@@ -365,6 +368,7 @@ module.BaseStore = {
 											.reduce(function(res, h){
 												return res === true
 													|| p.startsWith(h) }, false)))
+						//*/
 								&& !all){
 							return res }
 						var m = p.match(pattern)
