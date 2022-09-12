@@ -6,8 +6,8 @@
 *			(see /.hidden/suppage)
 *		- listing a hidden subtree should work regardless of :all	-- BROKEN
 *			(see: /.hidden/tree)
-*		...might also be a good idea to investigate a .tree directory 
-*		index as a supplement to .paths()
+* XXX might also be a good idea to investigate a .tree directory index 
+* 		as a supplement to .paths()
 * XXX BUG: changing the URL does not start the spinner...
 * 		chech:
 * 			- url (hashchange)
