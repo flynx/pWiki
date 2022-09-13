@@ -340,7 +340,8 @@ module.BaseStore = {
 					path
 						.replace(/^\/|\/$/g, '')
 						.replace(/\//g, '\\/')
-						.replace(/\*\*/g, '.*')
+						//.replace(/\*\*/g, '.*')
+						.replace(/([\\\/]?)\*\*/g, '($1.*)')
 						.replace(/(?<=^|[\\\/]+|[^.])\*/g, '[^\\/]*') 
 				}(?=[\\\\\/]|$)`)
 			/*/ XXX CACHED....
@@ -358,19 +359,12 @@ module.BaseStore = {
 						// skip metadata paths...
 						if(p.includes('*')){
 							return res }
-						// XXX HIDE .hide_paths
+						/*/ XXX HIDE this is wrong -- need to check for 
+						//		hidden paths within the match...
 						if(pwpath.basename(p)[0] == '.' 
-						/*/
-						if((pwpath.basename(p)[0] == '.' 
-									// XXX CACHE this???
-									|| (that.hide_paths
-										&& that.hide_paths
-											.reduce(function(res, h){
-												return res === true
-													|| p.startsWith(h) }, false)))
-						//*/
 								&& !all){
 							return res }
+						//*/
 						var m = p.match(pattern)
 						m
 							&& (!strict 
