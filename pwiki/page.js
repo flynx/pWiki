@@ -2010,8 +2010,6 @@ module.Test = {
 	// XXX do we support this???
 	//'list/action': function(){
 	//	return [...'abcdef'] },
-	// XXX BUG CHROME: this hangs under chrome...
-	// 		(see: pwiki2.js)
 	'list/generator': function*(){
 		yield* [...'abcdef'] },
 	'list/static': {
