@@ -1,6 +1,12 @@
 /**********************************************************************
 * 
 *
+* XXX BUG:
+* 			/System/info
+* 		and:
+* 			/System/info/_view
+* 		are not the same...
+* 		...bug likely in .text
 * XXX might also be a good idea to investigate a .tree directory index 
 * 		as a supplement to .paths()
 * XXX BUG: changing the URL does not start the spinner...
