@@ -360,7 +360,6 @@ module.BaseStore = {
 						// skip metadata paths...
 						if(p.includes('*')){
 							return res }
-						// XXX HIDE
 						var m = [...p.matchAll(pattern)]
 						m.length > 0
 							&& (!all ?
@@ -368,16 +367,10 @@ module.BaseStore = {
 								m.reduce(function(res, m){
 									return res === false ?
 										res
-										// XXX if we are using a partial pattern this is wrong...
-										// 		i.e. something like 'x*' (TEST)
 										: !/(^\.|[\\\/]\.)/.test(m[1])
 								}, true)
 								: true)
 							&& (m = m[0])
-						/*/
-						var m = p.match(pattern)
-						m
-						//*/
 							&& (!strict 
 								|| m[0] == p) 
 							&& res.add(
