@@ -1,11 +1,6 @@
 /**********************************************************************
 * 
 *
-* XXX BUG: .hide_paths: 
-*		- hidden dir should hide all the children 					-- BROKEN
-*			(see /.hidden/suppage)
-*		- listing a hidden subtree should work regardless of :all	-- BROKEN
-*			(see: /.hidden/tree)
 * XXX might also be a good idea to investigate a .tree directory index 
 * 		as a supplement to .paths()
 * XXX BUG: changing the URL does not start the spinner...
