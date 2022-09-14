@@ -166,6 +166,7 @@ require.config({
 
 document.pwikiloaded = new Event('pwikiloaded')
 
+REFRESH_DELAY = 20
 
 // start loading pWiki...
 require(['./browser'], function(browser){ 
@@ -186,8 +187,9 @@ require(['./browser'], function(browser){
 			: '/'+path
 		startSpinner()
 		// NOTE: setTimeout(..) to allow the spinner to start...
+		// NOTE: this seems not to work if the REFRESH_DELAY is too small...
 		setTimeout(function(){
-			pwiki.location = [path, hash] }, 0) })
+			pwiki.location = [path, hash] }, REFRESH_DELAY) })
 	pwiki
 		.onBeforeNavigate(function(){
 			saveNow() })
@@ -226,7 +228,7 @@ require(['./browser'], function(browser){
 				lnk.addEventListener('click', function(evt){
 					startSpinner()
 					setTimeout(function(){
-						that.refresh() }, 0) }) } })
+						that.refresh() }, REFRESH_DELAY) }) } })
 
 	// wait for stuff to finish...
 	browser.setup.then(function(){

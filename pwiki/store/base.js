@@ -334,16 +334,17 @@ module.BaseStore = {
 			args = pwpath.joinArgs('', args)
 			// NOTE: we are matching full paths only here so leading and 
 			// 		trainling '/' are optional...
-			// NOTE: we ensure that we match full names and always split 
-			// 		at '/' only...
-			var pattern = new RegExp(`^\\/?${
-					path
-						.replace(/^\/|\/$/g, '')
-						.replace(/\//g, '\\/')
-						//.replace(/\*\*/g, '.*')
-						.replace(/([\\\/]?)\*\*/g, '($1.*)')
-						.replace(/(?<=^|[\\\/]+|[^.])\*/g, '[^\\/]*') 
-				}(?=[\\\\\/]|$)`)
+			var pattern = new RegExp(`^\\/?`
+				+RegExp.quoteRegExp(
+					// remove leading/trailing '/'
+					path.replace(/^\/|\/$/g, ''))
+					// pattern: **
+					.replace(/\\\*\\\*/g, '(.*)')
+					// pattern: *
+					// NOTE: we are prepping the leading '.' of a pattern 
+					// 		dir for hidden tests...
+					.replace(/(^|\\\/+)(\\\.|)([^\/]*)\\\*/g, '$1$2($3[^\\/]*)')
+				+'(?=[\\/]|$)', 'g')
 			/*/ XXX CACHED....
 			var name = pwpath.basename(path)
 			return [...(name.includes('*') ?
@@ -359,14 +360,17 @@ module.BaseStore = {
 						// skip metadata paths...
 						if(p.includes('*')){
 							return res }
-						/*/ XXX HIDE this is wrong -- need to check for 
-						//		hidden paths within the match...
-						if(pwpath.basename(p)[0] == '.' 
-								&& !all){
-							return res }
-						//*/
-						var m = p.match(pattern)
-						m
+						var m = [...p.matchAll(pattern)]
+						m.length > 0
+							&& (!all ?
+								// test if we need to hide things....
+								m.reduce(function(res, m){
+									return res === false ?
+										res
+										: !/(^\.|[\\\/]\.)/.test(m[1])
+								}, true)
+								: true)
+							&& (m = m[0])
 							&& (!strict 
 								|| m[0] == p) 
 							&& res.add(
@@ -464,9 +468,6 @@ module.BaseStore = {
 					// 		this can be the result of matching a/* in a a/b/c
 					// 		and returning a a/b which can be undefined...
 					return that.get(p, strict) })
-			// XXX BUG CHROME: this hangs on Chrome when getting a 
-			// 		generator function...
-			// 		...should not require any editing when bug fixed.
 			: (await this.__get__(path) 
 				?? ((this.next || {}).__get__ 
 					&& this.next.get(path, strict))) },

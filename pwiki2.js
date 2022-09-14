@@ -1,18 +1,14 @@
 /**********************************************************************
 * 
 *
-* XXX BUG: .hide_paths: 
-*		- hidden dir should hide all the children 					-- BROKEN
-*			(see /.hidden/suppage)
-*		- listing a hidden subtree should work regardless of :all	-- BROKEN
-*			(see: /.hidden/tree)
+* XXX BUG:
+* 			/System/info
+* 		and:
+* 			/System/info/_view
+* 		are not the same...
+* 		...bug likely in .text
 * XXX might also be a good idea to investigate a .tree directory index 
 * 		as a supplement to .paths()
-* XXX BUG: changing the URL does not start the spinner...
-* 		chech:
-* 			- url (hashchange)
-* 			- click link
-* 			- history back/foreward
 * XXX Q: can we access fs from a pwa???
 * XXX start writing docs in pwiki
 * 		- WYSIWYG markdown editor/viewer (ASAP)
@@ -62,20 +58,6 @@
 * 			i.e. a way to pass tags through path...
 * 				/some/path:tags=a,b,c
 * XXX FEATURE images...
-* XXX BUG CHROME: can't .get(..) a generator...
-* 		affected code:
-* 			BaseStore's .get(..)
-* 		bug report:
-* 			https://bugs.chromium.org/p/chromium/issues/detail?id=1361981
-* 		when done test:
-* 			.get('/test/list/generator').asPages()
-* 			.get('/test/list/generator').raw
-* 			.get('/test/list/generator').data
-* 			.get('/test/list/generator').text
-* 		potential temporaty fix:
-* 			wrap all .__get__(..) call in an async function testing if 
-* 			it's return value is a generator function (return) or anything 
-* 			else (await)...
 * XXX rename??
 * 		System -> .system
 * 		Config -> .pwiki

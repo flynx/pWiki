@@ -1911,20 +1911,19 @@ module.System = {
 	// page actions...
 	//
 	
-	/* XXX broken... 
+	// XXX broken... 
 	// XXX this does not work as energetic...
-	// XXX for some reason this is called twice...
 	time: async function(){
-			var t = Date.now()
-			var text = await this.get('../_text').text
-			var time = Date.now() - t
+		var t = Date.now()
+		var text = await this.get('../_text').text
+		var time = Date.now() - t
 
-			console.log('RENDER TIME:', time)
+		console.log('RENDER TIME:', time)
 
-			return object.doc`
-			Time to render: ${time}ms <br>
-			<ht>
-			${text}`},
+		return object.doc`
+		Time to render: ${time}ms <br>
+		<ht>
+		${text}`},
 	//*/
 	
 	// XXX EXPERIMENTAL -- page types...
@@ -2011,8 +2010,6 @@ module.Test = {
 	// XXX do we support this???
 	//'list/action': function(){
 	//	return [...'abcdef'] },
-	// XXX BUG CHROME: this hangs under chrome...
-	// 		(see: pwiki2.js)
 	'list/generator': function*(){
 		yield* [...'abcdef'] },
 	'list/static': {
