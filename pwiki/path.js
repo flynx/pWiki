@@ -31,8 +31,6 @@ module = {
 		'NotFoundError',
 	],
 
-	//SYSTEM_PATH: '/System',
-	SYSTEM_PATH: '/.system',
 	// Default alternate search locations...
 	//
 	// NOTE: if a path here is relative it is also searched relative to 
@@ -41,6 +39,12 @@ module = {
 		//'./Theme/CLI',
 		'./Templates',
 	],
+	
+	// System path...
+	//
+	// This acts the same as elements in .SEARCH_PATHS but should contain 
+	// all the default and fallback templates.
+	SYSTEM_PATH: '/.system',
 
 	/*/ XXX NORMCACHE...
 	__normalized_cache_threshold: 100,

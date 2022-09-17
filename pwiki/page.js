@@ -7,8 +7,6 @@
 (function(require){ var module={} // make module AMD/node compatible...
 /*********************************************************************/
 
-// XXX
-//var object = require('lib/object')
 var object = require('ig-object')
 var types = require('ig-types')
 
@@ -46,7 +44,6 @@ function(name){
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-// XXX FUNC need to handle functions in store...
 var BasePage =
 module.BasePage = 
 object.Constructor('BasePage', {
@@ -619,8 +616,6 @@ types.event.EventMixin(BasePage.prototype)
 
 //---------------------------------------------------------------------
 
-// XXX should these be something more generic like Object.assign(..) ???
-
 // XXX do we need anything else like .doc, attrs???
 var Macro =
 module.Macro = 
@@ -637,9 +632,6 @@ function(spec, func){
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-// XXX filters (and macros?) should be features for simpler plugin handlng (???)
-// XXX STUB filters...
-// XXX rename to pWikiPage???
 var Page =
 module.Page = 
 object.Constructor('Page', BasePage, {
@@ -1518,6 +1510,7 @@ object.Constructor('Page', BasePage, {
 
 
 //---------------------------------------------------------------------
+// Cached .text page...
 
 var getCachedProp = 
 function(obj, name){

@@ -4,6 +4,7 @@
 * XXX ASAP start writing docs in pwiki
 * 		- WYSIWYG markdown editor/viewer (ASAP)
 * 		- fs store/export in browser or a simple way to export/import...
+* XXX BUG: /delete is broken...
 * XXX BUG:
 * 			/System/info
 * 		and:
