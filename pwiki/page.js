@@ -57,27 +57,35 @@ object.Constructor('BasePage', {
 	// different "class"...
 	//__clone_proto__: undefined,
 
-	actions: new Set([
-		'location',
-		'referrer',
-		'path',
-		'name',
-		'dir',
-		'argstr',
-		'title',
-		'resolved',
-		'rootpath',
-		'length',
-		'type',
-		'ctime',
-		'mtime',
-	]),
+	//
+	// Format:
+	// 	{
+	// 		<name>: true,
+	// 		<name>: <alias>,
+	// 	}
+	//
+	actions: { 
+		location: true,
+		referrer: true,
+		path: true,
+		name: true,
+		dir: true,
+		// alias...
+		args: 'argstr',
+		title: true,
+		resolved: true,
+		rootpath: true,
+		length: true,
+		type: true,
+		ctime: true,
+		mtime: true,
+	},
 	// These actions will be default get :$ARGS appended if no args are 
 	// explicitly given...
 	// XXX INHERIT_ARGS
 	actions_inherit_args: new Set([
 		'location',
-		'argstr',
+		'args',
 	]),
 
 	
@@ -249,8 +257,11 @@ object.Constructor('BasePage', {
 	get energetic(){ return async function(){
 		return this.__energetic === true
 			|| ((this.actions 
-				&& this.actions.has(this.name) 
-				&& !!this[this.name].energetic)
+				&& this.actions[this.name]
+				&& !!this[
+					this.actions[this.name] === true ?
+						this.name
+						: this.actions[this.name] ].energetic)
 			|| !!await this.store.isEnergetic(this.path)) }.call(this) },
 	set energetic(value){
 		this.__energetic = value },
@@ -261,8 +272,11 @@ object.Constructor('BasePage', {
 	get data(){ return (async function(){
 		// direct actions...
 		if(this.actions 
-				&& this.actions.has(this.name)){
-			var name = this.name
+				&& this.actions[this.name]){
+			var name = 
+				this.actions[this.name] === true ?
+					this.name
+					: this.actions[this.name]
 			var page = this.get('..', {args: this.args})
 			var res = (this.isPattern 
 					&& !this.__energetic
@@ -863,6 +877,7 @@ object.Constructor('Page', BasePage, {
 				if(!src){
 					return }
 				// XXX INHERIT_ARGS special-case: inherit args by default...
+				// XXX should this be done when isolated???
 				if(this.actions_inherit_args 
 						&& this.actions_inherit_args.has(pwpath.basename(src))
 						&& this.get(pwpath.dirname(src)).path == this.path){
@@ -1293,15 +1308,15 @@ object.Constructor('Page', BasePage, {
 	// NOTE: these can not be overloaded. 
 	// 		(XXX should this be so?)
 	// XXX should this be an object???
-	actions: new Set([
+	actions: {
 		...module.BasePage.prototype.actions,
 
-		'!',
+		'!': true,
 
 		// XXX DEBUG -- remove these...
-		'testDirect',
-		'testDirect!',	
-	]),
+		testDirect: true,
+		'testDirect!': true,	
+	},
 
 	'!': Object.assign(
 		function(){
@@ -1658,11 +1673,11 @@ object.Constructor('pWikiPageElement', Page, {
 	set __clone_proto__(value){
 		this.__clone_proto = value },
 	
-	actions: new Set([
+	actions: {
 		...CachedPage.prototype.actions,
 
-		'hash'
-	]),
+		hash: true,
+	},
 
 	// NOTE: setting location will reset .hash set it directly via either
 	// 		one of:

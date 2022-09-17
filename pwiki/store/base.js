@@ -140,11 +140,6 @@ module.BaseStore = {
 	// XXX revise naming...
 	next: undefined,
 
-	// XXX HIDE name??
-	hide_paths: [
-		'System',
-	],
-
 	// NOTE: .data is not part of the spec and can be implementation-specific,
 	// 		only .__<name>__(..) use it internally... (XXX check this)
 	__data: undefined,

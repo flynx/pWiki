@@ -1,28 +1,9 @@
 /**********************************************************************
 * 
 *
-* XXX EXPERIMENTAL DOC INHERIT_ARGS added a special-case...
-* 		as basename will get appended :$ARGS if no args are given...
-* 		...this only applies to paths referring to the current context 
-* 		page, i.e.: 
-* 			await pwiki
-* 				.get('/page:x:y:z')
-* 				// this will get the args...
-* 				.parse('@source(./location)')
-*
-* 			await pwiki
-* 				.get('/page:x:y:z')
-* 				// this will not get the args -- different page...
-* 				.parse('@source(./x/location)')
-*
-* 			await pwiki
-* 				.get('/page:x:y:z')
-* 				// this will get explicitly given empty args...
-* 				.parse('@source(./location:)')
-*
-* 		special args that auto-inherit are given in .actions_inherit_args
-* 		XXX this is currently implemented on the level of macro parsing,
-* 			should this be in a more general way???
+* XXX ASAP start writing docs in pwiki
+* 		- WYSIWYG markdown editor/viewer (ASAP)
+* 		- fs store/export in browser or a simple way to export/import...
 * XXX BUG:
 * 			/System/info
 * 		and:
@@ -32,9 +13,6 @@
 * XXX might also be a good idea to investigate a .tree directory index 
 * 		as a supplement to .paths()
 * XXX Q: can we access fs from a pwa???
-* XXX start writing docs in pwiki
-* 		- WYSIWYG markdown editor/viewer (ASAP)
-* 		- fs store/export in browser
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX the parser should handle all action return values, including:
 * 			- lists			-- XXX
@@ -227,6 +205,30 @@
 * 		...not sure how we track these...
 * XXX revise how we handle .strict mode in page's .raw and .text...
 * XXX might be a good idea to export HTML from a specific path/pattern...
+* XXX EXPERIMENTAL DOC INHERIT_ARGS added a special-case...
+* 		as basename will get appended :$ARGS if no args are given...
+* 		...this only applies to paths referring to the current context 
+* 		page, i.e.: 
+* 			await pwiki
+* 				.get('/page:x:y:z')
+* 				// this will get the args...
+* 				.parse('@source(./location)')
+*
+* 			await pwiki
+* 				.get('/page:x:y:z')
+* 				// this will not get the args -- different page...
+* 				.parse('@source(./x/location)')
+*
+* 			await pwiki
+* 				.get('/page:x:y:z')
+* 				// this will get explicitly given empty args...
+* 				.parse('@source(./location:)')
+*
+* 		special args that auto-inherit are given in .actions_inherit_args
+* 		XXX this is currently implemented on the level of macro parsing,
+* 			should this be in a more general way???  
+* 		XXX should this be done when isolated??? 
+* 			...yes (current)
 *
 *
 *
@@ -484,7 +486,9 @@ module.store = {
 // XXX nested system store...
 module.setup = 
 Promise.all([
-	store.next.update('System', 
+	//store.next.update('System',
+	store.next.update(
+		pwpath.sanitize(pwpath.SYSTEM_PATH),
 		Object.create(basestore.BaseStore).load(page.System)),
 	store.update('Settings', 
 		Object.create(basestore.BaseStore).load(page.Settings)),

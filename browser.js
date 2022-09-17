@@ -47,8 +47,9 @@ module.setup =
 Promise.all([
 	// static stores...
 	//
-	store.next.update('System', 
-	//store.update('System', 
+	//store.next.update('System', 
+	store.next.update(
+		pwpath.sanitize(pwpath.SYSTEM_PATH),
 		Object.create(basestore.BaseStore).load(page.System)),
 	store.update('Settings', 
 		Object.create(basestore.BaseStore).load(page.Settings)),

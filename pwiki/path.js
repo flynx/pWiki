@@ -31,6 +31,8 @@ module = {
 		'NotFoundError',
 	],
 
+	//SYSTEM_PATH: '/System',
+	SYSTEM_PATH: '/.system',
 	// Default alternate search locations...
 	//
 	// NOTE: if a path here is relative it is also searched relative to 
@@ -38,7 +40,6 @@ module = {
 	SEARCH_PATHS: [
 		//'./Theme/CLI',
 		'./Templates',
-		'/System',
 	],
 
 	/*/ XXX NORMCACHE...
@@ -252,7 +253,7 @@ module = {
 				&& path.push(this.INDEX_PAGE) }
 		// search for page...
 		var page = path.pop()
-		for(var tpl of ['.', ...this.SEARCH_PATHS]){
+		for(var tpl of ['.', ...this.SEARCH_PATHS, this.SYSTEM_PATH]){
 			// search for page up the path...
 			var pg = page
 			var base = path.slice()
