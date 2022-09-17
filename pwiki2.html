@@ -168,6 +168,19 @@ document.pwikiloaded = new Event('pwikiloaded')
 
 REFRESH_DELAY = 20
 
+// helper...
+var logTime = async function(promise, msg=''){
+	var t = Date.now()
+	var res = await promise
+	t = Date.now() - t
+	DEBUG 
+		&& console.log(`## ${
+				typeof(msg) == 'function' ? 
+					msg(res) 
+					: msg
+			} (${t}ms)`)
+	return res }
+
 // start loading pWiki...
 require(['./browser'], function(browser){ 
 	pwiki = window.pwiki = browser.pwiki 
@@ -205,11 +218,9 @@ require(['./browser'], function(browser){
 						: ''))
 			// NOTE: we are intentionally not awaiting for this -- this 
 			//		separates the navigate and load events...
-			var t = Date.now()
-			this.refresh() 
-				.then(function(){
-					DEBUG 
-						&& console.log(`## ${pwiki.path} (${Date.now() - t}ms)`) }) })
+			logTime(
+				this.refresh(), 
+				this.path) })
 		.onLoad(function(evt){
 			var that = this
 			// stop spinner...
@@ -228,7 +239,9 @@ require(['./browser'], function(browser){
 				lnk.addEventListener('click', function(evt){
 					startSpinner()
 					setTimeout(function(){
-						that.refresh() }, REFRESH_DELAY) }) } })
+						logTime(
+							that.refresh(), 
+							that.path) }, REFRESH_DELAY) }) } })
 
 	// wait for stuff to finish...
 	browser.setup.then(function(){
