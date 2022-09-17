@@ -1,6 +1,11 @@
 /**********************************************************************
 * 
 *
+* XXX can we avoid explicitly passing args to ./location ????
+* 		i.e.:
+* 		<a href="#@source(./location)">@source(./path)</a>
+* 	instead of (current):
+* 		<a href="#@source(./location:$ARGS)">@source(./path)</a>
 * XXX BUG:
 * 			/System/info
 * 		and:

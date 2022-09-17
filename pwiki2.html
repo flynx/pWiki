@@ -220,7 +220,7 @@ require(['./browser'], function(browser){
 			//		separates the navigate and load events...
 			logTime(
 				this.refresh(), 
-				this.path) })
+				this.location) })
 		.onLoad(function(evt){
 			var that = this
 			// stop spinner...
@@ -241,7 +241,7 @@ require(['./browser'], function(browser){
 					setTimeout(function(){
 						logTime(
 							that.refresh(), 
-							that.path) }, REFRESH_DELAY) }) } })
+							that.location) }, REFRESH_DELAY) }) } })
 
 	// wait for stuff to finish...
 	browser.setup.then(function(){

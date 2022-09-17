@@ -178,6 +178,11 @@ object.Constructor('BasePage', {
 			args == '' ? 
 				'.'
 				: '.:'+ args },
+	// helper...
+	get argstr(){
+		return pwpath.obj2args(this.args) },
+	set argstr(value){
+		this.args = value },
 
 	// NOTE: these are mostly here as helpers to be accessed via page 
 	// 		actions...
@@ -1449,12 +1454,15 @@ object.Constructor('Page', BasePage, {
 			console.warn('UNKNOWN RENDER TEMPLATE: '+ tpl_name) 
 			return this.get(this.NOT_FOUND_TEMPLATE_ERROR).parse() }
 
-		// render template in context of page...
 		var depends = this.depends = new Set([tpl])
-		var state = {depends}
 		// do the parse...
+		// NOTE: we render the template in context of page...
 		return this
-			.parse(this.get('/'+tpl).raw, state) }).call(this) },
+			.parse(
+				this.get(
+					'/'+tpl, 
+					{args: this.args}).raw, 
+				{depends}) }).call(this) },
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
@@ -1735,11 +1743,16 @@ module.System = {
 		text: '@include(.:$ARGS isolated join="@source(file-separator)")' },
 	// XXX /rootpath here is not relative -- makes reuse harder...
 	_view: {
+		// XXX can we avoid explicitly passing args to ./location ????
+		// 		i.e.:
+		//			<a href="#@source(./location)">@source(./path)</a>
+		//		instead of (current):
+		//			<a href="#@source(./location:$ARGS)">@source(./path)</a>
 		text: object.doc`
 			<slot name="header">
 				<a href="#/list">&#9776</a>
-				@source(./path/!) 
-				<a href="#@source(./path/!)/_edit">&#9998;</a>
+				<a href="#@source(./location)">@source(./path)</a>
+				<a href="#@source(./path)/_edit">&#9998;</a>
 			</slot>
 			<hr>
 			<slot name="content"></slot>
@@ -1816,6 +1829,7 @@ module.System = {
 
 	// XXX debug...
 	_path: {text: '@source(./path join=" ")'},
+	_location: {text: '@source(./location join=" ")'},
 
 
 	list: {
