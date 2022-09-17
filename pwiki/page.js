@@ -63,6 +63,7 @@ object.Constructor('BasePage', {
 		'path',
 		'name',
 		'dir',
+		'argstr',
 		'title',
 		'resolved',
 		'rootpath',
@@ -70,6 +71,13 @@ object.Constructor('BasePage', {
 		'type',
 		'ctime',
 		'mtime',
+	]),
+	// These actions will be default get :$ARGS appended if no args are 
+	// explicitly given...
+	// XXX INHERIT_ARGS
+	actions_inherit_args: new Set([
+		'location',
+		'argstr',
 	]),
 
 	
@@ -854,6 +862,11 @@ object.Constructor('Page', BasePage, {
 						await base.parse(args.src, state))
 				if(!src){
 					return }
+				// XXX INHERIT_ARGS special-case: inherit args by default...
+				if(this.actions_inherit_args 
+						&& this.actions_inherit_args.has(pwpath.basename(src))
+						&& this.get(pwpath.dirname(src)).path == this.path){
+					src += ':$ARGS' }
 				var recursive = args.recursive ?? body
 				var isolated = args.isolated 
 				var strict = args.strict
@@ -972,6 +985,11 @@ object.Constructor('Page', BasePage, {
 				src = src ? 
 					await base.parse(src, state)
 					: src
+				// XXX INHERIT_ARGS special-case: inherit args by default...
+				if(this.actions_inherit_args 
+						&& this.actions_inherit_args.has(pwpath.basename(src))
+						&& this.get(pwpath.dirname(src)).path == this.path){
+					src += ':$ARGS' }
 				var expandactions = args.expandactions
 
 				var depends = state.depends = 
@@ -1227,12 +1245,20 @@ object.Constructor('Page', BasePage, {
 						[text, join] = state.macros[name] } }
 
 				if(src){
+					src = await base.parse(src, state)
+					// XXX INHERIT_ARGS special-case: inherit args by default...
+					if(this.actions_inherit_args 
+							&& this.actions_inherit_args.has(pwpath.basename(src))
+							&& this.get(pwpath.dirname(src)).path == this.path){
+						src += ':$ARGS' }
+
 					join = _getBlock('join') 
 						?? join 
 					join = join
 						&& await base.parse(join, state)
 
-					var match = this.get(await base.parse(src, state))
+					//var match = this.get(await base.parse(src, state))
+					var match = this.get(src)
 
 					// NOTE: thie does not introduce a dependency on each 
 					// 		of the iterated pages, that is handled by the 
@@ -1744,14 +1770,14 @@ module.System = {
 	// XXX /rootpath here is not relative -- makes reuse harder...
 	_view: {
 		// XXX can we avoid explicitly passing args to ./location ????
-		// 		i.e.:
-		//			<a href="#@source(./location)">@source(./path)</a>
+		// 		i.e. do:
+		//			@source(./location)
 		//		instead of (current):
-		//			<a href="#@source(./location:$ARGS)">@source(./path)</a>
+		//			@source(./location:$ARGS)
 		text: object.doc`
 			<slot name="header">
 				<a href="#/list">&#9776</a>
-				<a href="#@source(./location)">@source(./path)</a>
+				@source(./location)
 				<a href="#@source(./path)/_edit">&#9998;</a>
 			</slot>
 			<hr>

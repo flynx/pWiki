@@ -1,11 +1,28 @@
 /**********************************************************************
 * 
 *
-* XXX can we avoid explicitly passing args to ./location ????
-* 		i.e.:
-* 		<a href="#@source(./location)">@source(./path)</a>
-* 	instead of (current):
-* 		<a href="#@source(./location:$ARGS)">@source(./path)</a>
+* XXX EXPERIMENTAL DOC INHERIT_ARGS added a special-case...
+* 		as basename will get appended :$ARGS if no args are given...
+* 		...this only applies to paths referring to the current context 
+* 		page, i.e.: 
+* 			await pwiki
+* 				.get('/page:x:y:z')
+* 				// this will get the args...
+* 				.parse('@source(./location)')
+*
+* 			await pwiki
+* 				.get('/page:x:y:z')
+* 				// this will not get the args -- different page...
+* 				.parse('@source(./x/location)')
+*
+* 			await pwiki
+* 				.get('/page:x:y:z')
+* 				// this will get explicitly given empty args...
+* 				.parse('@source(./location:)')
+*
+* 		special args that auto-inherit are given in .actions_inherit_args
+* 		XXX this is currently implemented on the level of macro parsing,
+* 			should this be in a more general way???
 * XXX BUG:
 * 			/System/info
 * 		and:
