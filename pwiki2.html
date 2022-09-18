@@ -297,12 +297,20 @@ require(['./browser'], function(browser){
 // Export...
 
 // XXX
-var exportData = async function(){
-	var blob = new Blob([await pwiki.store.json(true)], {type: "text/plain;charset=utf-8"});
+var exportData = async function(options={}){
+	var filename
+	if(typeof(options) == 'string'){
+		filename = options
+		options = arguments[1] ?? {} }
+	var blob = new Blob(
+		[await pwiki.store.json({stringify: true, space: 4, ...options})], 
+		{type: "text/plain;charset=utf-8"});
 
 	var a = document.createElement('a')
     var blobURL = a.href = URL.createObjectURL(blob)
-    a.download = 'pWiki-dump.json'
+    a.download = filename
+		?? options.filename 
+		?? 'pWiki-dump.json'
 
     //document.body.appendChild(a)
     a.dispatchEvent(new MouseEvent("click"))

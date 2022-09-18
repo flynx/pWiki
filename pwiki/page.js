@@ -1313,7 +1313,7 @@ object.Constructor('Page', BasePage, {
 
 	'!': Object.assign(
 		function(){
-			return this.get('.:$ARGS', {energetic: true}).raw },
+			return this.get('..:$ARGS', {energetic: true}).raw },
 		{energetic: true}),
 
 	// XXX DEBUG -- remove these...
@@ -1790,16 +1790,11 @@ module.System = {
 		text: '@include(.:$ARGS isolated join="@source(file-separator)")' },
 	// XXX /rootpath here is not relative -- makes reuse harder...
 	_view: {
-		// XXX can we avoid explicitly passing args to ./location ????
-		// 		i.e. do:
-		//			@source(./location)
-		//		instead of (current):
-		//			@source(./location:$ARGS)
 		text: object.doc`
 			<slot name="header">
 				<a href="#/list">&#9776</a>
-				@source(./location)
-				<a href="#@source(./path)/_edit">&#9998;</a>
+				@source(./location/!)
+				<a href="#@source(./path/!)/edit">&#9998;</a>
 			</slot>
 			<hr>
 			<slot name="content"></slot>
@@ -1838,7 +1833,7 @@ module.System = {
 	/*/
 	_edit: {
 		text: 
-			'@source(./path)'
+			'@source(./path/!)'
 			+'<hr>'
 			+'<macro src="." join="@source(file-separator)">'
 				+'<h1 '
@@ -1875,8 +1870,8 @@ module.System = {
 			</slot>`},
 
 	// XXX debug...
-	_path: {text: '@source(./path join=" ")'},
-	_location: {text: '@source(./location join=" ")'},
+	_path: {text: '@source(./path/! join=" ")'},
+	_location: {text: '@source(./location/! join=" ")'},
 
 
 	list: {
@@ -2166,8 +2161,8 @@ PAGES=100
 for(var i=0; i<PAGES; i++){
 	Test['Subtree/Page'+i] = {text: 'page: '+i} }
 
-var Settings =
-module.Settings = {
+var Config =
+module.Config = {
 	Export: {
 		text: '<button onclick="exportData()">Export</button>' },
 	// XXX

@@ -4,6 +4,8 @@
 * XXX ASAP start writing docs in pwiki
 * 		- WYSIWYG markdown editor/viewer (ASAP)
 * 		- fs store/export in browser or a simple way to export/import...
+*
+*
 * XXX might also be a good idea to investigate a .tree directory index 
 * 		as a supplement to .paths()
 * XXX Q: can we access fs from a pwa???
@@ -33,6 +35,7 @@
 * 			                      +--------------+ . .  search
 *		order is not relevant here...
 *		each of the methods narrows down the previous' results
+* XXX revise/update sort...
 * XXX FEATURE tags: might be a good idea to add a .__match__(..) hook
 * 		to enable store-level matching optimization...
 * 		...not trivial to route to alk the stores...
@@ -52,9 +55,6 @@
 * 			i.e. a way to pass tags through path...
 * 				/some/path:tags=a,b,c
 * XXX FEATURE images...
-* XXX rename??
-* 		System -> .system
-* 		Config -> .pwiki
 * XXX async/live render...
 * 		might be fun to push the async parts of the render to the dom...
 * 		...i.e. return a partially rendered DOM with handlers to fill 
@@ -93,7 +93,6 @@
 * 				any resyrictions other than the internally reserved
 * 				cars...
 * 				(currently: '#', and ':')
-* XXX revise/update sort...
 * XXX ASAP: MetaStore: need to correctly integrate the following store 
 * 		methods:
 * 			.get(..)					-- DONE
@@ -488,8 +487,8 @@ Promise.all([
 	store.next.update(
 		pwpath.sanitize(pwpath.SYSTEM_PATH),
 		Object.create(basestore.BaseStore).load(page.System)),
-	store.update('Settings', 
-		Object.create(basestore.BaseStore).load(page.Settings)),
+	store.update('.config', 
+		Object.create(basestore.BaseStore).load(page.Config)),
 ])
 
 
