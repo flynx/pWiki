@@ -274,7 +274,8 @@ object.Constructor('BasePage', {
 				this.actions[this.name] === true ?
 					this.name
 					: this.actions[this.name]
-			var page = this.get('..', {args: this.args})
+			var args = this.args
+			var page = this.get('..', {args})
 			var res = (this.isPattern 
 					&& !this.__energetic
 					&& !page[name].energetic) ?
@@ -282,12 +283,12 @@ object.Constructor('BasePage', {
 					.map(function(page){
 						var res = page[name] 
 						return typeof(res) == 'function' ?
-							res.bind(page)
+							res.bind(page.get(name, {args}))
 							: function(){ 
 								return res } })
 				: await page[name] 
 			return typeof(res) == 'function' ?
-					res.bind(page)
+					res.bind(this)
 				: res instanceof Array ?
 					res
 				: function(){ 
@@ -311,8 +312,7 @@ object.Constructor('BasePage', {
 			?? (this.__title = res.title)
 		//*/
 		return typeof(res) == 'function' ?
-			//res.bind(this)
-			res.bind(this.get('..', {args: this.args}))
+			res.bind(this)
 			: res }).call(this) },
 	set data(value){
 		this.__update__(value) },
@@ -892,6 +892,7 @@ object.Constructor('Page', BasePage, {
 								.parse({
 									seen: state.seen, 
 									depends,
+									renderer: state.renderer,
 								})}
 							: this.get(src)
 								.parse(state) }
@@ -1362,13 +1363,14 @@ object.Constructor('Page', BasePage, {
 			state = text
 			text = null }
 		state = state ?? {}
+		state.renderer = state.renderer ?? this
 		// this is here for debugging and introspection...
 		'__debug_last_render_state' in this
 			&& (this.__debug_last_render_state = state)
 		// parse...
 		return this.__parser__.parse(
 			this.get('.', {
-				renderer: this,
+				renderer: state.renderer,
 				args: this.args, 
 			}), 
 			text, 
@@ -2022,8 +2024,11 @@ module.System = {
 		// redirect...
 		this.renderer
 			&& (this.renderer.location = this.referrer)
+			&& this.renderer.refresh()
 		// show info about the delete operation...
-		return target.get('DeletingPage/_text').text },
+		//return target.get('DeletingPage/_text').text 
+		return ''
+	},
 
 	// XXX copy/move/...
 	// XXX do we need this as a page action???

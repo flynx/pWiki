@@ -4,7 +4,8 @@
 * XXX ASAP start writing docs in pwiki
 * 		- WYSIWYG markdown editor/viewer (ASAP)
 * 		- fs store/export in browser or a simple way to export/import...
-* XXX BUG: /delete is broken...
+* XXX currently actions get the parent path (not including the action), 
+* 		is this correct???
 * XXX BUG:
 * 			/System/info
 * 		and:

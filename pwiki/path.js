@@ -44,6 +44,10 @@ module = {
 	//
 	// This acts the same as elements in .SEARCH_PATHS but should contain 
 	// all the default and fallback templates.
+	//
+	// NOTE: we can't use .pwiki here as it will be in conflict with the
+	// 		fs store's directory structure.
+	// 		XXX or can we?
 	SYSTEM_PATH: '/.system',
 
 	/*/ XXX NORMCACHE...
