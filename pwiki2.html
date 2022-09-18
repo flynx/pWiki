@@ -173,22 +173,41 @@ require.config({
 // Editor -- save changes...
 
 // XXX versioning??
-var SAVE_TIMEOUT = 5000
+var SAVE_LIVE_TIMEOUT = 5000
+var SAVE_LIVE_QUEUE = {}
+
+var saveLiveContent = 
+function(path, text){
+	SAVE_LIVE_QUEUE[path] = text 
+	// clear editor page cache...
+	pwiki.cache = null }
+
 var SAVE_QUEUE = {}
-var saveContent = 
-	function(path, text){
-		SAVE_QUEUE[path] = text 
-		// clear editor page cache...
-		pwiki.cache = null }
+var saveContent =
+function(path, text){
+	SAVE_QUEUE[path] = text
+}
+
+var saveAll =
+function(){
+	saveNow()
+	var queue = Object.entries(SAVE_QUEUE)
+	SAVE_QUEUE = {}
+	queue
+		.forEach(function([path, text]){
+			console.log('saving changes to:', path)
+			pwiki.get(path).raw = text }) }
+
 var saveNow = 
-	function(){
-		var queue = Object.entries(SAVE_QUEUE)
-		SAVE_QUEUE = {}
-		queue
-			.forEach(function([path, text]){
-				console.log('saving changes to:', path)
-				pwiki.get(path).raw = text }) }
-setInterval(saveNow, 5000)
+function(){
+	var queue = Object.entries(SAVE_LIVE_QUEUE)
+	SAVE_LIVE_QUEUE = {}
+	NEW_TITLE = undefined
+	queue
+		.forEach(function([path, text]){
+			console.log('saving changes to:', path)
+			pwiki.get(path).raw = text }) }
+setInterval(saveNow, SAVE_LIVE_TIMEOUT)
 
 
 
@@ -206,8 +225,6 @@ window.stopSpinner = function(){
 //---------------------------------------------------------------------
 // General setup...
 
-REFRESH_DELAY = 20
-
 document.pwikiloaded = new Event('pwikiloaded')
 
 var logTime = async function(promise, msg=''){
@@ -221,6 +238,16 @@ var logTime = async function(promise, msg=''){
 					: msg
 			} (${t}ms)`)
 	return res }
+
+
+REFRESH_DELAY = 20
+
+var refresh = async function(){
+	startSpinner()
+	setTimeout(function(){
+		logTime(
+			pwiki.refresh(), 
+			pwiki.location) }, REFRESH_DELAY) }
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -248,7 +275,7 @@ require(['./browser'], function(browser){
 			pwiki.location = [path, hash] }, REFRESH_DELAY) })
 	pwiki
 		.onBeforeNavigate(function(){
-			saveNow() })
+			saveAll() })
 		.onNavigate(async function(){
 			// NOTE: we do not need to directly update location.hash here as
 			//		that will push an extra history item...
@@ -279,12 +306,7 @@ require(['./browser'], function(browser){
 			// NOTE: we need to do this as hashchange is only triggered 
 			//		when the hash is actually changed...
 			for(var lnk of this.dom.querySelectorAll(`a[href="${location.hash}"]`)){
-				lnk.addEventListener('click', function(evt){
-					startSpinner()
-					setTimeout(function(){
-						logTime(
-							that.refresh(), 
-							that.location) }, REFRESH_DELAY) }) } })
+				lnk.addEventListener('click', refresh) } })
 
 	// wait for stuff to finish...
 	browser.setup.then(function(){

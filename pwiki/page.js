@@ -211,10 +211,19 @@ object.Constructor('BasePage', {
 	// XXX should these be writable???
 	get name(){
 		return pwpath.basename(this.path) },
-	//set name(value){ },
+	set name(value){
+		this.move(
+			/^[\\\/]/.test(value) ?
+				value
+				: '../'+value) },
 	get dir(){
 		return pwpath.dirname(this.path) },
-	//set dir(value){ },
+	set dir(value){ 
+		var to = pwpath.join(value, this.name)
+		this.move(
+			/^[\\\/]/.test(to) ?
+				to
+				: '../'+to) },
 
 	/*/ XXX TITLE...
 	// NOTE: .__title is intentionally not persistent...
@@ -315,7 +324,25 @@ object.Constructor('BasePage', {
 			res.bind(this)
 			: res }).call(this) },
 	set data(value){
-		this.__update__(value) },
+		if(this.actions 
+				&& this.actions[this.name]){
+			var name = 
+				this.actions[this.name] === true ?
+					this.name
+					: this.actions[this.name]
+			var page = this.get('..')
+			// NOTE: this can return a promise, as we'll need to assign 
+			// 		we do not care about it as long as it's not a function...
+			// 		XXX not sure if this is a good idea...
+			var res = page[name]
+			// set...
+			typeof(res) == 'function' ?
+				page[name](value.text ?? value)
+			: (page[name] = value.text ?? value)
+
+		// normal update...
+		} else {
+			this.__update__(value) } },
 
 	// metadata...
 	//
@@ -1413,7 +1440,7 @@ object.Constructor('Page', BasePage, {
 					.flat())
    			: data.text )}).call(this) },
 	set raw(value){
-		this.__update__({text: value}) },
+		this.data = {text: value} },
 		//this.onTextUpdate(value) },
 
 	// iterate matches or content list as pages...
@@ -1510,7 +1537,7 @@ object.Constructor('Page', BasePage, {
 					renderer: this,
 				}) }).call(this) },
 	set text(value){
-		this.__update__({text: value}) },
+		this.data = {text: value} },
 		//this.onTextUpdate(value) },
 
 	// pass on .renderer to clones...
@@ -1788,12 +1815,12 @@ module.System = {
 	// XXX all of these should support pattern pages...
 	_text: {
 		text: '@include(.:$ARGS isolated join="@source(file-separator)")' },
-	// XXX /rootpath here is not relative -- makes reuse harder...
 	_view: {
 		text: object.doc`
 			<slot name="header">
 				<a href="#/list">&#9776</a>
 				@source(./location/!)
+				<a href="javascript:refresh()">&#10227;</a>
 				<a href="#@source(./path/!)/edit">&#9998;</a>
 			</slot>
 			<hr>
@@ -1825,7 +1852,7 @@ module.System = {
 					+'<pre class="editor" '
 							+'wikiwords="no" '
 							+'contenteditable '
-							+'oninput="saveContent(\'@source(./path)\', this.innerText)">'
+							+'oninput="saveLiveContent(\'@source(./path)\', this.innerText)">'
 						+'<quote filter="quote-tags" src="."/>'
 					+'</pre>' 
 				+'</macro>'
@@ -1839,13 +1866,13 @@ module.System = {
 				+'<h1 '
 						+'contenteditable '
 						// XXX need to make this savable...
-						+'oninput="saveContent(\'@source(./path)/name\')">' 
+						+'oninput="saveLiveContent(\'@source(./path)/name\')">' 
 					+'@source(./name)'
 				+'</h1>'
 				+'<pre class="editor" '
 						+'wikiwords="no" '
 						+'contenteditable '
-						+'oninput="saveContent(\'@source(./path)\', this.innerText)">'
+						+'oninput="saveLiveContent(\'@source(./path)\', this.innerText)">'
 					+'<quote filter="quote-tags" src="."/>'
 				+'</pre>' 
 			+'</macro>'},
@@ -1858,13 +1885,13 @@ module.System = {
 				<macro src=".." join="@source(file-separator)">
 					<h1 class="title-editor"
 							contenteditable 
-							oninput="saveContent(\'@source(./path)/name\')">
+							oninput="saveContent(\'@source(./path)/name\', this.innerText)">
 						@source(./name)
 					</h1>
 					<pre class="editor"
 							wikiwords="no"
 							contenteditable
-							oninput="saveContent(\'@source(./path)\', this.innerText)"
+							oninput="saveLiveContent(\'@source(./path)\', this.innerText)"
 					><quote filter="quote-tags" src="."/></pre> 
 				</macro>
 			</slot>`},
@@ -1967,20 +1994,16 @@ module.System = {
 	// page actions...
 	//
 	
-	// XXX broken... 
 	// XXX this does not work as energetic...
 	time: async function(){
 		var t = Date.now()
 		var text = await this.get('../_text').text
 		var time = Date.now() - t
-
 		console.log('RENDER TIME:', time)
-
 		return object.doc`
-		Time to render: ${time}ms <br>
-		<ht>
-		${text}`},
-	//*/
+			Time to render: ${time}ms <br>
+			<hr>
+			${text}`},
 	
 	// XXX EXPERIMENTAL -- page types...
 	isAction: async function(){
@@ -2040,9 +2063,9 @@ module.System = {
 			&& this.renderer.refresh()
 		// XXX returning undefined will stop the redirect...
 		return '' },
-	// XXX copy/move/...
-	// XXX do we need this as a page action???
-	move: function(){
+	// NOTE: this moves relative to the basedir and not relative to the 
+	// 		page...
+	move: async function(){
 		var from = this.get('..')
 		// XXX this is ugly...
 		// 		...need to standardize how we get arguments when rendering....
@@ -2050,19 +2073,25 @@ module.System = {
 			|| (this.renderer || {args:{}}).args.to
 
 		console.log('MOVE:', from.path, to)
-		// XXX
-		if(to){
-			// XXX move...
-		}
+
+		to
+			&& await from.move(
+				/^[\\\/]/.test(to[0]) ?
+					to
+					: pwpath.join('..', to))
+
 		// redirect...
 		this.renderer
-			&& (this.renderer.location = this.referrer)
+			&& to
+			//&& (this.renderer.location = this.referrer)
+			&& (this.renderer.location = from.path)
 			// XXX this should not be needed...
 			&& this.renderer.refresh()
 		// XXX if we return undefined here this will not fully redirect, 
 		// 		keeping the move page open but setting the url to the 
 		// 		redirected page...
 		return '' },
+	// XXX copy/...
 
 	// XXX System/back
 	// XXX System/forward
