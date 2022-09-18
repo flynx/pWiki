@@ -6,6 +6,12 @@
 * 		- fs store/export in browser or a simple way to export/import...
 *
 *
+* XXX need basic system events:
+* 			<page>.onUpdate(path, data?)
+* 			<page>.onUreate(path, data?)
+* 			<page>.onDelete(path)
+* 		..stores should also be able to trigger these when external 
+* 		updates are detected...
 * XXX might also be a good idea to investigate a .tree directory index 
 * 		as a supplement to .paths()
 * XXX Q: can we access fs from a pwa???
