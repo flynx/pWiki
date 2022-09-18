@@ -1470,6 +1470,10 @@ object.Constructor('Page', BasePage, {
 	// NOTE: this uses .PAGE_TEMPLATE to render the page.
 	// NOTE: writing to .raw is the same as writing to .text...
 	//
+	// XXX should render templates (_view and the like) be a special case
+	// 		or render as any other page???
+	// 		...currently they are rendered in the context of the page and
+	// 		not in their own context...
 	// XXX revise how we handle strict mode...
 	get text(){ return (async function(){
 		// strict mode -- break on non-existing pages...
@@ -1482,6 +1486,7 @@ object.Constructor('Page', BasePage, {
 			|| path.push(this.PAGE_TEMPLATE)
 		var tpl = pwpath.join(path)
 		var tpl_name = path.pop()
+		//var tpl_name = path.at(-1)
 
 		// get the template relative to the top most pattern...
 		tpl = await this.get(tpl).find(true)
@@ -1493,11 +1498,17 @@ object.Constructor('Page', BasePage, {
 		// do the parse...
 		// NOTE: we render the template in context of page...
 		return this
+			// NOTE: this.path can both contain a template and not, this
+			// 		normalizes it to the path up to the template path...
+			.get(path, {args: this.args})
 			.parse(
 				this.get(
 					'/'+tpl, 
 					{args: this.args}).raw, 
-				{depends}) }).call(this) },
+				{
+					depends, 
+					renderer: this,
+				}) }).call(this) },
 	set text(value){
 		this.__update__({text: value}) },
 		//this.onTextUpdate(value) },
@@ -2010,6 +2021,12 @@ module.System = {
 			//console.log('           :', this, this.renderer)
 			return this.location },
 		{energetic: true}),
+	_testPage: {
+		text: object.doc`
+			@source(./path)
+		`},
+	_testAction: function(){
+		return this.path },
 
 
 	// actions...
@@ -2024,12 +2041,10 @@ module.System = {
 		// redirect...
 		this.renderer
 			&& (this.renderer.location = this.referrer)
+			// XXX this should not be needed...
 			&& this.renderer.refresh()
-		// show info about the delete operation...
-		//return target.get('DeletingPage/_text').text 
-		return ''
-	},
-
+		// XXX returning undefined will stop the redirect...
+		return '' },
 	// XXX copy/move/...
 	// XXX do we need this as a page action???
 	move: function(){
@@ -2047,6 +2062,8 @@ module.System = {
 		// redirect...
 		this.renderer
 			&& (this.renderer.location = this.referrer)
+			// XXX this should not be needed...
+			&& this.renderer.refresh()
 		// XXX if we return undefined here this will not fully redirect, 
 		// 		keeping the move page open but setting the url to the 
 		// 		redirected page...
