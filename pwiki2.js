@@ -6,10 +6,15 @@
 * 		- fs store/export in browser or a simple way to export/import...
 *
 *
+* XXX need page names to contain odd characters when created by user, for
+* 		example: note titles...
+* 		...and need this to work through all the i/o...
+* 		....this might be an argument towards the .title attr, at least 
+* 		for notes...
 * XXX need basic system events:
-* 			<page>.onUpdate(path, data?)
-* 			<page>.onUreate(path, data?)
-* 			<page>.onDelete(path)
+* 			<store>.onUpdate(path, data?)
+* 			<store>.onCreate(path, data?)
+* 			<store>.onDelete(path)
 * 		..stores should also be able to trigger these when external 
 * 		updates are detected...
 * XXX CACHE strategy and architecture

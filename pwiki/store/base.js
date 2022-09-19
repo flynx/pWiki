@@ -140,6 +140,9 @@ module.BaseStore = {
 	// XXX revise naming...
 	next: undefined,
 
+	onUpdate: types.event.Event('update'),
+	onDelete: types.event.Event('delete'),
+
 	// NOTE: .data is not part of the spec and can be implementation-specific,
 	// 		only .__<name>__(..) use it internally... (XXX check this)
 	__data: undefined,
@@ -542,6 +545,7 @@ module.BaseStore = {
 		await this.__update__(path, data, mode)
 		// XXX CACHED
 		this.__cache_add(path)
+		this.onUpdate(path)
 		return this },
 	__delete__: async function(path){
 		delete this.data[path] },
@@ -554,7 +558,8 @@ module.BaseStore = {
 		if(path){
 			await this.__delete__(path)
 			// XXX CACHED
-			this.__cache_remove(path) }
+			this.__cache_remove(path) 
+			this.onDelete(path) }
 		return this },
 
 	// XXX NEXT might be a good idea to have an API to move pages from 

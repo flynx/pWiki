@@ -50,6 +50,13 @@ module = {
 	// 		XXX or can we?
 	SYSTEM_PATH: '/.system',
 
+	// XXX EXPERIMENTAL
+	encode: function(str){
+		return str
+			.replace(/[#:*%]/g, encodeURIComponent) },
+	decode: function(str){
+		return decodeURIComponent(str) },
+
 	/*/ XXX NORMCACHE...
 	__normalized_cache_threshold: 100,
 	__normalized_cache_size: 4096,
