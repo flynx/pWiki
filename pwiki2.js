@@ -12,6 +12,16 @@
 * 			<page>.onDelete(path)
 * 		..stores should also be able to trigger these when external 
 * 		updates are detected...
+* XXX CACHE strategy and architecture
+* 		controlled caching
+* 			- cache is a layer of linked data
+* 			- linked via events and overloads
+* 		goals:
+* 			- generate data once
+* 			- fully transparent
+* 		levels:
+* 			- memory
+* 			- persistent
 * XXX might also be a good idea to investigate a .tree directory index 
 * 		as a supplement to .paths()
 * XXX Q: can we access fs from a pwa???
