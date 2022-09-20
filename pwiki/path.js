@@ -123,6 +123,12 @@ module = {
 		// clear the trailing '/'...
 		path.at(-1) == ''
 			&& path.pop()
+		// trim trailing ':'...
+		path.at(-1) 
+			&& path.at(-1).endsWith(':')
+			&& (path.push(
+				path.pop()
+					.replace(/:*$/, '')))
 		/*/ XXX NORMCACHE...
 		var res = format == 'string' ?
 			// special case: root -> keep '/'

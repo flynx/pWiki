@@ -124,13 +124,14 @@ object.Constructor('BasePage', {
 	},
 	resolvePathVars: function(path, context={}){
 		var that = this
-		return Object.entries(this.path_vars)
-			.reduce(function(res, [key, func]){
-				return res
-					.replace(
-						new RegExp('(\\${'+key+'}|\\$'+key+')', 'g'), 
-						func.call(that, context))
-			}, path) },
+		return pwpath.normalize(
+			Object.entries(this.path_vars)
+				.reduce(function(res, [key, func]){
+					return res
+						.replace(
+							new RegExp('(\\${'+key+'}|\\$'+key+')', 'g'), 
+							func.call(that, context))
+				}, path)) },
 
 	// page location...
 	//
@@ -914,7 +915,6 @@ object.Constructor('Page', BasePage, {
 				// XXX DEPENDS_PATTERN
 				depends.add(src)
 
-
 				handler = handler 
 					?? async function(src, state){
 						return isolated ?
@@ -1035,7 +1035,6 @@ object.Constructor('Page', BasePage, {
 						?? new Set()
 				// XXX DEPENDS_PATTERN
 				depends.add(src)
-
 
 				var pages = src ?
 						(!expandactions 
@@ -1294,7 +1293,6 @@ object.Constructor('Page', BasePage, {
 						src += ':$ARGS' }
 					// XXX DEPENDS_PATTERN
 					depends.add(src)
-
 
 					join = _getBlock('join') 
 						?? join 
