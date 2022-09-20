@@ -911,6 +911,8 @@ object.Constructor('Page', BasePage, {
 				var depends = state.depends = 
 					state.depends 
 						?? new Set()
+				// XXX DEPENDS_PATTERN
+				depends.add(src)
 
 
 				handler = handler 
@@ -1031,6 +1033,8 @@ object.Constructor('Page', BasePage, {
 				var depends = state.depends = 
 					state.depends 
 						?? new Set()
+				// XXX DEPENDS_PATTERN
+				depends.add(src)
 
 
 				var pages = src ?
@@ -1288,6 +1292,8 @@ object.Constructor('Page', BasePage, {
 							&& this.actions_inherit_args.has(pwpath.basename(src))
 							&& this.get(pwpath.dirname(src)).path == this.path){
 						src += ':$ARGS' }
+					// XXX DEPENDS_PATTERN
+					depends.add(src)
 
 
 					join = _getBlock('join') 
