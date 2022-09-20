@@ -912,6 +912,7 @@ object.Constructor('Page', BasePage, {
 					state.depends 
 						?? new Set()
 
+
 				handler = handler 
 					?? async function(src, state){
 						return isolated ?
@@ -1030,6 +1031,7 @@ object.Constructor('Page', BasePage, {
 				var depends = state.depends = 
 					state.depends 
 						?? new Set()
+
 
 				var pages = src ?
 						(!expandactions 
@@ -1286,6 +1288,7 @@ object.Constructor('Page', BasePage, {
 							&& this.actions_inherit_args.has(pwpath.basename(src))
 							&& this.get(pwpath.dirname(src)).path == this.path){
 						src += ':$ARGS' }
+
 
 					join = _getBlock('join') 
 						?? join 

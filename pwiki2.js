@@ -26,7 +26,7 @@
 * 			- fully transparent
 * 		levels:
 * 			- memory
-* 			- persistent
+* 			- persistent (???)
 * XXX might also be a good idea to investigate a .tree directory index 
 * 		as a supplement to .paths()
 * XXX Q: can we access fs from a pwa???
