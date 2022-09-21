@@ -209,7 +209,7 @@ object.Constructor('BasePage', {
 			this.root.path 
 			: this.path },
 
-	// XXX should these be writable???
+	// XXX should this encode/decode??? 
 	get name(){
 		return pwpath.basename(this.path) },
 	set name(value){
