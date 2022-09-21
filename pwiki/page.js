@@ -226,16 +226,20 @@ object.Constructor('BasePage', {
 				to
 				: '../'+to) },
 
-	/*/ XXX TITLE...
+	/*/ XXX TITLE / EXPERIMENTAL...
 	// NOTE: .__title is intentionally not persistent...
 	__title: undefined,
 	get title(){
 		return this.__title
-			?? this.path },
+			?? this.name },
 	set title(value){
 		this.__title = value
 		this.__update__({title: value}) },
 	//*/
+	get title(){
+		return pwpath.decodeElem(this.name) },
+	set title(value){
+		this.name = pwpath.encodeElem(value) },
 
 	get isPattern(){
 		return this.path.includes('*') },
@@ -316,10 +320,10 @@ object.Constructor('BasePage', {
 		// single page...
 		// XXX ENERGETIC...
 		var res = await this.store.get(this.path, !!this.strict, !!await this.energetic)
-		/*/ XXX TITLE...
+		/*/ XXX TITLE / EXPERIMENTAL...
 		// load the title if set...
 		res.title 
-			?? (this.__title = res.title)
+			&& (this.__title = res.title)
 		//*/
 		return typeof(res) == 'function' ?
 			res.bind(this)
@@ -979,17 +983,21 @@ object.Constructor('Page', BasePage, {
 		// 		this renders the src in the context of current page while 
 		// 		include is rendered in the context of its page but with
 		// 		the same state...
+		// 		i.e. for @include(PATH) the paths within the included page 
+		// 		are resolved relative to PATH while for @source(PATH) 
+		// 		relative to the page containing the @source(..) statement...
 		source: Macro(
 			// XXX should this have the same args as include???
 			['src', 'recursive', 'join', 
 				['strict', 'nonstrict', 'isolated']],
 			//['src'],
 			async function*(args, body, state){
+				var that = this
 				yield* this.macros.include.call(this, 
 					'source',
 					args, body, state, 'sources', 
 					async function(src, state){
-						return this.parse(this.get(src).raw, state) }) }),
+						return that.parse(that.get(src).raw, state) }) }),
 		//
 		// 	@quote(<src>)
 		//
@@ -1485,8 +1493,10 @@ object.Constructor('Page', BasePage, {
 		// handle lists in pages (actions, ... etc.)...
 		} else {
 			var data = await page.data
-			data = typeof(data) == 'function' ?
-					data
+			data = 
+				typeof(data) == 'function' ?
+					//data
+					await data()
 				: 'text' in data ?
 					data.text
 				: null
@@ -1495,6 +1505,9 @@ object.Constructor('Page', BasePage, {
 				yield* data
 					.map(function(p){
 						return page.virtual({text: p}) })
+				return }
+			// do not iterate pages/actions that are undefined...
+			if(data == null){
 				return }
 
 			yield page } },
@@ -1826,7 +1839,8 @@ module.System = {
 		text: object.doc`
 			<slot name="header">
 				<a href="#/list">&#9776</a>
-				@source(./location/!)
+				<a href="#<slot name=parent>../</slot>">&#x21D1;</a>
+				[<slot name="location">@source(./location/!)</slot>]
 				<a href="javascript:refresh()">&#10227;</a>
 				<a href="#@source(./path/!)/edit">&#9998;</a>
 			</slot>
@@ -1837,6 +1851,7 @@ module.System = {
 
 			<!-- fill slots defaults -->
 			<slot name="content" hidden>
+				<slot name=title><h1>@source(./title)</h1></slot>
 				@include(.:$ARGS join="@source(file-separator)" recursive="")
 			</slot>` },
 	// XXX add join...
@@ -1885,15 +1900,17 @@ module.System = {
 			+'</macro>'},
 	//*/
 	edit: {
+		// XXX not sure if we should use .title or .name here...
 		text: object.doc`
-			@include(_view)
-			<slot name="header">@source(../path)</slot>
+			<slot name="parent">../..</slot>
+			<slot name="location">@source(../location/!)</slot>
+
 			<slot name="content">
 				<macro src=".." join="@source(file-separator)">
 					<h1 class="title-editor"
 							contenteditable 
-							oninput="saveContent(\'@source(./path)/name\', this.innerText)">
-						@source(./name)
+							oninput="saveContent(\'@source(./path)/title\', this.innerText)">
+						@source(./title)
 					</h1>
 					<pre class="editor"
 							wikiwords="no"
@@ -1932,6 +1949,7 @@ module.System = {
 	// XXX this is really slow...
 	tree: {
 		text: object.doc`
+			<slot name=title></slot>
 			<macro src="../*:@(all)">
 				<div>
 					<div class="item">
@@ -1940,7 +1958,7 @@ module.System = {
 						<a class="show-on-hover" href="#@source(./path)/delete">&times;</a>
 					</div>
 					<div style="padding-left: 30px">
-						@source("./tree:@(all)")
+						@include("./tree:@(all)")
 					</div>
 				</div>
 			</macro>` },
@@ -1996,6 +2014,20 @@ module.System = {
 			<slot name="footer"></slot> ` },
 	QuoteActionPage: {
 		text: '[ native code ]' },
+
+	// XXX should this be in templates???
+	// XXX for some reason this does not list files...
+	FlatNotes: {
+		text: object.doc`
+		<slot name=title></slot>
+		<slot name="header"><content/><a href="#./$NOW/edit">&#128462;</a></slot>
+		<macro src="*:@(all)" join="<br>">
+			<div class="item">
+				<a href="#@source(./path)/edit">@source(./title)</a>
+				<a class="show-on-hover" href="#@source(./path)/info">&#128712;</a>
+				<a class="show-on-hover" href="#@source(./path)/delete">&times;</a>
+			</div>
+		</macro>` },
 
 
 	// page actions...

@@ -56,6 +56,11 @@ module = {
 			.replace(/[#:*%]/g, encodeURIComponent) },
 	decode: function(str){
 		return decodeURIComponent(str) },
+	encodeElem: function(str){
+		return str
+			.replace(/[#:*%\\\/.]/g, encodeURIComponent) },
+	decodeElem: function(str){
+		return decodeURIComponent(str) },
 
 	/*/ XXX NORMCACHE...
 	__normalized_cache_threshold: 100,
@@ -106,14 +111,18 @@ module = {
 				if(res.length == 0 
 						&& e == '..'){
 					return [e] }
-				;(e == '.' 
+				// multiple leading '..'...
+				;(e == '..' 
+						&& res.at(-1) == '..' ?
+					res.push(e)
+				: e == '.' 
 						// keep explicit '/' only at start/end of path...
 						|| (e == '' 
 							&& i != 0 
 							&& i != L.length-1)) ?
 					undefined
 				: e == '..' 
-						|| res[res.length-1] == '>>' ?
+						|| res.at(-1) == '>>' ?
 					((res.length > 1 
 							|| res[0] != '')
 						&& res.pop())
@@ -158,10 +167,12 @@ module = {
 				: 'string')
 			: format
 		path = this.split(path)
-		;(path[0] == ''
+		// leading: '/', '.' and '..'...
+		while(path[0] == ''
 				|| path[0] == '.'
-				|| path[0] == '..')
-			&& path.shift()
+				|| path[0] == '..'){
+			path.shift() }
+		//trailing '/'
 		path.at(-1) == ''
 			&& path.pop()
 		return format == 'string' ?
