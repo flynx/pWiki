@@ -36,8 +36,7 @@ module = {
 	// NOTE: if a path here is relative it is also searched relative to 
 	// 		the target path.
 	SEARCH_PATHS: [
-		//'./Theme/CLI',
-		'./Templates',
+		'.templates',
 	],
 	
 	// System path...

@@ -51,8 +51,11 @@ Promise.all([
 	store.next.update(
 		pwpath.sanitize(pwpath.SYSTEM_PATH),
 		Object.create(basestore.BaseStore).load(page.System)),
+	store.next.update('.templates',
+		Object.create(basestore.BaseStore).load(page.Templates)),
 	store.update('.config', 
 		Object.create(basestore.BaseStore).load(page.Config)),
+
 	store.update('Test', 
 		Object.create(basestore.BaseStore).load(page.Test)),
 

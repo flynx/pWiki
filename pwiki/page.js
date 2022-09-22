@@ -226,20 +226,12 @@ object.Constructor('BasePage', {
 				to
 				: '../'+to) },
 
-	/*/ XXX TITLE / EXPERIMENTAL...
-	// NOTE: .__title is intentionally not persistent...
-	__title: undefined,
-	get title(){
-		return this.__title
-			?? this.name },
-	set title(value){
-		this.__title = value
-		this.__update__({title: value}) },
-	//*/
+	// XXX TITLE / EXPERIMENTAL...
 	get title(){
 		return pwpath.decodeElem(this.name) },
 	set title(value){
 		this.name = pwpath.encodeElem(value) },
+	//*/
 
 	get isPattern(){
 		return this.path.includes('*') },
@@ -1529,7 +1521,7 @@ object.Constructor('Page', BasePage, {
 			throw new Error('NOT FOUND ERROR: '+ this.location) }
 
 		var path = pwpath.split(this.path)
-		path.at(-1)[0] == '_'
+		;(path.at(-1) ?? '')[0] == '_'
 			|| path.push(this.PAGE_TEMPLATE)
 		var tpl = pwpath.join(path)
 		var tpl_name = path.pop()
@@ -1756,20 +1748,6 @@ object.Constructor('pWikiPageElement', Page, {
 		object.parentProperty(pWikiPageElement.prototype, 'location')
 			.set.call(this, value) },
 
-	/*/ XXX this is not persistent, is this what we want???
-	// XXX should this default to .path or to .name???
-	get title(){
-		return this.dom.getAttribute('title')
-			|| (this.dom.querySelector('h1') || {}).innerText
-			|| this.path 
-			|| object.parentProperty(pWikiPageElement.prototype, 'title')
-				.get.call(this) },
-	set title(value){
-		this.dom.setAttribute('title', value) 
-		object.parentProperty(pWikiPageElement.prototype, 'title')
-			.set.call(this, value) },
-	//*/
-
 	// events...
 	//
 	__pWikiLoadedDOMEvent: new Event('pwikiloaded'),
@@ -1837,21 +1815,21 @@ module.System = {
 		text: '@include(.:$ARGS isolated join="@source(file-separator)")' },
 	_view: {
 		text: object.doc`
-			<slot name="header">
+			<slot header>
 				<a href="#/list">&#9776</a>
-				<a href="#<slot name=parent>../</slot>">&#x21D1;</a>
-				[<slot name="location">@source(./location/!)</slot>]
+				<a href="#<slot parent>../</slot>">&#x21D1;</a>
+				[<slot location>@source(./location/!)</slot>]
 				<a href="javascript:refresh()">&#10227;</a>
 				<a href="#@source(./path/!)/edit">&#9998;</a>
 			</slot>
 			<hr>
-			<slot name="content"></slot>
+			<slot content></slot>
 			<hr>
-			<slot name="footer"></slot>
+			<slot footer></slot>
 
 			<!-- fill slots defaults -->
-			<slot name="content" hidden>
-				<slot name=title><h1>@source(./title)</h1></slot>
+			<slot content hidden>
+				<slot title><h1>@source(./title)</h1></slot>
 				@include(.:$ARGS join="@source(file-separator)" recursive="")
 			</slot>` },
 	// XXX add join...
@@ -1868,8 +1846,8 @@ module.System = {
 	_edit: {
 		text: 
 			'@include(PageTemplate)'
-			+'<slot name="header">@source(./path)</slot>'
-			+'<slot name="content">'
+			+'<slot header>@source(./path)</slot>'
+			+'<slot content>'
 				+'<macro src="." join="@source(file-separator)">'
 					+'<pre class="editor" '
 							+'wikiwords="no" '
@@ -1902,10 +1880,10 @@ module.System = {
 	edit: {
 		// XXX not sure if we should use .title or .name here...
 		text: object.doc`
-			<slot name="parent">../..</slot>
-			<slot name="location">@source(../location/!)</slot>
+			<slot parent>../..</slot>
+			<slot location>@source(../location/!)</slot>
 
-			<slot name="content">
+			<slot content>
 				<macro src=".." join="@source(file-separator)">
 					<h1 class="title-editor"
 							contenteditable 
@@ -1927,7 +1905,7 @@ module.System = {
 
 	list: {
 		text: object.doc`
-			<slot name="header">
+			<slot header>
 				<a href="#/list">&#9776</a>
 				<a href="#@source(../../path)/list">&#x21D1;</a>
 				@source(../path)
@@ -1949,7 +1927,7 @@ module.System = {
 	// XXX this is really slow...
 	tree: {
 		text: object.doc`
-			<slot name=title></slot>
+			<slot title/>
 			<macro src="../*:@(all)">
 				<div>
 					<div class="item">
@@ -2007,28 +1985,13 @@ module.System = {
 
 	PageTemplate: {
 		text: object.doc`
-			<slot name="header">@source(./path)/_edit</slot>
+			<slot header>@source(./path)/_edit</slot>
 			<hr>
-			<slot name="content"></slot>
+			<slot content></slot>
 			<hr>
-			<slot name="footer"></slot> ` },
+			<slot footer></slot> ` },
 	QuoteActionPage: {
 		text: '[ native code ]' },
-
-	// XXX should this be in templates???
-	// XXX for some reason this does not list files...
-	FlatNotes: {
-		text: object.doc`
-		<slot name=title></slot>
-		<slot name="header"><content/><a href="#./$NOW/edit">&#128462;</a></slot>
-		<macro src="*:@(all)" join="<br>">
-			<div class="item">
-				<a href="#@source(./path)/edit">@source(./title)</a>
-				<a class="show-on-hover" href="#@source(./path)/info">&#128712;</a>
-				<a class="show-on-hover" href="#@source(./path)/delete">&times;</a>
-			</div>
-		</macro>` },
-
 
 	// page actions...
 	//
@@ -2040,6 +2003,7 @@ module.System = {
 		var time = Date.now() - t
 		console.log('RENDER TIME:', time)
 		return object.doc`
+			<slot title/>
 			Time to render: ${time}ms <br>
 			<hr>
 			${text}`},
@@ -2132,10 +2096,25 @@ module.System = {
 		return '' },
 	// XXX copy/...
 
-	// XXX System/back
-	// XXX System/forward
 	// XXX System/sort
 	// XXX System/reverse
+}
+
+var Templates = 
+module.Templates = {
+	// XXX should this be in templates???
+	// XXX for some reason this does not list files...
+	FlatNotes: {
+		text: object.doc`
+		<slot title/>
+		<slot header><content/><a href="#./$NOW/edit">&#128462;</a></slot>
+		<macro src="*:@(all)" join="<br>">
+			<div class="item">
+				<a href="#@source(./path)/edit">@source(./title)</a>
+				<a class="show-on-hover" href="#@source(./path)/info">&#128712;</a>
+				<a class="show-on-hover" href="#@source(./path)/delete">&times;</a>
+			</div>
+		</macro>` },
 }
 
 var Test =

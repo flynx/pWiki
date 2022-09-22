@@ -25,6 +25,10 @@
 * 		levels:
 * 			- memory
 * 			- persistent (???)
+* XXX IDEA: macros: might be fun to be able to use certain pages as 
+* 		macros...
+* 		...this might even extend to all macros being actions in something 
+* 		like /.system/macros/...
 * XXX might also be a good idea to investigate a .tree directory index 
 * 		as a supplement to .paths()
 * XXX Q: can we access fs from a pwa???
@@ -508,6 +512,8 @@ Promise.all([
 	store.next.update(
 		pwpath.sanitize(pwpath.SYSTEM_PATH),
 		Object.create(basestore.BaseStore).load(page.System)),
+	store.next.update('.templates',
+		Object.create(basestore.BaseStore).load(page.Templates)),
 	store.update('.config', 
 		Object.create(basestore.BaseStore).load(page.Config)),
 ])
