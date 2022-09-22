@@ -1944,11 +1944,11 @@ module.System = {
 		text: `@include("../**/path:@(all)" join="@source(line-separator)")`},
 	info: {
 		text: object.doc`
-			Path: @source(../path) 
+			Path: [@source(../path) ]
 				(<a href="#@source(../path)/edit">edit</a>)<br>
-			Resolved path: @source(../resolved) 
+			Resolved path: [@source(../resolved)]
 				(<a href="#@source(../resolved)/edit">edit</a>)<br>
-			Referrer: @source(../referrer)
+			Referrer: [@source(../referrer)]
 				(<a href="#@source(../referrer)/edit">edit</a>)<br>
 			Args: <args/><br>
 

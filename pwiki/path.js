@@ -52,12 +52,16 @@ module = {
 	// XXX EXPERIMENTAL
 	encode: function(str){
 		return str
-			.replace(/[#:*%]/g, encodeURIComponent) },
+			.replace(/[#:*%'"]/g, 
+				function(s){ 
+					return '%'+s.charCodeAt().toString(16) }) },
 	decode: function(str){
 		return decodeURIComponent(str) },
 	encodeElem: function(str){
 		return str
-			.replace(/[#:*%\\\/.]/g, encodeURIComponent) },
+			.replace(/[#:*%'"\\\/]/g,
+				function(s){ 
+					return '%'+s.charCodeAt().toString(16) }) },
 	decodeElem: function(str){
 		return decodeURIComponent(str) },
 

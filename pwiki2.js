@@ -6,6 +6,16 @@
 * 		- fs store/export in browser or a simple way to export/import...
 *
 *
+* XXX titles containing quotes break things...
+* XXX BUG: for some reason deleting and refreshing takes ~2x as long as 
+* 		refreshing...
+* 		to reproduce:
+* 			pwiki.path = '/tree' 								// reports about ~2sec
+* 			await pwiki.get('/Test/Subtree/Page2/delete').raw	// refresh reports ~4sec (XXX)
+* 		while:
+* 			pwiki.path = '/tree' 								// reports about ~2sec
+* 			await pwiki.get('/Test/Subtree/Page2').delete()		// fast
+* 			pwiki.path = '/tree' 								// reports about ~2sec
 * XXX macros: should we add the pattern path to .depends instead of the
 * 		final path...
 * 		...would also need a fast way to pattern match...
