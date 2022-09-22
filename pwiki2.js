@@ -10,6 +10,12 @@
 * 		this works:
 * 			await pwiki.get('/FlatNotes/* /delete').raw
 * 		opening/editing/deleting from ui breaks -- macro issue??
+* XXX .delete() should support pattern pages, e.g.:
+* 			pwiki.get('/path/to/*').delete()
+* 		other actions should follow too:
+* 			- .move(..)
+* 			- .copy(..)
+* 			- ...
 * XXX BUG: for some reason deleting and refreshing takes ~2x as long as 
 * 		refreshing...
 * 		to reproduce:
