@@ -387,20 +387,42 @@ object.Constructor('BasePage', {
 			: res },
 	//*/
 	resolve: relMatchProxy('resolve'),
-	delete: function(path='.'){
-		this.__delete__(path) 
-		return this },
 
+
+	delete: async function(path='.', base=true){
+		var page = this.get(path)
+		if(page.isPattern){
+			base
+				&& this.__delete__(this.path.split('*')[0])
+			for(var p of await this.get('path').raw){
+				this.__delete__(p) }
+		} else {
+			this.__delete__(path) }
+		return this },
 	// XXX should these be implemented here or proxy to .store???
-	copy: async function(to){
-		this.get(to).data = await this.data
+	// XXX do we sanity check to no not contain '*'???
+	copy: async function(to, base=true){
+		// copy children...
+		if(this.isPattern){
+			var base = this.path.split('*')[0]
+			// copy the base...
+			base 
+				&& (this.get(to).data = await this.get(base).data)
+			for(var from of await this.get('path').raw){ 
+				this.get(pwpath.join(to, from.slice(base.length))).data = 
+					await this.get(from).data }
+		// copy self...
+		} else {
+			this.get(to).data = await this.data }
+		// change location...
 		this.path = to
 		return this },
-	move: async function(to){
+	move: async function(to, base=true){
 		var from = this.path
-		await this.copy(to)
-		this.delete(from)
+		await this.copy(to, base)
+		this.delete(from, base)
 		return this },
+
 
 	//
 	// 	Find current path (non-strict)
@@ -2052,12 +2074,13 @@ module.System = {
 
 	// actions...
 	//
+	// XXX should ** be the default here...
 	delete: function(){
 		var target = this.get('..')
 
 		console.log('DELETE:', target.path)
 
-		target.delete()
+		target.delete('**')
 
 		// redirect...
 		this.renderer
@@ -2078,7 +2101,7 @@ module.System = {
 		console.log('MOVE:', from.path, to)
 
 		to
-			&& await from.move(
+			&& await from.get('**').move(
 				/^[\\\/]/.test(to[0]) ?
 					to
 					: pwpath.join('..', to))
