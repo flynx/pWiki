@@ -10,6 +10,7 @@
 * 		this works:
 * 			await pwiki.get('/FlatNotes/* /delete').raw
 * 		opening/editing/deleting from ui breaks -- macro issue??
+* 		...seems to be at least a problem with macros eating up quotes...
 * XXX .delete() should support pattern pages, e.g.:
 * 			pwiki.get('/path/to/*').delete()
 * 		other actions should follow too:
