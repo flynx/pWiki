@@ -390,6 +390,9 @@ object.Constructor('BasePage', {
 
 
 	delete: async function(path='.', base=true){
+		if(path === true || path === false){
+			base = path
+			path = '.'	}
 		var page = this.get(path)
 		if(page.isPattern){
 			base
