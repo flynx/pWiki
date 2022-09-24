@@ -2083,7 +2083,9 @@ module.System = {
 
 		console.log('DELETE:', target.path)
 
-		target.delete('**')
+		target.isPattern ?
+			target.delete()
+			: target.delete('**')
 
 		// redirect...
 		this.renderer
@@ -2104,10 +2106,13 @@ module.System = {
 		console.log('MOVE:', from.path, to)
 
 		to
-			&& await from.get('**').move(
-				/^[\\\/]/.test(to[0]) ?
-					to
-					: pwpath.join('..', to))
+			&& await (from.isPattern ?
+					from
+					: from.get('**'))
+				.move(
+					/^[\\\/]/.test(to[0]) ?
+						to
+						: pwpath.join('..', to))
 
 		// redirect...
 		this.renderer
