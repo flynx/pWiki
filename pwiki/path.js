@@ -11,6 +11,34 @@ var types = require('ig-types')
 
 
 //---------------------------------------------------------------------
+
+var makeEncoder = function(name, chars){
+	var pattern_attr = '__'+name+'_pattern'
+	return function(str){
+		var pattern = this[pattern_attr] = 
+			this[pattern_attr] 
+				?? RegExp(`[${
+					this[chars]
+						.replace(/\\/g, '\\\\') }]`, 'g')
+		return str
+			.replace(pattern,
+				function(s){ 
+					return ('%'+s.charCodeAt().toString(16)).toUpperCase() }) } }
+var makeDecoder = function(name, encode, chars){
+	var pattern_attr = '__'+name+'_pattern'
+	return function(str){
+		var pattern = this[pattern_attr] = 
+			this[pattern_attr] 
+				?? RegExp(`%(${
+					this[encode](this[chars])
+						.slice(1)
+						.replace(/%/g, '|') })`, 'gi')
+		return str
+			.replace(pattern, function(_, c){
+				return String.fromCharCode('0x'+c) }) } }
+
+
+//---------------------------------------------------------------------
 // Path...
 
 module = {
@@ -50,20 +78,20 @@ module = {
 	SYSTEM_PATH: '/.system',
 
 	// XXX EXPERIMENTAL
-	encode: function(str){
-		return str
-			.replace(/[#:*%]/g, 
-				function(s){ 
-					return '%'+s.charCodeAt().toString(16) }) },
-	decode: function(str){
-		return decodeURIComponent(str) },
-	encodeElem: function(str){
-		return str
-			.replace(/[#:*%\\\/]/g,
-				function(s){ 
-					return '%'+s.charCodeAt().toString(16) }) },
-	decodeElem: function(str){
-		return decodeURIComponent(str) },
+	
+	ENCODED_PATH: '#:*%',
+	encode: makeEncoder('encode', 'ENCODED_PATH'),
+	decode: makeDecoder('decode', 'encode', 'ENCODED_PATH'),
+
+	ENCODED_ELEM: '#:*%\\/',
+	encodeElem: makeEncoder('encode_elem', 'ENCODED_ELEM'),
+	decodeElem: makeDecoder('decode_elem', 'encodeElem', 'ENCODED_ELEM'),
+
+	// chars we keep in path as-is -- decode on normalize...
+	//
+	UNENCODED_PATH: '\'"',
+	quote: makeEncoder('quote', 'UNENCODED_PATH'),
+	unquote: makeDecoder('unquote', 'quote', 'UNENCODED_PATH'),
 
 	/*/ XXX NORMCACHE...
 	__normalized_cache_threshold: 100,
@@ -104,9 +132,10 @@ module = {
 			: format
 		var root = path[0] == '' 
 			|| path[0] == '/'
-		path = (path instanceof Array ?
-				path.join('/')
-				: path)
+		path = this.unquote(
+				path instanceof Array ?
+					path.join('/')
+					: path)
 			// NOTE: this will also trim the path elements...
 			.split(/\s*[\\\/]+\s*/)
 			.reduce(function(res, e, i, L){

@@ -161,9 +161,9 @@ object.Constructor('BasePage', {
 				&& this.__beforenavigate__(location) }),
 	onNavigate: types.event.Event('navigate',
 		function(handle, location){
+			var {path, args} = pwpath.splitArgs(location)
 			this.onBeforeNavigate(location)
 			this.referrer = this.location
-			var {path, args} = pwpath.splitArgs(location)
 			var cur = this.__location = 
 				this.resolvePathVars(
 					// NOTE: this is done instead of simply assigning 
@@ -213,6 +213,8 @@ object.Constructor('BasePage', {
 	get name(){
 		return pwpath.basename(this.path) },
 	set name(value){
+		if(pwpath.normalize(value) == ''){
+			return }
 		this.move(
 			/^[\\\/]/.test(value) ?
 				value
@@ -405,6 +407,8 @@ object.Constructor('BasePage', {
 	// XXX should these be implemented here or proxy to .store???
 	// XXX do we sanity check to no not contain '*'???
 	copy: async function(to, base=true){
+		if(this.get(to).path == this.path){
+			return this }
 		// copy children...
 		if(this.isPattern){
 			var base = this.path.split('*')[0]
@@ -422,6 +426,8 @@ object.Constructor('BasePage', {
 		return this },
 	move: async function(to, base=true){
 		var from = this.path
+		if(this.get(to).path == this.path){
+			return this }
 		await this.copy(to, base)
 		this.delete(from, base)
 		return this },
