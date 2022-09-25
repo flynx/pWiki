@@ -855,7 +855,7 @@ object.Constructor('Page', BasePage, {
 					.call(this, Object.fromEntries(Object.entries(quote)), null, state)
 
 			// local filters...
-			if(body){
+			if(body != null){
 				// expand the body...
 				var ast = expand ?
 						this.__parser__.expand(this, body, state)
@@ -903,9 +903,10 @@ object.Constructor('Page', BasePage, {
 		// 		At the moment nested recursion is checked in a fast but 
 		// 		not 100% correct manner focusing on path depth and ignoring
 		// 		the context, this potentially can lead to false positives.
+		// XXX need a way to make encode option transparent...
 		include: Macro(
 			['src', 'recursive', 'join', 
-				['strict', 'nonstrict', 'isolated']],
+				['s', 'strict', 'nonstrict', 'isolated']],
 			async function*(args, body, state, key='included', handler){
 				var macro = 'include'
 				if(typeof(args) == 'string'){
@@ -927,6 +928,7 @@ object.Constructor('Page', BasePage, {
 				var isolated = args.isolated 
 				var strict = args.strict
 					&& !args.nonstrict
+				var strquotes = args.s
 				var join = args.join 
 					&& await base.parse(args.join, state)
 
@@ -989,6 +991,11 @@ object.Constructor('Page', BasePage, {
 					// load the included page...
 					var res = await handler.call(page, full, state)
 					depends.add(full)
+					res = strquotes ?
+						res
+							.replace(/["']/g, function(c){
+								return '%'+ c.charCodeAt().toString(16) })
+						: res
 
 					// NOTE: we only track recursion down and not sideways...
 					seen.delete(full)
@@ -1006,7 +1013,7 @@ object.Constructor('Page', BasePage, {
 		source: Macro(
 			// XXX should this have the same args as include???
 			['src', 'recursive', 'join', 
-				['strict', 'nonstrict', 'isolated']],
+				['s', 'strict', 'nonstrict', 'isolated']],
 			//['src'],
 			async function*(args, body, state){
 				var that = this
@@ -1845,7 +1852,7 @@ module.System = {
 				<a href="#<slot parent>../</slot>">&#x21D1;</a>
 				[<slot location>@source(./location/!)</slot>]
 				<a href="javascript:refresh()">&#10227;</a>
-				<a href="#@source(./path/!)/edit">&#9998;</a>
+				<a href="#@source(s ./path/!)/edit">&#9998;</a>
 			</slot>
 			<hr>
 			<slot content></slot>
@@ -1891,13 +1898,13 @@ module.System = {
 				+'<h1 '
 						+'contenteditable '
 						// XXX need to make this savable...
-						+'oninput="saveLiveContent(\'@source(./path)/name\')">' 
+						+'oninput="saveLiveContent(\'@source(s ./path)/name\')">' 
 					+'@source(./name)'
 				+'</h1>'
 				+'<pre class="editor" '
 						+'wikiwords="no" '
 						+'contenteditable '
-						+'oninput="saveLiveContent(\'@source(./path)\', this.innerText)">'
+						+'oninput="saveLiveContent(\'@source(s ./path)\', this.innerText)">'
 					+'<quote filter="quote-tags" src="."/>'
 				+'</pre>' 
 			+'</macro>'},
@@ -1912,13 +1919,13 @@ module.System = {
 				<macro src=".." join="@source(file-separator)">
 					<h1 class="title-editor"
 							contenteditable 
-							oninput="saveContent(\'@source(./path)/title\', this.innerText)">
+							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
 						@source(./title)
 					</h1>
 					<pre class="editor"
 							wikiwords="no"
 							contenteditable
-							oninput="saveLiveContent(\'@source(./path)\', this.innerText)"
+							oninput="saveLiveContent(\'@source(s ./path)\', this.innerText)"
 					><quote filter="quote-tags" src="."/></pre> 
 				</macro>
 			</slot>`},
@@ -1932,11 +1939,11 @@ module.System = {
 		text: object.doc`
 			<slot header>
 				<a href="#/list">&#9776</a>
-				<a href="#@source(../../path)/list">&#x21D1;</a>
+				<a href="#@source(s ../../path)/list">&#x21D1;</a>
 				@source(../path)
 			</slot>
 			<macro src="../*:@(all)" join="@source(line-separator)">
-				<a href="#@source(./path)">@source(./name)</a>
+				<a href="#@source(s ./path)">@source(./name)</a>
 				<sup>
 					<macro src="./isAction">
 						a
@@ -1945,9 +1952,9 @@ module.System = {
 						</else>
 					</macro>
 				</sup>
-				(<a href="#@source(./path)/list">@include(./*/length/!)</a>)
+				(<a href="#@source(s ./path)/list">@include(./*/length/!)</a>)
 				&nbsp;
-				<a href="#@source(./path)/delete">&times;</a>
+				<a href="#@source(s ./path)/delete">&times;</a>
 			</macro>` },
 	// XXX this is really slow...
 	tree: {
@@ -1956,9 +1963,9 @@ module.System = {
 			<macro src="../*:@(all)">
 				<div>
 					<div class="item">
-						<a href="#@source(./path)">@source(./name)</a>
-						<a class="show-on-hover" href="#@source(./path)/info">&#128712;</a>
-						<a class="show-on-hover" href="#@source(./path)/delete">&times;</a>
+						<a href="#@source(s ./path)">@source(./title)</a>
+						<a class="show-on-hover" href="#@source(s ./path)/info">&#128712;</a>
+						<a class="show-on-hover" href="#@source(s ./path)/delete">&times;</a>
 					</div>
 					<div style="padding-left: 30px">
 						@include("./tree:@(all)")
@@ -1970,11 +1977,11 @@ module.System = {
 	info: {
 		text: object.doc`
 			Path: [@source(../path) ]
-				(<a href="#@source(../path)/edit">edit</a>)<br>
+				(<a href="#@source(s ../path)/edit">edit</a>)<br>
 			Resolved path: [@source(../resolved)]
-				(<a href="#@source(../resolved)/edit">edit</a>)<br>
+				(<a href="#@source(s ../resolved)/edit">edit</a>)<br>
 			Referrer: [@source(../referrer)]
-				(<a href="#@source(../referrer)/edit">edit</a>)<br>
+				(<a href="#@source(s ../referrer)/edit">edit</a>)<br>
 			Args: <args/><br>
 
 			type: @source(../type)<br>
@@ -2141,11 +2148,13 @@ module.Templates = {
 		<slot header><content/><a href="#./$NOW/edit">&#128462;</a></slot>
 		<macro src="*:@(all)" join="<br>">
 			<div class="item">
-				<a href="#@source(./path)/edit">@source(./title)</a>
-				<a class="show-on-hover" href="#@source(./path)/info">&#128712;</a>
-				<a class="show-on-hover" href="#@source(./path)/delete">&times;</a>
+				<a href="#@source(s ./path)/edit">@source(./title)</a>
+				<a class="show-on-hover" href="#@source(s ./path)/info">&#128712;</a>
+				<a class="show-on-hover" href="#@source(s ./path)/delete">&times;</a>
 			</div>
 		</macro>` },
+	// XXX this is not resolved...
+	'FlatNotes/.templates/EmptyPage': {text: ' '},
 }
 
 var Test =

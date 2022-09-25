@@ -178,6 +178,9 @@ var SAVE_LIVE_QUEUE = {}
 
 var saveLiveContent = 
 function(path, text){
+	path = path
+		.replace(/%22/g, '"')
+		.replace(/%27/g, "'")
 	SAVE_LIVE_QUEUE[path] = text 
 	// clear editor page cache...
 	pwiki.cache = null }
@@ -185,6 +188,9 @@ function(path, text){
 var SAVE_QUEUE = {}
 var saveContent =
 function(path, text){
+	path = path
+		.replace(/%22/g, '"')
+		.replace(/%27/g, "'")
 	SAVE_QUEUE[path] = text
 }
 
