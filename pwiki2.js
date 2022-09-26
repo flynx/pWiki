@@ -18,12 +18,6 @@
 * XXX macros: should we add the pattern path to .depends instead of the
 * 		final path...
 * 		...would also need a fast way to pattern match...
-* XXX need basic system events:
-* 			<store>.onUpdate(path, data?)
-* 			<store>.onCreate(path, data?)
-* 			<store>.onDelete(path)
-* 		..stores should also be able to trigger these when external 
-* 		updates are detected...
 * XXX CACHE strategy and architecture
 * 		controlled caching
 * 			- cache is a layer of linked data
