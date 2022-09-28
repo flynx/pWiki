@@ -2,11 +2,13 @@
 * 
 *
 * XXX ASAP start writing docs in pwiki
+* 		- functional editor	-- DONE
 * 		- WYSIWYG markdown editor/viewer (ASAP)
 * 		- fs store/export in browser or a simple way to export/import...
 *
 *
 * XXX npx http-server ... -- for testing file access...
+* XXX test puchdb latency at scale in browser...
 * XXX BUG: for some reason deleting and refreshing takes ~2x as long as 
 * 		refreshing...
 * 		to reproduce:
