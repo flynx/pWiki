@@ -112,8 +112,8 @@ object.Constructor('BasePage', {
 			return this.dir },
 		ARGS: function(){
 			return pwpath.obj2args(this.args) },
-		//TITLE: function(){
-		//	return this.title },
+		TITLE: function(){
+			return this.title },
 
 		/*/ XXX this needs:
 		// 		- macro context...
@@ -233,7 +233,6 @@ object.Constructor('BasePage', {
 		return pwpath.decodeElem(this.name) },
 	set title(value){
 		this.name = pwpath.encodeElem(value) },
-	//*/
 
 	get isPattern(){
 		return this.path.includes('*') },
@@ -314,11 +313,6 @@ object.Constructor('BasePage', {
 		// single page...
 		// XXX ENERGETIC...
 		var res = await this.store.get(this.path, !!this.strict, !!await this.energetic)
-		/*/ XXX TITLE / EXPERIMENTAL...
-		// load the title if set...
-		res.title 
-			&& (this.__title = res.title)
-		//*/
 		return typeof(res) == 'function' ?
 			res.bind(this)
 			: res }).call(this) },
