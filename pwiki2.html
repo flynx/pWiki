@@ -340,7 +340,7 @@ var exportData = async function(options={}){
     var blobURL = a.href = URL.createObjectURL(blob)
     a.download = filename
 		?? options.filename 
-		?? 'pWiki-dump.json'
+		?? (Date.timeStamp() +'.pWiki.json')
 
     //document.body.appendChild(a)
     a.dispatchEvent(new MouseEvent("click"))
