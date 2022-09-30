@@ -8,6 +8,8 @@
 * 			- fs store/export in browser or a simple way to export/import..
 * 			- pouchdb-couchdb sync
 * 			- pouchdb-pouchdb sync (p2p via webrtc)
+* 		- tags/search
+* 		- images
 *
 *
 * XXX formalize in-page api...
