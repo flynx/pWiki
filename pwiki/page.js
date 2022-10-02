@@ -1976,12 +1976,14 @@ module.System = {
 		text: `@include("../**/path:@(all)" join="@source(line-separator)")`},
 	info: {
 		text: object.doc`
+			<slot title>
+				<h1><a href="#..">@source(../title)</a></h1>
+			</slot>
+
 			Path: [@source(../path) ]
-				(<a href="#@source(s ../path)/edit">edit</a>)<br>
-			Resolved path: [@source(../resolved)]
-				(<a href="#@source(s ../resolved)/edit">edit</a>)<br>
-			Referrer: [@source(../referrer)]
-				(<a href="#@source(s ../referrer)/edit">edit</a>)<br>
+				(<a href="#../edit">edit</a>)<br>
+			Resolved path: [/@source(../resolved)]<br>
+			Referrer: [@source(../referrer)]<br>
 			Args: <args/><br>
 
 			type: @source(../type)<br>
