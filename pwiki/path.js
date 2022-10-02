@@ -220,7 +220,9 @@ module = {
 			'string') },
 	basename: function(path){
 		path = this.split(path)
-		return path.length == 1 ?
+		return path.length == 0 ?
+				''
+			: path.length == 1 ?
 				path[0]	
 			: (path.at(-1) == '' ?
 				path.at(-2)
@@ -228,7 +230,7 @@ module = {
 	dirname: function(path){
 		path = this.split(path)
 		path = path.length == 1 ?
-				'.'
+				'/'
 			: path.length == 2 ?
 				path[0]
 			: (path.at(-1) == '' ?
@@ -344,6 +346,9 @@ module = {
 				yield* this.paths(path.concat(page), seen) }} },
 
 	names: function(path='/'){
+		path = path == '' ?
+			'/'
+			: path
 		path = this.normalize(path, 'string')
 		var name = path == '/' ?
 			this.ROOT_PAGE

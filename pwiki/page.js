@@ -122,7 +122,7 @@ object.Constructor('BasePage', {
 			return context.index },
 		//*/
 	},
-	resolvePathVars: function(path, context={}){
+	resolvePathVars: function(path='', context={}){
 		var that = this
 		return pwpath.normalize(
 			Object.entries(this.path_vars)
@@ -1847,6 +1847,8 @@ module.System = {
 		text: '@include(.:$ARGS isolated join="@source(file-separator)")' },
 	_view: {
 		text: object.doc`
+			<slot pre/>
+
 			<slot header>
 				<a href="#/list">&#9776</a>
 				<a href="#<slot parent>../</slot>">&#x21D1;</a>
@@ -1855,15 +1857,12 @@ module.System = {
 				<a href="#@source(s ./path/!)/edit">&#9998;</a>
 			</slot>
 			<hr>
-			<slot content></slot>
-			<hr>
-			<slot footer></slot>
-
-			<!-- fill slots defaults -->
-			<slot content hidden>
-				<slot title><h1>@source(./title)</h1></slot>
+			<slot content>
+				<h1><slot title>@source(./title)</slot></h1>
 				@include(.:$ARGS join="@source(file-separator)" recursive="")
-			</slot>` },
+			</slot>
+			<hr>
+			<slot footer/>` },
 	// XXX add join...
 	_raw: {
 		text: '@quote(.)' },
@@ -1912,6 +1911,10 @@ module.System = {
 	edit: {
 		// XXX not sure if we should use .title or .name here...
 		text: object.doc`
+			<slot pre>
+				<title>@source(../title) (edit)</title>
+			</slot>
+
 			<slot parent>../..</slot>
 			<slot location>@source(../location/!)</slot>
 
@@ -1976,6 +1979,9 @@ module.System = {
 		text: `@include("../**/path:@(all)" join="@source(line-separator)")`},
 	info: {
 		text: object.doc`
+			<slot pre>
+				<title>@source(../title) (info)</title>
+			</slot>
 			<slot title>
 				<h1><a href="#..">@source(../title)</a></h1>
 			</slot>

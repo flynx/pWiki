@@ -30,6 +30,10 @@ body {
 	font-size: 1.1em;
 }
 
+h1:empty {
+	display: none;
+}
+
 a {
 	text-decoration: none;
 }
@@ -304,7 +308,13 @@ require(['./browser'], function(browser){
 			// stop spinner...
 			stopSpinner()
 			// handle title...
-			document.querySelector('title').innerHTML = `${this.title} &mdash; pWiki`
+			// NOTE: we set the global title to either the last <title> 
+			//		tag value or the attr .title 
+			var titles = [...document.querySelectorAll('title')]
+			titles[0].innerHTML = 
+				`${titles.length > 1 ? 
+					titles.at(-1).innerHTML 
+					: this.title} &mdash; pWiki`
 			// scroll to anchor element...
 			this.hash
 				&& this.dom

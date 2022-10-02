@@ -36,9 +36,9 @@ function(text, show_brackets=true, skip){
 				if(l[0] == '\\'){
 					return l.slice(1) }
 
-				var path = l[0] == '[' ? 
-					l.slice(1, -1) 
-					: l
+				var path = (l[0] == '[' ? 
+						l.slice(1, -1) 
+						: l)
 				var i = [].slice.call(arguments).slice(-2)[0]
 
 				// XXX HACK check if we are inside a tag...
@@ -49,7 +49,7 @@ function(text, show_brackets=true, skip){
 				return skip.indexOf(l) < 0 ? 
 					('<a '
 						+'class="wikiword" '
-						+'href="#'+ path +'" '
+						+'href="#'+ path.replace(/"/g, '%22') +'" '
 						+'bracketed="'+ (show_brackets && l[0] == '[' ? 'yes' : 'no') +'" '
 						//+'onclick="event.preventDefault(); go($(this).attr(\'href\').slice(1))" '
 						+'>'
