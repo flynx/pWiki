@@ -4,11 +4,17 @@
 * XXX ASAP start writing docs in pwiki
 * 		- functional editor	-- DONE
 * 		- WYSIWYG markdown editor/viewer (ASAP)
-* 		- fs store/export in browser or a simple way to export/import...
+* 		- transparent sync
+* 			- fs store/export in browser or a simple way to export/import..
+* 			- pouchdb-couchdb sync
+* 			- pouchdb-pouchdb sync (p2p via webrtc)
+* 		- tags/search
+* 		- images
 *
 *
+* XXX formalize in-page api...
 * XXX npx http-server ... -- for testing file access...
-* XXX test puchdb latency at scale in browser...
+* XXX test pouchdb latency at scale in browser...
 * XXX BUG: for some reason deleting and refreshing takes ~2x as long as 
 * 		refreshing...
 * 		to reproduce:
@@ -18,9 +24,11 @@
 * 			pwiki.path = '/tree' 								// reports about ~2sec
 * 			await pwiki.get('/Test/Subtree/Page2').delete()		// fast
 * 			pwiki.path = '/tree' 								// reports about ~2sec
-* XXX macros: should we add the pattern path to .depends instead of the
-* 		final path...
+* 		XXX test with action...
+* XXX macros: should we keep normal paths in .depends if a matching pattern is present?  
 * 		...would also need a fast way to pattern match...
+* XXX macros / CACHE: convert a /path/* dependency to /path/** if a script 
+* 		is recursive...
 * XXX CACHE strategy and architecture
 * 		controlled caching
 * 			- cache is a layer of linked data
