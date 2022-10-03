@@ -356,7 +356,7 @@ object.Constructor('BasePage', {
 	// number of matching pages...
 	// NOTE: this can be both sync and async...
 	get length(){
-		var p = this.resolve(this.path)
+		var p = this.resolve(this.location)
 		return p instanceof Array ?
 				p.length
 			: p instanceof Promise ?
@@ -515,11 +515,12 @@ object.Constructor('BasePage', {
 	// XXX when this is async, should this return a promise????
 	sort: async function(cmp){
 		// not sorting single pages...
-		if(this.length <= 1){
+		//if(this.length <= 1){
+		if(!this.isPattern){
 			return this }
 		// sort...
 		this.metadata = 
-			{ order: await this.each()
+			{ order: (await this.each())
 				.sort(...arguments)
 				.map(function(p){
 					return p.path }) }
@@ -1858,7 +1859,7 @@ module.System = {
 			</slot>
 			<hr>
 			<slot content>
-				<h1><slot title>@source(./title)</slot></h1>
+				<h1><slot title>@source(./title/!)</slot></h1>
 				@include(.:$ARGS join="@source(file-separator)" recursive="")
 			</slot>
 			<hr>
