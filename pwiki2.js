@@ -2,7 +2,7 @@
 * 
 *
 * XXX ASAP start writing docs in pwiki
-* 		- functional editor	-- DONE
+* 		- minimal/functional editor	-- DONE
 * 		- WYSIWYG markdown editor/viewer (ASAP)
 * 		- transparent sync
 * 			- fs store/export in browser or a simple way to export/import..
@@ -12,6 +12,8 @@
 * 		- images
 *
 *
+* XXX might be a good idea to wrap the wysiwig editor into a separate template
+* 		and use it in the main edit template
 * XXX formalize in-page api...
 * XXX npx http-server ... -- for testing file access...
 * XXX test pouchdb latency at scale in browser...
