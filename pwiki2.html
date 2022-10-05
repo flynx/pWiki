@@ -22,6 +22,40 @@
 
 <link rel="stylesheet" href="css/fonts.css">
 
+
+<!-- MediumEditor -->
+<!--link rel="stylesheet" href="experiments/medium-editor/css/medium-editor.css">
+<link rel="stylesheet" href="experiments/medium-editor/css/themes/default.css">
+<script src="ext-lib/showdown.min.js"></script>
+<script src="experiments/medium-editor/js/medium-editor.js"></script>
+<script src="experiments/medium-editor/js/me-markdown.standalone.js"></script>
+<script>
+var setupMediumEditor = async function () {
+	var editorelem = document.querySelector('.medium-editor')
+	if(editorelem){
+		console.log('MediumEditor: setup...')
+		var page = pwiki.get('..')
+
+		// load the initial state...
+		var converter = new showdown.Converter()
+		editorelem.innerHTML = converter.makeHtml(await page.raw)
+
+		var elem = document.querySelector('.medium-markdown')
+		editor = new MediumEditor(editorelem, {
+			extensions: {
+				markdown: new MeMarkdown(function(code) {
+					saveContent(page.path, code)
+					// XXX DEBUG...
+					elem 
+						&& (elem.textContent = code) }) } }) } }
+</script-->
+<!-- MediumEditor -->
+
+<!-- ToastUIEditor -->
+<!-- ToastUIEditor -->
+
+
+
 </head>
 
 <style>
@@ -320,6 +354,10 @@ require(['./browser'], function(browser){
 				&& this.dom
 					.querySelector('#'+ this.hash)
 					.scrollIntoView() 
+
+			// XXX MediumEditor...
+			//setupMediumEditor()
+
 			// handle refresh...
 			// NOTE: we need to do this as hashchange is only triggered 
 			//		when the hash is actually changed...

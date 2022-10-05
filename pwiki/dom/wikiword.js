@@ -84,6 +84,7 @@ function(elem){
 		.forEach(function(text){
 			// skip stuff...
 			if(text.parentNode.nodeName.toLowerCase() == 'a'
+					|| text.parentNode.nodeName.toLowerCase() == 'script'
 					|| (text.parentNode.getAttribute('wikiwords') ?? '').toLowerCase() == 'no'){
 				return }
 			var t = text.nodeValue
