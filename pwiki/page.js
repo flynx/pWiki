@@ -1595,6 +1595,33 @@ object.Constructor('Page', BasePage, {
 
 
 //---------------------------------------------------------------------
+// Markdown renderer...
+// XXX EXPERIMENTAL...
+
+var showdown = require('showdown')
+
+var MarkdownPage =
+module.MarkdownPage =
+object.Constructor('MarkdownPage', Page, {
+	actions: {
+		...module.Page.prototype.actions,
+
+		html: true,
+	},
+
+	markdown: new showdown.Converter(),
+
+	get html(){ return async function(){
+		return this.markdown.makeHtml(await this.raw) }.call(this) },
+	set html(value){
+		this.raw = this.markdown.makeMarkdown(value) },
+})
+
+// XXX HACK...
+var Page = MarkdownPage
+
+
+//---------------------------------------------------------------------
 // Cached .text page...
 
 var getCachedProp = 

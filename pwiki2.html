@@ -23,6 +23,16 @@
 <link rel="stylesheet" href="css/fonts.css">
 
 
+<!-- NativeMarkdown -->
+<script src="ext-lib/showdown.min.js"></script>
+<script>
+var MarkdownPage = {
+}
+</script>
+<!-- NativeMarkdown -->
+
+
+
 <!-- MediumEditor -->
 <!--link rel="stylesheet" href="experiments/medium-editor/css/medium-editor.css">
 <link rel="stylesheet" href="experiments/medium-editor/css/themes/default.css">
@@ -44,7 +54,7 @@ var setupMediumEditor = async function () {
 		editor = new MediumEditor(editorelem, {
 			extensions: {
 				markdown: new MeMarkdown(function(code) {
-					saveContent(page.path, code)
+					saveLiveContent(page.path, code)
 					// XXX DEBUG...
 					elem 
 						&& (elem.textContent = code) }) } }) } }
