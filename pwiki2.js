@@ -13,8 +13,9 @@
 *
 *
 * XXX might be a good idea to wrap the wysiwig editor into a separate template
-* 		and use it in the main edit template
-* XXX formalize in-page api...
+* 		and use it in the main edit template to make it user-selectable...
+* XXX generalize html/dom api...
+* 		...see refresh() in pwiki2.html
 * XXX npx http-server ... -- for testing file access...
 * XXX test pouchdb latency at scale in browser...
 * XXX BUG: for some reason deleting and refreshing takes ~2x as long as 
@@ -27,10 +28,13 @@
 * 			await pwiki.get('/Test/Subtree/Page2').delete()		// fast
 * 			pwiki.path = '/tree' 								// reports about ~2sec
 * 		XXX test with action...
-* XXX macros: should we keep normal paths in .depends if a matching pattern is present?  
-* 		...would also need a fast way to pattern match...
+* 		...cane we make everything index-related sync?
+* XXX macros: .depends: need fast path pattern matching... 
 * XXX macros / CACHE: convert a /path/* dependency to /path/** if a script 
 * 		is recursive...
+* XXX CACHE make index data (.paths, .names, ...) be sync and in-memory...
+* XXX might also be a good idea to investigate a .tree directory index 
+* 		as a supplement to .paths()
 * XXX CACHE strategy and architecture
 * 		controlled caching
 * 			- cache is a layer of linked data
@@ -41,14 +45,11 @@
 * 		levels:
 * 			- memory
 * 			- persistent (???)
+* XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX IDEA: macros: might be fun to be able to use certain pages as 
 * 		macros...
 * 		...this might even extend to all macros being actions in something 
 * 		like /.system/macros/...
-* XXX might also be a good idea to investigate a .tree directory index 
-* 		as a supplement to .paths()
-* XXX Q: can we access fs from a pwa???
-* XXX CACHE need to explicitly prevent caching of some actions/pages...
 * XXX the parser should handle all action return values, including:
 * 			- lists			-- XXX
 * 			- strings		-- DONE
@@ -74,6 +75,12 @@
 * 			                      +--------------+ . .  search
 *		order is not relevant here...
 *		each of the methods narrows down the previous' results
+* XXX FEATURE list macro paging...
+* 		...should this be macro level or handled in .each()
+* 		what mode?
+* 			- count + block-offset (preferred)
+* 			- count + elem-offset
+* 			- from + to
 * XXX revise/update sort...
 * XXX FEATURE tags: might be a good idea to add a .__match__(..) hook
 * 		to enable store-level matching optimization...
@@ -94,8 +101,6 @@
 * 			i.e. a way to pass tags through path...
 * 				/some/path:tags=a,b,c
 * XXX FEATURE images...
-* XXX generalize html/dom api...
-* 		...see refresh() in pwiki2.html
 * XXX async/live render...
 * 		might be fun to push the async parts of the render to the dom...
 * 		...i.e. return a partially rendered DOM with handlers to fill 
@@ -113,21 +118,9 @@
 * XXX OPTIMIZE CACHE catch page creation --  match pattern path...
 * 		1) explicit subpath matching -- same as .match(..)
 * 		2) identify recursive patterns -- same as **
-* XXX Q: empty title???
-* 		- special default name
-* 			a timestamp or some thing similar
-* 			this can be hidden until changed by user
-* 		- do we split .name/.path and .title???
-* 			...since pWiki is a wiki, the system-level answer is NO.
 * XXX do we need something like /System/Actions/.. for fast actions called 
 * 		in the same way as direct page actions???
 * 		...experiment??
-* XXX FEATURE list macro paging...
-* 		...should this be macro level or handled in .each()
-* 		what mode?
-* 			- count + block-offset (preferred)
-* 			- count + elem-offset
-* 			- from + to
 * XXX fs: handle odd file names...
 * 			- we need '*' and '**'
 * 			- would be nice to be able to name files without
@@ -147,12 +140,6 @@
 * 		vs.
 * 			/some/path/!action
 * 			..."!" is removed before the <store>.__<name>__(..) calls...
-* XXX ENERGETIC revise naming...
-* XXX ENERGETIC System/time does not seem to work correctly...
-* 		...creating a _time alternative does not work...
-* XXX OPTIMIZE might be a good idea to make some methods that only access 
-* 		the index sync -- this will make the store unusable while indexing 
-* 		though...
 * XXX OPTIMIZE load pages in packs...
 * 		might be a good idea to move stuff down the stack to Store:
 * 			.each()	-> .store.each(<path>)
@@ -211,18 +198,10 @@
 * 			2) all the macros that can source pages to produce generators (DONE)
 * XXX might be a good idea to parse a page into an executable/function
 * 		that would render self in a given context...
-* XXX BUG: .move(..) behaves in an odd way...
-* 		see: System/move page action
-* 		...deletes the original and moves an empty page -- sync error???
 * XXX differences in behaviour between _abc and abc, either need to make 
 * 		them the same or document the differences and the reasons behind 
 * 		them...
 * XXX add support for <join> tag in include/source/quote???
-* XXX BUG?: markdown: when parsing chunks each chunk gets an open/closed 
-* 		<p> inserted at start/end -- this breaks stuff returned by macros...
-* 		...there are two ways to dance around this:
-* 			- make filters run a bit more globaly -- per block...
-* 			- find a local parser...
 * XXX introspection:
 * 			/stores								-- DONE
 * 				list stores...
@@ -231,14 +210,11 @@
 *			/storage							-- XXX
 *				list storage usage / limits
 * XXX BUG: FF: conflict between object.run and PouchDB... 
+* 		...seems to be a race, also affects chrome sometimes...
 * XXX add action to reset overloaded (bootstrap/.next) pages...
 * 		- per page
 * 		- global
-* XXX CHECK: @macro(..) and @slot(..) must overload in the same way...
-* XXX DEPENDS/CACHE @macro(..) introduces a dependency on count (pattern)
-* 		...not sure how we track these...
-* XXX revise how we handle .strict mode in page's .raw and .text...
-* XXX might be a good idea to export HTML from a specific path/pattern...
+* XXX TEST @macro(..) and @slot(..) must overload in the same way...
 * XXX should render templates (_view and the like) be a special case
 * 		or render as any other page???
 * 		...currently they are rendered in the context of the page and
@@ -273,23 +249,23 @@
 * XXX ROADMAP:
 * 	- run in browser
 * 		- basics, loading 							-- DONE
-* 		- test localStorage / sessionStorage 		-- DONE
-* 		- test pouch								-- DONE
+* 		- localStorage / sessionStorage 			-- DONE
+* 		- pouchdb									-- DONE
 * 		- render page								-- DONE
 * 		- navigation								-- DONE
 * 			- hash/anchor							-- DONE
-* 			- action redirects (see: System/delete)	-- DONE
+* 			- action redirects (see: System/delete)	-- DONE (XXX revise)
 * 		- basic editor and interactivity			-- DONE
 * 		- export
 * 			- json									-- DONE
 * 			- zip (json/tree)						--
+* 		- sync (auto)								-- XXX
 * 		- page actions
 * 			- delete								-- DONE
 * 			- copy/move								-- DONE
 * 			- resolved (async)						-- DONE
 * 		- migrate/rewrite bootstrap					--
 * 		- store topology							-- DONE
-* 		- sync and sync conf						--
 * 		- images
 * 			- get 									-- 
 * 			- download								--
@@ -298,8 +274,8 @@
 * 		- get tags from page						-- 
 * 		- show tagged pages							-- 
 * 	- search
-* 		- paths
-* 		- text
+* 		- paths										--
+* 		- text										-- 
 * 	- markdown										-- DONE
 * 	- WikiWord										-- DONE
 * 	- dom filter mechanics							-- DONE
@@ -318,7 +294,7 @@
 * 		- editor
 * 			basic									-- DONE
 * 				see: /System/edit
-* 			MediumEditor (markdown-plugin)
+* 			MediumEditor (markdown-plugin)			-- REJECTED XXX
 * 				https://github.com/yabwe/medium-editor
 * 				https://github.com/IonicaBizau/medium-editor-markdown
 * 					- heavy-ish markdown plugin
@@ -336,20 +312,25 @@
 * 	- templates
 * 		- all (tree)								-- DONE
 * 	- configuration
-* 		- defaults
-* 		- System/config (global)
+* 		- defaults									-- 
+* 		- System/config (global)					-- 
 * 	- pwa
-* 		- service worker ???
+* 		- service worker							-- ???
 * 			...handle relative urls (???)
+* 		- fs access (external sync)					-- ???
 * 	- cli
 * 		- basic wiki manipulations (1:1 methods)
 * 		- import/export/sync
 * 		- introspection/repl
-* 	- archive old code
-* 	- update docs
+* 	- archive old code								-- 
+* 	- update docs									--
 * 	- refactor and cleanup
 * 		- module structure							-- REVISE
-* 	- pack as electron app (???)
+* 	- package
+* 		- pwa										-- ???
+* 		- electron									-- 
+* 		- android									-- ???
+* 		- iOS										-- ???
 *
 *
 *
@@ -357,7 +338,7 @@
 *
 * Architecture:
 *
-* 			store
+* 			store <-> index
 * 			  ^
 * 			  |
 * 			page <--> renderer
