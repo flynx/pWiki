@@ -16,6 +16,7 @@ LOCAL_MODULES := \
 EXT_MODULES := \
 	$(wildcard node_modules/pouchdb/dist/*) \
 	$(wildcard node_modules/jszip/dist/*) \
+	$(wildcard node_modules/idb-keyval/dist/*.js) \
 	$(wildcard node_modules/showdown/dist/*)
 
 POUCH_DB := \

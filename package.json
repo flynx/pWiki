@@ -6,6 +6,7 @@
   "dependencies": {
     "@toast-ui/editor": "^3.2.0",
     "glob": "*",
+    "idb-keyval": "^6.2.0",
     "ig-actions": "*",
     "ig-features": "*",
     "ig-object": "*",
