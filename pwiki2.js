@@ -5,7 +5,10 @@
 * 		- minimal/functional editor	-- DONE
 * 		- WYSIWYG markdown editor/viewer (ASAP)
 * 		- transparent sync
-* 			- fs store/export in browser or a simple way to export/import..
+* 			- fs store/export in browser or a simple way to export/import...
+* 				...can't seem to get it to work without asking for permission
+* 				on every startup (one more thing left to try, keeping the 
+* 				handler live in a service worker, but the hopes are low)...
 * 			- pouchdb-couchdb sync
 * 			- pouchdb-pouchdb sync (p2p via webrtc)
 * 		- tags/search
