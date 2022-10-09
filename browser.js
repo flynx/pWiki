@@ -15,6 +15,7 @@ var page = require('./pwiki/page')
 
 var basestore = require('./pwiki/store/base')
 var localstoragestore = require('./pwiki/store/localstorage')
+var indexeddb = require('./pwiki/store/indexeddb')
 
 var pouchdbstore = require('./pwiki/store/pouchdb')
 
@@ -61,16 +62,19 @@ Promise.all([
 
 	// persistent stores...
 	//
-	store.update('@local', {
+	store.update('/Stores/local', {
 		__proto__: localstoragestore.localStorageStore,
 		data: localStorage,
 	}),
-	store.update('@session', {
+	store.update('Stores/session', {
 		__proto__: localstoragestore.localStorageStore,
 		data: sessionStorage,
 	}),
-	store.update('@pouch', {
+	store.update('Stores/pouch', {
 		__proto__: pouchdbstore.PouchDBStore,
+	}),
+	store.update('Stores/idb', {
+		__proto__: indexeddb.IndexedDBStore,
 	}),
 
 	/*/ XXX next testing...

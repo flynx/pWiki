@@ -15,6 +15,12 @@
 * 		- images
 *
 *
+* XXX IndexedDB: after editing a page for some reason we do not see the 
+* 		final version until a full refresh -- cache???
+* XXX Chrome started spamming CORS error: 
+* 			Access to manifest at 'file:///L:/work/pWiki/manifest.json' 
+* 			from origin 'null' ...
+* 		not sure why...
 * XXX test: can we store the file handler with permissions in a ServiceWorker??
 * XXX store: add an indexedDB backend -- save on serialization...
 * 		- idb-keyval
