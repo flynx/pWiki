@@ -16,6 +16,7 @@
 *
 *
 * XXX BUG: can't .get(..) data from substore root...
+* 		...updating it seems to work fine...
 * XXX IndexedDB: after editing a page for some reason we do not see the 
 * 		final version until a full refresh -- cache???
 * 		...this seems to disappeared after moving external stores 

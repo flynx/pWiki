@@ -1994,7 +1994,7 @@ module.System = {
 			<macro src="../*:@(all)">
 				<div>
 					<div class="item">
-						<a href="#@source(s ./path)">@source(./title)</a>
+						<a class="tree-page-title" href="#@source(s ./path)">@source(./title)</a>
 						<a class="show-on-hover" href="#@source(s ./path)/info">&#128712;</a>
 						<a class="show-on-hover" href="#@source(s ./path)/delete">&times;</a>
 					</div>

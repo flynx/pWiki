@@ -62,18 +62,18 @@ Promise.all([
 
 	// persistent stores...
 	//
-	store.update('/Stores/local', {
+	store.update('/Stores/localStorage', {
 		__proto__: localstoragestore.localStorageStore,
 		data: localStorage,
 	}),
-	store.update('Stores/session', {
+	store.update('Stores/sessionStorage', {
 		__proto__: localstoragestore.localStorageStore,
 		data: sessionStorage,
 	}),
-	store.update('Stores/pouch', {
+	store.update('Stores/PouchDB', {
 		__proto__: pouchdbstore.PouchDBStore,
 	}),
-	store.update('Stores/idb', {
+	store.update('Stores/IndexedDB', {
 		__proto__: indexeddb.IndexedDBStore,
 	}),
 
