@@ -239,39 +239,28 @@ module.BaseStore = {
 		return path in this.data
 				&& path },
 	exists: async function(path){
-		// XXX SANITIZE...
-		path = pwpath.sanitize(path, 'string')
-		/*/
-		path = pwpath.normalize(path, 'string')
-		//*/
-		var {path, args} = pwpath.splitArgs(path)
-		var res = (await this.__exists__(path))
-			// NOTE: all paths at this point and in store are 
-			// 		absolute, so we check both with the leading 
-			// 		'/' and without it to make things a bit more 
-			// 		relaxed and return the actual matching path...
-			// XXX SANITIZE...
-			|| (await this.__exists__('/'+ path))
-			/*/
-			|| (await this.__exists__(
-				path[0] == '/' ? 
-					path.slice(1) 
-					: ('/'+ path)))
-			//*/
-			// delegate to .next...
-			|| ((this.next || {}).__exists__
-				&& (await this.next.__exists__(path)
-					// XXX SANITIZE...
-					|| await this.next.__exists__('/'+path)))
-					/*/
-					|| await this.next.__exists__(
-						path[0] == '/' ?
-							path.slice(1)
-							: ('/'+ path)))) 
-					//*/
-			// normalize the output...
-			|| false 
-		if(!res){
+		var {path, args} = 
+			pwpath.splitArgs(
+				pwpath.sanitize(path, 'string'))
+
+		// NOTE: all paths at this point and in store are 
+		// 		absolute, so we check both with the leading 
+		// 		'/' and without it to make things a bit more 
+		// 		relaxed and return the actual matching path...
+		var res = await this.__exists__(path)
+		// NOTE: res can be '' and thus we can't simply chain via || here...
+		typeof(res) != 'string'
+			&& (res = await this.__exists__('/'+ path))
+
+		// delegate to .next...
+		typeof(res) != 'string'
+			&& (this.next || {}).__exists__
+			&& (res = await this.next.__exists__(path))
+		typeof(res) != 'string'
+			&& (this.next || {}).__exists__
+			&& (res = await this.next.__exists__('/'+path))
+
+		if(typeof(res) != 'string'){
 			return false }
 		return pwpath.joinArgs(res, args) },
 	// find the closest existing alternative path...
@@ -555,7 +544,7 @@ module.BaseStore = {
 			return this }
 		path = pwpath.splitArgs(path).path
 		path = await this.exists(path)
-		if(path){
+		if(typeof(path) == 'string'){
 			await this.__delete__(path)
 			// XXX CACHED
 			this.__cache_remove(path) 
@@ -743,7 +732,7 @@ module.MetaStore = {
 		null,
 		function(res, path){
 			var s = this.substore(path)
-			return res == false ?
+			return typeof(res) != 'string' ?
 					(this.next ?
 						this.next.exists(path)
 						: res)
@@ -865,8 +854,8 @@ module.CachedStore = {
 
 var Store =
 module.Store =
-	//MetaStore
-	CachedStore
+	MetaStore
+	//CachedStore
 
 
 

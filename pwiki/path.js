@@ -351,11 +351,11 @@ module = {
 			: path
 		path = this.normalize(path, 'string')
 		var name = path == '/' ?
-			this.ROOT_PAGE
-			: this.basename(path)
+			['', this.ROOT_PAGE]
+			: [this.basename(path)]
 		return name == '' ?
 			this.ALTERNATIVE_PAGES.slice()
-			: [name, ...this.ALTERNATIVE_PAGES] },
+			: [...name, ...this.ALTERNATIVE_PAGES] },
 
 
 	//
