@@ -13,6 +13,8 @@
 * 			- pouchdb-pouchdb sync (p2p via webrtc)
 * 		- tags/search
 * 		- images
+* 		- GUI
+* 		- CLI
 *
 *
 * XXX BUG: can't .get(..) data from substore root...
