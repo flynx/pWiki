@@ -168,24 +168,15 @@ module.BaseStore = {
 			.concat((!local && (this.next || {}).paths) ? 
 				this.next.paths() 
 				: []) },
-
-	// local names...
-	__names: cached('names', async function(){
-		return this.__paths()
+	// XXX BUG: after caching this will ignore the local argument....
+	names: cached('names', async function(local=false){
+		return this.paths(local)
 			.iter()
 			.reduce(function(res, path){
 				var n = pwpath.basename(path)
 				if(!n.includes('*')){
 					(res[n] = res[n] ?? []).push(path) }
 				return res }, {}) }),
-	// XXX should this also be cached???
-	names: async function(local=false){
-		return {
-			...(!local && (this.next || {}).names ?
-				await this.next.names()
-				: {}),
-			...await this.__names(),
-		} },
 
 	// XXX sort paths based on search order into three groups:
 	// 		- non-system
@@ -713,18 +704,6 @@ module.MetaStore = {
 		return object.parentCall(MetaStore.paths, this, ...arguments)
 			.iter()
 			.concat(stores) },
-	names: async function(){
-		var that = this
-		var res = await object.parentCall(MetaStore.names, this, ...arguments)
-		await Promise.all(Object.entries(this.substores ?? {})
-			.map(async function([path, store]){
-				return Object.entries(await store.names())
-					.map(function([name, paths]){
-						res[name] = (res[name] ?? [])
-							.concat(paths
-								.map(function(s){ 
-									return pwpath.join(path, s) })) }) }))
-		return res },
 
 	exists: metaProxy('exists',
 		//async function(path){

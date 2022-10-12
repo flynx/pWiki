@@ -76,6 +76,13 @@ Promise.all([
 	store.update('Stores/IndexedDB', {
 		__proto__: indexeddb.IndexedDBStore,
 	}),
+	store.update('Stores/memory', {
+		__proto__: basestore.MetaStore,
+		data: {
+			'': {text: 'memory store'},
+			moo: {text: 'moo'},
+		},
+	}),
 
 	/*/ XXX next testing...
 	store.next.update('NextPage', {
