@@ -19,10 +19,13 @@
 *
 * XXX BUG: when editing the root page of a substore the page's .cache is 
 * 		not reset for some reason...
+* XXX might be a good idea to create memory store (sandbox) from the 
+* 		page API -- action??
 * XXX Chrome started spamming CORS error: 
 * 			Access to manifest at 'file:///L:/work/pWiki/manifest.json' 
 * 			from origin 'null' ...
 * 		not sure why...
+* 		(switched off in console filter for now)
 * XXX test: can we store the file handler with permissions in a ServiceWorker??
 * XXX might be a good idea to wrap the wysiwig editor into a separate template
 * 		and use it in the main edit template to make it user-selectable...
