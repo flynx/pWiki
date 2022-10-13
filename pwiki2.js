@@ -17,8 +17,10 @@
 * 		- CLI
 *
 *
+* XXX CachedStore seems to be broken (see: pwiki/store/base.js:837)
 * XXX BUG: when editing the root page of a substore the page's .cache is 
 * 		not reset for some reason...
+* 		...seems to be fixed now, not sure what was that...
 * XXX might be a good idea to create memory store (sandbox) from the 
 * 		page API -- action??
 * XXX Chrome started spamming CORS error: 
