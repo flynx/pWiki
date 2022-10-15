@@ -742,6 +742,7 @@ module.MetaStore = {
 			: data
 		// add substore...
 		if(object.childOf(data, BaseStore)){
+			path = pwpath.sanitize(path, 'string')
 			;(this.substores = this.substores ?? {})[path] = data
 			return this }
 		// add to substore...

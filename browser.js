@@ -62,8 +62,9 @@ Promise.all([
 
 	// persistent stores...
 	//
-	store.update('/Stores/localStorage', {
+	store.update('Stores/localStorage', {
 		__proto__: localstoragestore.localStorageStore,
+		__prefix__: '--pwiki-nested:',
 		data: localStorage,
 	}),
 	store.update('Stores/sessionStorage', {
@@ -76,7 +77,7 @@ Promise.all([
 	store.update('Stores/IndexedDB', {
 		__proto__: indexeddb.IndexedDBStore,
 	}),
-	store.update('Stores/memory', {
+	store.update('/Stores/memory', {
 		__proto__: basestore.MetaStore,
 		data: {
 			'': {text: 'memory store'},
