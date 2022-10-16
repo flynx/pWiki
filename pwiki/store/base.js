@@ -500,11 +500,7 @@ module.BaseStore = {
 			return this }
 		var exists = await this.exists(path) 
 		path = exists
-			// XXX SANITIZE...
 			|| pwpath.sanitize(path, 'string')
-			/*/
-			|| pwpath.normalize(path, 'string')
-			//*/
 		path = pwpath.splitArgs(path).path
 		data = data instanceof Promise ?
 			await data
@@ -654,17 +650,15 @@ module.MetaStore = {
 	substores: undefined,
 
 	substore: function(path){
-		path = pwpath.normalize(path, 'string')
+		path = pwpath.sanitize(path, 'string')
 		if(path in (this.substores ?? {})){
 			return path }
-		var root = path[0] == '/'
 		var store = Object.keys(this.substores ?? {})
 			// normalize store paths to the given path...
 			.filter(function(p){
-				p = root ?
-					'/'+p
-					: p
 				return path.startsWith(p)
+					// only keep whole path elements...
+					// NOTE: this prevents matching 'a/b' with 'a/bbb', for example.
 		   			&& (path[p.length] == null
 						|| path[p.length] == '/'
 						|| path[p.length] == '\\')})
@@ -680,10 +674,8 @@ module.MetaStore = {
 	isStore: function(path){
 		if(!this.substores){
 			return false }
-		path = pwpath.normalize(path, 'string')
-		path = path[0] == '/' ?
-			path.slice(1)
-			: path
+		path = pwpath.sanitize(path, 'string')
+		// XXX do we need this???
 		return !!this.substores[path]
 			|| !!this.substores['/'+ path] },
 
