@@ -2130,6 +2130,11 @@ module.System = {
 			target.delete()
 			: target.delete('**')
 
+		// XXX
+		if(this.referrer == this.path){
+			this.renderer.path = '..'
+			return '' }
+
 		// redirect...
 		this.renderer
 			&& (this.renderer.location = this.referrer)

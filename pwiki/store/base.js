@@ -425,12 +425,7 @@ module.BaseStore = {
 		return this.data[key] },
 	get: async function(path, strict=false, energetic=false){
 		var that = this
-		/* XXX ENERGETIC...
-		path = await this.resolve(path, strict)
-		/*/
-		// XXX SANITIZE...
 		path = pwpath.sanitize(path, 'string')
-		//*/
 		var path = pwpath.splitArgs(path).path
 		path = path.includes('*') 
 			&& (energetic == true ?
