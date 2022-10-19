@@ -14,6 +14,137 @@ var pwpath = require('../path')
 
 
 //---------------------------------------------------------------------
+//
+// - define (name, generate, merge)
+// 		inline
+// 		online
+// - undefine (online)
+// - enumerate/list
+// - group operations:
+// 		- update item
+// 		- remove item
+// 		- reset (cache)
+//
+//
+
+
+// XXX need support for:
+// 		'update', <path>, <value>
+// 		'remove', <path>
+//
+var makeIndexed = 
+function(name, generate, options={}){
+	var cache = !!options.attr ?
+		name
+		: `__${name}_cache`
+	var merge = `__${name}_merge__`
+	var special = `__${name}__`
+
+	// make local cache...
+	var _make = function(){
+		return this[special] != null ?
+			this[special]()
+			: generate.call(this) }
+	// unwrap a promised value into cache...
+	var _await = function(obj, val){
+		if(val instanceof Promise){
+			val.then(function(value){
+				obj[cache] = value }) }
+		return val }
+
+	var meth
+	return (meth = Object.assign(
+		function(action='get', ...args){
+			var that = this
+			// clear/reset...
+			if(action == 'clear' 
+					|| action == 'reset'){
+				delete this[cache] }
+			// clear...
+			if(action == 'clear'){
+				return }
+			// other actions...
+			if(action != 'get' 
+					&& action != 'reset'){
+				var action_meth = `__${name}_${action}__`
+				// generate cache if not available...
+				var cur = cache in this ?
+					this[cache]
+					: meth.call(this, 'reset')
+				return _await(this, this[cache] = 
+					(action in options 
+							&& typeof(options[action]) == 'function') ?
+						options[action].call(this, cur, ...args)
+					: action_meth in this ?
+						this[action_meth](cur, ...args)
+					: cur) }
+			// get...
+			return _await(this,
+				// NOTE: this is intentionally not cached...
+				action == 'local' ?
+					_make.call(this)
+				// get...
+				: (this[cache] =
+					// cached...
+					this[cache] != null ?
+						this[cache] 
+					// generate + merge...
+					: this[merge] != null ?
+						this[merge](_make.call(this))
+					// generate...
+					: _make.call(this)) ) },
+		{
+			attr: name,
+			indexed: true,
+			options,
+		})) }
+
+
+var indexTest = 
+module.indexTest =
+{
+	get indexi(){
+		var that = this
+		return object.deepKeys(this)
+			.filter(function(key){
+				var d = object.values(that, key, true).next().value.value
+				return typeof(d) == 'function' 
+						&& d.indexed }) },
+	
+	index: async function(action='get', ...args){
+		var that = this
+		return Object.fromEntries(
+			await Promise.all(
+				this.indexi
+					.map(async function(name){
+						return [
+							that[name].attr, 
+							await that[name](action, ...args),
+						] }))) },
+
+	// tests...
+	//
+	moo: makeIndexed('moo', () => 123),
+
+	_foo_index: makeIndexed('foo', () => 123, {
+		attr: true,
+		add: function(cur, val){
+			return cur + val },
+	}),
+
+	__boo_add__: function(cur, val){
+		return cur + val },
+	boo: makeIndexed('boo', () => 123),
+
+	__amoo_add__: async function(cur, val){
+		return await cur + val },
+	amoo: makeIndexed('amoo', async () => 123),
+}
+
+
+
+
+//---------------------------------------------------------------------
 
 
 //
@@ -739,10 +870,12 @@ module.MetaStore = {
 				// trim path...
 				path.slice(path.indexOf(p)+p.length),
 				...[...arguments].slice(1))
+			this.__cache_add(path)
 			return this }
 		// add local...
 		return object.parentCall(MetaStore.update, this, ...arguments) },
 	// XXX Q: how do we delete a substore???
+	// XXX need to call .__cache_remove(..) here if we did not super-call...
 	delete: metaProxy('delete'), 
 }
 
