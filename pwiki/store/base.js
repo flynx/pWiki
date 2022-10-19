@@ -14,21 +14,21 @@ var pwpath = require('../path')
 
 
 //---------------------------------------------------------------------
-//
-// - define (name, generate, merge) 	- DONE
-// 		inline							- DONE
-// 		online							- DONE
-// - undefine (online)					- ???
-// - enumerate/list						- DONE
-// - group operations:
-// 		- reset (cache)					- DONE
-// 		- custom						- DONE
-//
+// XXX move this to a separate module (???)
+// XXX TODO:
+// 		- define (name, generate, merge) 	- DONE
+// 				inline					   	- DONE
+// 				online					   	- DONE
+// 		- undefine (online)					- ???
+// 		- enumerate/list				   	- DONE
+// 		- group operations:
+// 				- reset (cache)			   	- DONE
+// 				- custom				   	- DONE
 //
 
 
 //
-//	makeIndexed(<name>, <generate>[, <options>])
+//	makeIndex(<name>, <generate>[, <options>])
 //		-> <index-handler> 
 //
 //	Get merged data (cached)
@@ -100,9 +100,8 @@ var pwpath = require('../path')
 // 	}
 //
 //
-// XXX move this to a separate module (???)
-var makeIndexed = 
-module.makeIndexed =
+var makeIndex = 
+module.makeIndex =
 function(name, generate, options={}){
 	// attr names...
 	var cache = 
@@ -189,7 +188,6 @@ function(name, generate, options={}){
 			options,
 		})) }
 
-// XXX make this a mixin...
 var IndexManagerMixin = 
 module.IndexManagerMixin =
 object.Mixin('IndexManagerMixin', {
@@ -218,10 +216,14 @@ object.Mixin('IndexManagerMixin', {
 	// 	.index(<action>, ...)
 	// 		-> <indexi>
 	//
+	//
+	// 	.index('new', <name>, <generate>[, <options>])
+	//		-> <index-handler> 
+	//
 	index: async function(action='get', ...args){
 		// create a new index...
 		if(action == 'new'){
-			var res = makeIndexed(...args)
+			var res = makeIndex(...args)
 			var [name, _, options={}] = args
 			var attr = name
 			if(options.attr){
@@ -243,15 +245,14 @@ object.Mixin('IndexManagerMixin', {
 })
 
 
-
 var indexTest = 
 module.indexTest =
 IndexManagerMixin({
 	// tests...
 	//
-	moo: makeIndexed('moo', () => 123),
+	moo: makeIndex('moo', () => 123),
 
-	foo_index: makeIndexed('foo', () => 123, {
+	foo_index: makeIndex('foo', () => 123, {
 		attr: true,
 		add: function(cur, val){
 			return cur + val },
@@ -259,15 +260,15 @@ IndexManagerMixin({
 
 	__boo_add__: function(cur, val){
 		return cur + val },
-	boo: makeIndexed('boo', () => 123),
+	boo: makeIndex('boo', () => 123),
 
 	__soo_add__: async function(cur, val){
 		return await cur + val },
-	__soo: makeIndexed('soo', async () => 123),
+	__soo: makeIndex('soo', async () => 123),
 	get soo(){
 		return this.__soo() },
 
-	__sum: makeIndexed('sum', 
+	__sum: makeIndex('sum', 
 		async function(){
 			return await this.moo() 
 				+ await this.foo_index()
