@@ -15,15 +15,14 @@ var pwpath = require('../path')
 
 //---------------------------------------------------------------------
 //
-// - define (name, generate, merge)
-// 		inline
-// 		online
-// - undefine (online)
-// - enumerate/list
+// - define (name, generate, merge) 	- DONE
+// 		inline							- DONE
+// 		online							- DONE
+// - undefine (online)					- ???
+// - enumerate/list						- DONE
 // - group operations:
-// 		- update item
-// 		- remove item
-// 		- reset (cache)
+// 		- reset (cache)					- DONE
+// 		- custom						- DONE
 //
 //
 
@@ -77,20 +76,52 @@ var pwpath = require('../path')
 // 	.__<name>_cache / .<name>
 //
 //
+// Options format:
+// 	{
+// 		// XXX
+// 		attr: false 
+// 			| true 
+// 			| <name>,
+//
+// 		// list of dependencies that when changed will trigger a cache 
+// 		// drop on current index...
+// 		// NOTE: dependency checking is done via .modified time, if value
+// 		//		is changed manually and not via an action then the system
+// 		//		will not catch the change.
+// 		depends: [ 
+// 			<index-name>, 
+// 			... 
+// 		],
+//
+// 		// custom action...
+// 		// NOTE: this is the same as defining .__<name>_<action-name>__(..)
+// 		//		method...
+// 		<action-name>: <func>,
+// 	}
+//
+//
+// XXX move this to a separate module (???)
 var makeIndexed = 
+module.makeIndexed =
 function(name, generate, options={}){
-	// XXX revise default...
-	var cache = !!options.attr ?
-		name
+	// attr names...
+	var cache = 
+		typeof(options.attr) == 'string' ?
+			options.attr
+		// XXX revise default...
+		: !!options.attr ?
+			name
 		: `__${name}_cache`
 	var merge = `__${name}_merge__`
 	var special = `__${name}__`
 
 	// make local cache...
 	var _make = function(){
-		return this[special] != null ?
+		var res = this[special] != null ?
 			this[special]()
-			: generate.call(this) }
+			: generate.call(this) 
+		meth.modified = Date.now()
+		return res }
 	// unwrap a promised value into cache...
 	var _await = function(obj, val){
 		if(val instanceof Promise){
@@ -98,18 +129,27 @@ function(name, generate, options={}){
 				obj[cache] = value }) }
 		return val }
 
+	// build the method...
 	var meth
 	return (meth = Object.assign(
 		function(action='get', ...args){
 			var that = this
-			// clear/reset...
+			// action: clear/reset...
 			if(action == 'clear' 
 					|| action == 'reset'){
 				delete this[cache] }
-			// clear...
+			// action: clear...
 			if(action == 'clear'){
 				return }
-			// other actions...
+			// check dependencies (timestamps)...
+			if(cache in this 
+					&& meth.options.depends){
+				var cur = meth.modified
+				for(var dep of meth.options.depends){
+					if(this[dep].modified > cur){
+						delete this[cache]
+						break } } }
+			// action: other...
 			if(action != 'get' 
 					&& action != 'reset'){
 				var action_meth = `__${name}_${action}__`
@@ -117,15 +157,18 @@ function(name, generate, options={}){
 				var cur = cache in this ?
 					this[cache]
 					: meth.call(this, 'reset')
-				return _await(this, this[cache] = 
+				var res = _await(this, this[cache] = 
 					// NOTE: this[action_meth] will fully shadow options[action]...
 					action_meth in this ?
 						this[action_meth](cur, ...args)
 					: (action in options 
 							&& typeof(options[action]) == 'function') ?
 						options[action].call(this, cur, ...args)
-					: cur) }
-			// get...
+					: cur) 
+				res !== cur
+					&& (meth.modified = Date.now())
+				return res }
+			// action: get/local...
 			return _await(this,
 				// NOTE: this is intentionally not cached...
 				action == 'local' ?
@@ -146,30 +189,64 @@ function(name, generate, options={}){
 			options,
 		})) }
 
-
-var indexTest = 
-module.indexTest =
-{
+// XXX make this a mixin...
+var IndexManagerMixin = 
+module.IndexManagerMixin =
+object.Mixin('IndexManagerMixin', {
+	// List of index handler attribute names...
+	//
 	// XXX rename???
-	get indexi(){
+	get index_attrs(){
 		var that = this
 		return object.deepKeys(this)
 			.filter(function(key){
 				var d = object.values(that, key, true).next().value.value
 				return typeof(d) == 'function' 
 						&& d.indexed }) },
-	
+	//
+	// 	.index()
+	// 	.index('get')
+	// 		-> <indexi>
+	//
+	// 	.index('clear')
+	// 		-> <indexi>
+	// 	.index('reset')
+	// 		-> <indexi>
+	// 	.index('local')
+	// 		-> <indexi>
+	//
+	// 	.index(<action>, ...)
+	// 		-> <indexi>
+	//
 	index: async function(action='get', ...args){
+		// create a new index...
+		if(action == 'new'){
+			var res = makeIndexed(...args)
+			var [name, _, options={}] = args
+			var attr = name
+			if(options.attr){
+				var attr = `__${name}`
+				Object.defineProperty(this, name, {
+					get: function(){ 
+						return this[attr] }, }) }
+			return (this[attr] = res) }
+		// propagate action...
 		var that = this
 		return Object.fromEntries(
 			await Promise.all(
-				this.indexi
+				this.index_attrs
 					.map(async function(name){
 						return [
 							that[name].attr, 
 							await that[name](action, ...args),
 						] }))) },
+})
 
+
+
+var indexTest = 
+module.indexTest =
+IndexManagerMixin({
 	// tests...
 	//
 	moo: makeIndexed('moo', () => 123),
@@ -188,13 +265,23 @@ module.indexTest =
 		return await cur + val },
 	__soo: makeIndexed('soo', async () => 123),
 	get soo(){
-		return this.__soo() }
+		return this.__soo() },
 
-	// XXX need a way to link indexes...
-	// 		Ex:
-	// 			sum -> soo + boo + foo + moo
-	// 			...changing any of the summed values should drop cache of sum
-}
+	__sum: makeIndexed('sum', 
+		async function(){
+			return await this.moo() 
+				+ await this.foo_index()
+				+ await this.boo() 
+				+ await this.soo },
+		{ depends: [
+			'moo', 
+			'foo_index', 
+			'boo', 
+			'__soo',
+		], }),
+	get sum(){
+		return this.__sum() },
+})
 
 
 
