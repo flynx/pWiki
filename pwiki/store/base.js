@@ -28,12 +28,58 @@ var pwpath = require('../path')
 //
 
 
-// XXX need support for:
-// 		'update', <path>, <value>
-// 		'remove', <path>
+//
+//	makeIndexed(<name>, <generate>[, <options>])
+//		-> <index-handler> 
+//
+//	Get merged data (cached)
+//	<index-handler>()
+//	<index-handler>('get')
+//		-> <data>
+//
+//	Get local data (uncached)...
+//	<index-handler>('local')
+//		-> <data>
+//
+//	Clear cache...
+//	<index-handler>('clear')
+//		-> <data>
+//
+//	Reset cache (clear then get)...
+//	<index-handler>('reset')
+//		-> <data>
+//
+//	Run custom action...
+//	<index-handler>(<action-name>), ...)
+//		-> <data>
+//
+//
+//
+// Special methods:
+//
+// 	Special method to generate local <data>...
+// 	.__<name>__()
+// 		-> <data>
+//
+// 	Merge local data with other sources...
+// 	.__<name>_merge__(<data>)
+// 		-> <data>
+//
+// 	Handle custom action...
+// 	.__<name>_<action-name>__(<data>. ...)
+// 		-> <data>
+//
+//
+//
+// Special attributes:
+//
+// 	Cached data...
+// 	.__<name>_cache / .<name>
+//
 //
 var makeIndexed = 
 function(name, generate, options={}){
+	// XXX revise default...
 	var cache = !!options.attr ?
 		name
 		: `__${name}_cache`
@@ -72,11 +118,12 @@ function(name, generate, options={}){
 					this[cache]
 					: meth.call(this, 'reset')
 				return _await(this, this[cache] = 
-					(action in options 
+					// NOTE: this[action_meth] will fully shadow options[action]...
+					action_meth in this ?
+						this[action_meth](cur, ...args)
+					: (action in options 
 							&& typeof(options[action]) == 'function') ?
 						options[action].call(this, cur, ...args)
-					: action_meth in this ?
-						this[action_meth](cur, ...args)
 					: cur) }
 			// get...
 			return _await(this,
@@ -103,6 +150,7 @@ function(name, generate, options={}){
 var indexTest = 
 module.indexTest =
 {
+	// XXX rename???
 	get indexi(){
 		var that = this
 		return object.deepKeys(this)
@@ -126,7 +174,7 @@ module.indexTest =
 	//
 	moo: makeIndexed('moo', () => 123),
 
-	_foo_index: makeIndexed('foo', () => 123, {
+	foo_index: makeIndexed('foo', () => 123, {
 		attr: true,
 		add: function(cur, val){
 			return cur + val },
@@ -136,9 +184,16 @@ module.indexTest =
 		return cur + val },
 	boo: makeIndexed('boo', () => 123),
 
-	__amoo_add__: async function(cur, val){
+	__soo_add__: async function(cur, val){
 		return await cur + val },
-	amoo: makeIndexed('amoo', async () => 123),
+	__soo: makeIndexed('soo', async () => 123),
+	get soo(){
+		return this.__soo() }
+
+	// XXX need a way to link indexes...
+	// 		Ex:
+	// 			sum -> soo + boo + foo + moo
+	// 			...changing any of the summed values should drop cache of sum
 }
 
 
