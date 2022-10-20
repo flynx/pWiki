@@ -1061,7 +1061,7 @@ module.MetaStore = {
 		var stores = await Promise.iter(
 				Object.entries(this.substores ?? {})
 					.map(function([path, store]){
-						return store.paths()
+						return store.xpaths
 								.iter()
 								.map(function(s){
 									return pwpath.join(path, s) }) }))
