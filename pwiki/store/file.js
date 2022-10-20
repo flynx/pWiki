@@ -564,6 +564,20 @@ module.FileStoreRO = {
 		return pwpath.join(...path)
 			.replace(/\$PWIKI/, this.__pwiki_path__) },
 
+	// XXX INDEX...
+	__xpaths__: async function(){
+		var that = this
+		return new Promise(function(resolve, reject){
+			glob(pwpath.join(that.__path__, '**/*'))
+				.on('end', function(paths){
+					Promise.all(paths
+							.map(async function(path){
+								return await module.exists(path) ?
+									decode(path)
+										.slice(that.__path__.length)
+									: [] }))
+						.then(function(paths){
+							resolve(paths.flat()) }) }) }) },
 	// XXX do we remove the extension???
 	// XXX cache???
 	__paths__: async function(){

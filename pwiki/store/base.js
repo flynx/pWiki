@@ -24,10 +24,12 @@ var pwpath = require('../path')
 // 		- group operations:
 // 				- reset (cache)			   	- DONE
 // 				- custom				   	- DONE
+// XXX move .paths()/.names() to this...
 //
 
 
 //
+//	makeIndex(<name>[, <options>])
 //	makeIndex(<name>, <generate>[, <options>])
 //		-> <index-handler> 
 //
@@ -64,6 +66,10 @@ var pwpath = require('../path')
 // 	.__<name>_merge__(<data>)
 // 		-> <data>
 //
+// 	Test if cache is valid...
+// 	.__<name>_test__(<timestamp>)
+// 		-> <bool>
+//
 // 	Handle custom action...
 // 	.__<name>_<action-name>__(<data>. ...)
 // 		-> <data>
@@ -74,6 +80,9 @@ var pwpath = require('../path')
 //
 // 	Cached data...
 // 	.__<name>_cache / .<name>
+//
+// 	Modification time...
+// 	.__<name>_modified
 //
 //
 // Options format:
@@ -100,9 +109,17 @@ var pwpath = require('../path')
 // 	}
 //
 //
+// XXX do we separate internal methods and actions???
+// 		i.e. __<name>_merge__(..) / __<name>_test__(..) and the rest...
 var makeIndex = 
 module.makeIndex =
 function(name, generate, options={}){
+	// makeIndex(<name>, <options>)
+	if(generate 
+			&& typeof(generate) != 'function'){
+		options = generate 
+		generate = options.generate }
+
 	// attr names...
 	var cache = 
 		typeof(options.attr) == 'string' ?
@@ -112,14 +129,18 @@ function(name, generate, options={}){
 			name
 		: `__${name}_cache`
 	var merge = `__${name}_merge__`
+	var test = `__${name}_test__`
 	var special = `__${name}__`
+	var modified = `__${name}_modified`
 
 	// make local cache...
 	var _make = function(){
-		var res = this[special] != null ?
-			this[special]()
-			: generate.call(this) 
-		meth.modified = Date.now()
+		var res = 
+			this[special] != null ?
+				this[special]()
+				: (generate 
+					&& generate.call(this))
+		this[modified] = Date.now()
 		return res }
 	// unwrap a promised value into cache...
 	var _await = function(obj, val){
@@ -140,14 +161,19 @@ function(name, generate, options={}){
 			// action: clear...
 			if(action == 'clear'){
 				return }
-			// check dependencies (timestamps)...
-			if(cache in this 
-					&& meth.options.depends){
-				var cur = meth.modified
-				for(var dep of meth.options.depends){
-					if(this[dep].modified > cur){
-						delete this[cache]
-						break } } }
+			// validate cache...
+			if(cache in this){
+				var cur = this[modified]
+				// user test...
+				if(test in this 
+						&& !this[test](cur)){
+					delete this[cache]
+				// check dependencies...
+				} else if(meth.options.depends){
+					for(var dep of meth.options.depends){
+						if(this[`__${this[dep].attr}_modified`] > cur){
+							delete this[cache]
+							break } } } }
 			// action: other...
 			if(action != 'get' 
 					&& action != 'reset'){
@@ -165,7 +191,7 @@ function(name, generate, options={}){
 						options[action].call(this, cur, ...args)
 					: cur) 
 				res !== cur
-					&& (meth.modified = Date.now())
+					&& (this[modified] = Date.now())
 				return res }
 			// action: get/local...
 			return _await(this,
@@ -282,6 +308,14 @@ IndexManagerMixin({
 		], }),
 	get sum(){
 		return this.__sum() },
+
+	__merged__: function(){
+		return 777 },
+	__merged_merge__: async function(data){
+		return (await data) + 777 },
+	__merged: makeIndex('merged'),
+	get merged(){
+		return this.__merged() },
 })
 
 
@@ -354,6 +388,7 @@ function(name, get, update, ...args){
 // 				-> <path-list>
 // 			.names()
 // 				-> <name-index>
+//
 // 			.exists(<path>)
 // 				-> <real-path>
 // 				-> false
@@ -427,10 +462,76 @@ module.BaseStore = {
 		this.__data = value },
 
 
+	// XXX INDEX...
+	__xpaths__: async function(){
+		return Object.keys(this.data) },
+	// XXX unique???
+	__xpaths_merge__: async function(data){
+		return (await data)
+			.concat((this.next 
+					&& 'xpaths' in this.next) ?
+				await this.next.xpaths
+				: []) },
+	__xpaths_test__: function(t){
+		var changed = 
+			!!this.__xpaths_next_exists != !!this.next
+				|| (!!this.next 
+					&& this.next.__xpaths_modified > t)
+		this.__xpaths_next_exists = !this.next
+		return changed },
+	__xpaths: makeIndex('xpaths', {
+		update: async function(data, path){
+			data = await data
+			// XXX normalize???
+			data.includes(path)
+				|| data.push(path)
+			return data }, 
+		remove: async function(data, path){
+			data = await data
+			// XXX normalize???
+			data.includes(path)
+				&& data.splice(data.indexOf(path), 1)
+			return data }, }),
+	// XXX should this clone the data???
+	get xpaths(){
+		return this.__xpaths() },
+
+	// NOTE: this is build from .paths so there is no need to define a 
+	// 		way to merge...
+	__xnames: makeIndex('xnames', 
+		function(){
+			return this.xpaths
+				.iter()
+				.reduce(function(res, path){
+					var n = pwpath.basename(path)
+					if(!n.includes('*')){
+						(res[n] = res[n] ?? []).push(path) }
+					return res }, {}) }, {
+		update: async function(data, path){
+			data = await data
+			// XXX normalize???
+			var n = pwpath.basename(path)
+			if(!n.includes('*') 
+					&& !data[n].includes(path)){
+				(data[n] = data[n] ?? []).push(path) }
+			return data },
+		remove: async function(data, path){
+			data = await data
+			// XXX normalize???
+			var n = pwpath.basename(path)
+			data[n].includes(path)
+				&& data[n].splice(data[n].indexOf(path), 1)
+			data[n].length == 0
+				&& (delete data[n])
+			return data }, }),
+	// XXX should this clone the data???
+	get xnames(){
+		return this.__xnames() },
+
+
 	// XXX might be a good idea to cache this...
 	__paths__: async function(){
 		return Object.keys(this.data) },
-
 	// local paths...
 	__paths: cached('paths', async function(){
 		return this.__paths__() }),
@@ -442,6 +543,7 @@ module.BaseStore = {
 			.concat((!local && (this.next || {}).paths) ? 
 				this.next.paths() 
 				: []) },
+
 	// XXX BUG: after caching this will ignore the local argument....
 	names: cached('names', async function(local=false){
 		return this.paths(local)
@@ -870,6 +972,7 @@ module.BaseStore = {
 			: res },
 }
 
+IndexManagerMixin(BaseStore)
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -951,6 +1054,38 @@ module.MetaStore = {
 	// NOTE: we are using level2 API here to enable mixing this with 
 	// 		store adapters that can overload the level1 API to implement 
 	// 		their own stuff...
+
+	// XXX INDEX...
+	__xpaths_merge__: async function(data){
+		var that = this
+		var stores = await Promise.iter(
+				Object.entries(this.substores ?? {})
+					.map(function([path, store]){
+						return store.paths()
+								.iter()
+								.map(function(s){
+									return pwpath.join(path, s) }) }))
+			.flat()
+		return object.parentCall(MetaStore.__xpaths_merge__, this, ...arguments)
+			.iter()
+			.concat(stores) },
+	// XXX
+	__xpaths_test__: function(t){
+		if(!this.substores){
+			return true }
+		// match substore list...
+		var cur = Object.keys(this.substores)
+		var prev = this.__xpaths_substores
+		if(!prev){
+			this.__xpaths_substores = cur
+		} else if(prev.length != cur.length
+				|| (new Set([...cur, ...prev])).length != cur.length){
+			return false }
+		// check timestamps...
+		for(var store of Object.values(this.substores ?? {})){
+			if(store.__xpaths_modified > t){
+				return false } }
+		return object.parentCall(MetaStore.__xpaths_test__, this, ...arguments) },
 
 	paths: async function(){
 		var that = this

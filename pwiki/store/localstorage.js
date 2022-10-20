@@ -29,6 +29,16 @@ module.localStorageStore = {
 			localStorage
 			: undefined,
 	
+	// XXX INDEX...
+	__xpaths__: function(){
+		var that = this
+		return Object.keys(this.data)
+			.map(function(k){ 
+				return k.startsWith(that.__prefix__) ?
+					k.slice((that.__prefix__ ?? '').length) 
+					: [] }) 
+			.flat() },
+
 	__paths__: function(){
 		var that = this
 		return Object.keys(this.data)
