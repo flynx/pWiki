@@ -17,6 +17,7 @@
 * 		- CLI
 *
 *
+* XXX odd bug: in node .xpaths seems to get invalidated on each call...
 * XXX INDEX / CACHE:
 * 			- centralized
 * 			- nestable

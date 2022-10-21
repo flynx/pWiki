@@ -171,7 +171,7 @@ function(name, generate, options={}){
 				// check dependencies...
 				} else if(meth.options.depends){
 					for(var dep of meth.options.depends){
-						if(this[`__${this[dep].attr}_modified`] > cur){
+						if(this[`__${this[dep].index}_modified`] > cur){
 							delete this[cache]
 							break } } } }
 			// action: other...
@@ -209,7 +209,7 @@ function(name, generate, options={}){
 					// generate...
 					: _make.call(this)) ) },
 		{
-			attr: name,
+			index: name,
 			indexed: true,
 			options,
 		})) }
@@ -265,7 +265,7 @@ object.Mixin('IndexManagerMixin', {
 				this.index_attrs
 					.map(async function(name){
 						return [
-							that[name].attr, 
+							that[name].index, 
 							await that[name](action, ...args),
 						] }))) },
 })
