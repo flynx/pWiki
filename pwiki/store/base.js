@@ -1069,16 +1069,18 @@ module.MetaStore = {
 		return object.parentCall(MetaStore.__xpaths_merge__, this, ...arguments)
 			.iter()
 			.concat(stores) },
-	// XXX
+	// XXX BUG:
+	// 		(reload)
+	// 		pwiki.store.xnames
+	// 		pwiki.store.substores['Stores/memory'].index('update', 'a/b/c/xxx', {})
+	// 		pwiki.store.xnames	// does not change...
 	__xpaths_test__: function(t){
 		if(!this.substores){
 			return true }
 		// match substore list...
-		var cur = Object.keys(this.substores)
-		var prev = this.__xpaths_substores
-		if(!prev){
-			this.__xpaths_substores = cur
-		} else if(prev.length != cur.length
+		var cur = Object.keys(this.substores ?? {})
+		var prev = this.__xpaths_substores ?? cur ?? []
+		if(prev.length != cur.length
 				|| (new Set([...cur, ...prev])).length != cur.length){
 			return false }
 		// check timestamps...
