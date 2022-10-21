@@ -19,14 +19,14 @@ var pwpath = require('../path')
 // 		- define (name, generate, merge) 	- DONE
 // 				inline					   	- DONE
 // 				online					   	- DONE
-// 		- undefine (online)					- ???
+// 		- undefine (online)					- DONE
+// 			...simply delete the method/prop...
 // 		- enumerate/list				   	- DONE
 // 		- group operations:
 // 				- reset (cache)			   	- DONE
 // 				- custom				   	- DONE
 // XXX move .paths()/.names() to this...
 //
-
 
 //
 //	makeIndex(<name>[, <options>])
