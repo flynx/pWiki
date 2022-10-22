@@ -89,6 +89,17 @@ var pwpath = require('../path')
 //		-> <data>
 //		-> <promise>
 //
+// NOTE: the main differences between the 'get', 'lazy' and 'cached' actions:
+// 		'get'
+// 			generate/merge are all sync/async as defined
+// 			when cached value available validate and return either the cached value or generate
+// 		'lazy'
+// 			XXX
+// 		'cached'
+// 			call get in background
+// 			return cached value or undefined
+// 	  
+//
 //
 // Special methods:
 //
@@ -238,22 +249,19 @@ function(name, generate, options={}){
 						&& res instanceof Promise) ? 
 					this[cache]
 					: res }
-
 			// action: cached...
 			if(action == 'cached'){
 				_deferred(this, 'get')
 				return this[cache] }
-
 			// action: local...
-			// NOTE: this "cascade" of actions is interdependent...
 			// NOTE: this is intentionally not cached...
 			if(action == 'local'){
 				return _make(this) }
+
 			// action: clear/reset...
 			if(action == 'clear' 
 					|| action == 'reset'){
 				delete this[cache] }
-			// action: clear...
 			if(action == 'clear'){
 				return }
 

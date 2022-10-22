@@ -17,7 +17,8 @@
 * 		- CLI
 *
 *
-* XXX add 'status' action to .index(..) and makeIndex(..)
+* XXX ASAP move index stuff to pwiki/index.js
+* XXX can index validation be async???
 * XXX INDEX / CACHE:
 * 			- centralized
 * 			- nestable
