@@ -38,6 +38,8 @@ var pwpath = require('../path')
 //	<index-handler>('get')
 //		-> <data>
 //		-> <promise>
+// 		NOTE: when a getter is pending (promise), all consecutive calls 
+// 			will resolve the original getter return value...
 //
 //	Get cached result and do "lazy" background update... (XXX EXPERIMENTAL)
 //	<index-handler>('lazy')
@@ -46,6 +48,9 @@ var pwpath = require('../path')
 // 		NOTE: 'lazy' mode is generally faster as it does all the checks and 
 // 			updating (if needed) in a background promise, but can return 
 // 			outdated cached results.
+// 		NOTE: as a side-effect this avoids returning promises if a cached 
+// 			value is available. i.e. a promise is returned only when 
+// 			getting/generating a value for the first time.
 //
 //	Get local data (uncached)...
 //	<index-handler>('local')
@@ -64,9 +69,6 @@ var pwpath = require('../path')
 //	<index-handler>(<action-name>), ...)
 //		-> <data>
 //		-> <promise>
-//
-// NOTE: when a getter is pending (promise), all consecutive calls will
-// 		resolve the original getter return value...
 //
 //
 //
@@ -177,7 +179,8 @@ function(name, generate, options={}){
 					function(value){
 						delete obj[promise]
 						obj[cache] = value },
-					function(){
+					function(err){
+						// XXX should we report this???
 						delete obj[promise] }) }
 			val = obj[promise] }
 		return val }
