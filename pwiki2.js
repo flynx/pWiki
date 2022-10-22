@@ -17,7 +17,6 @@
 * 		- CLI
 *
 *
-* XXX odd bug: in node .xpaths seems to get invalidated on each call...
 * XXX INDEX / CACHE:
 * 			- centralized
 * 			- nestable
@@ -27,15 +26,6 @@
 * 				name, generate, get (extensible), update, delete
 * 			- event-based???
 * 			- sync???
-* 		API???:
-*			// create
-* 			<store>.index(<name>, {generate, update, ... })
-* 			delete <store>.index.<name>
-* 			<store>.<name>				- index data (prop)
-* 			<store>.__<name>__()		- index getter
-* 			<store>.index.<name>(..)	- update
-* 			<store>.index.clear()
-* 			<store>.index.refresh()
 * XXX BUG: when editing the root page of a substore the page's .cache is 
 * 		not reset for some reason...
 * 		...the problem is in that .names() cache is not reset when a new

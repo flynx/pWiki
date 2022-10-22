@@ -67,7 +67,7 @@ var pwpath = require('../path')
 // 		-> <data>
 //
 // 	Test if cache is valid...
-// 	.__<name>_test__(<timestamp>)
+// 	.__<name>_isvalid__(<timestamp>)
 // 		-> <bool>
 //
 // 	Handle custom action...
@@ -110,7 +110,7 @@ var pwpath = require('../path')
 //
 //
 // XXX do we separate internal methods and actions???
-// 		i.e. __<name>_merge__(..) / __<name>_test__(..) and the rest...
+// 		i.e. __<name>_merge__(..) / __<name>_isvalid__(..) and the rest...
 var makeIndex = 
 module.makeIndex =
 function(name, generate, options={}){
@@ -128,20 +128,25 @@ function(name, generate, options={}){
 		: !!options.attr ?
 			name
 		: `__${name}_cache`
+	var test = `__${name}_isvalid__`
 	var merge = `__${name}_merge__`
-	var test = `__${name}_test__`
 	var special = `__${name}__`
 	var modified = `__${name}_modified`
 
-	// make local cache...
-	var _make = function(){
-		var res = 
-			this[special] != null ?
-				this[special]()
-				: (generate 
-					&& generate.call(this))
-		this[modified] = Date.now()
+	// set modified time...
+	var _stamp = function(that, res){
+		res instanceof Promise ?
+			res.then(function(){
+				that[modified] = Date.now() })
+			: (that[modified] = Date.now())
 		return res }
+	// make local cache...
+	var _make = function(that){
+		return _stamp(that,
+			that[special] != null ?
+				that[special]()
+				: (generate 
+					&& generate.call(that))) }
 	// unwrap a promised value into cache...
 	var _await = function(obj, val){
 		if(val instanceof Promise){
@@ -191,13 +196,13 @@ function(name, generate, options={}){
 						options[action].call(this, cur, ...args)
 					: cur) 
 				res !== cur
-					&& (this[modified] = Date.now())
+					&& _stamp(this, res)
 				return res }
 			// action: get/local...
 			return _await(this,
 				// NOTE: this is intentionally not cached...
 				action == 'local' ?
-					_make.call(this)
+					_make(this)
 				// get...
 				: (this[cache] =
 					// cached...
@@ -205,9 +210,11 @@ function(name, generate, options={}){
 						this[cache] 
 					// generate + merge...
 					: this[merge] != null ?
-						this[merge](_make.call(this))
+						// NOTE: need to set the timestamp after the merge...
+						_stamp(this, 
+							this[merge](_make(this)))
 					// generate...
-					: _make.call(this)) ) },
+					: _make(this)) ) },
 		{
 			index: name,
 			indexed: true,
@@ -472,7 +479,7 @@ module.BaseStore = {
 					&& 'xpaths' in this.next) ?
 				await this.next.xpaths
 				: []) },
-	__xpaths_test__: function(t){
+	__xpaths_isvalid__: function(t){
 		var changed = 
 			!!this.__xpaths_next_exists != !!this.next
 				|| (!!this.next 
@@ -1069,25 +1076,19 @@ module.MetaStore = {
 		return object.parentCall(MetaStore.__xpaths_merge__, this, ...arguments)
 			.iter()
 			.concat(stores) },
-	// XXX BUG:
-	// 		(reload)
-	// 		pwiki.store.xnames
-	// 		pwiki.store.substores['Stores/memory'].index('update', 'a/b/c/xxx', {})
-	// 		pwiki.store.xnames	// does not change...
-	__xpaths_test__: function(t){
-		if(!this.substores){
-			return true }
-		// match substore list...
-		var cur = Object.keys(this.substores ?? {})
-		var prev = this.__xpaths_substores ?? cur ?? []
-		if(prev.length != cur.length
-				|| (new Set([...cur, ...prev])).length != cur.length){
-			return false }
-		// check timestamps...
-		for(var store of Object.values(this.substores ?? {})){
-			if(store.__xpaths_modified > t){
-				return false } }
-		return object.parentCall(MetaStore.__xpaths_test__, this, ...arguments) },
+	__xpaths_isvalid__: function(t){
+		if(this.substores){
+			// match substore list...
+			var cur = Object.keys(this.substores ?? {})
+			var prev = this.__xpaths_substores ?? cur ?? []
+			if(prev.length != cur.length
+					|| (new Set([...cur, ...prev])).size != cur.length){
+				return false }
+			// check timestamps...
+			for(var {__xpaths_modified} of Object.values(this.substores ?? {})){
+				if(__xpaths_modified > t){
+					return false } } }
+		return object.parentCall(MetaStore.__xpaths_isvalid__, this, ...arguments) },
 
 	paths: async function(){
 		var that = this
