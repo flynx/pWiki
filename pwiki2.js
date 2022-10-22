@@ -17,6 +17,7 @@
 * 		- CLI
 *
 *
+* XXX add 'status' action to .index(..) and makeIndex(..)
 * XXX INDEX / CACHE:
 * 			- centralized
 * 			- nestable

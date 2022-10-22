@@ -41,16 +41,28 @@ var pwpath = require('../path')
 // 		NOTE: when a getter is pending (promise), all consecutive calls 
 // 			will resolve the original getter return value...
 //
-//	Get cached result and do "lazy" background update... (XXX EXPERIMENTAL)
+//	Get sync or cached result and do "lazy" background update...
 //	<index-handler>('lazy')
 //		-> <data>
 //		-> <promise>
+// 		NOTE: if <index-handler>(..) is synchronous, this will wait till
+// 			it returns and will return the result.
 // 		NOTE: 'lazy' mode is generally faster as it does all the checks and 
 // 			updating (if needed) in a background promise, but can return 
 // 			outdated cached results.
 // 		NOTE: as a side-effect this avoids returning promises if a cached 
 // 			value is available. i.e. a promise is returned only when 
 // 			getting/generating a value for the first time.
+//
+//	Get cached result and trigger a background update...
+//	<index-handler>('cached')
+//		-> <data>
+//		-> <promise>
+//		-> undefined
+//		NOTE: this is like 'lazy' but will not wait for <index-handler>)(..)
+//			to return, making it even faster but as a trade off it will
+//			return the cached and possibly outdated result even if 
+//			<index-handler>(..) is synchronous.
 //
 //	Get local data (uncached)...
 //	<index-handler>('local')
@@ -65,11 +77,17 @@ var pwpath = require('../path')
 //		-> <data>
 //		-> <promise>
 //
+//	Get index status...
+//	<index-handler>('status')
+//		-> 'empty'
+//		-> 'pending'
+//		-> 'cached'
+//		-> 'outdated'
+//
 //	Run custom action...
 //	<index-handler>(<action-name>), ...)
 //		-> <data>
 //		-> <promise>
-//
 //
 //
 // Special methods:
@@ -147,11 +165,11 @@ function(name, generate, options={}){
 		: !!options.attr ?
 			name
 		: `__${name}_cache`
+	var modified = `__${name}_modified`
+	var promise = `__${name}_promise`
 	var test = `__${name}_isvalid__`
 	var merge = `__${name}_merge__`
 	var special = `__${name}__`
-	var modified = `__${name}_modified`
-	var promise = `__${name}_promise`
 
 	// set modified time...
 	var _stamp = function(that, res){
@@ -184,23 +202,50 @@ function(name, generate, options={}){
 						delete obj[promise] }) }
 			val = obj[promise] }
 		return val }
+	var _deferred = async function(obj, ...args){
+		return meth.call(obj, ...args) }
 
 	// build the method...
 	var meth
 	return (meth = Object.assign(
 		function(action='get', ...args){
 			var that = this
-			// XXX EXPERIMENTAL...
+
+			// action: status...
+			if(action == 'status'){
+				if(this[cache] instanceof Promise){
+					return 'pending' }
+				if(cache in this){
+					var cur = this[modified]
+					// user test...
+					if(test in this 
+							&& !this[test](cur)){
+						return 'outdated'
+					// check dependencies...
+					} else if(meth.options.depends){
+						for(var dep of meth.options.depends){
+							if(this[`__${this[dep].index}_modified`] > cur){
+								return 'outdated' } } }
+					return 'cached' }
+				return 'empty' }
+
 			// action: lazy...
 			if(action == 'lazy'){
 				if(this[cache] instanceof Promise){
 					return this[cache] }
-				var res = meth('get')
+				var res = meth.call(this, 'get')
 				return (this[cache]
 						&& res instanceof Promise) ? 
 					this[cache]
 					: res }
+
+			// action: cached...
+			if(action == 'cached'){
+				_deferred(this, 'get')
+				return this[cache] }
+
 			// action: local...
+			// NOTE: this "cascade" of actions is interdependent...
 			// NOTE: this is intentionally not cached...
 			if(action == 'local'){
 				return _make(this) }
@@ -211,19 +256,12 @@ function(name, generate, options={}){
 			// action: clear...
 			if(action == 'clear'){
 				return }
+
 			// validate cache...
-			if(cache in this){
-				var cur = this[modified]
-				// user test...
-				if(test in this 
-						&& !this[test](cur)){
-					delete this[cache]
-				// check dependencies...
-				} else if(meth.options.depends){
-					for(var dep of meth.options.depends){
-						if(this[`__${this[dep].index}_modified`] > cur){
-							delete this[cache]
-							break } } } }
+			if(cache in this
+					&& meth.call(this, 'status') == 'outdated'){
+				delete this[cache] }
+
 			// action: other...
 			if(action != 'get' 
 					&& action != 'reset'){
@@ -243,6 +281,7 @@ function(name, generate, options={}){
 				res !== cur
 					&& _stamp(this, res)
 				return res }
+
 			// action: get...
 			return _await(this, 
 				this[cache] =
