@@ -300,7 +300,7 @@ function(name, generate, options={}){
 					: this[merge] != null ?
 						// NOTE: need to set the timestamp after the merge...
 						_stamp(this, 
-							this[merge](_smake(this)))
+							this[merge](_make(this)))
 					// generate...
 					: _smake(this)) },
 		{
@@ -1328,4 +1328,4 @@ module.Store =
 
 
 /**********************************************************************
-* vim:set ts=4 sw=4 :                               */ return module })
+* vim:set ts=4 sw=4 nowrap :                        */ return module })
