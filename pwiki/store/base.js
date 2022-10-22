@@ -65,6 +65,9 @@ var pwpath = require('../path')
 //		-> <data>
 //		-> <promise>
 //
+// NOTE: when a getter is pending (promise), all consecutive calls will
+// 		resolve the original getter return value...
+//
 //
 //
 // Special methods:
@@ -94,6 +97,9 @@ var pwpath = require('../path')
 //
 // 	Modification time...
 // 	.__<name>_modified
+//
+// 	Pending generator promise...
+// 	.__<name>_promise
 //
 //
 // Options format:
@@ -143,6 +149,7 @@ function(name, generate, options={}){
 	var merge = `__${name}_merge__`
 	var special = `__${name}__`
 	var modified = `__${name}_modified`
+	var promise = `__${name}_promise`
 
 	// set modified time...
 	var _stamp = function(that, res){
@@ -160,17 +167,19 @@ function(name, generate, options={}){
 	var _smake = function(that){
 		return _stamp(that, _make(that)) }
 	// unwrap a promised value into cache...
-	var promise = `__${name}_promise`
 	var _await = function(obj, val){
 		if(val instanceof Promise){
 			// NOTE: this avoids a race condition when a getter is called
 			// 		while a previous getter is still pending...
-			val = obj[promise] = 
-				obj[promise] 
-					?? val
-			val.then(function(value){
-				delete obj[promise]
-				obj[cache] = value }) }
+			if(obj[promise] == null){
+				obj[promise] = val
+				val.then(
+					function(value){
+						delete obj[promise]
+						obj[cache] = value },
+					function(){
+						delete obj[promise] }) }
+			val = obj[promise] }
 		return val }
 
 	// build the method...
