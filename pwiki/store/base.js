@@ -37,22 +37,33 @@ var pwpath = require('../path')
 //	<index-handler>()
 //	<index-handler>('get')
 //		-> <data>
+//		-> <promise>
+//
+//	Get cached result and do "lazy" background update... (XXX EXPERIMENTAL)
+//	<index-handler>('lazy')
+//		-> <data>
+//		-> <promise>
+// 		NOTE: 'lazy' mode is generally faster as it does all the checks and 
+// 			updating (if needed) in a background promise, but can return 
+// 			outdated cached results.
 //
 //	Get local data (uncached)...
 //	<index-handler>('local')
 //		-> <data>
+//		-> <promise>
 //
 //	Clear cache...
 //	<index-handler>('clear')
-//		-> <data>
 //
 //	Reset cache (clear then get)...
 //	<index-handler>('reset')
 //		-> <data>
+//		-> <promise>
 //
 //	Run custom action...
 //	<index-handler>(<action-name>), ...)
 //		-> <data>
+//		-> <promise>
 //
 //
 //
@@ -142,15 +153,23 @@ function(name, generate, options={}){
 		return res }
 	// make local cache...
 	var _make = function(that){
-		return _stamp(that,
-			that[special] != null ?
+		return that[special] != null ?
 				that[special]()
 				: (generate 
-					&& generate.call(that))) }
+					&& generate.call(that)) }
+	var _smake = function(that){
+		return _stamp(that, _make(that)) }
 	// unwrap a promised value into cache...
+	var promise = `__${name}_promise`
 	var _await = function(obj, val){
 		if(val instanceof Promise){
+			// NOTE: this avoids a race condition when a getter is called
+			// 		while a previous getter is still pending...
+			val = obj[promise] = 
+				obj[promise] 
+					?? val
 			val.then(function(value){
+				delete obj[promise]
 				obj[cache] = value }) }
 		return val }
 
@@ -159,6 +178,20 @@ function(name, generate, options={}){
 	return (meth = Object.assign(
 		function(action='get', ...args){
 			var that = this
+			// XXX EXPERIMENTAL...
+			// action: lazy...
+			if(action == 'lazy'){
+				if(this[cache] instanceof Promise){
+					return this[cache] }
+				var res = meth('get')
+				return (this[cache]
+						&& res instanceof Promise) ? 
+					this[cache]
+					: res }
+			// action: local...
+			// NOTE: this is intentionally not cached...
+			if(action == 'local'){
+				return _make(this) }
 			// action: clear/reset...
 			if(action == 'clear' 
 					|| action == 'reset'){
@@ -198,13 +231,9 @@ function(name, generate, options={}){
 				res !== cur
 					&& _stamp(this, res)
 				return res }
-			// action: get/local...
-			return _await(this,
-				// NOTE: this is intentionally not cached...
-				action == 'local' ?
-					_make(this)
-				// get...
-				: (this[cache] =
+			// action: get...
+			return _await(this, 
+				this[cache] =
 					// cached...
 					this[cache] != null ?
 						this[cache] 
@@ -212,9 +241,9 @@ function(name, generate, options={}){
 					: this[merge] != null ?
 						// NOTE: need to set the timestamp after the merge...
 						_stamp(this, 
-							this[merge](_make(this)))
+							this[merge](_smake(this)))
 					// generate...
-					: _make(this)) ) },
+					: _smake(this)) },
 		{
 			index: name,
 			indexed: true,
