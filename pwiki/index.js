@@ -11,20 +11,6 @@ var object = require('ig-object')
 
 
 //---------------------------------------------------------------------
-// XXX move this to a separate module (???)
-// XXX TODO:
-// 		- define (name, generate, merge) 	- DONE
-// 				inline					   	- DONE
-// 				online					   	- DONE
-// 		- undefine (online)					- DONE
-// 			...simply delete the method/prop...
-// 		- enumerate/list				   	- DONE
-// 		- group operations:
-// 				- reset (cache)			   	- DONE
-// 				- custom				   	- DONE
-// XXX move .paths()/.names() to this...
-//
-
 //
 //	makeIndex(<name>[, <options>])
 //	makeIndex(<name>, <generate>[, <options>])
