@@ -153,6 +153,7 @@ module.BaseStore = {
 	set data(value){
 		this.__data = value },
 
+	// XXX not sure if it is better to set these here or use index.IndexManagerMixin(..)
 	get index_attrs(){
 		return [...index.iter(this)] },
 	index: async function(action='get', ...args){

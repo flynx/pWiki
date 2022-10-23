@@ -17,14 +17,10 @@
 * 		- CLI
 *
 *
-* XXX ASAP INDEX move index stuff to pwiki/index.js
+* XXX INDEX move to the new index...
 * XXX INDEX DOC can index validation be async???
 * 		...likely no
 * XXX INDEX add option to set default action (get/lazy/cached)
-* XXX INDEX might be a better idea to make the iterator (.index_attrs)
-* 		and global method (.index(..)) out of the mixin and keep them
-* 		as utility methods.
-* 		...the mixin can still live for convinience.
 * XXX BUG: when editing the root page of a substore the page's .cache is 
 * 		not reset for some reason...
 * 		...the problem is in that .names() cache is not reset when a new
