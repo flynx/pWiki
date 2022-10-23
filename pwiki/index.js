@@ -307,21 +307,65 @@ function(name, generate, options={}){
 		})) }
 
 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
 // XXX
 var iter =
 module.iter =
-function*(){
+function*(obj){
+	for(var key of object.deepKeys(obj)){
+		var d = object.values(obj, key, true).next().value.value
+		// XXX should makeIndex(..) be a constructor -- i.e. an instanceof test???
+		if(typeof(d) == 'function' 
+				&& d.indexed){
+			yield key } } }
 
-}
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+//
+// 	.index(obj)
+// 	.index(obj, 'get')
+// 		-> <indexi>
+//
+// 	...
+//
+// 	.index(obj, <action>, ...)
+// 		-> <indexi>
+//
+//
+// 	.index('obj, new', <name>, <generate>[, <options>])
+//		-> <index-handler> 
+//
 // XXX
 var index =
 module.index =
-function(){
+async function(obj, action='get', ...args){
+	// create a new index...
+	if(action == 'new'){
+		var res = module.makeIndex(...args)
+		var [name, _, options={}] = args
+		var attr = name
+		if(options.attr){
+			var attr = `__${name}`
+			Object.defineProperty(obj, name, {
+				get: function(){ 
+					return obj[attr] }, }) }
+		return (obj[attr] = res) }
+	// propagate action...
+	return Object.fromEntries(
+		await Promise.all(
+			module.iter(obj)
+				.map(async function(name){
+					return [
+						obj[name].index, 
+						await obj[name](action, ...args),
+					] }))) }
 
-}
 
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 var IndexManagerMixin = 
 module.IndexManagerMixin =
@@ -330,59 +374,23 @@ object.Mixin('IndexManagerMixin', {
 	//
 	// XXX rename???
 	get index_attrs(){
-		var that = this
-		return object.deepKeys(this)
-			.filter(function(key){
-				var d = object.values(that, key, true).next().value.value
-				return typeof(d) == 'function' 
-						&& d.indexed }) },
-	//
-	// 	.index()
-	// 	.index('get')
-	// 		-> <indexi>
-	//
-	// 	...
-	//
-	// 	.index(<action>, ...)
-	// 		-> <indexi>
-	//
-	//
-	// 	.index('new', <name>, <generate>[, <options>])
-	//		-> <index-handler> 
-	//
+		return [...module.iter(this)] },
 	index: async function(action='get', ...args){
-		// create a new index...
-		if(action == 'new'){
-			var res = makeIndex(...args)
-			var [name, _, options={}] = args
-			var attr = name
-			if(options.attr){
-				var attr = `__${name}`
-				Object.defineProperty(this, name, {
-					get: function(){ 
-						return this[attr] }, }) }
-			return (this[attr] = res) }
-		// propagate action...
-		var that = this
-		return Object.fromEntries(
-			await Promise.all(
-				this.index_attrs
-					.map(async function(name){
-						return [
-							that[name].index, 
-							await that[name](action, ...args),
-						] }))) },
+		return module.index(this, ...arguments) },
 })
 
+
+
+//---------------------------------------------------------------------
 
 var indexTest = 
 module.indexTest =
 IndexManagerMixin({
 	// tests...
 	//
-	moo: makeIndex('moo', () => 123),
+	moo: module.makeIndex('moo', () => 123),
 
-	foo_index: makeIndex('foo', () => 123, {
+	foo_index: module.makeIndex('foo', () => 123, {
 		attr: true,
 		add: function(cur, val){
 			return cur + val },
@@ -390,15 +398,15 @@ IndexManagerMixin({
 
 	__boo_add__: function(cur, val){
 		return cur + val },
-	boo: makeIndex('boo', () => 123),
+	boo: module.makeIndex('boo', () => 123),
 
 	__soo_add__: async function(cur, val){
 		return await cur + val },
-	__soo: makeIndex('soo', async () => 123),
+	__soo: module.makeIndex('soo', async () => 123),
 	get soo(){
 		return this.__soo() },
 
-	__sum: makeIndex('sum', 
+	__sum: module.makeIndex('sum', 
 		async function(){
 			return await this.moo() 
 				+ await this.foo_index()
@@ -417,7 +425,7 @@ IndexManagerMixin({
 		return 777 },
 	__merged_merge__: async function(data){
 		return (await data) + 777 },
-	__merged: makeIndex('merged'),
+	__merged: module.makeIndex('merged'),
 	get merged(){
 		return this.__merged() },
 })
