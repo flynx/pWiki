@@ -190,10 +190,11 @@ module.BaseStore = {
 				&& data.splice(data.indexOf(path), 1)
 			return data }, }),
 	// XXX should this clone the data???
+	// XXX should we use 'lazy'???
 	get xpaths(){
 		return this.__xpaths() },
 
-	// NOTE: this is build from .paths so there is no need to define a 
+	// NOTE: this is built from .paths so there is no need to define a 
 	// 		way to merge...
 	__xnames: index.makeIndex('xnames', 
 		function(){
@@ -224,6 +225,7 @@ module.BaseStore = {
 				&& (delete data[n])
 			return data }, }),
 	// XXX should this clone the data???
+	// XXX should we use 'lazy'???
 	get xnames(){
 		return this.__xnames() },
 
@@ -335,7 +337,9 @@ module.BaseStore = {
 		var {path, args} = pwpath.splitArgs(path)
 		args = pwpath.joinArgs('', args)
 		// build list of existing page candidates...
-		var names = await this.names()
+		//var names = await this.names()
+		// XXX INDEX
+		var names = await this.xnames
 		var pages = new Set(
 			pwpath.names(path)
 				.map(function(name){
@@ -591,6 +595,8 @@ module.BaseStore = {
 		await this.__update__(path, data, mode)
 		// XXX CACHED
 		this.__cache_add(path)
+		// XXX INDEX
+		this.index('update', path)
 		this.onUpdate(path)
 		return this },
 	__delete__: async function(path){
@@ -605,6 +611,8 @@ module.BaseStore = {
 			await this.__delete__(path)
 			// XXX CACHED
 			this.__cache_remove(path) 
+			// XXX INDEX
+			this.index('remove', path)
 			this.onDelete(path) }
 		return this },
 
@@ -844,6 +852,8 @@ module.MetaStore = {
 				path.slice(path.indexOf(p)+p.length),
 				...[...arguments].slice(1))
 			this.__cache_add(path)
+			// XXX INDEX
+			this.index('update', path)
 			return this }
 		// add local...
 		return object.parentCall(MetaStore.update, this, ...arguments) },
