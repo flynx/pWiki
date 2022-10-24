@@ -34,9 +34,6 @@ module.IndexedDBStore = {
 			?? (this.__data = idb.createStore(this.__db__, this.__store__)) },
 	
 	// XXX INDEX...
-	__xpaths__: function(){
-		return idb.keys(this.data) },
-
 	__paths__: function(){
 		return idb.keys(this.data) },
 	__exists__: function(path){

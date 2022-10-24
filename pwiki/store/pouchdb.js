@@ -35,14 +35,6 @@ module.PouchDBStore = {
 		this.__data = value },
 
 	// XXX INDEX...
-	__xpaths__: async function(){
-		var that = this
-		// XXX not sure if this is a good idea...
-		return (await this.data.allDocs()).rows
-			.map(function(e){ 
-				return e.id.slice(that.__key_prefix__.length) }) },
-
-	// XXX cache???
 	__paths__: async function(){
 		var that = this
 		// XXX not sure if this is a good idea...

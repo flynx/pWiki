@@ -16,39 +16,6 @@ var index = require('../index')
 
 //---------------------------------------------------------------------
 
-//
-// 	cached(<name>, <update>[, ...<args>])
-// 	cached(<name>, <get>, <update>[, ...<args>])
-// 		-> <func>
-//
-// NOTE: in the first case (no <get>) the first <args> item can not be 
-// 		a function...
-//
-// XXX better introspection???
-var cached = 
-module.cached =
-function(name, get, update, ...args){
-	name = `__${name}_cache`
-	if(typeof(update) != 'function'){
-		args.unshift(update)
-		update = get
-		get = null }
-	return update instanceof types.AsyncFunction ?
-		async function(){
-			var cache = this[name] = 
-				this[name] 
-					?? await update.call(this)
-			return get ?
-				get.call(this, cache, ...arguments)
-			: cache }
-		: function(){
-			var cache = this[name] = 
-				this[name] 
-					?? update.call(this)
-			return get ?
-				get.call(this, cache, ...arguments)
-			: cache } }
-
 
 
 //---------------------------------------------------------------------
@@ -76,9 +43,9 @@ function(name, get, update, ...args){
 // 		When overloading it is needed to to call the super method to 
 // 		retain base functionality.
 // 		All overloading here is optional.
-// 			.paths()
+// 			.paths
 // 				-> <path-list>
-// 			.names()
+// 			.names
 // 				-> <name-index>
 //
 // 			.exists(<path>)
@@ -160,23 +127,23 @@ module.BaseStore = {
 		return index.index(this, ...arguments) },
 
 	// XXX INDEX...
-	__xpaths__: async function(){
+	__paths__: async function(){
 		return Object.keys(this.data) },
 	// XXX unique???
-	__xpaths_merge__: async function(data){
+	__paths_merge__: async function(data){
 		return (await data)
 			.concat((this.next 
-					&& 'xpaths' in this.next) ?
-				await this.next.xpaths
+					&& 'paths' in this.next) ?
+				await this.next.paths
 				: []) },
-	__xpaths_isvalid__: function(t){
+	__paths_isvalid__: function(t){
 		var changed = 
-			!!this.__xpaths_next_exists != !!this.next
+			!!this.__paths_next_exists != !!this.next
 				|| (!!this.next 
-					&& this.next.__xpaths_modified > t)
-		this.__xpaths_next_exists = !this.next
+					&& this.next.__paths_modified > t)
+		this.__paths_next_exists = !this.next
 		return changed },
-	__xpaths: index.makeIndex('xpaths', {
+	__paths: index.makeIndex('paths', {
 		update: async function(data, path){
 			data = await data
 			// XXX normalize???
@@ -191,14 +158,14 @@ module.BaseStore = {
 			return data }, }),
 	// XXX should this clone the data???
 	// XXX should we use 'lazy'???
-	get xpaths(){
-		return this.__xpaths() },
+	get paths(){
+		return this.__paths() },
 
 	// NOTE: this is built from .paths so there is no need to define a 
 	// 		way to merge...
-	__xnames: index.makeIndex('xnames', 
+	__names: index.makeIndex('names', 
 		function(){
-			return this.xpaths
+			return this.paths
 				.iter()
 				.reduce(function(res, path){
 					var n = pwpath.basename(path)
@@ -226,76 +193,12 @@ module.BaseStore = {
 			return data }, }),
 	// XXX should this clone the data???
 	// XXX should we use 'lazy'???
-	get xnames(){
-		return this.__xnames() },
+	get names(){
+		return this.__names() },
 
+	// XXX tags
+	// XXX search
 
-	// XXX might be a good idea to cache this...
-	__paths__: async function(){
-		return Object.keys(this.data) },
-	// local paths...
-	__paths: cached('paths', async function(){
-		return this.__paths__() }),
-	// NOTE: this produces an unsorted list...
-	// XXX should this also be cached???
-	paths: async function(local=false){
-		return this.__paths()
-			.iter()
-			.concat((!local && (this.next || {}).paths) ? 
-				this.next.paths() 
-				: []) },
-
-	// XXX BUG: after caching this will ignore the local argument....
-	names: cached('names', async function(local=false){
-		return this.paths(local)
-			.iter()
-			.reduce(function(res, path){
-				var n = pwpath.basename(path)
-				if(!n.includes('*')){
-					(res[n] = res[n] ?? []).push(path) }
-				return res }, {}) }),
-
-	// XXX sort paths based on search order into three groups:
-	// 		- non-system
-	// 			...sorted by length?
-	// 		- system 
-	// 			...sort based on system search order?
-	__sort_names: function(){},
-
-	__cache_add: function(path){
-		if(this.__paths_cache){
-			this.__paths_cache.includes(path) 
-				|| this.__paths_cache.push(path) }
-		if(this.__names_cache){
-			var name = pwpath.basename(path)
-			var names = (this.__names_cache[name] = 
-				this.__names_cache[name] 
-					?? [])
-			names.includes(path)
-				|| names.push(path) }
-		return this },
-	__cache_remove: function(path){
-		if(this.__paths_cache){
-			var paths = this.__paths_cache
-			paths.splice(
-				paths.indexOf(
-					paths.includes(path) ? 
-						path
-					: path[0] == '/' ?
-						path.slice(1)
-					: '/'+path),
-				1) }
-		if(this.__names_cache){
-			var name = pwpath.basename(path)
-			var names = (this.__names_cache[name] = 
-				this.__names_cache[name] 
-					?? [])
-			var i = names.indexOf(path)
-			i >= 0
-				&& names.splice(i, 1)
-			if(names.length == 0){
-				delete this.__names_cache[name] } }
-		return this },
 
 	//
 	// 	.exists(<path>)
@@ -337,9 +240,7 @@ module.BaseStore = {
 		var {path, args} = pwpath.splitArgs(path)
 		args = pwpath.joinArgs('', args)
 		// build list of existing page candidates...
-		//var names = await this.names()
-		// XXX INDEX
-		var names = await this.xnames
+		var names = await this.names
 		var pages = new Set(
 			pwpath.names(path)
 				.map(function(name){
@@ -408,7 +309,8 @@ module.BaseStore = {
 						await this.paths()
 						: await (this.names())[name])
 			/*/
-			return [...(await this.paths())
+			//return [...(await this.paths())
+			return [...(await this.paths)
 			//*/
 					// NOTE: we are not using .filter(..) here as wee 
 					// 		need to keep parts of the path only and not 
@@ -593,8 +495,6 @@ module.BaseStore = {
 					data,
 					{mtime: Date.now()})
 		await this.__update__(path, data, mode)
-		// XXX CACHED
-		this.__cache_add(path)
 		// XXX INDEX
 		this.index('update', path)
 		this.onUpdate(path)
@@ -609,8 +509,6 @@ module.BaseStore = {
 		path = await this.exists(path)
 		if(typeof(path) == 'string'){
 			await this.__delete__(path)
-			// XXX CACHED
-			this.__cache_remove(path) 
 			// XXX INDEX
 			this.index('remove', path)
 			this.onDelete(path) }
@@ -668,7 +566,8 @@ module.BaseStore = {
 		// generic...
 		} else {
 			var res = {}
-			for(var path of await this.paths()){
+			//for(var path of await this.paths()){
+			for(var path of await this.paths){
 				var page = await this.get(path) 
 				if(keep_funcs 
 						|| typeof(page) != 'function'){
@@ -763,46 +662,32 @@ module.MetaStore = {
 	// 		their own stuff...
 
 	// XXX INDEX...
-	__xpaths_merge__: async function(data){
+	__paths_merge__: async function(data){
 		var that = this
 		var stores = await Promise.iter(
 				Object.entries(this.substores ?? {})
 					.map(function([path, store]){
-						return store.xpaths
+						return store.paths
 								.iter()
 								.map(function(s){
 									return pwpath.join(path, s) }) }))
 			.flat()
-		return object.parentCall(MetaStore.__xpaths_merge__, this, ...arguments)
+		return object.parentCall(MetaStore.__paths_merge__, this, ...arguments)
 			.iter()
 			.concat(stores) },
-	__xpaths_isvalid__: function(t){
+	__paths_isvalid__: function(t){
 		if(this.substores){
 			// match substore list...
 			var cur = Object.keys(this.substores ?? {})
-			var prev = this.__xpaths_substores ?? cur ?? []
+			var prev = this.__paths_substores ?? cur ?? []
 			if(prev.length != cur.length
 					|| (new Set([...cur, ...prev])).size != cur.length){
 				return false }
 			// check timestamps...
-			for(var {__xpaths_modified} of Object.values(this.substores ?? {})){
-				if(__xpaths_modified > t){
+			for(var {__paths_modified} of Object.values(this.substores ?? {})){
+				if(__paths_modified > t){
 					return false } } }
-		return object.parentCall(MetaStore.__xpaths_isvalid__, this, ...arguments) },
-
-	paths: async function(){
-		var that = this
-		var stores = await Promise.iter(
-				Object.entries(this.substores ?? {})
-					.map(function([path, store]){
-						return store.paths()
-								.iter()
-								.map(function(s){
-									return pwpath.join(path, s) }) }))
-			.flat()
-		return object.parentCall(MetaStore.paths, this, ...arguments)
-			.iter()
-			.concat(stores) },
+		return object.parentCall(MetaStore.__paths_isvalid__, this, ...arguments) },
 
 	exists: metaProxy('exists',
 		//async function(path){
@@ -851,7 +736,7 @@ module.MetaStore = {
 				// trim path...
 				path.slice(path.indexOf(p)+p.length),
 				...[...arguments].slice(1))
-			this.__cache_add(path)
+			//this.__cache_add(path)
 			// XXX INDEX
 			this.index('update', path)
 			return this }
