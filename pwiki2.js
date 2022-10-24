@@ -19,11 +19,6 @@
 *
 * XXX INDEX should we update the index in-method or on event????
 * 		....i.e. in .update(..)/.delete(..) vs. .onUpdate(..)/.onDelete(..) ???
-* XXX INDEX move to the new index...
-* 		- .names			- DONE
-* 		- .paths			- DONE 
-* 		- handling			- DONE
-* 		- cleanup			- DONE
 * XXX INDEX DOC can index validation be async???
 * 		...likely no
 * XXX INDEX add option to set default action (get/lazy/cached)
