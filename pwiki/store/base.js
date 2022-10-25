@@ -206,10 +206,21 @@ module.BaseStore = {
 	// 		-> <normalized-path>
 	// 		-> false
 	//
-	// XXX might be a good idea to cache this...
+	// XXX INDEXED...
+	exists: async function(path){
+		var {path, args} = 
+			pwpath.splitArgs(
+				pwpath.sanitize(path, 'string'))
+		//return new Set(await this.paths).has(path) ?
+		//return (await this.paths).indexOf(path) != -1 ?
+		return (await this.paths).includes(path) ?
+			pwpath.joinArgs(path, args)
+			: undefined },
+	/*/
 	__exists__: async function(path){
 		return path in this.data
 				&& path },
+	// XXX might be a good idea to cache this...
 	exists: async function(path){
 		var {path, args} = 
 			pwpath.splitArgs(
@@ -235,6 +246,7 @@ module.BaseStore = {
 		if(typeof(res) != 'string'){
 			return false }
 		return pwpath.joinArgs(res, args) },
+	//*/
 	// find the closest existing alternative path...
 	find: async function(path, strict=false){
 		var {path, args} = pwpath.splitArgs(path)
@@ -500,8 +512,7 @@ module.BaseStore = {
 		path = await this.exists(path)
 		if(typeof(path) == 'string'){
 			await this.__delete__(path)
-			this.index('remove', path)
-			this.onDelete(path) }
+			this.index('remove', path) }
 		return this },
 	delete: types.event.Event('delete', 
 		function(handler, path){
