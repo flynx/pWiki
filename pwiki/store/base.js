@@ -91,7 +91,7 @@ var index = require('../index')
 //
 //
 // XXX potential architectural problems:
-// 		- .paths()
+// 		- .paths
 // 			external index -- is this good???
 // 			bottleneck??
 // 			cache/index???
@@ -108,8 +108,6 @@ module.BaseStore = {
 	// XXX revise naming...
 	next: undefined,
 
-	onUpdate: types.event.Event('update'),
-	onDelete: types.event.Event('delete'),
 
 	// NOTE: .data is not part of the spec and can be implementation-specific,
 	// 		only .__<name>__(..) use it internally... (XXX check this)
@@ -161,6 +159,8 @@ module.BaseStore = {
 	get paths(){
 		return this.__paths() },
 
+	__names_isvalid__: function(t){
+		return this.__paths_isvalid__(t) },
 	// NOTE: this is built from .paths so there is no need to define a 
 	// 		way to merge...
 	__names: index.makeIndex('names', 
@@ -197,7 +197,8 @@ module.BaseStore = {
 		return this.__names() },
 
 	// XXX tags
-	// XXX search
+
+	// XXX text search index
 
 
 	//
@@ -235,7 +236,6 @@ module.BaseStore = {
 			return false }
 		return pwpath.joinArgs(res, args) },
 	// find the closest existing alternative path...
-	// XXX CACHED....
 	find: async function(path, strict=false){
 		var {path, args} = pwpath.splitArgs(path)
 		args = pwpath.joinArgs('', args)
@@ -255,12 +255,6 @@ module.BaseStore = {
 				: '/'+p
 			if(pages.has(p)){
 				return p+args } } },
-	/*/
-	find: async function(path, strict=false){
-		for(var p of pwpath.paths(path, !!strict)){
-			if(p = await this.exists(p)){
-				return p } } },
-	//*/
 	// 
 	// 	Resolve page for path
 	// 	.match(<path>)
@@ -303,15 +297,7 @@ module.BaseStore = {
 					// 		dir for hidden tests...
 					.replace(/(^|\\\/+)(\\\.|)([^\/]*)\\\*/g, '$1$2($3[^\\/]*)')
 				+'(?=[\\/]|$)', 'g')
-			/*/ XXX CACHED....
-			var name = pwpath.basename(path)
-			return [...(name.includes('*') ?
-						await this.paths()
-						: await (this.names())[name])
-			/*/
-			//return [...(await this.paths())
 			return [...(await this.paths)
-			//*/
 					// NOTE: we are not using .filter(..) here as wee 
 					// 		need to keep parts of the path only and not 
 					// 		return the whole thing...
@@ -360,7 +346,6 @@ module.BaseStore = {
 	// 			-> ['System/tree', 'Dir/tree', ...]
 	//
 	// XXX should this be used by .get(..) instead of .match(..)???
-	// XXX EXPERIMENTAL 
 	resolve: async function(path, strict){
 		// pattern match * / **
 		if(path.includes('*') 
@@ -402,7 +387,7 @@ module.BaseStore = {
 	//
 	// XXX should this call actions???
 	// XXX should this return a map for pattern matches???
-	__get__: async function(key){
+	__get__: function(key){
 		return this.data[key] },
 	get: async function(path, strict=false, energetic=false){
 		var that = this
@@ -423,10 +408,9 @@ module.BaseStore = {
 					// 		and returning a a/b which can be undefined...
 					return that.get(p, strict) })
 			: (await this.__get__(path) 
-				?? ((this.next || {}).__get__ 
+				?? ((this.next || {}).get 
 					&& this.next.get(path, strict))) },
 
-	// XXX EXPERIMENTAL...
 	isEnergetic: async function(path){
 		var p = await this.find(path)
 		return !!(await this.get(p, true) ?? {}).energetic 
@@ -470,7 +454,7 @@ module.BaseStore = {
 	// XXX do we copy the data here or modify it????
 	__update__: async function(key, data, mode='update'){
 		this.data[key] = data },
-	update: async function(path, data, mode='update'){
+	__update: async function(path, data, mode='update'){
 		// read-only...
 		if(this.__update__ == null){
 			return this }
@@ -495,13 +479,20 @@ module.BaseStore = {
 					data,
 					{mtime: Date.now()})
 		await this.__update__(path, data, mode)
-		// XXX INDEX
-		this.index('update', path)
-		this.onUpdate(path)
+		this.index('update', path, data, mode)
 		return this },
+	// XXX can we do a blanket .index('update', ...) here??
+	// 		...currently this will mess up caches between .next/.substores 
+	// 		and the top level store to an inconsistent state...
+	// 		...this could be a sign of problems with index -- needs more 
+	// 		tought...
+	update: types.event.Event('update', 
+		function(handler, path, data, mode='update'){
+			return this.__update(...[...arguments].slice(1)) }),
+
 	__delete__: async function(path){
 		delete this.data[path] },
-	delete: async function(path){
+	__delete: async function(path){
 		// read-only...
 		if(this.__delete__ == null){
 			return this }
@@ -509,10 +500,12 @@ module.BaseStore = {
 		path = await this.exists(path)
 		if(typeof(path) == 'string'){
 			await this.__delete__(path)
-			// XXX INDEX
 			this.index('remove', path)
 			this.onDelete(path) }
 		return this },
+	delete: types.event.Event('delete', 
+		function(handler, path){
+			return this.__delete(path) }),
 
 	// XXX NEXT might be a good idea to have an API to move pages from 
 	// 		current store up the chain...
@@ -521,7 +514,7 @@ module.BaseStore = {
 	//
 	// The .load(..) / .json(..) methods have two levels of implementation:
 	// 	- generic
-	// 		uses .update(..) and .paths()/.get(..) and is usable as-is
+	// 		uses .update(..) and .paths/.get(..) and is usable as-is
 	// 		in any store adapter implementing the base protocol.
 	// 	- batch
 	// 		implemented via .__batch_load__(..) and .__batch_json__(..) 
@@ -555,7 +548,7 @@ module.BaseStore = {
 	// NOTE: this will not serialize functions...
 	//__batch_json__: function(){
 	//	// ...
-	//	return json},
+	//	return json },
 	json: async function(options={}){
 		if(options === true){
 			options = {stringify: true} }
@@ -566,7 +559,6 @@ module.BaseStore = {
 		// generic...
 		} else {
 			var res = {}
-			//for(var path of await this.paths()){
 			for(var path of await this.paths){
 				var page = await this.get(path) 
 				if(keep_funcs 
@@ -578,7 +570,6 @@ module.BaseStore = {
 			: res },
 }
 
-//index.IndexManagerMixin(BaseStore)
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -720,13 +711,14 @@ module.MetaStore = {
 	// 		...should copy and merge...
 	metadata: metaProxy('metadata'),
 	// NOTE: we intentionally do not delegate to .next here...
-	update: async function(path, data, mode='update'){
+	__update: async function(path, data, mode='update'){
 		data = data instanceof Promise ?
 			await data
 			: data
 		// add substore...
 		if(object.childOf(data, BaseStore)){
 			path = pwpath.sanitize(path, 'string')
+			//data.index('clear')
 			;(this.substores = this.substores ?? {})[path] = data
 			return this }
 		// add to substore...
@@ -736,15 +728,12 @@ module.MetaStore = {
 				// trim path...
 				path.slice(path.indexOf(p)+p.length),
 				...[...arguments].slice(1))
-			//this.__cache_add(path)
-			// XXX INDEX
-			this.index('update', path)
 			return this }
 		// add local...
-		return object.parentCall(MetaStore.update, this, ...arguments) },
+		return object.parentCall(MetaStore.__update, this, ...arguments) },
 	// XXX Q: how do we delete a substore???
 	// XXX need to call .__cache_remove(..) here if we did not super-call...
-	delete: metaProxy('delete'), 
+	__delete: metaProxy('__delete'), 
 }
 
 
@@ -791,10 +780,10 @@ module.CachedStore = {
 		return this.cache[path] 
 			?? (this.cache[path] = 
 				await object.parentCall(CachedStore.get, this, ...arguments)) },
-	update: async function(path, data){
+	__update: async function(path, data){
 		var that = this
 		delete this.cache[path]
-		var res = object.parentCall(CachedStore.update, this, ...arguments) 
+		var res = object.parentCall(CachedStore.__update, this, ...arguments) 
 		// re-cache in the background...
 		res.then(async function(){
 			that.cache[path] = await that.get(path) })
@@ -810,9 +799,9 @@ module.CachedStore = {
 				?? (this.cache[path] = 
 					await object.parentCall(CachedStore.metadata, this, ...arguments)) } },
 	//*/
-	delete: async function(path){
+	__delete: async function(path){
 		delete this.cache[path]
-		return object.parentCall(CachedStore.delete, this, ...arguments) },
+		return object.parentCall(CachedStore.__delete, this, ...arguments) },
 }
 
 
