@@ -862,7 +862,7 @@ object.Constructor('Page', BasePage, {
 					: v
 				return v
 					|| args.default }),
-		'': Macro( 
+		'': Macro(
 			['name', 'default', ['local']],
 			function(args){
 				return this.macros.arg.call(this, args) }),
@@ -983,7 +983,8 @@ object.Constructor('Page', BasePage, {
 				handler = handler 
 					?? async function(src, state){
 						return isolated ?
-							{data: await this.get(src)
+							//{data: await this.get(src)
+							{data: await this
 								.parse({
 									seen: state.seen, 
 									depends,
@@ -1063,7 +1064,8 @@ object.Constructor('Page', BasePage, {
 					'source',
 					args, body, state, 'sources', 
 					async function(src, state){
-						return that.parse(that.get(src).raw, state) }) }),
+						//return that.parse(that.get(src).raw, state) }) }),
+						return that.parse(this.raw, state) }) }),
 		//
 		// 	@quote(<src>)
 		//
