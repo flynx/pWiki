@@ -339,6 +339,8 @@ object.Constructor('BasePage', {
 		} else {
 			this.__update__(value) } },
 
+	// tags...
+	//
 	get tags(){ return async function(){
 		return (await this.data).tags ?? [] }.call(this) },
 	set tags(value){ return async function(){
@@ -348,7 +350,7 @@ object.Constructor('BasePage', {
 		} }.call(this) },
 	// XXX TAGS HACK -- should this be a list???
 	get tagstr(){ return async function(){
-		return JSON.stringify(await this.tags ?? []) }.call(this) },
+		return JSON.stringify(await this.tags ?? []).slice(1,-1) }.call(this) },
 	tag: async function(...tags){
 		this.tags = [...new Set([
 			...(await this.tags), 
@@ -359,6 +361,14 @@ object.Constructor('BasePage', {
 		this.tags = (await this.tags)
 			.filter(function(tag){
 				return !tags.includes(tag) })
+		return this },
+	toggleTags: async function(...tags){
+		var t = new Set(await this.tags)
+		for(var tag of tags){
+			t.has(tag) ?
+				t.delete(tag)
+				: t.add(tag) }
+		this.tags = t
 		return this },
 
 	// metadata...
