@@ -76,8 +76,8 @@ object.Constructor('BasePage', {
 		type: true,
 		ctime: true,
 		mtime: true,
-		// XXX TAGS HACK -- should this be a list???
-		tags: 'tagstr',
+		// XXX
+		//tags: true,
 	},
 	// These actions will be default get :$ARGS appended if no args are 
 	// explicitly given...
@@ -358,9 +358,6 @@ object.Constructor('BasePage', {
 			...(await this.data),
 			tags: [...value],
 		} }.call(this) },
-	// XXX TAGS HACK -- should this be a list???
-	get tagstr(){ return async function(){
-		return JSON.stringify(await this.tags ?? []).slice(1,-1) }.call(this) },
 	tag: async function(...tags){
 		this.tags = [...new Set([
 			...(await this.tags), 
@@ -2065,7 +2062,7 @@ module.System = {
 
 			type: @source(../type)<br>
 
-			tags: @source(../tags)<br>
+			tags: @source(../tags join=", ")<br>
 
 			ctime: @source(../ctime)<br>
 			mtime: @source(../mtime)<br>
@@ -2077,8 +2074,19 @@ module.System = {
 	stores: function(){
 		return Object.keys(this.store.substores ?? {}) },
 
-	tagslist: function(){
-		return this.tags },
+	// tags...
+	//
+	// XXX should these be actions???
+	// 		...actions do not yet support lists/generators...
+	tags: async function*(){
+		yield* this.get('..').tags },
+	allTags: async function*(){
+		yield* Object.keys((await this.store.tags).tags) },
+	relatedTags: async function*(){
+		yield* this.store.relatedTags(
+			...((await this.args.tags)
+				?? this.get('..').tags
+				?? [])) },
 
 	// page parts...
 	//
