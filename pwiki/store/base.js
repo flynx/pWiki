@@ -124,16 +124,22 @@ module.BaseStore = {
 	index: async function(action='get', ...args){
 		return index.index(this, ...arguments) },
 
-	// XXX INDEX...
+	//
+	// Format:
+	// 	[
+	// 		<path>,
+	// 		...
+	// 	]
+	//
 	__paths__: async function(){
 		return Object.keys(this.data) },
-	// XXX unique???
 	__paths_merge__: async function(data){
 		return (await data)
 			.concat((this.next 
 					&& 'paths' in this.next) ?
 				await this.next.paths
-				: []) },
+				: []) 
+			.unique() },
 	__paths_isvalid__: function(t){
 		var changed = 
 			!!this.__paths_next_exists != !!this.next
@@ -159,6 +165,16 @@ module.BaseStore = {
 	get paths(){
 		return this.__paths() },
 
+	//
+	// Format:
+	// 	{
+	// 		<name>: [
+	// 			<path>,
+	// 			...
+	// 		],
+	// 		...
+	// 	}
+	//
 	__names_isvalid__: function(t){
 		return this.__paths_isvalid__(t) },
 	// NOTE: this is built from .paths so there is no need to define a 
@@ -197,8 +213,76 @@ module.BaseStore = {
 		return this.__names() },
 
 	// XXX tags
+	//
+	// Format:
+	// 	{
+	// 		tags: {
+	// 			<tag>: Set([
+	// 				<path>,
+	// 				...
+	// 			]),
+	// 			...
+	// 		},
+	// 		paths: {
+	// 			<path>: Set([
+	// 				<tag>,
+	// 				...
+	// 			]),
+	// 			...
+	// 		}
+	// 	}
+	//
+	// XXX should this be here???
+	parseTags: function(str){
+		return str
+			.split(/\s*(?:([a-zA-Z1-9_-]+)|"(.+)"|'(.+)')\s*/g)
+			.filter(function(t){
+				return t 
+					&& t != '' 
+					&& t != ',' }) },
+	// XXX do we need these???
+	// 		...the question is if we have .__tags__(..) how do we 
+	// 		partially .__tags_merge__(..) things???
+	//__tags__: function(){ },
+	//__tags_merge__: function(data){ },
+	__tags_isvalid__: function(t){
+		return this.__paths_isvalid__(t) },
+	__tags: index.makeIndex('tags', 
+		async function(){
+			var tags = {}
+			var paths = {}
+			for(var path of (await this.paths)){
+				var t = (await this.get(path)).tags
+				if(!t){
+					continue }
+				paths[path] = new Set(t)
+				for(var tag of t){
+					;(tags[tag] = 
+							tags[tag] ?? new Set([]))
+						.add(path) } }
+			return {tags, paths} }, {
+		update: async function(data, path, update){
+			if(!('tags' in update)){
+				return data }
+			var {tags, paths} = await data
+			// remove obsolete tags...
+			this.__tags.options.remove.call(this, data, path)
+			// add...
+			paths[path] = new Set(update.tags)
+			for(var tag of update.tags ?? []){
+				;(tags[tag] = 
+						tags[tag] ?? new Set([]))
+					.add(path) }
+			return data }, 
+		remove: async function(data, path){
+			var {tags, paths} = await data
+			for(var tag of paths[path]){
+				tags[tag].delete(path) }
+			return data }, }),
+	get tags(){
+		return this.__tags() },
 
-	// XXX text search index
+	// XXX text search index (???)
 
 
 	//
@@ -293,9 +377,16 @@ module.BaseStore = {
 		if(path.includes('*') 
 				|| path.includes('**')){
 			var order = (this.metadata(path) ?? {}).order || []
+
 			var {path, args} = pwpath.splitArgs(path)
 			var all = args.all
+			var tags = args.tags
+			tags = typeof(tags) == 'string' ?
+				this.parseTags(tags)
+				: false
+			tags && await this.tags
 			args = pwpath.joinArgs('', args)
+
 			// NOTE: we are matching full paths only here so leading and 
 			// 		trainling '/' are optional...
 			var pattern = new RegExp(`^\\/?`
@@ -317,6 +408,14 @@ module.BaseStore = {
 						// skip metadata paths...
 						if(p.includes('*')){
 							return res }
+						// skip untagged pages...
+						if(tags){ 
+							var t = that.tags.paths[p]
+							if(!t){
+								return res }
+							for(var tag of tags){
+								if(!t || !t.has(tag)){
+									return res } } }
 						var m = [...p.matchAll(pattern)]
 						m.length > 0
 							&& (!all ?
@@ -363,7 +462,6 @@ module.BaseStore = {
 		if(path.includes('*') 
 				|| path.includes('**')){
 			var p = pwpath.splitArgs(path)
-			var all = p.args.all
 			var args = pwpath.joinArgs('', p.args)
 			p = pwpath.split(p.path)
 			var tail = []
@@ -372,12 +470,11 @@ module.BaseStore = {
 			tail = tail.join('/')
 			if(tail.length > 0){
 				return (await this.match(
-						p.join('/') + (all ? ':all' : ''), 
+						p.join('/') + args, 
 						strict))
 					.map(function(p){
-						all &&
-							(p = p.replace(/:all/, ''))
-						return pwpath.join(p, tail) + args }) } }
+						var {path, args} = pwpath.splitArgs(p)
+						return pwpath.joinArgs(pwpath.join(path, tail), args) }) } }
 		// direct...
 		return this.match(path, strict) },
 	// 

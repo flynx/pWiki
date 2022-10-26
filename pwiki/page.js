@@ -76,6 +76,8 @@ object.Constructor('BasePage', {
 		type: true,
 		ctime: true,
 		mtime: true,
+		// XXX TAGS HACK -- should this be a list???
+		tags: 'tagstr',
 	},
 	// These actions will be default get :$ARGS appended if no args are 
 	// explicitly given...
@@ -336,6 +338,28 @@ object.Constructor('BasePage', {
 		// normal update...
 		} else {
 			this.__update__(value) } },
+
+	get tags(){ return async function(){
+		return (await this.data).tags ?? [] }.call(this) },
+	set tags(value){ return async function(){
+		this.data = {
+			...(await this.data),
+			tags: [...value],
+		} }.call(this) },
+	// XXX TAGS HACK -- should this be a list???
+	get tagstr(){ return async function(){
+		return JSON.stringify(await this.tags ?? []) }.call(this) },
+	tag: async function(...tags){
+		this.tags = [...new Set([
+			...(await this.tags), 
+			...tags,
+		])]
+		return this },
+	untag: async function(...tags){
+		this.tags = (await this.tags)
+			.filter(function(tag){
+				return !tags.includes(tag) })
+		return this },
 
 	// metadata...
 	//
@@ -1263,7 +1287,6 @@ object.Constructor('Page', BasePage, {
 				var that = this
 				var name = args.name //?? args[0]
 				var src = args.src
-				var all = args.all
 				var base = this.get(this.path.split(/\*/).shift())
 				var sort = (args.sort ?? '')
 					.split(/\s+/g)
@@ -1973,7 +1996,7 @@ module.System = {
 				<a href="#@source(s ../../path)/list">&#x21D1;</a>
 				@source(../path)
 			</slot>
-			<macro src="../*:@(all)" join="@source(line-separator)">
+			<macro src="../*:$ARGS" join="@source(line-separator)">
 				<a href="#@source(s ./path)">@source(./name)</a>
 				<sup>
 					<macro src="./isAction">
@@ -1991,7 +2014,7 @@ module.System = {
 	tree: {
 		text: object.doc`
 			<slot title/>
-			<macro src="../*:@(all)">
+			<macro src="../*:$ARGS">
 				<div>
 					<div class="item">
 						<a class="tree-page-title" href="#@source(s ./path)">@source(./title)</a>
@@ -1999,12 +2022,12 @@ module.System = {
 						<a class="show-on-hover" href="#@source(s ./path)/delete">&times;</a>
 					</div>
 					<div style="padding-left: 30px">
-						@include("./tree:@(all)")
+						@include("./tree:$ARGS")
 					</div>
 				</div>
 			</macro>` },
 	all: {
-		text: `@include("../**/path:@(all)" join="@source(line-separator)")`},
+		text: `@include("../**/path:$ARGS" join="@source(line-separator)")`},
 	info: {
 		text: object.doc`
 			<slot pre>
@@ -2021,6 +2044,8 @@ module.System = {
 			Args: <args/><br>
 
 			type: @source(../type)<br>
+
+			tags: @source(../tags)<br>
 
 			ctime: @source(../ctime)<br>
 			mtime: @source(../mtime)<br>
@@ -2187,7 +2212,7 @@ module.Templates = {
 		text: object.doc`
 		<slot title/>
 		<slot header><content/><a href="#./$NOW/edit">&#128462;</a></slot>
-		<macro src="*:@(all)" join="<br>">
+		<macro src="*:$ARGS" join="<br>">
 			<div class="item">
 				<a href="#@source(s ./path)/edit">@source(./title)</a>
 				<a class="show-on-hover" href="#@source(s ./path)/info">&#128712;</a>
