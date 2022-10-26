@@ -341,8 +341,18 @@ object.Constructor('BasePage', {
 
 	// tags...
 	//
+	/*
 	get tags(){ return async function(){
 		return (await this.data).tags ?? [] }.call(this) },
+	/*/
+	get tags(){
+		var tags = this.store.tags
+		var path = pwpath.sanitize(this.path)
+		return tags instanceof Promise ?
+			tags.then(function(tags){
+				return tags.paths[path] ?? [] })
+			: this.store.tags.paths[path] ?? [] },
+	//*/
 	set tags(value){ return async function(){
 		this.data = {
 			...(await this.data),
@@ -2066,6 +2076,9 @@ module.System = {
 	// XXX need to also be able to list things about each store...
 	stores: function(){
 		return Object.keys(this.store.substores ?? {}) },
+
+	tagslist: function(){
+		return this.tags },
 
 	// page parts...
 	//

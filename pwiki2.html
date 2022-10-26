@@ -380,7 +380,11 @@ require(['./browser'], function(browser){
 				lnk.addEventListener('click', refresh) } })
 
 	// wait for stuff to finish...
-	browser.setup.then(function(){
+	browser.setup.then(async function(){
+		// index...
+		await logTime(
+			pwiki.store.index(), 
+			'Indexing')
 		// show current page...
 		pwiki.location = decodeURI(location.hash).slice(1) }) }) 
 
