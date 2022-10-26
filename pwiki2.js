@@ -2,19 +2,20 @@
 * 
 *
 * XXX ASAP start writing docs in pwiki
-* 		- minimal/functional editor	-- DONE
-* 		- WYSIWYG markdown editor/viewer (ASAP)
+* 		- minimal/functional editor					- DONE
+* 		- WYSIWYG markdown editor/viewer (ASAP)		- 
 * 		- transparent sync
 * 			- fs store/export in browser or a simple way to export/import...
 * 				...can't seem to get it to work without asking for permission
 * 				on every startup (one more thing left to try, keeping the 
 * 				handler live in a service worker, but the hopes are low)...
-* 			- pouchdb-couchdb sync
-* 			- pouchdb-pouchdb sync (p2p via webrtc)
-* 		- tags/search
-* 		- images
-* 		- GUI
-* 		- CLI
+* 			- pouchdb-couchdb sync					- 
+* 			- pouchdb-pouchdb sync (p2p via webrtc) - XXX 
+* 		- tags										- DONE
+* 		- search									- 
+* 		- images									- XXX 
+* 		- GUI										- 
+* 		- CLI										- 
 *
 *
 * XXX TAGS
@@ -26,6 +27,8 @@
 * 		- tag cache <store>.tags					- DONE
 * 		- tag-path filtering...						- DONE
 * XXX TAGS add a more advanced query -- e.g. "/**:tagged=y,z:untagged=x" ???
+* XXX TAGS do we need page actions to tag/untag pages???
+* XXX INDEX store index (IndexedDB?) and update as the stores are updated...
 * XXX INDEX DOC can index validation be async???
 * 		...likely no
 * XXX INDEX add option to set default action (get/lazy/cached)
@@ -278,8 +281,8 @@
 * 			- download								--
 * 			- upload								--
 * 	- tags
-* 		- get tags from page						-- 
-* 		- show tagged pages							-- 
+* 		- get tags from page						-- DONE
+* 		- show tagged pages							-- DONE
 * 	- search
 * 		- paths										--
 * 		- text										-- 
