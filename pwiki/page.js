@@ -126,14 +126,16 @@ object.Constructor('BasePage', {
 	},
 	resolvePathVars: function(path='', context={}){
 		var that = this
-		return pwpath.normalize(
-			Object.entries(this.path_vars)
-				.reduce(function(res, [key, func]){
-					return res
-						.replace(
-							new RegExp('(\\${'+key+'}|\\$'+key+')', 'g'), 
-							func.call(that, context))
-				}, path)) },
+		return path == '.' ?
+			path
+			: pwpath.normalize(
+				Object.entries(this.path_vars)
+					.reduce(function(res, [key, func]){
+						return res
+							.replace(
+								new RegExp('(\\${'+key+'}|\\$'+key+')', 'g'), 
+								func.call(that, context))
+					}, path)) },
 
 	// page location...
 	//
@@ -990,7 +992,8 @@ object.Constructor('Page', BasePage, {
 									depends,
 									renderer: state.renderer,
 								})}
-							: this.get(src)
+							//: this.get(src)
+							: this
 								.parse(state) }
 
 				var first = true
@@ -2064,7 +2067,12 @@ module.System = {
 
 			type: @source(../type)<br>
 
-			tags: @source(../tags join=", ")<br>
+			tags: 
+				<macro name="list-tags" src="../tags">
+					<a href="#/**/path:tags=@source(.)">@source(.)</a>
+				</macro><br>
+			related tags: 
+				<macro name="list-tags" src="../relatedTags"/><br>
 
 			ctime: @source(../ctime)<br>
 			mtime: @source(../mtime)<br>

@@ -283,13 +283,14 @@ module.BaseStore = {
 		return this.__tags() },
 
 	relatedTags: function*(...tags){
-		var cur = tags
+		var cur = new Set(tags)
 		var {tags, paths} = this.tags 
 		var seen = new Set()
 		for(var tag of cur){
 			for(var p of tags[tag] ?? []){
 				for(var t of paths[p] ?? []){
-					if(!seen.has(t)){
+					if(!seen.has(t) 
+							&& !cur.has(t)){
 						seen.add(t)
 						yield t } } } } },
 

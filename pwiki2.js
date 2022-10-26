@@ -18,6 +18,15 @@
 * 		- CLI										- 
 *
 *
+* XXX BUG: parser:
+* 		This will break:
+*			<macro src=../tags join=", ">@source(.)</macro><br>
+*		This will not:
+*			<macro src="../tags" join=", ">@source(.)</macro><br>
+* XXX LIST BUG: <macro>: sourcing an element of a list does not work...
+* 		Example:
+* 			await pwiki.parse('<macro src="/WikiHome/tags">@source(.)</macro>')
+* 		XXX do we need a way to index a list item via path???
 * XXX TAGS
 * 		- add tags to page -- macro/filter
 * 			- <page>.text -> <page>.tags (cached on .update(..))
