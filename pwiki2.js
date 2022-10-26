@@ -17,21 +17,12 @@
 * 		- CLI
 *
 *
-* XXX BUG:
-* 			await pwiki.parse('@source(/Test/list/static join=", ")')
-*				-> 'abcdef, abcdef, abcdef, abcdef, abcdef, abcdef'
-*		should be:
-* 			await pwiki.parse('@source(/Test/list/static join=", ")')
-*				-> 'a, b, c, d, e, f'
-*		findings:
-*			- this is a problem with @source(..) while @include(..) works fine...
-*		FIXED, TESTING...
-* XXX TAGS should ./tags (i.e. .tagstr) return a list of tags???
 * XXX TAGS
 * 		- add tags to page -- macro/filter
 * 			- <page>.text -> <page>.tags (cached on .update(..))
-* 			- manual
-* 		- a way to list tags -- folder like?		- ???
+* 													- ???
+* 			- manual								- DONE
+* 		- a way to list tags -- folder like?		- DONE
 * 		- tag cache <store>.tags					- DONE
 * 		- tag-path filtering...						- DONE
 * XXX TAGS add a more advanced query -- e.g. "/**:tagged=y,z:untagged=x" ???
