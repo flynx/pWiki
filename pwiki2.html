@@ -165,6 +165,11 @@ body.loading .page.spinner span {
 }
 
 </style>
+<!-- 
+Do not edit here...
+This is loaded with the style defined by the system 
+-->
+<style id="style"></style>
 
 <!-- XXX do we need this??? -->
 <script src="bootstrap.js"></script>
@@ -233,6 +238,21 @@ require.config({
 
 //---------------------------------------------------------------------
 // Editor -- save changes...
+
+// XXX might be a good idea to make this a method of pwiki???
+var STYLE_UPDATED = false
+var updateStyle = async function(){
+	document.querySelector('#style').innerHTML = 
+		await pwiki.get('/.config/Style/_raw').text }
+
+// XXX might be a good idea to make this a method of pwiki???
+var CONFIG_UPDATED = false
+var updateConfig = async function(){
+	// XXX need to set this to something...
+	// XXX
+	// XXX need to use a parser that supports comments and stuff...
+	return JSON.parse(await pwiki.get('/.config/Config/_raw').text) }
+
 
 // XXX versioning??
 var SAVE_LIVE_TIMEOUT = 5000
@@ -347,6 +367,14 @@ require(['./browser'], function(browser){
 					+(this.hash ? 
 						'#'+this.hash 
 						: ''))
+			// style...
+			if(STYLE_UPDATED){
+				STYLE_UPDATED = false
+				await updateStyle() }
+			// config...
+			if(CONFIG_UPDATED){
+				CONFIG_UPDATED = false
+				await updateConfig() }
 			// NOTE: we are intentionally not awaiting for this -- this 
 			//		separates the navigate and load events...
 			logTime(
@@ -379,12 +407,24 @@ require(['./browser'], function(browser){
 			for(var lnk of this.dom.querySelectorAll(`a[href="${location.hash}"]`)){
 				lnk.addEventListener('click', refresh) } })
 
+	// handle special file updates...
+	// NOTE: the actual updates are done .onNavigate(..)
+	pwiki.store
+		.update(function(_, path){
+			if(path == '/.config/Style'){
+				STYLE_UPDATED = true }
+			if(path == '/.config/Config'){
+				CONFIG_UPDATED = true } })
+
 	// wait for stuff to finish...
 	browser.setup.then(async function(){
 		// index...
 		await logTime(
 			pwiki.store.index(), 
 			'Indexing')
+		// setup global stuff...
+		updateStyle()
+		updateConfig()
 		// show current page...
 		pwiki.location = decodeURI(location.hash).slice(1) }) }) 
 

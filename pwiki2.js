@@ -18,6 +18,7 @@
 * 		- CLI										- 
 *
 *
+* XXX NAMING: revise .onNavigate(..) and .onBeforeNavigate(..) event names...
 * XXX BUG: parser:
 * 		This will break:
 *			<macro src=../tags join=", ">@source(.)</macro><br>
@@ -28,13 +29,15 @@
 * 		- add tags to page -- macro/filter
 * 			- <page>.text -> <page>.tags (cached on .update(..))
 * 													- ???
-* 			- manual								- DONE
+* 			- manual/API							- DONE
+* 			- editor								- 
 * 		- a way to list tags -- folder like?		- DONE
 * 		- tag cache <store>.tags					- DONE
 * 		- tag-path filtering...						- DONE
 * XXX TAGS add a more advanced query -- e.g. "/**:tagged=y,z:untagged=x" ???
 * XXX TAGS do we need page actions to tag/untag pages???
-* XXX INDEX store index (IndexedDB?) and update as the stores are updated...
+* XXX INDEX persistent index -- store index (IndexedDB?) and update as 
+* 		the stores are updated...
 * XXX INDEX DOC can index validation be async???
 * 		...likely no
 * XXX INDEX add option to set default action (get/lazy/cached)

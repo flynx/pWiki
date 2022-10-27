@@ -2361,7 +2361,11 @@ module.Config = {
 		text: '<button onclick="exportData()">Export</button>' },
 	// XXX
 	Config: {
-		text: '{}' },
+		text: object.doc`{
+		}` },
+	Style: {
+		text: object.doc`
+		` },
 }
 
 
