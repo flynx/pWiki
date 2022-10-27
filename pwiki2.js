@@ -18,6 +18,8 @@
 * 		- CLI										- 
 *
 *
+* XXX STYLE: should style loading be done via the event mechanics or via 
+* 		the base templates???
 * XXX NAMING: revise .onNavigate(..) and .onBeforeNavigate(..) event names...
 * XXX BUG: parser:
 * 		This will break:

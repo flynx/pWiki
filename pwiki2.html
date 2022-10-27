@@ -239,11 +239,13 @@ require.config({
 //---------------------------------------------------------------------
 // Editor -- save changes...
 
+/* XXX GLOBAL_STYLE
 // XXX might be a good idea to make this a method of pwiki???
 var STYLE_UPDATED = false
 var updateStyle = async function(){
 	document.querySelector('#style').innerHTML = 
 		await pwiki.get('/.config/Style/_raw').text }
+//*/
 
 // XXX might be a good idea to make this a method of pwiki???
 var CONFIG_UPDATED = false
@@ -367,10 +369,13 @@ require(['./browser'], function(browser){
 					+(this.hash ? 
 						'#'+this.hash 
 						: ''))
+
+			/* XXX GLOBAL_STYLE
 			// style...
 			if(STYLE_UPDATED){
 				STYLE_UPDATED = false
 				await updateStyle() }
+			//*/
 			// config...
 			if(CONFIG_UPDATED){
 				CONFIG_UPDATED = false
@@ -411,8 +416,9 @@ require(['./browser'], function(browser){
 	// NOTE: the actual updates are done .onNavigate(..)
 	pwiki.store
 		.update(function(_, path){
-			if(path == '/.config/Style'){
-				STYLE_UPDATED = true }
+			// XXX GLOBAL_STYLE
+			//if(path == '/.config/Style'){
+			//	STYLE_UPDATED = true }
 			if(path == '/.config/Config'){
 				CONFIG_UPDATED = true } })
 
@@ -423,7 +429,8 @@ require(['./browser'], function(browser){
 			pwiki.store.index(), 
 			'Indexing')
 		// setup global stuff...
-		updateStyle()
+		// XXX GLOBAL_STYLE
+		//updateStyle()
 		updateConfig()
 		// show current page...
 		pwiki.location = decodeURI(location.hash).slice(1) }) }) 

@@ -1920,6 +1920,8 @@ module.System = {
 		text: '@include(.:$ARGS isolated join="@source(file-separator)")' },
 	_view: {
 		text: object.doc`
+			<style>@include(./Style)</style>
+
 			<slot pre/>
 
 			<slot header>
@@ -2126,6 +2128,10 @@ module.System = {
 			<slot footer></slot> ` },
 	QuoteActionPage: {
 		text: '[ native code ]' },
+
+	Style: {
+		text: object.doc`
+		` },
 
 	// page actions...
 	//
