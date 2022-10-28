@@ -18,6 +18,7 @@
 * 		- CLI										- 
 *
 *
+* XXX parser: might be a good idea to make slots local to macro by default...
 * XXX STYLE: should style loading be done via the event mechanics 
 * 		(see: pwiki2.html) or via the base templates (see: pwiki/page.js:_view 
 * 		template)???
