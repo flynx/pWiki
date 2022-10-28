@@ -1856,7 +1856,7 @@ object.Constructor('pWikiPageElement', Page, {
 	// events...
 	//
 	__pWikiLoadedDOMEvent: new Event('pwikiloaded'),
-	onLoad: types.event.Event('onLoad', function(){
+	onLoad: types.event.PureEvent('onLoad', function(){
 		this.dom.dispatchEvent(this.__pWikiLoadedDOMEvent) }),
 
 	// XXX CACHE...
@@ -1874,7 +1874,7 @@ object.Constructor('pWikiPageElement', Page, {
 		for(var filter of Object.values(this.domFilters)){
 			filter
 				&& filter.call(this, dom) }
-		this.onLoad()
+		this.trigger('onLoad')
 		return this },
 
 	// handle dom as first argument...
