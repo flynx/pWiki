@@ -244,7 +244,7 @@ require.config({
 var STYLE_UPDATED = false
 var updateStyle = async function(){
 	document.querySelector('#style').innerHTML = 
-		await pwiki.get('/.config/Style/_raw').text }
+		await pwiki.get('/.config/Style/_text').text }
 //*/
 
 // XXX might be a good idea to make this a method of pwiki???
@@ -253,7 +253,7 @@ var updateConfig = async function(){
 	// XXX need to set this to something...
 	// XXX
 	// XXX need to use a parser that supports comments and stuff...
-	return JSON.parse(await pwiki.get('/.config/Config/_raw').text) }
+	return JSON.parse(await pwiki.get('/.config/Config/_text').text) }
 
 
 // XXX versioning??

@@ -1059,7 +1059,7 @@ object.Constructor('Page', BasePage, {
 		source: Macro(
 			// XXX should this have the same args as include???
 			['src', 'recursive', 'join', 
-				['s', 'strict', 'nonstrict', 'isolated']],
+				['s', 'strict', 'nonstrict']],
 			//['src'],
 			async function*(args, body, state){
 				var that = this
@@ -1069,6 +1069,21 @@ object.Constructor('Page', BasePage, {
 					async function(src, state){
 						//return that.parse(that.get(src).raw, state) }) }),
 						return that.parse(this.raw, state) }) }),
+
+		// Load macro and slot definitions but ignore the page text...
+		//
+		// NOTE: this is essentially the same as @source(..) but returns ''.
+		// XXX revise name...
+		load: Macro(
+			['src', ['strict', 'nonstrict']],
+			async function*(args, body, state){
+				var that = this
+				yield* this.macros.include.call(this, 
+					'load',
+					args, body, state, 'sources', 
+					async function(src, state){
+						await that.parse(this.raw, state) 
+						return '' }) }),
 		//
 		// 	@quote(<src>)
 		//
@@ -1248,6 +1263,7 @@ object.Constructor('Page', BasePage, {
 					&& stack.push(slots[name])
 				delete slots[name]
 				var slot = await this.__parser__.expand(this, text, state)
+				var original = slot
 				slots[name]
 					&& stack.unshift(slot)
 				slot = slots[name] = 
@@ -1272,7 +1288,7 @@ object.Constructor('Page', BasePage, {
 					''
 					: Object.assign(
 						function(state){
-							return state.slots[name] },
+							return (state.slots || {})[name] ?? original },
 						{slot: name}) }), 
 		'content': ['slot'],
 
@@ -1304,7 +1320,8 @@ object.Constructor('Page', BasePage, {
 		// XXX SORT sorting not implemented yet....
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else', 
-				['strict', 'nonstrict']],
+				['strict', 'nonstrict', 'isolated']],
+				//['strict', 'nonstrict', 'unisolated']],
 			async function*(args, body, state){
 				var that = this
 				var name = args.name //?? args[0]
@@ -1323,6 +1340,8 @@ object.Constructor('Page', BasePage, {
 					: text
 				var strict = args.strict
 					&& !args.nonstrict
+				var isolated = args.isolated 
+				//var isolated = !args.unisolated 
 				var join
 
 				var depends = state.depends = 
@@ -1392,7 +1411,18 @@ object.Constructor('Page', BasePage, {
 						if(join && !first){
 							yield join }
 						first = false 
-						yield this.__parser__.expand(page, text, state) }
+						if(isolated){
+							var _state = {
+								seen: state.seen, 
+								depends,
+								renderer: state.renderer,
+							}
+							// XXX this is ugly, can we avoid this???
+							yield this.__parser__.resolve(page, 
+								this.__parser__.expand(page, 
+									text, _state), _state)
+						} else {
+							yield this.__parser__.expand(page, text, state) } }
 					// else...
 					if(first
 							&& (text || args['else'])){
@@ -1995,6 +2025,32 @@ module.System = {
 
 			<slot content>
 				<macro src=".." join="@source(file-separator)">
+					<h1 class="title-editor"
+							contenteditable 
+							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
+						@source(./title)
+					</h1>
+					<pre class="editor"
+							wikiwords="no"
+							contenteditable
+							oninput="saveLiveContent(\'@source(s ./path)\', this.innerText)"
+					><quote filter="quote-tags" src="."/></pre> 
+				</macro>
+			</slot>`},
+
+	// XXX remove when bug (quote getting trash) fixed... 
+	edit_isolated: {
+		// XXX not sure if we should use .title or .name here...
+		text: object.doc`
+			<slot pre>
+				<title>@source(../title) (edit)</title>
+			</slot>
+
+			<slot parent>../..</slot>
+			<slot location>@source(../location/!)</slot>
+
+			<slot content>
+				<macro src=".." join="@source(file-separator)" isolated>
 					<h1 class="title-editor"
 							contenteditable 
 							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">

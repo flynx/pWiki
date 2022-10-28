@@ -18,7 +18,23 @@
 * 		- CLI										- 
 *
 *
-* XXX parser: might be a good idea to make slots local to macro by default...
+* XXX BUG: in .system/edit if macro is isolated then @quote(..) will 
+* 		for some reason get odd stuff like '[object Object]'...
+* 		these break:
+* 			/QuoteTest/edit_isolated 
+* 			/MacroSlotTest/edit_isolated 
+* 		these work:
+* 			/QuoteTest/edit
+* 			/MacroSlotTest/edit
+* 		...can't produce a minimal example (/QuoteTest) other than 
+* 		editing .system/edit...
+* 		...seems that in isolated mode some macros get expanded before/in @quote(..)
+* 		XXX remove .system/edit_isolated when done...
+* XXX MACRO: should <macro>'s isolated be on by default???
+* 			...do we need to isolate named macros too???
+* 			...should this isolation be one-directional???
+* 				...i.e. iterations see/overload things defined above but 
+* 				can not affect the above context...
 * XXX STYLE: should style loading be done via the event mechanics 
 * 		(see: pwiki2.html) or via the base templates (see: pwiki/page.js:_view 
 * 		template)???
@@ -396,6 +412,7 @@
 *
 *
 * XXX DOC:
+* 		- macro isolation in relation to slots...
 * 		- paths in pWiki behave a bit differently than traditional 
 * 			file-system paths, this is due to one key distinction:
 * 				in pWiki there is no distinction between a file and a 
