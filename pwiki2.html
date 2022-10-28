@@ -359,7 +359,7 @@ require(['./browser'], function(browser){
 	pwiki
 		.onBeforeNavigate(function(){
 			saveAll() })
-		.onNavigate(async function(){
+		.navigate(async function(){
 			// NOTE: we do not need to directly update location.hash here as
 			//		that will push an extra history item...
 			history.replaceState(
@@ -413,7 +413,7 @@ require(['./browser'], function(browser){
 				lnk.addEventListener('click', refresh) } })
 
 	// handle special file updates...
-	// NOTE: the actual updates are done .onNavigate(..)
+	// NOTE: the actual updates are done .navigate(..)
 	pwiki.store
 		.update(function(_, path){
 			// XXX GLOBAL_STYLE

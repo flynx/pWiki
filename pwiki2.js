@@ -18,8 +18,9 @@
 * 		- CLI										- 
 *
 *
-* XXX STYLE: should style loading be done via the event mechanics or via 
-* 		the base templates???
+* XXX STYLE: should style loading be done via the event mechanics 
+* 		(see: pwiki2.html) or via the base templates (see: pwiki/page.js:_view 
+* 		template)???
 * XXX NAMING: revise .onNavigate(..) and .onBeforeNavigate(..) event names...
 * XXX BUG: parser:
 * 		This will break:

@@ -141,13 +141,13 @@ object.Constructor('BasePage', {
 	//
 	// NOTE: path variables are resolved relative to the page BEFORE 
 	// 		navigation...
-	// NOTE: the actual work is done by the .onNavigate(..) method...
+	// NOTE: the actual work is done by the .navigate(..) method...
 	__location: undefined,
 	get location(){
 		return this.__location ?? '/' },
 	set location(path){
 		// trigger the event...
-		this.onNavigate(path) },
+		this.navigate(path) },
 	// referrer -- a previous page location...
 	referrer: undefined,
 
@@ -159,14 +159,14 @@ object.Constructor('BasePage', {
 	//
 	// XXX revise naming...
 	// XXX should this be able to prevent navigation???
-	onBeforeNavigate: types.event.Event('beforeNavigate',
+	onBeforeNavigate: types.event.PureEvent('beforeNavigate',
 		function(_, location){
 			'__beforenavigate__' in this
 				&& this.__beforenavigate__(location) }),
-	onNavigate: types.event.Event('navigate',
+	navigate: types.event.Event('navigate',
 		function(handle, location){
 			var {path, args} = pwpath.splitArgs(location)
-			this.onBeforeNavigate(location)
+			this.trigger("onBeforeNavigate", location)
 			this.referrer = this.location
 			var cur = this.__location = 
 				this.resolvePathVars(
