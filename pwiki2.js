@@ -18,19 +18,16 @@
 * 		- CLI										- 
 *
 *
-* XXX would be nice for bool arguments to accept yes/no true/false values...
-* XXX macro: should macro isolation be one-directional???
-* 			...i.e. iterations see/overload things defined above but 
-* 			can not affect the above context...
+* XXX BUG: parser:
+* 		This will break:
+* 			await pwiki.parse('<macro src=../tags join=", ">@source(.)</macro>')
+*		This will not:
+* 			await pwiki.parse('<macro src="../tags" join=", ">@source(.)</macro>')
+* XXX Q: do we need a way to index a list item via path???
+* XXX macro: should inheritmacros be true or false (current) by default???
 * XXX STYLE: should style loading be done via the event mechanics 
 * 		(see: pwiki2.html) or via the base templates (see: pwiki/page.js:_view 
 * 		template)???
-* XXX BUG: parser:
-* 		This will break:
-*			<macro src=../tags join=", ">@source(.)</macro><br>
-*		This will not:
-*			<macro src="../tags" join=", ">@source(.)</macro><br>
-* XXX Q: do we need a way to index a list item via path???
 * XXX TAGS
 * 		- add tags to page -- macro/filter
 * 			- <page>.text -> <page>.tags (cached on .update(..))
