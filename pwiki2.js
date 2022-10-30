@@ -18,6 +18,8 @@
 * 		- CLI										- 
 *
 *
+* XXX macros: add @defmacro(<name> ..) to be exactly as @macro(<name> ..) 
+* 		but defines a @<name>(..) macro...
 * XXX BUG: parser:
 * 		This will break:
 * 			await pwiki.parse('<macro src=../tags join=", ">@source(.)</macro>')

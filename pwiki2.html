@@ -97,7 +97,7 @@ a:hover {
 
 /* Spinner... */
 .spinner {
-	position: absolute;
+	position: fixed;
 	display: flex;
 	text-align: center;
 	left: 50%;
@@ -411,6 +411,7 @@ require(['./browser'], function(browser){
 			//		when the hash is actually changed...
 			for(var lnk of this.dom.querySelectorAll(`a[href="${location.hash}"]`)){
 				lnk.addEventListener('click', refresh) } })
+		.delete(refresh)
 
 	// handle special file updates...
 	// NOTE: the actual updates are done .navigate(..)

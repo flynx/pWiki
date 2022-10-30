@@ -35,7 +35,7 @@ module.BaseParser = {
 	//
 	MACRO_ARGS: ['(\\s*(',[
 				// arg='val' | arg="val" | arg=val
-				'(?<PREFIXArgName>[a-z-]+)\\s*=\\s*(?<PREFIXArgValue>'+([
+				'(?<PREFIXArgName>[a-z:-]+)\\s*=\\s*(?<PREFIXArgValue>'+([
 					// XXX CHROME/NODE BUG: this does not work yet...
 					//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
 					'"(?<PREFIXDoubleQuotedValue>(\\"|[^"])*?)"',

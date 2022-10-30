@@ -427,20 +427,22 @@ object.Constructor('BasePage', {
 	//*/
 	resolve: relMatchProxy('resolve'),
 
-
-	delete: async function(path='.', base=true){
-		if(path === true || path === false){
-			base = path
-			path = '.'	}
-		var page = this.get(path)
-		if(page.isPattern){
-			base
-				&& this.__delete__(this.path.split('*')[0])
-			for(var p of await this.get('path').raw){
-				this.__delete__(p) }
-		} else {
-			this.__delete__(path) }
-		return this },
+	delete: types.event.Event('delete', 
+		async function(handle, path='.', base=true){
+			handle(false)
+			if(path === true || path === false){
+				base = path
+				path = '.'	}
+			var page = this.get(path)
+			if(page.isPattern){
+				base
+					&& this.__delete__(this.path.split('*')[0])
+				for(var p of await this.get('path').raw){
+					this.__delete__(p) }
+			} else {
+				this.__delete__(path) }
+			handle()
+			return this }),
 	// XXX should these be implemented here or proxy to .store???
 	// XXX do we sanity check to no not contain '*'???
 	copy: async function(to, base=true){
@@ -687,8 +689,9 @@ object.Constructor('BasePage', {
 	// 		...right now this will write what-ever is given, even if it
 	// 		will never be explicitly be accessible...
 	// XXX sync/async???
-	update: function(...data){
-		return Object.assign(this, ...data) },
+	update: types.event.Event('update',
+		function(_, ...data){
+			return Object.assign(this, ...data) }),
 
 	// XXX should this take an options/dict argument????
 	__init__: function(path, referrer, store){
@@ -1359,7 +1362,7 @@ object.Constructor('Page', BasePage, {
 				text = typeof(text) == 'string' ?
 					[...this.__parser__.group(this, text+'</macro>', 'macro')]
 					: text
-				var join
+				var join, itext
 				var iargs = {}
 
 				// stored macros...
@@ -1383,7 +1386,7 @@ object.Constructor('Page', BasePage, {
 				// XXX is there a point in overloading text???
 				text = text.length > 0 ? 
 					text 
-					: itext
+					: itext ?? text
 				var sort = (args.sort 
 						?? iargs.sort 
 						?? '')
@@ -1441,7 +1444,7 @@ object.Constructor('Page', BasePage, {
 								seen: state.seen, 
 								depends,
 								renderer: state.renderer,
-								macros: args.inheritmacros ?
+								macros: inheritmacros ?
 									{__proto__: macros}
 									: {},
 							}
@@ -2102,7 +2105,9 @@ module.System = {
 					<div class="item">
 						<a class="tree-page-title" href="#@source(s ./path)">@source(./title)</a>
 						<a class="show-on-hover" href="#@source(s ./path)/info">&#128712;</a>
-						<a class="show-on-hover" href="#@source(s ./path)/delete">&times;</a>
+						<a class="show-on-hover" 
+							href="javascript:pwiki.delete('@source(s ./path)')"
+							>&times;</a>
 					</div>
 					<div style="padding-left: 30px">
 						@include("./tree:$ARGS")

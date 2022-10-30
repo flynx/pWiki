@@ -276,7 +276,7 @@ module.BaseStore = {
 			return data }, 
 		remove: async function(data, path){
 			var {tags, paths} = await data
-			for(var tag of paths[path]){
+			for(var tag of paths[path] ?? []){
 				tags[tag].delete(path) }
 			return data }, }),
 	get tags(){
@@ -609,8 +609,11 @@ module.BaseStore = {
 	// 		...this could be a sign of problems with index -- needs more 
 	// 		tought...
 	update: types.event.Event('update', 
-		function(handler, path, data, mode='update'){
-			return this.__update(...[...arguments].slice(1)) }),
+		async function(handler, path, data, mode='update'){
+			handler(false)
+			var res = await this.__update(...[...arguments].slice(1)) 
+			handler()
+			return res }),
 
 	__delete__: async function(path){
 		delete this.data[path] },
@@ -625,8 +628,11 @@ module.BaseStore = {
 			this.index('remove', path) }
 		return this },
 	delete: types.event.Event('delete', 
-		function(handler, path){
-			return this.__delete(path) }),
+		async function(handler, path){
+			handler(false)
+			var res = await this.__delete(path) 
+			handler()
+			return res }),
 
 	// XXX NEXT might be a good idea to have an API to move pages from 
 	// 		current store up the chain...
