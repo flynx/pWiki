@@ -1418,7 +1418,7 @@ object.Constructor('Page', BasePage, {
 								renderer: state.renderer,
 							}
 							// XXX this is ugly, can we avoid this???
-							yield this.__parser__.resolve(page, 
+							yield this.__parser__.parse(page, 
 								this.__parser__.expand(page, 
 									text, _state), _state)
 						} else {
@@ -2000,6 +2000,7 @@ module.System = {
 			+'<hr>'
 			+'<macro src="." join="@source(file-separator)">'
 				+'<h1 '
+						+'wikiwords="no" '
 						+'contenteditable '
 						// XXX need to make this savable...
 						+'oninput="saveLiveContent(\'@source(s ./path)/name\')">' 
@@ -2026,32 +2027,7 @@ module.System = {
 			<slot content>
 				<macro src=".." join="@source(file-separator)">
 					<h1 class="title-editor"
-							contenteditable 
-							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
-						@source(./title)
-					</h1>
-					<pre class="editor"
 							wikiwords="no"
-							contenteditable
-							oninput="saveLiveContent(\'@source(s ./path)\', this.innerText)"
-					><quote filter="quote-tags" src="."/></pre> 
-				</macro>
-			</slot>`},
-
-	// XXX remove when bug (quote getting trash) fixed... 
-	edit_isolated: {
-		// XXX not sure if we should use .title or .name here...
-		text: object.doc`
-			<slot pre>
-				<title>@source(../title) (edit)</title>
-			</slot>
-
-			<slot parent>../..</slot>
-			<slot location>@source(../location/!)</slot>
-
-			<slot content>
-				<macro src=".." join="@source(file-separator)" isolated>
-					<h1 class="title-editor"
 							contenteditable 
 							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
 						@source(./title)

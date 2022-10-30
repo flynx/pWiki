@@ -18,18 +18,6 @@
 * 		- CLI										- 
 *
 *
-* XXX BUG: in .system/edit if macro is isolated then @quote(..) will 
-* 		for some reason get odd stuff like '[object Object]'...
-* 		these break:
-* 			/QuoteTest/edit_isolated 
-* 			/MacroSlotTest/edit_isolated 
-* 		these work:
-* 			/QuoteTest/edit
-* 			/MacroSlotTest/edit
-* 		...can't produce a minimal example (/QuoteTest) other than 
-* 		editing .system/edit...
-* 		...seems that in isolated mode some macros get expanded before/in @quote(..)
-* 		XXX remove .system/edit_isolated when done...
 * XXX MACRO: should <macro>'s isolated be on by default???
 * 			...do we need to isolate named macros too???
 * 			...should this isolation be one-directional???

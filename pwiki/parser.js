@@ -204,7 +204,7 @@ module.BaseParser = {
 					return a.pop().uncomment 
 						|| '' }) },
 
-	// Lexically split the string...
+	// Lexically split the string (generator)...
 	//
 	// 	<item> ::=
 	// 		<string>
@@ -322,7 +322,7 @@ module.BaseParser = {
 					yield str }
 				macro = true } } },
 
-	// Group block elements...
+	// Group block elements (generator)...
 	//
 	// 	<item> ::=
 	// 		<string>
