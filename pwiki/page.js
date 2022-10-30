@@ -1448,7 +1448,6 @@ object.Constructor('Page', BasePage, {
 								this.__parser__.expand(page, 
 									text, _state), _state)
 						} else {
-							console.log('---', state.slots)
 							yield this.__parser__.expand(page, text, state) } }
 					// else...
 					if(first
