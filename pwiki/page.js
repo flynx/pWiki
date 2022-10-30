@@ -1400,12 +1400,11 @@ object.Constructor('Page', BasePage, {
 							args.isolated
 							: iargs.isolated)
 						?? true
-				// XXX INHERITMACROS EXPERIMENTAL
 				var inheritmacros = 
 					('inheritmacros' in args ?
 							args.inheritmacros
 							: iargs.inheritmacros)
-						?? false
+						?? true
 
 				if(src){
 					src = await base.parse(src, state)
@@ -1442,7 +1441,6 @@ object.Constructor('Page', BasePage, {
 								seen: state.seen, 
 								depends,
 								renderer: state.renderer,
-								// XXX INHERITMACROS EXPERIMENTAL
 								macros: args.inheritmacros ?
 									{__proto__: macros}
 									: {},

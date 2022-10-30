@@ -24,7 +24,6 @@
 *		This will not:
 * 			await pwiki.parse('<macro src="../tags" join=", ">@source(.)</macro>')
 * XXX Q: do we need a way to index a list item via path???
-* XXX macro: should inheritmacros be true or false (current) by default???
 * XXX STYLE: should style loading be done via the event mechanics 
 * 		(see: pwiki2.html) or via the base templates (see: pwiki/page.js:_view 
 * 		template)???
