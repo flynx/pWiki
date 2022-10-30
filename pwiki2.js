@@ -18,8 +18,6 @@
 * 		- CLI										- 
 *
 *
-* XXX macro: bug: see /NamedMacroTest...
-* XXX macro: should isolated and other args be inherited???
 * XXX macro: should macro isolation be one-directional???
 * 			...i.e. iterations see/overload things defined above but 
 * 			can not affect the above context...

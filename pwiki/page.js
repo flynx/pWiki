@@ -1444,11 +1444,11 @@ object.Constructor('Page', BasePage, {
 								depends,
 								renderer: state.renderer,
 							}
-							// XXX this is ugly, can we avoid this???
 							yield this.__parser__.parse(page, 
 								this.__parser__.expand(page, 
 									text, _state), _state)
 						} else {
+							console.log('---', state.slots)
 							yield this.__parser__.expand(page, text, state) } }
 					// else...
 					if(first
