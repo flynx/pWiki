@@ -149,6 +149,11 @@ module.BaseParser = {
 	// Spec format:
 	// 	[<orderd>, ... [<keyword>, ...]]
 	//
+	// Keyword arguments if given without a value are true by default, 
+	// explicitly setting a keyword argument to 'true' or 'yes' will set 
+	// it to true, explicitly setting to 'false' or 'no' will set it to 
+	// false, any other value will be set as-is...
+	//
 	// NOTE: the input to this is formatted by .lex(..)
 	// NOTE: arg pre-parsing is dome by .lex(..) but at that stage we do not
 	// 		yet touch the actual macros (we need them to get the .arg_spec)
@@ -174,6 +179,17 @@ module.BaseParser = {
 						(res[value] = true)
 						// positional...
 						: (pos[key*1] = value))
+					// keyword/bool default values...
+					: bools.has(key) ?
+						(res[key] = 
+							// value escaping...
+							value[0] == '\\' ?
+								value.slice(1)
+							: (value == 'true' || value == 'yes') ?
+								true
+							: (value == 'false' || value == 'no') ?
+								false
+							: value)
 					// keyword...
 					: (res[key] = value)
 				return pos }, [])

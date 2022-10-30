@@ -18,6 +18,7 @@
 * 		- CLI										- 
 *
 *
+* XXX would be nice for bool arguments to accept yes/no true/false values...
 * XXX macro: should macro isolation be one-directional???
 * 			...i.e. iterations see/overload things defined above but 
 * 			can not affect the above context...

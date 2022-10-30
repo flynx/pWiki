@@ -950,7 +950,7 @@ object.Constructor('Page', BasePage, {
 		// XXX need a way to make encode option transparent...
 		include: Macro(
 			['src', 'recursive', 'join', 
-				['s', 'strict', 'nonstrict', 'isolated']],
+				['s', 'strict', 'isolated']],
 			async function*(args, body, state, key='included', handler){
 				var macro = 'include'
 				if(typeof(args) == 'string'){
@@ -971,7 +971,6 @@ object.Constructor('Page', BasePage, {
 				var recursive = args.recursive ?? body
 				var isolated = args.isolated 
 				var strict = args.strict
-					&& !args.nonstrict
 				var strquotes = args.s
 				var join = args.join 
 					&& await base.parse(args.join, state)
@@ -1059,7 +1058,7 @@ object.Constructor('Page', BasePage, {
 		source: Macro(
 			// XXX should this have the same args as include???
 			['src', 'recursive', 'join', 
-				['s', 'strict', 'nonstrict']],
+				['s', 'strict']],
 			//['src'],
 			async function*(args, body, state){
 				var that = this
@@ -1075,7 +1074,7 @@ object.Constructor('Page', BasePage, {
 		// NOTE: this is essentially the same as @source(..) but returns ''.
 		// XXX revise name...
 		load: Macro(
-			['src', ['strict', 'nonstrict']],
+			['src', ['strict']],
 			async function*(args, body, state){
 				var that = this
 				yield* this.macros.include.call(this, 
@@ -1314,15 +1313,10 @@ object.Constructor('Page', BasePage, {
 		// 		</else>
 		// 	</macro>
 		//
-		// NOTE: if both strict and nonstrict are given the later takes 
-		// 		precedence.
-		// NOTE: if both isolated (default) and unisolated are given 
-		// 		then isolated has priority.
-		//
 		// XXX SORT sorting not implemented yet....
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else', 
-				['strict', 'nonstrict', 'isolated', 'unisolated']],
+				['strict', 'isolated', 'inheritmacros' ]],
 			async function*(args, body, state){
 				var that = this
 
@@ -1348,7 +1342,9 @@ object.Constructor('Page', BasePage, {
 					return block }
 
 				var base = this.get(this.path.split(/\*/).shift())
-
+				var macros = state.macros = 
+					state.macros 
+						?? {}
 				var depends = state.depends = 
 					state.depends 
 						?? new Set()
@@ -1374,39 +1370,42 @@ object.Constructor('Page', BasePage, {
 						// NOTE: we do not need to worry about saving 
 						// 		stateful text here because it is only 
 						// 		grouped and not expanded...
-						;(state.macros = state.macros ?? {})[name] = 
-							// XXX should we store all the args???
-							[text, _getBlock('join'), JSON.parse(JSON.stringify(args))]
+						macros[name] = 
+							[ text, 
+								_getBlock('join'), 
+								JSON.parse(JSON.stringify(args)), ]
 					// use existing macro...
-					} else if(state.macros 
-							&& name in state.macros){
-						;[itext, join, iargs] = state.macros[name] } }
+					} else if(macros 
+							&& name in macros){
+						;[itext, join, iargs] = macros[name] } }
 
+				// inheritable args...
 				// XXX is there a point in overloading text???
 				text = text.length > 0 ? 
 					text 
 					: itext
-				// inheritable args...
 				var sort = (args.sort 
 						?? iargs.sort 
 						?? '')
 					.split(/\s+/g)
 					.filter(function(e){ 
 						return e != '' })
-				// default is false...
 				var strict = 
-					('strict' in args || 'nonstrict' in args) ?
-						args.strict 
-							&& !args.nonstrict 
-						: iargs.strict 
-							&& !iargs.nonstrict
-				// default is true...
+					('strict' in args ?
+							args.strict 
+							: iargs.strict)
+						?? false
 				var isolated = 
-					('isolated' in args || 'unisolated' in args) ?
-						args.isolated
-						|| !args.unisolated
-					: iargs.isolated
-						|| !iargs.unisolated
+					('isolated' in args ?
+							args.isolated
+							: iargs.isolated)
+						?? true
+				// XXX INHERITMACROS EXPERIMENTAL
+				var inheritmacros = 
+					('inheritmacros' in args ?
+							args.inheritmacros
+							: iargs.inheritmacros)
+						?? false
 
 				if(src){
 					src = await base.parse(src, state)
@@ -1443,6 +1442,10 @@ object.Constructor('Page', BasePage, {
 								seen: state.seen, 
 								depends,
 								renderer: state.renderer,
+								// XXX INHERITMACROS EXPERIMENTAL
+								macros: args.inheritmacros ?
+									{__proto__: macros}
+									: {},
 							}
 							yield this.__parser__.parse(page, 
 								this.__parser__.expand(page, 
