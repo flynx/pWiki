@@ -1316,12 +1316,13 @@ object.Constructor('Page', BasePage, {
 		//
 		// NOTE: if both strict and nonstrict are given the later takes 
 		// 		precedence.
+		// NOTE: if both isolated (default) and unisolated are given 
+		// 		then isolated has priority.
 		//
 		// XXX SORT sorting not implemented yet....
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else', 
-				['strict', 'nonstrict', 'isolated']],
-				//['strict', 'nonstrict', 'unisolated']],
+				['strict', 'nonstrict', 'isolated', 'unisolated']],
 			async function*(args, body, state){
 				var that = this
 				var name = args.name //?? args[0]
@@ -1341,7 +1342,7 @@ object.Constructor('Page', BasePage, {
 				var strict = args.strict
 					&& !args.nonstrict
 				var isolated = args.isolated 
-				//var isolated = !args.unisolated 
+					|| !args.unisolated 
 				var join
 
 				var depends = state.depends = 
