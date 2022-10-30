@@ -1325,30 +1325,8 @@ object.Constructor('Page', BasePage, {
 				['strict', 'nonstrict', 'isolated', 'unisolated']],
 			async function*(args, body, state){
 				var that = this
-				var name = args.name //?? args[0]
-				var src = args.src
-				var base = this.get(this.path.split(/\*/).shift())
-				var sort = (args.sort ?? '')
-					.split(/\s+/g)
-					.filter(function(e){ 
-						return e != '' })
-				// NOTE: args.text will need parsing...
-				var text = args.text 
-					?? body 
-					?? []
-				text = typeof(text) == 'string' ?
-					[...this.__parser__.group(this, text+'</macro>', 'macro')]
-					: text
-				var strict = args.strict
-					&& !args.nonstrict
-				var isolated = args.isolated 
-					|| !args.unisolated 
-				var join
 
-				var depends = state.depends = 
-					state.depends 
-						?? new Set()
-
+				// helpers...
 				var _getBlock = function(name){
 					var block = args[name] ?
 						[{
@@ -1369,18 +1347,66 @@ object.Constructor('Page', BasePage, {
 							?? block.body
 					return block }
 
-				if(name){
-					name = await base.parse(name, state)
+				var base = this.get(this.path.split(/\*/).shift())
+
+				var depends = state.depends = 
+					state.depends 
+						?? new Set()
+
+				// uninheritable args...
+				// NOTE: arg handling is split in two, to make things simpler 
+				// 		to process for retrieved named macros...
+				var src = args.src
+				var text = args.text 
+					?? body 
+					?? []
+				text = typeof(text) == 'string' ?
+					[...this.__parser__.group(this, text+'</macro>', 'macro')]
+					: text
+				var join
+				var iargs = {}
+
+				// stored macros...
+				if(args.name){
+					var name = await base.parse(args.name, state)
 					// define new named macro...
 					if(text.length != 0){
 						// NOTE: we do not need to worry about saving 
 						// 		stateful text here because it is only 
 						// 		grouped and not expanded...
-						;(state.macros = state.macros ?? {})[name] = [text, _getBlock('join')]
+						;(state.macros = state.macros ?? {})[name] = 
+							// XXX should we store all the args???
+							[text, _getBlock('join'), JSON.parse(JSON.stringify(args))]
 					// use existing macro...
 					} else if(state.macros 
 							&& name in state.macros){
-						[text, join] = state.macros[name] } }
+						;[itext, join, iargs] = state.macros[name] } }
+
+				// XXX is there a point in overloading text???
+				text = text.length > 0 ? 
+					text 
+					: itext
+				// inheritable args...
+				var sort = (args.sort 
+						?? iargs.sort 
+						?? '')
+					.split(/\s+/g)
+					.filter(function(e){ 
+						return e != '' })
+				// default is false...
+				var strict = 
+					('strict' in args || 'nonstrict' in args) ?
+						args.strict 
+							&& !args.nonstrict 
+						: iargs.strict 
+							&& !iargs.nonstrict
+				// default is true...
+				var isolated = 
+					('isolated' in args || 'unisolated' in args) ?
+						args.isolated
+						|| !args.unisolated
+					: iargs.isolated
+						|| !iargs.unisolated
 
 				if(src){
 					src = await base.parse(src, state)

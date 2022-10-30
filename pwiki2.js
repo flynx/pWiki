@@ -18,11 +18,11 @@
 * 		- CLI										- 
 *
 *
-* XXX MACRO: should <macro>'s isolated be on by default???
-* 			...do we need to isolate named macros too???
-* 			...should this isolation be one-directional???
-* 				...i.e. iterations see/overload things defined above but 
-* 				can not affect the above context...
+* XXX macro: bug: see /NamedMacroTest...
+* XXX macro: should isolated and other args be inherited???
+* XXX macro: should macro isolation be one-directional???
+* 			...i.e. iterations see/overload things defined above but 
+* 			can not affect the above context...
 * XXX STYLE: should style loading be done via the event mechanics 
 * 		(see: pwiki2.html) or via the base templates (see: pwiki/page.js:_view 
 * 		template)???
