@@ -18,6 +18,10 @@
 * 		- CLI										- 
 *
 *
+* XXX FEATURE store: mirror (slave) -- a way to hold data in one store 
+* 		and to mirror everything (async) to a separate store...
+* 		example:
+* 			PouchDB (main) -- FileSore (export)
 * XXX BUG: parser:
 * 		This will break:
 * 			await pwiki.parse('<macro src=../tags join=", ">@source(.)</macro>')

@@ -1883,7 +1883,7 @@ object.Constructor('CachedPage', Page, {
 //---------------------------------------------------------------------
 
 var wikiword = require('./dom/wikiword')
-var textarea = require('./dom/textarea')
+//var textarea = require('./dom/textarea')
 
 var pWikiPageElement =
 module.pWikiPageElement = 
@@ -1898,7 +1898,7 @@ object.Constructor('pWikiPageElement', Page, {
 	domFilters: {
 		// XXX see Page.filters.wikiword for notes...
 		wikiword: wikiword.wikiWordText,
-		textarea: textarea.setupTextarea,
+		//textarea: textarea.setupTextarea,
 	},
 
 	// XXX CACHE
@@ -2075,7 +2075,9 @@ module.System = {
 				+'</pre>' 
 			+'</macro>'},
 	//*/
-	/* XXX textarea or contenteditable -- the later has annoying editor features...
+	//* XXX textarea or contenteditable -- the later has annoying editor features...
+	//		...while the former can't self-resize and forcing it to messes 
+	//		with scrolling...
 	edit: {
 		// XXX not sure if we should use .title or .name here...
 		text: object.doc`
@@ -2147,7 +2149,8 @@ module.System = {
 				@source(../path)
 			</slot>
 			<macro src="../*:$ARGS" join="@source(line-separator)">
-				<a href="#@source(s ./path)">@source(./name)</a>
+				@var(path "@source(s ./path)")
+				<a href="#@var(path)">@source(./name)</a>
 				<sup>
 					<macro src="./isAction">
 						a
@@ -2156,9 +2159,9 @@ module.System = {
 						</else>
 					</macro>
 				</sup>
-				(<a href="#@source(s ./path)/list">@include(./*/length/!)</a>)
+				(<a href="#@var(path)/list">@include(./*/length/!)</a>)
 				&nbsp;
-				<a href="#@source(s ./path)/delete">&times;</a>
+				<a href="#@var(path)/delete">&times;</a>
 			</macro>` },
 	// XXX this is really slow...
 	tree: {
@@ -2166,8 +2169,7 @@ module.System = {
 			<slot title/>
 
 			<macro tree src="../*:$ARGS">
-				<var path "@source(s ./path)"/>
-
+				@var(path "@source(s ./path)")
 				<div>
 					<div class="item">
 						<a class="tree-page-title" href="#@var(path)">@source(./title)</a>
