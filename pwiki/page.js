@@ -1294,6 +1294,45 @@ object.Constructor('Page', BasePage, {
 						{slot: name}) }), 
 		'content': ['slot'],
 
+		// XXX EXPERIMENTAL...
+		'var': Macro(
+			['name', 'text', 
+				['shown', 'hidden']],
+			async function(args, body, state){
+				var name = args.name
+				if(!name){
+					return '' }
+				name = await this.parse(name, state)
+				var text = args.text 
+					?? body 
+				var vars = state.vars = 
+					state.vars 
+						?? {}
+
+				// set...
+				if(text){
+					text = vars[name] = 
+						await this.parse(text, state)
+					var show = args.shown 
+						|| ('hidden' in args 
+							&& !args.hidden)
+						|| false
+					return show ?
+						text
+						: ''
+				// get...
+				} else {
+					return vars[name] 
+						?? '' } }),
+		vars: async function(args, body, state){
+			var vars = state.vars = 
+				state.vars 
+					?? {}
+			for(var [name, value] of Object.entries(args)){
+				vars[await this.parse(name, state)] =
+					await this.parse(value, state) }
+			return '' },
+
 		// 	
 		// 	<macro src=<url>> .. </macro>
 		//
@@ -1319,7 +1358,7 @@ object.Constructor('Page', BasePage, {
 		// XXX SORT sorting not implemented yet....
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else', 
-				['strict', 'isolated', 'inheritmacros' ]],
+				['strict', 'isolated', 'inheritmacros', 'inheritvars' ]],
 			async function*(args, body, state){
 				var that = this
 
@@ -1347,6 +1386,9 @@ object.Constructor('Page', BasePage, {
 				var base = this.get(this.path.split(/\*/).shift())
 				var macros = state.macros = 
 					state.macros 
+						?? {}
+				var vars = state.vars = 
+					state.vars 
 						?? {}
 				var depends = state.depends = 
 					state.depends 
@@ -1408,6 +1450,11 @@ object.Constructor('Page', BasePage, {
 							args.inheritmacros
 							: iargs.inheritmacros)
 						?? true
+				var inheritvars = 
+					('inheritvars' in args ?
+							args.inheritvars
+							: iargs.inheritvars)
+						?? true
 
 				if(src){
 					src = await base.parse(src, state)
@@ -1447,6 +1494,9 @@ object.Constructor('Page', BasePage, {
 								macros: inheritmacros ?
 									{__proto__: macros}
 									: {},
+								vars: inheritvars ?
+									{__proto__: vars}
+									: {},
 							}
 							yield this.__parser__.parse(page, 
 								this.__parser__.expand(page, 
@@ -1459,30 +1509,6 @@ object.Constructor('Page', BasePage, {
 						var else_block = _getBlock('else')
 						if(else_block){
 							yield this.__parser__.expand(this, else_block, state) } } } }),
-
-		/* XXX this is not possible with the current parser as we statically  
-		//		define the macro name list (regexp) for the lexer... 		
-		//		...so to make this happen we'd need to:
-		//			- update the patterns for parser.lex(..)
-		//			- tweak parser.group(..)
-		// Like @macro(..) but requires the name argument and will define
-		// the macros in state.usermacros instead of state.macros...
-		defmacro: Macro(
-			['name', 'src', 'sort', 'text', 'join', 'else', 
-				['strict', 'isolated', 'inheritmacros' ]],
-			async function*(args, body, state){
-				var name = args.name
-				if(!name){
-					// XXX throw err???
-					return '' }
-				state.usermacros = state.usermacros ?? {}
-				var s = {}
-				var res = await this.macros.macro.call(this, args, body, s)
-				Object.assign(
-					state.usermacros, 
-					s.macros)
-				return res }),
-		//*/
 
 		// nesting rules...
 		'else': ['macro'],
@@ -1501,10 +1527,6 @@ object.Constructor('Page', BasePage, {
 		...module.BasePage.prototype.actions,
 
 		'!': true,
-
-		// XXX DEBUG -- remove these...
-		testDirect: true,
-		'testDirect!': true,	
 	},
 
 	'!': Object.assign(
@@ -1512,23 +1534,6 @@ object.Constructor('Page', BasePage, {
 			return this.get('..:$ARGS', {energetic: true}).raw },
 		{energetic: true}),
 
-	// XXX DEBUG -- remove these...
-	testDirect: function(){
-		console.log('testDirect:', this.location, 
-			this.args,
-			(this.renderer ?? {}).args,
-			(this.root ?? {}).args)
-		//console.log('          :', this, this.renderer) 
-		return this.location },
-	'testDirect!': Object.assign(
-		function(){
-			console.log('testDirect!:', this.location,
-				this.args,
-				(this.renderer ?? {}).args,
-				(this.root ?? {}).args)
-			//console.log('           :', this, this.renderer)
-			return this.location },
-		{energetic: true}),
 
 	// events...
 	//
@@ -2159,7 +2164,31 @@ module.System = {
 	tree: {
 		text: object.doc`
 			<slot title/>
-			<macro src="../*:$ARGS">
+
+			<macro tree src="../*:$ARGS">
+				<var path "@source(s ./path)"/>
+
+				<div>
+					<div class="item">
+						<a class="tree-page-title" href="#@var(path)">@source(./title)</a>
+						<a class="show-on-hover" href="#@var(path)/info">&#128712;</a>
+						<a class="show-on-hover" 
+							href="javascript:pwiki.delete('@var(path)')"
+							>&times;</a>
+					</div>
+					<div style="padding-left: 30px">
+						@macro(tree "./*:$ARGS")
+					</div>
+				</div>
+			</macro>` },
+	/* XXX @var(..) vs. multiple @source(..) calls are not that different...
+	tree2: {
+		text: object.doc`
+			<slot title/>
+
+			<i>This is a comparison with [../tree] -- \\@var(..) vs direct macro call...</i><br><br>
+
+			<macro tree src="../*:$ARGS">
 				<div>
 					<div class="item">
 						<a class="tree-page-title" href="#@source(s ./path)">@source(./title)</a>
@@ -2169,10 +2198,11 @@ module.System = {
 							>&times;</a>
 					</div>
 					<div style="padding-left: 30px">
-						@include("./tree:$ARGS")
+						@macro(tree "./*:$ARGS")
 					</div>
 				</div>
 			</macro>` },
+	//*/
 	all: {
 		text: `@include("../**/path:$ARGS" join="@source(line-separator)")`},
 	info: {
@@ -2282,37 +2312,8 @@ module.System = {
 			: undefined },
 
 
-	// XXX DEBUG -- remove these...
-	testPage: {
-		text: object.doc`<pre>
-			location: @source(./location)
-			path: @source(./path)
-			args: <args/>
-		</pre>`},
-	testAction: function(){
-		console.log('testAction:', this.location, 
-			this.args, 
-			(this.renderer ?? {}).args, 
-			(this.root ?? {}).args)
-		//console.log('          :', this, this.renderer)
-		return this.location },
-	'testAction!': Object.assign(
-		function(){
-			console.log('testAction!:', this.location,
-				this.args, 
-				(this.renderer ?? {}).args, 
-				(this.root ?? {}).args)
-			//console.log('           :', this, this.renderer)
-			return this.location },
-		{energetic: true}),
-	_testPage: {
-		text: object.doc`
-			@source(./path)
-		`},
-	_testAction: function(){
-		return this.path },
-
-
+	/* XXX need a stable way to redirect after the action...
+	//		...not sure if these are needed vs. pwiki.delete(..) and friends...
 	// actions...
 	//
 	// XXX should ** be the default here...
@@ -2369,6 +2370,7 @@ module.System = {
 		// 		redirected page...
 		return '' },
 	// XXX copy/...
+	//*/
 
 	// XXX System/sort
 	// XXX System/reverse

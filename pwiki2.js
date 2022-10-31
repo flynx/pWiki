@@ -23,6 +23,7 @@
 * 			await pwiki.parse('<macro src=../tags join=", ">@source(.)</macro>')
 *		This will not:
 * 			await pwiki.parse('<macro src="../tags" join=", ">@source(.)</macro>')
+* XXX parser: error handling: must output to page and be informative...
 * XXX Q: do we need a way to index a list item via path???
 * XXX STYLE: should style loading be done via the event mechanics 
 * 		(see: pwiki2.html) or via the base templates (see: pwiki/page.js:_view 
