@@ -150,9 +150,15 @@ body.loading .page.spinner span {
 	}
 }
 
-[contenteditable] {
-  outline: 0px solid transparent;
+textarea {
+	font-size: 1.2em;
+	border: none;
+	resize: none;
 }
+[contenteditable] {
+	outline: 0px solid transparent;
+}
+textarea:empty:after,
 [contenteditable]:empty:after {
 	display: block;
 	content: 'Empty';

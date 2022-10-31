@@ -1878,6 +1878,7 @@ object.Constructor('CachedPage', Page, {
 //---------------------------------------------------------------------
 
 var wikiword = require('./dom/wikiword')
+var textarea = require('./dom/textarea')
 
 var pWikiPageElement =
 module.pWikiPageElement = 
@@ -1892,6 +1893,7 @@ object.Constructor('pWikiPageElement', Page, {
 	domFilters: {
 		// XXX see Page.filters.wikiword for notes...
 		wikiword: wikiword.wikiWordText,
+		textarea: textarea.setupTextarea,
 	},
 
 	// XXX CACHE
@@ -2068,6 +2070,7 @@ module.System = {
 				+'</pre>' 
 			+'</macro>'},
 	//*/
+	/* XXX textarea or contenteditable -- the later has annoying editor features...
 	edit: {
 		// XXX not sure if we should use .title or .name here...
 		text: object.doc`
@@ -2080,11 +2083,13 @@ module.System = {
 
 			<slot content>
 				<macro src=".." join="@source(file-separator)">
-					<h1 class="title-editor"
-							wikiwords="no"
-							contenteditable 
-							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
-						@source(./title)
+					<h1>
+						<span class="title-editor"
+								wikiwords="no"
+								contenteditable 
+								oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
+							@source(./title)
+						</span>
 					</h1>
 					<pre class="editor"
 							wikiwords="no"
@@ -2093,6 +2098,36 @@ module.System = {
 					><quote filter="quote-tags" src="."/></pre> 
 				</macro>
 			</slot>`},
+	/*/
+	edit: {
+		// XXX not sure if we should use .title or .name here...
+		text: object.doc`
+			<slot pre>
+				<title>@source(../title) (edit)</title>
+			</slot>
+
+			<slot parent>../..</slot>
+			<slot location>@source(../location/!)</slot>
+
+			<slot content>
+				<macro src=".." join="@source(file-separator)">
+					<h1>
+						<span class="title-editor"
+								wikiwords="no"
+								contenteditable 
+								oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
+							@source(./title)
+						</span>
+					</h1>
+					<textarea class="editor"
+							style="width:100%;"
+							wikiwords="no"
+							contenteditable
+							oninput="saveLiveContent(\'@source(s ./path)\', this.value)"
+					><quote filter="quote-tags" src="."/></textarea> 
+				</macro>
+			</slot>`},
+	//*/
 
 	// XXX debug...
 	_path: {text: '@source(./path/! join=" ")'},
