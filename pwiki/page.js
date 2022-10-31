@@ -1460,6 +1460,30 @@ object.Constructor('Page', BasePage, {
 						if(else_block){
 							yield this.__parser__.expand(this, else_block, state) } } } }),
 
+		/* XXX this is not possible with the current parser as we statically  
+		//		define the macro name list (regexp) for the lexer... 		
+		//		...so to make this happen we'd need to:
+		//			- update the patterns for parser.lex(..)
+		//			- tweak parser.group(..)
+		// Like @macro(..) but requires the name argument and will define
+		// the macros in state.usermacros instead of state.macros...
+		defmacro: Macro(
+			['name', 'src', 'sort', 'text', 'join', 'else', 
+				['strict', 'isolated', 'inheritmacros' ]],
+			async function*(args, body, state){
+				var name = args.name
+				if(!name){
+					// XXX throw err???
+					return '' }
+				state.usermacros = state.usermacros ?? {}
+				var s = {}
+				var res = await this.macros.macro.call(this, args, body, s)
+				Object.assign(
+					state.usermacros, 
+					s.macros)
+				return res }),
+		//*/
+
 		// nesting rules...
 		'else': ['macro'],
 		'join': ['macro'],

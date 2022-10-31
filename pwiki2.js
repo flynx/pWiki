@@ -18,8 +18,6 @@
 * 		- CLI										- 
 *
 *
-* XXX macros: add @defmacro(<name> ..) to be exactly as @macro(<name> ..) 
-* 		but defines a @<name>(..) macro...
 * XXX BUG: parser:
 * 		This will break:
 * 			await pwiki.parse('<macro src=../tags join=", ">@source(.)</macro>')
@@ -242,6 +240,16 @@
 * 		or render as any other page???
 * 		...currently they are rendered in the context of the page and
 * 		not in their own context...
+* XXX macros: add @defmacro(<name> ..) to be exactly as @macro(<name> ..) 
+* 		but defines a @<name>(..) macro...
+* 		...this would be useful for things like:
+* 			<pw:delete src="."/>
+* 		or:
+* 			<pw:info src="."/>
+* 		generating delete and info buttons...
+* 		...this is not possible because:
+* 			- we statically set the macro name list (regexp) parser.lex(..)
+* 			- we need this list to parser.group(..)
 * XXX EXPERIMENTAL DOC INHERIT_ARGS added a special-case...
 * 		as basename will get appended :$ARGS if no args are given...
 * 		...this only applies to paths referring to the current context 

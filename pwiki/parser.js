@@ -201,9 +201,10 @@ module.BaseParser = {
 		return res },
 	// XXX should this be here or on page???
 	callMacro: function(page, name, args, body, state, ...rest){
-		return page.macros[name].call(page, 
+		var macro = page.macros[name] 
+		return macro.call(page, 
 				this.parseArgs(
-					page.macros[name].arg_spec 
+					macro.arg_spec 
 						?? [], 
 					args),
 				body, 
