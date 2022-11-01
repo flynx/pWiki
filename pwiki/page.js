@@ -175,8 +175,10 @@ object.Constructor('BasePage', {
 					// 		arguments...
 					pwpath.joinArgs(
 						pwpath.relative(
-							this.path, 
-							path),
+								this.path, 
+								path) 
+							// keep root path predictable...
+							|| '/',
 						pwpath.obj2args(args)))
 			// trigger handlers...
 			'__navigate__' in this
