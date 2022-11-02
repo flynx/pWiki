@@ -1484,6 +1484,26 @@ object.Constructor('Page', BasePage, {
 					// 		only depends on page count...
 					depends.add(match.path)
 
+					// populate macrovars...
+					var macrovars = {}
+					for(var [key, value] 
+							of Object.entries(
+								Object.assign(
+									args,
+									iargs,
+									{
+										strict,
+										isolated,
+										inheritmacros,
+										inheritvars,
+									}))){
+						macrovars['macro:'+ key] = 
+							value === true ?
+								'yes'
+							: value === false ?
+								'no'
+							: value }
+
 					// expand matches...
 					var first = true
 					for await(var page of match.asPages(strict)){
@@ -1499,8 +1519,9 @@ object.Constructor('Page', BasePage, {
 									{__proto__: macros}
 									: {},
 								vars: inheritvars ?
-									{__proto__: vars}
-									: {},
+									{__proto__: vars, 
+										...macrovars}
+									: {...macrovars},
 							}
 							yield this.__parser__.parse(page, 
 								this.__parser__.expand(page, 
@@ -2086,10 +2107,6 @@ module.System = {
 					+'<quote filter="quote-tags" src="."/>'
 				+'</pre>' 
 			+'</macro>'},
-	//*/
-	//* XXX textarea or contenteditable -- the later has annoying editor features...
-	//		...while the former can't self-resize and forcing it to messes 
-	//		with scrolling...
 	edit: {
 		// XXX not sure if we should use .title or .name here...
 		text: object.doc`
@@ -2124,37 +2141,6 @@ module.System = {
 			<slot content>
 				<macro editor src=".."/>
 			</slot>`},
-	/*/
-	edit: {
-		// XXX not sure if we should use .title or .name here...
-		text: object.doc`
-			<slot pre>
-				<title>@source(../title) (edit)</title>
-			</slot>
-
-			<slot parent>../..</slot>
-			<slot location>@source(../location/!)</slot>
-
-			<slot content>
-				<macro src=".." join="@source(file-separator)">
-					<h1>
-						<span class="title-editor"
-								wikiwords="no"
-								contenteditable 
-								oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
-							@source(./title)
-						</span>
-					</h1>
-					<textarea class="editor"
-							style="width:100%;"
-							wikiwords="no"
-							contenteditable
-							oninput="saveLiveContent(\'@source(s ./path)\', this.value)"
-					><quote filter="quote-tags" src="."/></textarea> 
-				</macro>
-			</slot>`},
-	//*/
-	//
 	// XXX EXPERIMENTAL...
 	ed: {
 		text: object.doc` @source(../ed-visual) `},
