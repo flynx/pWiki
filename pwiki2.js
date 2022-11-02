@@ -18,6 +18,8 @@
 * 		- CLI										- 
 *
 *
+* XXX macro-vars: should the vars be defined as macro:<name> (current) or 
+* 		simply as <name>???
 * XXX macros: should vars and url args be unified???
 * 		...likely no but need tho think about it some more...
 * XXX should @quote(..)'s expandactions  be on by default???
