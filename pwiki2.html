@@ -401,7 +401,7 @@ require(['./browser'], function(browser){
 			var titles = [...document.querySelectorAll('title')]
 			titles[0].innerHTML = 
 				`${titles.length > 1 ? 
-					titles.at(-1).innerHTML 
+					titles.at(-1).innerText
 					: this.title} &mdash; pWiki`
 			// scroll to anchor element...
 			this.hash

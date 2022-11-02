@@ -2093,30 +2093,36 @@ module.System = {
 	edit: {
 		// XXX not sure if we should use .title or .name here...
 		text: object.doc`
+			<macro titleeditor>
+				<h1>
+					<span class="title-editor"
+							wikiwords="no"
+							contenteditable 
+							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
+						@source(./title)
+					</span>
+				</h1>
+			</macro>
+			<macro texteditor>
+				<pre class="editor"
+						wikiwords="no"
+						contenteditable
+						oninput="saveLiveContent(\'@source(s ./path)\', this.innerText)"
+					><quote filter="quote-tags" src="."/></pre> 
+			</macro>
+			<macro editor join="@source(file-separator)">
+				@macro(titleeditor .)
+				@macro(texteditor .)
+			</macro>
+			
 			<slot pre>
 				<title>@source(../title) (edit)</title>
 			</slot>
-
 			<slot parent>../..</slot>
 			<slot location>@source(../location/!)</slot>
 			<slot edit/>
-
 			<slot content>
-				<macro src=".." join="@source(file-separator)">
-					<h1>
-						<span class="title-editor"
-								wikiwords="no"
-								contenteditable 
-								oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
-							@source(./title)
-						</span>
-					</h1>
-					<pre class="editor"
-							wikiwords="no"
-							contenteditable
-							oninput="saveLiveContent(\'@source(s ./path)\', this.innerText)"
-					><quote filter="quote-tags" src="."/></pre> 
-				</macro>
+				<macro editor src=".."/>
 			</slot>`},
 	/*/
 	edit: {
@@ -2156,26 +2162,21 @@ module.System = {
 		text: object.doc`
 			@load(./edit)
 
-			<slot content>
-				<macro src=".." join="@source(file-separator)">
-					<h1>
-						<span class="title-editor"
-								wikiwords="no"
-								contenteditable 
-								oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
-							@source(./title)
-						</span>
-					</h1>
-					<div class="editor"
-							wikiwords="no"
-							contenteditable
-							class="native-editor"
-							oninput="saveLiveContent('@source(s ./path)/html', this.innerHTML)">
-						@quote(./html)
-					</div>
-				</macro>
-			</slot>
+			<macro texteditor>
+				<div class="editor"
+						wikiwords="no"
+						contenteditable
+						class="native-editor"
+						oninput="saveLiveContent('@source(s ./path)/html', this.innerHTML)">
+					@quote(./html)
+				</div>
+			</macro>
 
+			<!-- NOTE: we need to redefine this to make the overloaded 
+					texteditor macro visible... -->
+			<slot content>
+				<macro editor src=".."/>
+			</slot>
 			<slot footer>
 				<div style="text-align:right">
 					<b>visual</b> 
@@ -2186,25 +2187,20 @@ module.System = {
 		text: object.doc`
 			@load(./edit)
 
-			<slot content>
-				<macro src=".." join="@source(file-separator)">
-					<h1>
-						<span class="title-editor"
-								wikiwords="no"
-								contenteditable 
-								oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
-							@source(./title)
-						</span>
-					</h1>
-					<pre class="editor"
-							wikiwords="no"
-							contenteditable
-							class="native-editor"
-							oninput="saveLiveContent('@source(s ./path)', this.innerText)"
-						><quote filter="quote-tags" src="."/></pre> 
-				</macro>
-			</slot>
+			<macro texteditor>
+				<pre class="editor"
+						wikiwords="no"
+						contenteditable
+						class="native-editor"
+						oninput="saveLiveContent('@source(s ./path)', this.innerText)"
+					><quote filter="quote-tags" src="."/></pre> 
+			</macro>
 
+			<!-- NOTE: we need to redefine this to make the overloaded 
+					texteditor macro visible... -->
+			<slot content>
+				<macro editor src=".."/>
+			</slot>
 			<slot footer>
 				<div style="text-align:right">
 					<a href="#../ed-visual">visual</a> 
