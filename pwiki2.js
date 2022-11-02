@@ -18,6 +18,7 @@
 * 		- CLI										- 
 *
 *
+* XXX should @quote(..)'s expandactions  be on by default???
 * XXX FEATURE store: mirror (slave) -- a way to hold data in one store 
 * 		and to mirror everything (async) to a separate store...
 * 		example:

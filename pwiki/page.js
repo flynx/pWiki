@@ -1126,7 +1126,9 @@ object.Constructor('Page', BasePage, {
 						&& this.actions_inherit_args.has(pwpath.basename(src))
 						&& this.get(pwpath.dirname(src)).path == this.path){
 					src += ':$ARGS' }
-				var expandactions = args.expandactions
+				var expandactions = 
+					args.expandactions
+						?? true
 
 				var depends = state.depends = 
 					state.depends 
@@ -2020,17 +2022,25 @@ module.System = {
 			<slot header>
 				<a href="#/list">&#9776</a>
 				<a href="#<slot parent>../</slot>">&#x21D1;</a>
+				<!-- XXX make this editable... -->
 				[<slot location>@source(./location/!)</slot>]
 				<a href="javascript:refresh()">&#10227;</a>
-				<a href="#@source(s ./path/!)/edit">&#9998;</a>
+				<slot edit>
+					<a href="#@source(s ./path/!)/edit">&#9998;</a>
+				</slot>
 			</slot>
 			<hr>
+			<slot content/>
+			<hr>
+			<slot footer/>
+			
+			<!-- NOTE: this is not included directly to enable client code to 
+					set slots that are defined after the content... -->
 			<slot content>
 				<h1><slot title>@source(./title/!)</slot></h1>
 				@include(.:$ARGS join="@source(file-separator)" recursive="")
 			</slot>
-			<hr>
-			<slot footer/>` },
+			` },
 	// XXX add join...
 	_raw: {
 		text: '@quote(.)' },
@@ -2089,6 +2099,7 @@ module.System = {
 
 			<slot parent>../..</slot>
 			<slot location>@source(../location/!)</slot>
+			<slot edit/>
 
 			<slot content>
 				<macro src=".." join="@source(file-separator)">
@@ -2137,6 +2148,69 @@ module.System = {
 				</macro>
 			</slot>`},
 	//*/
+	//
+	// XXX EXPERIMENTAL...
+	ed: {
+		text: object.doc` @source(../ed-visual) `},
+	'ed-visual': {
+		text: object.doc`
+			@load(./edit)
+
+			<slot content>
+				<macro src=".." join="@source(file-separator)">
+					<h1>
+						<span class="title-editor"
+								wikiwords="no"
+								contenteditable 
+								oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
+							@source(./title)
+						</span>
+					</h1>
+					<div class="editor"
+							wikiwords="no"
+							contenteditable
+							class="native-editor"
+							oninput="saveLiveContent('@source(s ./path)/html', this.innerHTML)">
+						@quote(./html)
+					</div>
+				</macro>
+			</slot>
+
+			<slot footer>
+				<div style="text-align:right">
+					<b>visual</b> 
+					| <a href="#../ed-text">text</a> 
+				</div>
+			</slot> `},
+	'ed-text': {
+		text: object.doc`
+			@load(./edit)
+
+			<slot content>
+				<macro src=".." join="@source(file-separator)">
+					<h1>
+						<span class="title-editor"
+								wikiwords="no"
+								contenteditable 
+								oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
+							@source(./title)
+						</span>
+					</h1>
+					<pre class="editor"
+							wikiwords="no"
+							contenteditable
+							class="native-editor"
+							oninput="saveLiveContent('@source(s ./path)', this.innerText)"
+						><quote filter="quote-tags" src="."/></pre> 
+				</macro>
+			</slot>
+
+			<slot footer>
+				<div style="text-align:right">
+					<a href="#../ed-visual">visual</a> 
+					| <b>text</b> 
+				</div>
+			</slot> `},
 
 	// XXX debug...
 	_path: {text: '@source(./path/! join=" ")'},
