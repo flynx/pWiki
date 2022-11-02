@@ -18,6 +18,9 @@
 * 		- CLI										- 
 *
 *
+* XXX macro: should macro attrs also be defined as vars???
+* XXX macros: should vars and url args be unified???
+* 		...likely no but need tho think about it some more...
 * XXX should @quote(..)'s expandactions  be on by default???
 * XXX FEATURE store: mirror (slave) -- a way to hold data in one store 
 * 		and to mirror everything (async) to a separate store...
