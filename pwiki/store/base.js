@@ -182,14 +182,12 @@ module.BaseStore = {
 	// NOTE: this is built from .paths so there is no need to define a 
 	// 		way to merge...
 	__names: index.makeIndex('names', 
-		function(){
-			return this.paths
-				.iter()
-				.reduce(function(res, path){
-					var n = pwpath.basename(path)
-					if(!n.includes('*')){
-						(res[n] = res[n] ?? []).push(path) }
-					return res }, {}) }, {
+		async function(){
+			var update = this.__names.options.update
+			var index = {}
+			for(var path of (await this.paths)){
+				index = update.call(this, index, path) }
+			return index }, {
 		update: async function(data, path){
 			data = await data
 			// XXX normalize???
@@ -251,18 +249,11 @@ module.BaseStore = {
 		return this.__paths_isvalid__(t) },
 	__tags: index.makeIndex('tags', 
 		async function(){
-			var tags = {}
-			var paths = {}
+			var index = {tags: {}, paths: {}}
+			var update = this.__tags.options.update
 			for(var path of (await this.paths)){
-				var t = (await this.get(path)).tags
-				if(!t){
-					continue }
-				paths[path] = new Set(t)
-				for(var tag of t){
-					;(tags[tag] = 
-							tags[tag] ?? new Set([]))
-						.add(path) } }
-			return {tags, paths} }, {
+				index = update.call(this, index, path, await this.get(path)) }
+			return index }, {
 		update: async function(data, path, update){
 			if(!('tags' in update)){
 				return data }
@@ -299,19 +290,29 @@ module.BaseStore = {
 
 	// XXX text search index (???)
 	// XXX do we index .data.text or .raw or .text
+	// XXX should we have separate indexes for path, text and tags or 
+	// 		cram the three together?
+	// XXX need to store this...
 	__search: index.makeIndex('search',
 		async function(){
 			var index = new flexsearch.Index() 
+			var update = this.__search.options.update
 			for(var path of (await this.paths)){
-				var text = (await this.get(path)).text
-				text
-					&& typeof(text) != 'function'
-					&& index.add(path, text) }
+				update.call(this, index, path, await this.get(path)) }
 			return index }, {
 		update: async function(data, path, update){
-			update.text
-				&& typeof(update.text) != 'function'
-				&& (await data).add(path, update.text) 
+			var {text, tags} = update
+			text = [
+				path,
+				((text 
+						&& typeof(text) != 'function') ?
+					text
+					: ''),
+				(tags ?
+					'#'+ tags.join(' #')
+					: ''),
+			].join('\n\n')
+			;(await data).add(path, update.text) 
 			return data },
 		remove: async function(data, path){
 			;(await data).remove(path) 
