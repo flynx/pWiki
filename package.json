@@ -5,6 +5,7 @@
   "license": "BSD",
   "dependencies": {
     "@toast-ui/editor": "^3.2.0",
+    "flexsearch": "^0.7.31",
     "glob": "*",
     "idb-keyval": "^6.2.0",
     "ig-actions": "*",

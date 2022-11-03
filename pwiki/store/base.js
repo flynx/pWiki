@@ -7,6 +7,8 @@
 (function(require){ var module={} // make module AMD/node compatible...
 /*********************************************************************/
 
+var flexsearch = require('flexsearch')
+
 var object = require('ig-object')
 var types = require('ig-types')
 
@@ -296,6 +298,26 @@ module.BaseStore = {
 
 
 	// XXX text search index (???)
+	// XXX do we index .data.text or .raw or .text
+	__search: index.makeIndex('search',
+		async function(){
+			var index = new flexsearch.Index() 
+			for(var path of (await this.paths)){
+				var text = (await this.get(path)).text
+				text
+					&& typeof(text) != 'function'
+					&& index.add(path, text) }
+			return index }, {
+		update: async function(data, path, update){
+			update.text
+				&& typeof(update.text) != 'function'
+				&& (await data).add(path, update.text) 
+			return data },
+		remove: async function(data, path){
+			;(await data).remove(path) 
+			return data }, }),
+	search: function(){
+		return this.__search().search(...arguments) },
 
 
 	//

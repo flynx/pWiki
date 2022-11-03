@@ -4,7 +4,7 @@
 * XXX ASAP start writing docs in pwiki
 * 		- minimal/functional editor					- DONE
 * 		- WYSIWYG markdown editor/viewer (ASAP)		- 
-* 		- transparent sync
+* 		- transparent sync/backup
 * 			- fs store/export in browser or a simple way to export/import...
 * 				...can't seem to get it to work without asking for permission
 * 				on every startup (one more thing left to try, keeping the 
@@ -16,6 +16,13 @@
 * 		- images									- XXX 
 * 		- GUI										- 
 * 		- CLI										- 
+*
+* XXX things that will help:
+* 		- async render (infinite scroll + search + large pages)
+* 			unresolved -> dom placeholder
+* 			iterator prepends to placeholder
+* 			when resolved/done remove placeholder
+* 		- 
 *
 *
 * XXX macro-vars: should the vars be defined as macro:<name> (current) or 

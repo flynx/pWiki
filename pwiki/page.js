@@ -2325,7 +2325,22 @@ module.System = {
 	RecursionError: {
 		text: 'RECURSION ERROR: @source(../path)' },
 	NotFoundError: { 
-		text: 'NOT FOUND ERROR: @source(./path)' },
+		//text: 'NOT FOUND ERROR: @source(./path)' },
+		text: object.doc`
+			<slot title/>
+
+			<p>NOT FOUND ERROR: @source(./path)</p>
+
+			<slot nested>
+				<div>
+					<b>Nested pages:</b><br>
+					<div style="padding-left: 30px">
+						<macro src="./*" join="<br>" else="@slot(nested)">
+							<a href="#@source(s ./path)">@source(./title)</a>
+						</macro>
+					</div>
+				</div>
+			</slot>` },
 	NotFoundTemplateError: {
 		text: 'NOT FOUND TEMPLATE ERROR: @source(../path)' },
 
