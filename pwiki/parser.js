@@ -35,7 +35,7 @@ module.BaseParser = {
 	//
 	MACRO_ARGS: ['(\\s*(',[
 				// arg='val' | arg="val" | arg=val
-				'(?<PREFIXArgName>[a-z:-]+)\\s*=\\s*(?<PREFIXArgValue>'+([
+				'(?<PREFIXArgName>[a-z:-_]+)\\s*=\\s*(?<PREFIXArgValue>'+([
 					// XXX CHROME/NODE BUG: this does not work yet...
 					//'\\s+(?<quote>[\'"])[^\\k<quote>]*\\k<quote>',
 					'"(?<PREFIXDoubleQuotedValue>(\\"|[^"])*?)"',
@@ -539,6 +539,13 @@ module.BaseParser = {
 		return await this.resolve(page, ast, state)
 			// filters...
 			.map(function(section){
+				// normalize types...
+				section = 
+					typeof(section) == 'number' ?
+						section + ''
+					: section == null ?
+						''
+					: section
 				return (
 					// expand section...
 					typeof(section) != 'string' ?

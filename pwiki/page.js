@@ -1299,29 +1299,70 @@ object.Constructor('Page', BasePage, {
 		'content': ['slot'],
 
 		// XXX EXPERIMENTAL...
+		// XXX INC_DEC do we need inc/dec and parent???
 		'var': Macro(
 			['name', 'text', 
+				// XXX INC_DEC
+				['shown', 'hidden', 'inc', 'dec', 'parent']],
+				/*/
 				['shown', 'hidden']],
+				//*/
 			async function(args, body, state){
 				var name = args.name
 				if(!name){
 					return '' }
 				name = await this.parse(name, state)
+				// XXX INC_DEC
+				var inc = args.inc
+				var dec = args.dec
+				//*/
 				var text = args.text 
 					?? body 
+				// NOTE: .hidden has priority...
+				var show = 
+						('hidden' in args ?
+							!args.hidden
+							: undefined)
+						?? args.shown 
+
 				var vars = state.vars = 
 					state.vars 
 						?? {}
+				// XXX INC_DEC
+				if(args.parent && name in vars){
+					while(!vars.hasOwnProperty(name)
+							&& vars.__proto__ !== Object.prototype){
+						vars = vars.__proto__ } }
+
+				// inc/dec...
+				if(inc || dec){
+					if(!(name in vars) 
+							|| isNaN(parseInt(vars[name]))){
+						return '' }
+					var cur = parseInt(vars[name])
+					cur += 
+						inc === true ? 
+							1 
+						: !inc ?
+							0
+						: parseInt(inc)
+					cur -= 
+						dec === true ? 
+							1 
+						: !dec ?
+							0
+						: parseInt(dec)
+					vars[name] = cur + ''
+					return show ?? true ?
+						vars[name]
+						: '' }
+				//*/
 
 				// set...
 				if(text){
 					text = vars[name] = 
 						await this.parse(text, state)
-					var show = args.shown 
-						|| ('hidden' in args 
-							&& !args.hidden)
-						|| false
-					return show ?
+					return show ?? false ?
 						text
 						: ''
 				// get...
@@ -1359,9 +1400,15 @@ object.Constructor('Page', BasePage, {
 		// 		</else>
 		// 	</macro>
 		//
-		// XXX SORT sorting not implemented yet....
+		// NOTE: this handles src count argument internally partially 
+		// 		overriding <store>.match(..)'s implementation, this is done
+		// 		because @macro(..) needs to account for arbitrary nesting 
+		// 		that <store>.match(..) can not know about...
+		// 		XXX should we do the same for offset???
+		//
+		// XXX SORT sorting not implemented yet...
 		macro: Macro(
-			['name', 'src', 'sort', 'text', 'join', 'else', 
+			['name', 'src', 'sort', 'text', 'join', 'else',
 				['strict', 'isolated', 'inheritmacros', 'inheritvars' ]],
 			async function*(args, body, state){
 				var that = this
@@ -1504,9 +1551,36 @@ object.Constructor('Page', BasePage, {
 								'no'
 							: value }
 
+					// XXX COUNT
+					// handle count...
+					// NOTE: this duplicates <store>.match(..)'s functionality
+					// 		because we need to account for arbitrary macro 
+					// 		nesting that .match(..) does not know about...
+					// XXX we still end up with NaN in some cases...
+					var count = pwpath.splitArgs(src).args.count
+					if(count == 'inherit' 
+							&& !('macro:count' in vars)){
+						vars['macro:count'] =
+							vars['macro:count']
+								?? parseInt(this.args.count) }
+					if(count 
+							&& count != 'inherit'){
+						vars['macro:count'] = parseInt(count) }
+					//*/
+						
 					// expand matches...
 					var first = true
 					for await(var page of match.asPages(strict)){
+						// XXX COUNT
+						// handle count...
+						if(vars['macro:count'] <= 0){
+							break }
+						if('macro:count' in vars){
+							var v = vars
+							while(!v.hasOwnProperty('macro:count')){
+								v = v.__proto__ }
+							v['macro:count']-- }
+						//*/
 						if(join && !first){
 							yield join }
 						first = false 
@@ -1528,6 +1602,9 @@ object.Constructor('Page', BasePage, {
 									text, _state), _state)
 						} else {
 							yield this.__parser__.expand(page, text, state) } }
+					// XXX COUNT
+					// cleanup...
+					delete vars['macro:count']
 					// else...
 					if(first
 							&& (text || args['else'])){
@@ -2226,11 +2303,16 @@ module.System = {
 	// 		...for this we'll need to be able to either:
 	// 			- count our own pages or 
 	// 			- keep a global count
+	// 		...with offset the issue is not solvable because we will not 
+	// 		see/count the children of skipped nodes -- the only way to 
+	// 		solve this is to completely handle offset in macro...
 	tree: {
 		text: object.doc`
 			<slot title/>
+			<!--@var(count "@(count)")-->
 
-			<macro tree src="../*:$ARGS">
+			<!--macro tree src="../*:$ARGS"-->
+			<macro tree src="../*:$ARGS:count=inherit">
 				@var(path "@source(s ./path)")
 				<div>
 					<div class="item">
@@ -2241,7 +2323,7 @@ module.System = {
 							>&times;</a>
 					</div>
 					<div style="padding-left: 30px">
-						@macro(tree "./*:$ARGS")
+						@macro(tree "./*:$ARGS:count=inherit")
 					</div>
 				</div>
 			</macro>` },

@@ -25,8 +25,15 @@
 * 		- 
 *
 *
-* XXX macro-vars: should the vars be defined as macro:<name> (current) or 
-* 		simply as <name>???
+* XXX not yet sure why /tree's root macro needs to have count=inherit...
+* 		for an example see:
+* 			/Tests/MacroPageCountInheritTest:count=3
+* 				...adding :count=inherit after $ARGS fixes the issue...
+* 		not sure why this works in this context:
+* 			/Tests/MacroCountTest
+* XXX should @macro(..) handle offset in the same manner as count???
+* XXX BUG: @var(macro:count) can still be NaN in some cases...
+* XXX BUG: count does not appear to affext /Test/list/generator and /Test/list/static...
 * XXX macros: should vars and url args be unified???
 * 		...likely no but need tho think about it some more...
 * XXX should @quote(..)'s expandactions  be on by default???
