@@ -2222,6 +2222,10 @@ module.System = {
 				<a href="#@var(path)/delete">&times;</a>
 			</macro>` },
 	// XXX this is really slow...
+	// XXX need to handle count/offset arguments correctly...
+	// 		...for this we'll need to be able to either:
+	// 			- count our own pages or 
+	// 			- keep a global count
 	tree: {
 		text: object.doc`
 			<slot title/>

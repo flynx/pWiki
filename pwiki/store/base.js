@@ -293,9 +293,17 @@ module.BaseStore = {
 	// XXX should we have separate indexes for path, text and tags or 
 	// 		cram the three together?
 	// XXX need to store this...
+	/* XXX
+	__search_options: {
+		preset: 'match',
+		tokenize: 'full',
+	},
+	//*/
 	__search: index.makeIndex('search',
 		async function(){
-			var index = new flexsearch.Index() 
+			var index = new flexsearch.Index(
+				this.__search_options 
+					?? {}) 
 			var update = this.__search.options.update
 			for(var path of (await this.paths)){
 				update.call(this, index, path, await this.get(path)) }
@@ -387,6 +395,7 @@ module.BaseStore = {
 				: '/'+p
 			if(pages.has(p)){
 				return p+args } } },
+
 	// 
 	// 	Resolve page for path
 	// 	.match(<path>)
@@ -407,6 +416,73 @@ module.BaseStore = {
 	// actual existing pages, while in non-strict mode the pattern will 
 	// match all sub-paths.
 	//
+	__match_args__: {
+		//
+		//	<tag-name>: function(value, args){
+		//		// setup state if needed and pre-check...
+		//		// ...
+		//		return no_check_needed ?
+		//			false
+		//			// path predicate...
+		//			: function(path){
+		//				if( path_matches ){
+		//					return true } } },
+		//
+		// NOTE: handlers are run in order of definition.
+		//
+		tags: async function(tags){
+			tags = typeof(tags) == 'string' ?
+				this.parseTags(tags)
+				: false
+			tags && await this.tags
+			return tags 
+				&& function(path){
+					// tags -> skip untagged pages...
+					var t = this.tags.paths[path]
+					if(!t){
+						return false }
+					for(var tag of tags){
+						if(!t || !t.has(tag)){
+							return false } } 
+					return true } },
+		search: async function(search){
+			search = search 
+				&& new Set(await this.search(search))
+			return search instanceof Set
+				&& function(path){
+					// nothing found or not in match list...
+					if(search.size == 0 
+							|| !search.has(path)){
+						return false } 
+					return true } },
+		// XXX EXPERIMENTAL...
+		// XXX add page/page-size???
+		offset: function(offset){
+			offset = parseInt(offset)
+			return !!offset
+				&& function(path){
+					offset--
+					return !(offset >= 0) } },
+		count: function(count){
+			count = parseInt(count)
+			return !!count
+				&& function(path){
+					count--
+					return !!(count >= 0) } },
+	},
+	__match_args: async function(args){
+		var that = this
+		var predicates = []
+		for(var [key, gen] of Object.entries(this.__match_args__ ?? {})){
+			var p = await gen.call(this, args[key], args)
+			p && predicates.push(p) }
+		return predicates.length > 0 ?
+			function(path){
+				for(var p of predicates){
+					if(!p.call(that, path)){
+						return false } }
+				return true }
+			: undefined },
 	match: async function(path, strict=false){
 		var that = this
 		// pattern match * / **
@@ -416,11 +492,7 @@ module.BaseStore = {
 
 			var {path, args} = pwpath.splitArgs(path)
 			var all = args.all
-			var tags = args.tags
-			tags = typeof(tags) == 'string' ?
-				this.parseTags(tags)
-				: false
-			tags && await this.tags
+			var test = await this.__match_args(args)
 			args = pwpath.joinArgs('', args)
 
 			// NOTE: we are matching full paths only here so leading and 
@@ -444,16 +516,9 @@ module.BaseStore = {
 						// skip metadata paths...
 						if(p.includes('*')){
 							return res }
-						// skip untagged pages...
-						if(tags){ 
-							var t = that.tags.paths[p]
-							if(!t){
-								return res }
-							for(var tag of tags){
-								if(!t || !t.has(tag)){
-									return res } } }
+						// check path: stage 1
 						var m = [...p.matchAll(pattern)]
-						m.length > 0
+						var visible = m.length > 0
 							&& (!all ?
 								// test if we need to hide things....
 								m.reduce(function(res, m){
@@ -462,6 +527,16 @@ module.BaseStore = {
 										: !/(^\.|[\\\/]\.)/.test(m[1])
 								}, true)
 								: true)
+						// args...
+						// NOTE: this needs to be between path checking 
+						// 		stages as we need to skip paths depending 
+						// 		on the all argument...
+						if(visible 
+								&& test 
+								&& !test(p)){
+							return res }
+						// check path: stage 2
+						visible
 							&& (m = m[0])
 							&& (!strict 
 								|| m[0] == p) 

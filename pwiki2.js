@@ -12,7 +12,7 @@
 * 			- pouchdb-couchdb sync					- 
 * 			- pouchdb-pouchdb sync (p2p via webrtc) - XXX 
 * 		- tags										- DONE
-* 		- search									- 
+* 		- search									- DONE
 * 		- images									- XXX 
 * 		- GUI										- 
 * 		- CLI										- 
@@ -74,17 +74,6 @@
 * XXX generalize html/dom api...
 * 		...see refresh() in pwiki2.html
 * XXX test pouchdb latency at scale in browser...
-* XXX BUG: for some reason deleting and refreshing takes ~2x as long as 
-* 		refreshing...
-* 		to reproduce:
-* 			pwiki.path = '/tree' 								// reports about ~2sec
-* 			await pwiki.get('/Test/Subtree/Page2/delete').raw	// refresh reports ~4sec (XXX)
-* 		while:
-* 			pwiki.path = '/tree' 								// reports about ~2sec
-* 			await pwiki.get('/Test/Subtree/Page2').delete()		// fast
-* 			pwiki.path = '/tree' 								// reports about ~2sec
-* 		XXX test with action...
-* 		...cane we make everything index-related sync?
 * XXX macros: .depends: need fast path pattern matching... 
 * XXX macros / CACHE: convert a /path/* dependency to /path/** if a script 
 * 		is recursive...
@@ -120,23 +109,6 @@
 * 			...likely no...
 * 			...would depend on where we iterate pages and on whether 
 * 			we can/should reach that spot from within the parser...
-* XXX page access mothods (.get(..) / .__get__(..) via path + args)
-* 			- path	   			 -- DONE
-* 			- tags	   			 -- 
-* 			- search   			 -- 
-* 		Syntax:
-* 			/path/to/*:tags=a,b,c:search=some text
-* 			+--------+ . . . . . . . . . . . . . . . .  path           
-* 			           +--------+ . . . . . . . . . . . tags
-* 			                      +--------------+ . .  search
-*		order is not relevant here...
-*		each of the methods narrows down the previous' results
-* XXX FEATURE list macro paging...
-* 		...should this be macro level or handled in .each()
-* 		what mode?
-* 			- count + block-offset (preferred)
-* 			- count + elem-offset
-* 			- from + to
 * XXX revise/update sort...
 * XXX FEATURE images...
 * XXX async/live render...
@@ -252,7 +224,6 @@
 * XXX add action to reset overloaded (bootstrap/.next) pages...
 * 		- per page
 * 		- global
-* XXX TEST @macro(..) and @slot(..) must overload in the same way...
 * XXX should render templates (_view and the like) be a special case
 * 		or render as any other page???
 * 		...currently they are rendered in the context of the page and
@@ -322,8 +293,8 @@
 * 		- get tags from page						-- DONE
 * 		- show tagged pages							-- DONE
 * 	- search
-* 		- paths										--
-* 		- text										-- 
+* 		- paths										-- ???
+* 		- text										-- DONE 
 * 	- markdown										-- DONE
 * 	- WikiWord										-- DONE
 * 	- dom filter mechanics							-- DONE
