@@ -1551,36 +1551,37 @@ object.Constructor('Page', BasePage, {
 								'no'
 							: value }
 
-					// XXX COUNT
 					// handle count...
 					// NOTE: this duplicates <store>.match(..)'s functionality
 					// 		because we need to account for arbitrary macro 
 					// 		nesting that .match(..) does not know about...
-					// XXX we still end up with NaN in some cases...
-					var count = pwpath.splitArgs(src).args.count
-					if(count == 'inherit' 
-							&& !('macro:count' in vars)){
-						vars['macro:count'] =
-							vars['macro:count']
-								?? parseInt(this.args.count) }
-					if(count 
-							&& count != 'inherit'){
-						vars['macro:count'] = parseInt(count) }
-					//*/
+					// XXX revise var naming...
+					// XXX these can be overriden in nested macros...
+					var count = match.args.count
+					if(count){
+						var c =
+							count == 'inherit' ?
+								(!('macro:count' in vars) ?
+									this.args.count
+									: undefined)
+								: count 
+						if(c !== undefined){
+							vars['macro:count'] = 
+								isNaN(parseInt(c)) ?
+									c
+									: parseInt(c) 
+							vars['macro:index'] = 0 } }
 						
 					// expand matches...
 					var first = true
 					for await(var page of match.asPages(strict)){
-						// XXX COUNT
 						// handle count...
-						if(vars['macro:count'] <= 0){
-							break }
 						if('macro:count' in vars){
-							var v = vars
-							while(!v.hasOwnProperty('macro:count')){
-								v = v.__proto__ }
-							v['macro:count']-- }
-						//*/
+							if(vars['macro:count'] <= vars['macro:index']){
+								break }
+							object.sources(vars, 'macro:index')
+								.shift()['macro:index']++ }
+						// output join between elements....
 						if(join && !first){
 							yield join }
 						first = false 
@@ -1602,9 +1603,9 @@ object.Constructor('Page', BasePage, {
 									text, _state), _state)
 						} else {
 							yield this.__parser__.expand(page, text, state) } }
-					// XXX COUNT
 					// cleanup...
 					delete vars['macro:count']
+					delete vars['macro:index']
 					// else...
 					if(first
 							&& (text || args['else'])){
@@ -2311,8 +2312,7 @@ module.System = {
 			<slot title/>
 			<!--@var(count "@(count)")-->
 
-			<!--macro tree src="../*:$ARGS"-->
-			<macro tree src="../*:$ARGS:count=inherit">
+			<macro tree src="../*:$ARGS">
 				@var(path "@source(s ./path)")
 				<div>
 					<div class="item">
