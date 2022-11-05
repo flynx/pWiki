@@ -312,13 +312,13 @@ module.BaseStore = {
 			var {text, tags} = update
 			text = [
 				path,
-				((text 
+				(text 
 						&& typeof(text) != 'function') ?
 					text
-					: ''),
-				(tags ?
+					: '',
+				tags ?
 					'#'+ tags.join(' #')
-					: ''),
+					: '',
 			].join('\n\n')
 			;(await data).add(path, update.text) 
 			return data },
