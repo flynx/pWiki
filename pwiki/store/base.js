@@ -120,6 +120,7 @@ module.BaseStore = {
 	set data(value){
 		this.__data = value },
 
+	__cache_path__: '.cache',
 	// XXX not sure if it is better to set these here or use index.IndexManagerMixin(..)
 	get index_attrs(){
 		return [...index.iter(this)] },
@@ -300,14 +301,23 @@ module.BaseStore = {
 	},
 	//*/
 	__search: index.makeIndex('search',
+		// XXX do a load if present...
 		async function(){
-			var index = new flexsearch.Index(
-				this.__search_options 
-					?? {}) 
-			var update = this.__search.options.update
-			for(var path of (await this.paths)){
-				update.call(this, index, path, await this.get(path)) }
+			var path = this.__cache_path__ +'/search'
+			// load index...
+			if(this.__cache_path__ 
+					&& await this.exists(path)){
+				return this.__search.options.load()
+			// generate...
+			} else {
+				var index = new flexsearch.Index(
+					this.__search_options 
+						?? {}) 
+				var update = this.__search.options.update
+				for(var path of (await this.paths)){
+					update.call(this, index, path, await this.get(path)) } }
 			return index }, {
+		// XXX do a save???
 		update: async function(data, path, update){
 			var {text, tags} = update
 			text = [
@@ -322,8 +332,43 @@ module.BaseStore = {
 			].join('\n\n')
 			;(await data).add(path, update.text) 
 			return data },
+		// XXX do a save???
 		remove: async function(data, path){
 			;(await data).remove(path) 
+			return data }, 
+		// XXX EXPERIMENTAL...
+		save: async function(data){
+			if(this.__cache_path__){
+				var that = this
+				var path = this.__cache_path__ +'/search'
+				/*/ XXX this thing runs async but does not return a promise...
+				var index = {}
+				data.export(
+					function(key, value){
+						index[key] = value })
+				this.update(path, {index}) 
+				/*/
+				// XXX this is quote ugly but can't figure out a way to 
+				// 		track when exporting is done...
+				var index = {}
+				data.export(
+					function(key, value){
+						index[key] = value
+						return that.update(path, {index}) })
+				//*/
+			}
+			return data },
+		load: async function(data){
+			if(this.__cache_path__){
+				var path = this.__cache_path__ +'/search'
+				var {index} = 
+					await this.get(path) 
+						?? {index: {}}
+				var data = new flexsearch.Index(
+					this.__search_options 
+						?? {}) 
+				for(var [key, value] of Object.entries(index)){
+					data.import(key, value) } }
 			return data }, }),
 	search: function(){
 		return this.__search().search(...arguments) },
