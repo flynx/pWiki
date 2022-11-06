@@ -151,13 +151,13 @@ module.BaseStore = {
 		this.__paths_next_exists = !this.next
 		return changed },
 	__paths: index.makeIndex('paths', {
-		update: async function(data, path){
+		update: async function(data, name, path){
 			data = await data
 			// XXX normalize???
 			data.includes(path)
 				|| data.push(path)
 			return data }, 
-		remove: async function(data, path){
+		remove: async function(data, name, path){
 			data = await data
 			// XXX normalize???
 			data.includes(path)
@@ -187,9 +187,9 @@ module.BaseStore = {
 			var update = this.__names.options.update
 			var index = {}
 			for(var path of (await this.paths)){
-				index = update.call(this, index, path) }
+				index = update.call(this, index, name, path) }
 			return index }, {
-		update: async function(data, path){
+		update: async function(data, name, path){
 			data = await data
 			// XXX normalize???
 			var n = pwpath.basename(path)
@@ -197,7 +197,7 @@ module.BaseStore = {
 					&& !(data[n] ?? []).includes(path)){
 				(data[n] = data[n] ?? []).push(path) }
 			return data },
-		remove: async function(data, path){
+		remove: async function(data, name, path){
 			data = await data
 			// XXX normalize???
 			var n = pwpath.basename(path)
@@ -253,14 +253,12 @@ module.BaseStore = {
 			var index = {tags: {}, paths: {}}
 			var update = this.__tags.options.update
 			for(var path of (await this.paths)){
-				index = update.call(this, index, path, await this.get(path)) }
+				index = update.call(this, index, name, path, await this.get(path)) }
 			return index }, {
-		update: async function(data, path, update){
-			if(!('tags' in update)){
-				return data }
+		update: async function(data, name, path, update){
 			var {tags, paths} = await data
 			// remove obsolete tags...
-			this.__tags.options.remove.call(this, data, path)
+			this.__tags.options.remove.call(this, data, name, path)
 			// add...
 			paths[path] = new Set(update.tags)
 			for(var tag of update.tags ?? []){
@@ -268,7 +266,7 @@ module.BaseStore = {
 						tags[tag] ?? new Set([]))
 					.add(path) }
 			return data }, 
-		remove: async function(data, path){
+		remove: async function(data, name, path){
 			var {tags, paths} = await data
 			for(var tag of paths[path] ?? []){
 				tags[tag].delete(path) }
@@ -315,10 +313,25 @@ module.BaseStore = {
 						?? {}) 
 				var update = this.__search.options.update
 				for(var path of (await this.paths)){
-					update.call(this, index, path, await this.get(path)) } }
+					update.call(this, index, name, path, await this.get(path)) } }
 			return index }, {
+		/* XXX problematic...
+		__save_changes: async function(name, action, path, ...args){
+			//if(this.__cache_path__ 
+			//		&& this.exists(this.__cache_path__ +'/'+ name)){
+			if(this.__cache_path__){
+				// do not save changes to changes ;)
+				if(path.startsWith(this.__cache_path__)){
+					return }
+				var p = [this.__cache_path__, name, 'changes'].join('/')
+				var {changes} = await this.get(p) ?? {}
+				changes = changes ?? []
+				changes.push([Date.now(), action, path, ...args])
+				// XXX this needs not to trigger handlers...
+				return this.__update(p, {changes}) } },
+		//*/
 		// XXX do a save???
-		update: async function(data, path, update){
+		update: async function(data, name, path, update){
 			var {text, tags} = update
 			text = [
 				path,
@@ -331,22 +344,27 @@ module.BaseStore = {
 					: '',
 			].join('\n\n')
 			;(await data).add(path, update.text) 
+			// handle changes...
+			//this.__search.options.__save_changes.call(this, name, 'update', path, update)
 			return data },
 		// XXX do a save???
-		remove: async function(data, path){
+		remove: async function(data, name, path){
 			;(await data).remove(path) 
+			// handle changes...
+			//this.__search.options.__save_changes.call(this, name, 'remove', path)
 			return data }, 
 		// XXX EXPERIMENTAL...
-		save: async function(data){
+		save: async function(data, name){
 			if(this.__cache_path__){
 				var that = this
-				var path = this.__cache_path__ +'/search'
-				/*/ XXX this thing runs async but does not return a promise...
+				var path = this.__cache_path__ +'/'+ name
+				this.delete(path +'/changes')
+				/*/ XXX HACK this thing runs async but does not return a promise...
 				var index = {}
 				data.export(
 					function(key, value){
 						index[key] = value })
-				this.update(path, {index}) 
+				this.update(path, {index}) }
 				/*/
 				// XXX this is quote ugly but can't figure out a way to 
 				// 		track when exporting is done...
@@ -354,13 +372,13 @@ module.BaseStore = {
 				data.export(
 					function(key, value){
 						index[key] = value
-						return that.update(path, {index}) })
+						return that.update(path, {index}) }) }
 				//*/
-			}
 			return data },
-		load: async function(data){
+		load: async function(data, name){
 			if(this.__cache_path__){
-				var path = this.__cache_path__ +'/search'
+				var path = this.__cache_path__ +'/'+ name
+				var changes = path +'/changes'
 				var {index} = 
 					await this.get(path) 
 						?? {index: {}}
@@ -368,7 +386,9 @@ module.BaseStore = {
 					this.__search_options 
 						?? {}) 
 				for(var [key, value] of Object.entries(index)){
-					data.import(key, value) } }
+					data.import(key, value) } 
+				// XXX load changes...
+			}
 			return data }, }),
 	search: function(){
 		return this.__search().search(...arguments) },
@@ -722,7 +742,7 @@ module.BaseStore = {
 	__update: async function(path, data, mode='update'){
 		// read-only...
 		if(this.__update__ == null){
-			return this }
+			return data }
 		var exists = await this.exists(path) 
 		path = exists
 			|| pwpath.sanitize(path, 'string')
@@ -745,7 +765,7 @@ module.BaseStore = {
 					{mtime: Date.now()})
 		await this.__update__(path, data, mode)
 		this.index('update', path, data, mode)
-		return this },
+		return data },
 	// XXX can we do a blanket .index('update', ...) here??
 	// 		...currently this will mess up caches between .next/.substores 
 	// 		and the top level store to an inconsistent state...
@@ -756,7 +776,7 @@ module.BaseStore = {
 			handler(false)
 			var res = await this.__update(...[...arguments].slice(1)) 
 			handler()
-			return res }),
+			return this }),
 
 	__delete__: async function(path){
 		delete this.data[path] },
@@ -813,7 +833,9 @@ module.BaseStore = {
 		// one-by-one loader...
 		} else {
 			for(var [path, value] of Object.entries(input)){
+				// XXX LOAD
 				this.update(path, value) } }
+				//this.__update(path, value) } }
 		return this },
 	// NOTE: this will not serialize functions...
 	//__batch_json__: function(){
@@ -990,17 +1012,38 @@ module.MetaStore = {
 			path = pwpath.sanitize(path, 'string')
 			//data.index('clear')
 			;(this.substores = this.substores ?? {})[path] = data
-			return this }
+			return data }
 		// add to substore...
 		var p = this.substore(path)
 		if(p){
-			this.substores[p].update(
+			// XXX should this call .__update(..) ???
+			// 		...if yes, how do we trigger the substore event, if no
+			// 		then how do we nut trigger the event if needed???
+			return this.substores[p].__update(
 				// trim path...
 				path.slice(path.indexOf(p)+p.length),
 				...[...arguments].slice(1))
-			return this }
+			return data }
 		// add local...
 		return object.parentCall(MetaStore.__update, this, ...arguments) },
+	// NOTE: this fully overloads the .update(..) events and duplicates 
+	// 		it's functionality because we need to handle the .__update(..)
+	// 		call differently for .substores here and in .__update(..)...
+	update: types.event.Event('update', 
+		async function(handler, path, data, mode='update'){
+			handler(false)
+			// add to substore...
+			var p = this.substore(path)
+			if(p){
+				var res = await this.substores[p].update(
+					// trim path...
+					path.slice(path.indexOf(p)+p.length),
+					...[...arguments].slice(2))
+			// local...
+			} else {
+				var res = await this.__update(...[...arguments].slice(1)) }
+			handler()
+			return this }),
 	// XXX Q: how do we delete a substore???
 	// XXX need to call .__cache_remove(..) here if we did not super-call...
 	__delete: metaProxy('__delete'), 

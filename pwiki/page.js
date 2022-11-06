@@ -2545,11 +2545,14 @@ module.Templates = {
 		text: object.doc`
 		<slot title/>
 		<slot header><content/><a href="#./$NOW/edit">&#128462;</a></slot>
-		<macro src="*:$ARGS" join="<br>">
+		<macro src="*:$ARGS">
+			@var(path "@source(s ./path)")
 			<div class="item">
-				<a href="#@source(s ./path)/edit">@source(./title)</a>
-				<a class="show-on-hover" href="#@source(s ./path)/info">&#128712;</a>
-				<a class="show-on-hover" href="#@source(s ./path)/delete">&times;</a>
+				<a href="#@var(path)/edit">@source(./title)</a>
+				<a class="show-on-hover" href="#@var(path)/info">&#128712;</a>
+				<a class="show-on-hover" 
+					href="javascript:pwiki.delete('@var(path)')"
+					>&times;</a>
 			</div>
 		</macro>` },
 	// XXX this is not resolved...

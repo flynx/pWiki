@@ -267,7 +267,8 @@ function(name, generate, options={}){
 						this[action_meth](cur, ...args)
 					: (action in options 
 							&& typeof(options[action]) == 'function') ?
-						options[action].call(this, cur, ...args)
+						//options[action].call(this, cur, ...args)
+						options[action].call(this, cur, name, ...args)
 					: cur) 
 				res !== cur
 					&& _stamp(this, res)
