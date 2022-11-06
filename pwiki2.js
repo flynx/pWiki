@@ -25,6 +25,7 @@
 * 		- 
 *
 *
+* XXX Q: can we get state and update in one go???
 * XXX stored index cache: need to define the save/load strategy + stored 
 * 		cache validation...
 * XXX FEATURE: to avoid reinventing the wheel, serialize stuff as pages...

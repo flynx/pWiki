@@ -244,7 +244,9 @@ function(name, generate, options={}){
 			// action: clear/reset...
 			if(action == 'clear' 
 					|| action == 'reset'){
-				delete this[cache] }
+				delete this[cache] 
+				'reset' in options
+					&& options['reset'].call(this, null, name) }
 			if(action == 'clear'){
 				return }
 
@@ -261,15 +263,16 @@ function(name, generate, options={}){
 				var cur = cache in this ?
 					this[cache]
 					: meth.call(this, 'reset')
-				var res = _await(this, this[cache] = 
-					// NOTE: this[action_meth] will fully shadow options[action]...
-					action_meth in this ?
-						this[action_meth](cur, ...args)
-					: (action in options 
-							&& typeof(options[action]) == 'function') ?
-						//options[action].call(this, cur, ...args)
-						options[action].call(this, cur, name, ...args)
-					: cur) 
+				var res = _await(this, 
+					this[cache] = 
+						// NOTE: this[action_meth] will fully shadow options[action]...
+						action_meth in this ?
+							this[action_meth](cur, ...args)
+						: (action in options 
+								&& typeof(options[action]) == 'function') ?
+							//options[action].call(this, cur, ...args)
+							options[action].call(this, cur, name, ...args)
+						: cur) 
 				res !== cur
 					&& _stamp(this, res)
 				return res }

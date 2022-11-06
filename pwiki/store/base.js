@@ -256,6 +256,10 @@ module.BaseStore = {
 				index = update.call(this, index, name, path, await this.get(path)) }
 			return index }, {
 		update: async function(data, name, path, update){
+			// do not index cache...
+			if(this.__cache_path__ 
+					&& !path.startsWith(this.__cache_path__)){
+				return data }
 			var {tags, paths} = await data
 			// remove obsolete tags...
 			this.__tags.options.remove.call(this, data, name, path)
@@ -305,7 +309,7 @@ module.BaseStore = {
 			// load index...
 			if(this.__cache_path__ 
 					&& await this.exists(path)){
-				return this.__search.options.load()
+				return this.__search.options.load.call(this, null, 'search')
 			// generate...
 			} else {
 				var index = new flexsearch.Index(
@@ -315,23 +319,11 @@ module.BaseStore = {
 				for(var path of (await this.paths)){
 					update.call(this, index, name, path, await this.get(path)) } }
 			return index }, {
-		/* XXX problematic...
-		__save_changes: async function(name, action, path, ...args){
-			//if(this.__cache_path__ 
-			//		&& this.exists(this.__cache_path__ +'/'+ name)){
-			if(this.__cache_path__){
-				// do not save changes to changes ;)
-				if(path.startsWith(this.__cache_path__)){
-					return }
-				var p = [this.__cache_path__, name, 'changes'].join('/')
-				var {changes} = await this.get(p) ?? {}
-				changes = changes ?? []
-				changes.push([Date.now(), action, path, ...args])
-				// XXX this needs not to trigger handlers...
-				return this.__update(p, {changes}) } },
-		//*/
-		// XXX do a save???
 		update: async function(data, name, path, update){
+			// do not index cache...
+			if(this.__cache_path__ 
+					&& path.startsWith(this.__cache_path__)){
+				return data }
 			var {text, tags} = update
 			text = [
 				path,
@@ -347,51 +339,69 @@ module.BaseStore = {
 			// handle changes...
 			//this.__search.options.__save_changes.call(this, name, 'update', path, update)
 			return data },
-		// XXX do a save???
 		remove: async function(data, name, path){
-			;(await data).remove(path) 
+			data = await data
+			data 
+				&& data.remove(path) 
 			// handle changes...
 			//this.__search.options.__save_changes.call(this, name, 'remove', path)
 			return data }, 
 		// XXX EXPERIMENTAL...
+		// XXX for this to work need to figure out how to save a page 
+		// 		without triggering an index update...
+		// 		...and do it fast!!
+		__save_changes: async function(name, action, path, ...args){
+			if(this.__cache_path__ 
+					&& !path.startsWith(this.__cache_path__)){
+				var p = [this.__cache_path__, name, 'changes'].join('/')
+				// XXX can we get/update in one op???
+				var {changes} = await this.get(p) ?? {}
+				changes = changes ?? []
+				changes.push([Date.now(), action, path, ...args])
+				// XXX this needs not to neither trigger handlers nor .index('update', ...)...
+				return this.__update(p, {changes}) } },
 		save: async function(data, name){
 			if(this.__cache_path__){
 				var that = this
 				var path = this.__cache_path__ +'/'+ name
-				this.delete(path +'/changes')
-				/*/ XXX HACK this thing runs async but does not return a promise...
-				var index = {}
-				data.export(
-					function(key, value){
-						index[key] = value })
-				this.update(path, {index}) }
-				/*/
-				// XXX this is quote ugly but can't figure out a way to 
+				//this.delete(path +'/changes')
+				// XXX HACK this thing runs async but does not return a promise...
+				// 		...this is quote ugly but I can't figure out a way to 
 				// 		track when exporting is done...
 				var index = {}
 				data.export(
 					function(key, value){
 						index[key] = value
 						return that.update(path, {index}) }) }
+				/*/
+				var index = {}
+				data.export(
+					function(key, value){
+						index[key] = value })
+				this.update(path, {index}) }
 				//*/
 			return data },
 		load: async function(data, name){
 			if(this.__cache_path__){
 				var path = this.__cache_path__ +'/'+ name
 				var changes = path +'/changes'
-				var {index} = 
-					await this.get(path) 
-						?? {index: {}}
-				var data = new flexsearch.Index(
-					this.__search_options 
-						?? {}) 
-				for(var [key, value] of Object.entries(index)){
-					data.import(key, value) } 
-				// XXX load changes...
-			}
-			return data }, }),
-	search: function(){
-		return this.__search().search(...arguments) },
+				var {index} = await this.get(path) ?? {}
+				var data = 
+					new flexsearch.Index(
+						this.__search_options 
+							?? {}) 
+				for(var [key, value] of Object.entries(index ?? {})){
+					data.import(key, value) } }
+			return data }, 
+		reset: function(_, name){
+			this.__cache_path__
+				&& this.delete(this.__cache_path__ +'/'+ name) },}),
+	search: function(...args){
+		var s = this.__search()
+		return s instanceof Promise ?
+			s.then(function(s){
+				return s.search(...args)})
+			: s.search(...args) },
 
 
 	//
@@ -833,7 +843,6 @@ module.BaseStore = {
 		// one-by-one loader...
 		} else {
 			for(var [path, value] of Object.entries(input)){
-				// XXX LOAD
 				this.update(path, value) } }
 				//this.__update(path, value) } }
 		return this },
