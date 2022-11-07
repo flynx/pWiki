@@ -250,15 +250,22 @@ module.BaseStore = {
 		return this.__paths_isvalid__(t) },
 	__tags: index.makeIndex('tags', 
 		async function(){
-			var index = {tags: {}, paths: {}}
-			var update = this.__tags.options.update
-			for(var path of (await this.paths)){
-				index = update.call(this, index, name, path, await this.get(path)) }
-			return index }, {
+			// load index...
+			var path = this.__cache_path__ +'/tags_index'
+			if(this.__cache_path__ 
+					&& await this.exists(path)){
+				return this.__tags.options.load.call(this, null, 'tags')
+			// generate...
+			} else {
+				var index = {tags: {}, paths: {}}
+				var update = this.__tags.options.update
+				for(var path of (await this.paths)){
+					index = update.call(this, index, name, path, await this.get(path)) }
+				return index } }, {
 		update: async function(data, name, path, update){
 			// do not index cache...
 			if(this.__cache_path__ 
-					&& !path.startsWith(this.__cache_path__)){
+					&& path.startsWith(this.__cache_path__)){
 				return data }
 			var {tags, paths} = await data
 			// remove obsolete tags...
@@ -271,10 +278,29 @@ module.BaseStore = {
 					.add(path) }
 			return data }, 
 		remove: async function(data, name, path){
-			var {tags, paths} = await data
+			data = await data
+			if(!data){
+				return data }
+			var {tags, paths} = data
 			for(var tag of paths[path] ?? []){
 				tags[tag].delete(path) }
-			return data }, }),
+			return data }, 
+		// XXX EXPERIMENTAL...
+		save: async function(data, name){
+			if(this.__cache_path__){
+				this.update(
+					this.__cache_path__ +'/'+ name+'_index',
+					{index: data})}
+			return data },
+		load: async function(data, name){
+			if(this.__cache_path__){
+				var path = this.__cache_path__ +'/'+ name+'_index'
+				var {index} = await this.get(path) ?? {}
+				return index ?? data }
+			return data }, 
+		reset: function(_, name){
+			this.__cache_path__
+				&& this.delete(this.__cache_path__ +'/'+ name+'_index') }, }),
 	get tags(){
 		return this.__tags() },
 
@@ -305,8 +331,8 @@ module.BaseStore = {
 	__search: index.makeIndex('search',
 		// XXX do a load if present...
 		async function(){
-			var path = this.__cache_path__ +'/search'
 			// load index...
+			var path = this.__cache_path__ +'/search_index'
 			if(this.__cache_path__ 
 					&& await this.exists(path)){
 				return this.__search.options.load.call(this, null, 'search')
@@ -317,8 +343,8 @@ module.BaseStore = {
 						?? {}) 
 				var update = this.__search.options.update
 				for(var path of (await this.paths)){
-					update.call(this, index, name, path, await this.get(path)) } }
-			return index }, {
+					update.call(this, index, name, path, await this.get(path)) }
+				return index } }, {
 		update: async function(data, name, path, update){
 			// do not index cache...
 			if(this.__cache_path__ 
@@ -353,7 +379,7 @@ module.BaseStore = {
 		__save_changes: async function(name, action, path, ...args){
 			if(this.__cache_path__ 
 					&& !path.startsWith(this.__cache_path__)){
-				var p = [this.__cache_path__, name, 'changes'].join('/')
+				var p = [this.__cache_path__, name+'_index', 'changes'].join('/')
 				// XXX can we get/update in one op???
 				var {changes} = await this.get(p) ?? {}
 				changes = changes ?? []
@@ -363,7 +389,7 @@ module.BaseStore = {
 		save: async function(data, name){
 			if(this.__cache_path__){
 				var that = this
-				var path = this.__cache_path__ +'/'+ name
+				var path = this.__cache_path__ +'/'+ name+'_index'
 				//this.delete(path +'/changes')
 				// XXX HACK this thing runs async but does not return a promise...
 				// 		...this is quote ugly but I can't figure out a way to 
@@ -383,7 +409,7 @@ module.BaseStore = {
 			return data },
 		load: async function(data, name){
 			if(this.__cache_path__){
-				var path = this.__cache_path__ +'/'+ name
+				var path = this.__cache_path__ +'/'+ name+'_index'
 				var changes = path +'/changes'
 				var {index} = await this.get(path) ?? {}
 				var data = 
@@ -395,7 +421,7 @@ module.BaseStore = {
 			return data }, 
 		reset: function(_, name){
 			this.__cache_path__
-				&& this.delete(this.__cache_path__ +'/'+ name) },}),
+				&& this.delete(this.__cache_path__ +'/'+ name+'_index') }, }),
 	search: function(...args){
 		var s = this.__search()
 		return s instanceof Promise ?
