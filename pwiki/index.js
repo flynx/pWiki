@@ -16,8 +16,17 @@ var object = require('ig-object')
 //	makeIndex(<name>, <generate>[, <options>])
 //		-> <index-handler> 
 //
-//	Get merged data (cached)
+//	Call/get
 //	<index-handler>()
+//		-> <data>
+//		-> <promise>
+//
+//	Call the index handler method...
+//	<index-handler>('__call__', ..)
+//		-> ...
+//		-> <promise>
+//
+//	Get merged data (cached)
 //	<index-handler>('get')
 //		-> <data>
 //		-> <promise>
@@ -202,8 +211,14 @@ function(name, generate, options={}){
 	// build the method...
 	var meth
 	return (meth = Object.assign(
-		function(action='get', ...args){
+		function(action, ...args){
 			var that = this
+
+			action = action === undefined ?
+				('__call__' in options ?
+					'__call__'
+					: 'get')
+				: action
 
 			// action: status...
 			if(action == 'status'){
@@ -257,6 +272,7 @@ function(name, generate, options={}){
 
 			// action: other...
 			if(action != 'get' 
+					&& action != '__call__'
 					&& action != 'reset'){
 				var action_meth = `__${name}_${action}__`
 				// generate cache if not available...
@@ -277,8 +293,8 @@ function(name, generate, options={}){
 					&& _stamp(this, res)
 				return res }
 
-			// action: get...
-			return _await(this, 
+			// get/generate the data...
+			var res = _await(this, 
 				this[cache] =
 					// cached...
 					this[cache] != null ?
@@ -289,7 +305,16 @@ function(name, generate, options={}){
 						_stamp(this, 
 							this[merge](_make(this)))
 					// generate...
-					: _smake(this)) },
+					: _smake(this)) 
+
+			// action: call...
+			// NOTE: this directly returns the result to user but will 
+			// 		not automatically influence the stored value...
+			if(action == '__call__'){
+				return options.__call__.call(this, res, name, ...args) }
+
+			// action: get...
+			return res },
 		{
 			index: name,
 			indexed: true,

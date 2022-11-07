@@ -430,6 +430,62 @@ module.BaseStore = {
 			: s.search(...args) },
 
 
+	// XXX EXPERIMENTAL...
+	// XXX Q: can we store journal data in a page???
+	__journal: index.makeIndex('journal',
+		function(){
+			// XXX stub...
+			var data = []
+			return data }, {
+
+		'__call__': function(data, name, from, to){
+			if(typeof(from) == 'object'){
+				var {from, to} = from }
+			var _get = function(data){
+				return data
+					.filter(function(elem){
+						return (!from 
+								|| elem[0] > from) 
+							&& (!to 
+								|| elem[0] <= to)}) }
+			return data instanceof Promise ?
+				data.then(_get)
+				: _get(data) },
+
+		// XXX do we need this???
+		'journal-clear': function(data, name){
+			this.__journal('clear')
+			return data },
+
+		update: function(data, name, path, update){
+			data.push([Date.now(), 'update', path, update])
+			return data },
+		remove: function(data, name, path){
+			data.push([Date.now(), 'remove', path])
+			return data }, 
+		//reset: function(){
+		//},
+		save: function(data, name){
+			// XXX move this out...
+			//var idb = require('idb-keyval')
+			// XXX
+			data.push([Date.now(), 'save'])
+			return data},
+		load: function(data, name){
+			// XXX move this out...
+			//var idb = require('idb-keyval')
+			// XXX should we clear the journal here???
+			this.__journal('clear')
+			// load...
+			// XXX
+
+			// XXX
+			data.push([Date.now(), 'load'])
+			return data}, }),
+	journal: function(){
+		return this.__journal('__call__', ...arguments)},
+
+
 	//
 	// 	.exists(<path>)
 	// 		-> <normalized-path>
