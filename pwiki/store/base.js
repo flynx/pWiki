@@ -263,10 +263,12 @@ module.BaseStore = {
 					index = update.call(this, index, name, path, await this.get(path)) }
 				return index } }, {
 		update: async function(data, name, path, update){
+			/*/ XXX CACHE_INDEX...
 			// do not index cache...
 			if(this.__cache_path__ 
 					&& path.startsWith(this.__cache_path__)){
 				return data }
+			//*/
 			var {tags, paths} = await data
 			// remove obsolete tags...
 			this.__tags.options.remove.call(this, data, name, path)
@@ -346,10 +348,12 @@ module.BaseStore = {
 					update.call(this, index, name, path, await this.get(path)) }
 				return index } }, {
 		update: async function(data, name, path, update){
+			/*/ XXX CACHE_INDEX...
 			// do not index cache...
 			if(this.__cache_path__ 
 					&& path.startsWith(this.__cache_path__)){
 				return data }
+			//*/
 			var {text, tags} = update
 			text = [
 				path,
@@ -385,7 +389,7 @@ module.BaseStore = {
 				changes = changes ?? []
 				changes.push([Date.now(), action, path, ...args])
 				// XXX this needs not to neither trigger handlers nor .index('update', ...)...
-				return this.__update(p, {changes}) } },
+				return this.__update(p, {changes}, 'unindexed') } },
 		save: async function(data, name){
 			if(this.__cache_path__){
 				var that = this
@@ -431,7 +435,7 @@ module.BaseStore = {
 
 
 	// XXX EXPERIMENTAL...
-	// XXX Q: can we store journal data in a page???
+	// XXX need a persistent fast store of changes...
 	__journal: index.makeIndex('journal',
 		function(){
 			// XXX stub...
@@ -457,31 +461,29 @@ module.BaseStore = {
 			this.__journal('clear')
 			return data },
 
+		// XXX these need to be persistent...
 		update: function(data, name, path, update){
 			data.push([Date.now(), 'update', path, update])
 			return data },
 		remove: function(data, name, path){
 			data.push([Date.now(), 'remove', path])
 			return data }, 
-		//reset: function(){
-		//},
-		save: function(data, name){
-			// XXX move this out...
-			//var idb = require('idb-keyval')
-			// XXX
-			data.push([Date.now(), 'save'])
-			return data},
-		load: function(data, name){
-			// XXX move this out...
-			//var idb = require('idb-keyval')
-			// XXX should we clear the journal here???
-			this.__journal('clear')
-			// load...
-			// XXX
 
-			// XXX
-			data.push([Date.now(), 'load'])
-			return data}, }),
+		save: function(data, name){
+			data.push([Date.now(), 'save'])
+			if(this.__cache_path__){
+				var path = this.__cache_path__ +'/'+ name+'_index'
+				this.update(path, {index: data}) }
+			return data},
+		load: async function(data, name){
+			// load...
+			if(this.__cache_path__){
+				var path = this.__cache_path__ +'/'+ name+'_index'
+				data = (await this.get(path) ?? {}).index ?? [] }
+			return data }, 
+		reset: function(){
+			this.__cache_path__
+				&& this.delete(this.__cache_path__ +'/'+ name+'_index') }, }),
 	journal: function(){
 		return this.__journal('__call__', ...arguments)},
 
@@ -831,7 +833,19 @@ module.BaseStore = {
 	// XXX do we copy the data here or modify it????
 	__update__: async function(key, data, mode='update'){
 		this.data[key] = data },
+	//
+	//	Unindexed update...
+	//	.__update(<path>, <data>, 'unindexed')
+	//	.__update(<path>, <data>, 'unindexed', <mode>)
+	//		-> <data>
+	//
 	__update: async function(path, data, mode='update'){
+		// handle unindexed mode...
+		var index = true
+		if(mode == 'unindexed'){
+			index = false
+			mode = arguments[3] 
+				?? 'update' }
 		// read-only...
 		if(this.__update__ == null){
 			return data }
@@ -856,7 +870,8 @@ module.BaseStore = {
 					data,
 					{mtime: Date.now()})
 		await this.__update__(path, data, mode)
-		this.index('update', path, data, mode)
+		index
+			&& this.index('update', path, data, mode)
 		return data },
 	// XXX can we do a blanket .index('update', ...) here??
 	// 		...currently this will mess up caches between .next/.substores 
@@ -872,7 +887,7 @@ module.BaseStore = {
 
 	__delete__: async function(path){
 		delete this.data[path] },
-	__delete: async function(path){
+	__delete: async function(path, mode='normal'){
 		// read-only...
 		if(this.__delete__ == null){
 			return this }
