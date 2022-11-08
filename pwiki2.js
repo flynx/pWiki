@@ -3,7 +3,12 @@
 *
 * XXX ASAP start writing docs in pwiki
 * 		- minimal/functional editor					- DONE
-* 		- WYSIWYG markdown editor/viewer (ASAP)		- 
+* 			...<pre> sometimes ties formatting while <textarea>/<input type=text>
+* 			handle resizing in a really odd way...
+* 		- WYSIWYG markdown editor/viewer (ASAP)		- DONE (partial)
+* 			- need a UI a-la milkdown
+* 				...milkdown is good but 500mb dev-env and (apparently) 
+* 				no AMD support are problems -- need more testing...
 * 		- transparent sync/backup
 * 			- fs store/export in browser or a simple way to export/import...
 * 				...can't seem to get it to work without asking for permission
