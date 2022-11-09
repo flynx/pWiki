@@ -20,7 +20,11 @@
 * 		- search									- DONE
 * 		- images									- XXX 
 * 		- GUI										- 
+* 			general UI/UX
+* 			standalone
 * 		- CLI										- 
+* 			- server / replication target
+* 			- management
 *
 * XXX things that will help:
 * 		- async render (infinite scroll + search + large pages)
