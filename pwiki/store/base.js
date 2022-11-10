@@ -122,7 +122,7 @@ object.Constructor('JournalDB', {
 
 	clear: function(){
 		indexedDB.deleteDatabase(this.id) 
-		delete this.db },
+		delete this.__db },
 
 	__init__: function(id){
 		var that = this
