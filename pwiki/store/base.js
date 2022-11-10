@@ -19,6 +19,118 @@ var index = require('../index')
 //---------------------------------------------------------------------
 
 
+var JournalDB = 
+module.JournalDB =
+object.Constructor('JournalDB', {
+	id: undefined,
+	__version__: 1,
+
+	__promisify: async function(req){
+		return new Promise(function(resolve, reject){
+			req.onsuccess = function(){
+				resolve(req.result) }
+			req.onerror = function(evt){
+				reject(evt.error) } }) },
+
+	__db: undefined,
+	get db(){
+		if(this.__db){
+			return this.__db }
+
+		var that = this
+		var id = this.id
+
+		if(id == null){
+			throw new Error('JournalDB(..): need an id.') }
+		if(typeof(indexedDB) == 'undefined'){
+			throw new Error('JournalDB(..): indexedDB not supported.') }
+
+		return new Promise(function(resolve, reject){
+			var req = indexedDB.open(id, this.__version__)
+			// setup/upgrade...
+			req.onupgradeneeded = function(evt){
+				var old = evt.oldVersion
+				if(old > this.__version__){
+					throw new Error(`JournalDB(..): stored version (${old}) newer than expected: ${this.__version__}`) }
+				// setup/update...
+				var db = that.__db = req.result
+				switch(old){
+					// setup...
+					case 0:
+						console.log('CREATE!!')
+						var journal = db.createObjectStore('journal', {keyPath: 'date'})
+						journal.createIndex('path', 'path')
+					// update...
+					case 1:
+						// update code...
+				} }
+			req.onversionchange = function(evt){
+				// XXX close connections and reload...
+				// 		...this means that two+ versions of code opened the 
+				// 		same db and we need to reload the older versions...
+				// XXX
+			}
+			req.onerror = function(evt){
+				reject(evt.error) }
+			req.onsuccess = function(evt){
+				that.__db = req.result } }) },
+
+	// XXX
+	get length(){
+		return this.__promisify(
+			(await this.db)
+				.transaction('journal', 'readonly')
+				.objectStore('journal')
+					.count()) },
+
+	slice: async function(from, to){
+		return this.__promisify(
+			(await this.db)
+				.transaction('journal', 'readonly')
+				.objectStore('journal')
+					.getAll(IDBKeyRange.lowerBound(from ?? 0, true))) },
+
+	path: async function(path){
+		return this.__promisify(
+			(await this.db)
+				.transaction('journal', 'readonly')
+				.objectStore('journal')
+				.index('path')
+					.getAll(...arguments)) },
+
+	get paths(){
+	},
+
+	// remove entries up to date...
+	trim: function(date){
+		// XXX
+	},
+	add: async function(path, action, ...data){
+		return this.__promisify(
+			(await this.db)
+				.transaction('journal', 'readwrite')
+				.objectStore('journal')
+					.add({
+						// high-resolution date...
+						date: 
+							performance.timing.navigationStart 
+							+ performance.now(),
+						path,
+						action,
+						data,
+					})) },
+
+	clear: function(){
+		indexedDB.deleteDatabase(this.id) 
+		delete this.db },
+
+	__init__: function(id){
+		var that = this
+		this.id = id ?? this.id
+		this.db },
+})
+
+
 
 //---------------------------------------------------------------------
 // Store...
