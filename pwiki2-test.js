@@ -18,7 +18,7 @@ var pouchdbstore = require('./pwiki/store/pouchdb')
 var filestore = require('./pwiki/store/file')
 
 // XXX this fails silently in browser...
-var bootstrap = require('./bootstrap')
+//var bootstrap = require('./bootstrap')
 
 
 //---------------------------------------------------------------------

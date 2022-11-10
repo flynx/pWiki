@@ -76,12 +76,12 @@ object.Constructor('JournalDB', {
 				that.__db = req.result } }) },
 
 	// XXX
-	get length(){
+	get length(){ return async function(){
 		return this.__promisify(
 			(await this.db)
 				.transaction('journal', 'readonly')
 				.objectStore('journal')
-					.count()) },
+					.count()) }.call(this) },
 
 	slice: async function(from, to){
 		return this.__promisify(
@@ -299,7 +299,7 @@ module.BaseStore = {
 			var update = this.__names.options.update
 			var index = {}
 			for(var path of (await this.paths)){
-				index = update.call(this, index, name, path) }
+				index = update.call(this, index, 'names', path) }
 			return index }, {
 		update: async function(data, name, path){
 			data = await data
@@ -372,7 +372,7 @@ module.BaseStore = {
 				var index = {tags: {}, paths: {}}
 				var update = this.__tags.options.update
 				for(var path of (await this.paths)){
-					index = update.call(this, index, name, path, await this.get(path)) }
+					index = update.call(this, index, 'tags', path, await this.get(path)) }
 				return index } }, {
 		update: async function(data, name, path, update){
 			/*/ XXX CACHE_INDEX...
@@ -457,7 +457,7 @@ module.BaseStore = {
 						?? {}) 
 				var update = this.__search.options.update
 				for(var path of (await this.paths)){
-					update.call(this, index, name, path, await this.get(path)) }
+					update.call(this, index, 'search', path, await this.get(path)) }
 				return index } }, {
 		update: async function(data, name, path, update){
 			/*/ XXX CACHE_INDEX...
@@ -593,7 +593,7 @@ module.BaseStore = {
 				var path = this.__cache_path__ +'/'+ name+'_index'
 				data = (await this.get(path) ?? {}).index ?? [] }
 			return data }, 
-		reset: function(){
+		reset: function(data, name){
 			this.__cache_path__
 				&& this.delete(this.__cache_path__ +'/'+ name+'_index') }, }),
 	journal: function(){
