@@ -18,7 +18,7 @@ var index = require('../index')
 
 //---------------------------------------------------------------------
 
-
+// XXX EXPERIMENTAL...
 var JournalDB = 
 module.JournalDB =
 object.Constructor('JournalDB', {
@@ -75,21 +75,31 @@ object.Constructor('JournalDB', {
 			req.onsuccess = function(evt){
 				that.__db = req.result } }) },
 
-	// XXX
+	// XXX should these be props???
+	// XXX should these be cached???
 	get length(){ return async function(){
 		return this.__promisify(
 			(await this.db)
 				.transaction('journal', 'readonly')
 				.objectStore('journal')
 					.count()) }.call(this) },
+	get paths(){ return async function(){
+		return (await this.slice())
+			.map(function(elem){ 
+				return elem.path }) 
+			.unique() }.call(this) },
 
-	slice: async function(from, to){
+	// get entries by time...
+	slice: async function(from=0, to=Infinity){
 		return this.__promisify(
 			(await this.db)
 				.transaction('journal', 'readonly')
 				.objectStore('journal')
-					.getAll(IDBKeyRange.lowerBound(from ?? 0, true))) },
-
+					.getAll(IDBKeyRange.bound(
+						from ?? 0, 
+						to ?? Infinity,
+						true, true))) },
+	// get entries by path...
 	path: async function(path){
 		return this.__promisify(
 			(await this.db)
@@ -97,14 +107,11 @@ object.Constructor('JournalDB', {
 				.objectStore('journal')
 				.index('path')
 					.getAll(...arguments)) },
-
-	get paths(){
-	},
-
-	// remove entries up to date...
-	trim: function(date){
-		// XXX
-	},
+	
+	//
+	// 	<journal-db>.add(<path>, <action>, ...)
+	// 		-> <promise>
+	//
 	add: async function(path, action, ...data){
 		return this.__promisify(
 			(await this.db)
@@ -120,10 +127,22 @@ object.Constructor('JournalDB', {
 						data,
 					})) },
 
+	// remove entries up to date...
+	trim: async function(to){
+		return this.__promisify(
+			(await this.db)
+				.transaction('journal', 'readwrite')
+				.objectStore('journal')
+					.delete(IDBKeyRange.upperBound(to ?? 0, true))) },
+	// clear journal...
 	clear: function(){
 		indexedDB.deleteDatabase(this.id) 
 		delete this.__db },
 
+	//
+	// 	JournalDB(<id>)
+	// 		-> <journal-db>
+	//
 	__init__: function(id){
 		var that = this
 		this.id = id ?? this.id
