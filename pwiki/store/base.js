@@ -19,6 +19,8 @@ var index = require('../index')
 //---------------------------------------------------------------------
 
 // XXX EXPERIMENTAL...
+// XXX see bugs/issues...
+// XXX not sure if we need this... 
 var JournalDB = 
 module.JournalDB =
 object.Constructor('JournalDB', {
@@ -57,13 +59,14 @@ object.Constructor('JournalDB', {
 				switch(old){
 					// setup...
 					case 0:
-						console.log('CREATE!!')
+						console.log('JournalDB.db: create.')
 						var journal = db.createObjectStore('journal', {keyPath: 'date'})
 						journal.createIndex('path', 'path')
 					// update...
 					case 1:
 						// update code...
-				} }
+				} 
+				resolve(db) }
 			req.onversionchange = function(evt){
 				// XXX close connections and reload...
 				// 		...this means that two+ versions of code opened the 
@@ -135,6 +138,9 @@ object.Constructor('JournalDB', {
 				.objectStore('journal')
 					.delete(IDBKeyRange.upperBound(to ?? 0, true))) },
 	// clear journal...
+	// XXX BUG? for some reason .deleteDatabase(..) does not actually delete 
+	// 		the database until a reload thus messing up the db creation 
+	// 		process (as the .onversionchange event is not triggered)...
 	clear: function(){
 		indexedDB.deleteDatabase(this.id) 
 		delete this.__db },
@@ -566,12 +572,22 @@ module.BaseStore = {
 
 
 	// XXX EXPERIMENTAL...
+	// XXX see issues with indexedDB...
+	// XXX not sure if we need this...
 	// XXX need a persistent fast store of changes...
+	//__journal_id__: 'pWiki:test-journal',
+	__journal_db: undefined,
 	__journal: index.makeIndex('journal',
 		function(){
 			// XXX stub...
-			var data = []
-			return data }, {
+			var journal = this.__journal_db = 
+				this.__journal_db 
+					?? (this.__journal_id__ ?
+						JournalDB(this.__journal_id__)
+						: undefined)
+			return journal ?
+				journal.slice()
+				: [] }, {
 
 		'__call__': function(data, name, from, to){
 			if(typeof(from) == 'object'){
@@ -590,22 +606,37 @@ module.BaseStore = {
 		// XXX do we need this???
 		'journal-clear': function(data, name){
 			this.__journal('clear')
+			this.__journal_db 
+				&& this.__journal_db.clear()
 			return data },
 
 		// XXX these need to be persistent...
-		update: function(data, name, path, update){
+		update: async function(data, name, path, update){
+			var date = this.__journal_db ?
+				this.__journal_db.add(path, 'update', update)
+				: Date.now()
+			data = await data
+			// XXX need to reuse the actual date...
 			data.push([Date.now(), 'update', path, update])
 			return data },
-		remove: function(data, name, path){
+		remove: async function(data, name, path){
+			var date = this.__journal_db ?
+				this.__journal_db.add(path, 'update', update)
+				: Date.now()
+			data = await data
+			// XXX need to reuse the actual date...
 			data.push([Date.now(), 'remove', path])
 			return data }, 
 
-		save: function(data, name){
+		// XXX clear the .__journal_db...
+		save: async function(data, name){
+			data = await data
 			data.push([Date.now(), 'save'])
 			if(this.__cache_path__){
 				var path = this.__cache_path__ +'/'+ name+'_index'
 				this.update(path, {index: data}) }
 			return data},
+		// XXX populate the .__journal_db???
 		load: async function(data, name){
 			// load...
 			if(this.__cache_path__){
@@ -617,6 +648,7 @@ module.BaseStore = {
 				&& this.delete(this.__cache_path__ +'/'+ name+'_index') }, }),
 	journal: function(){
 		return this.__journal('__call__', ...arguments)},
+	//*/
 
 
 	//
