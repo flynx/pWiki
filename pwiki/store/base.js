@@ -406,10 +406,10 @@ module.BaseStore = {
 					&& path.startsWith(this.__cache_path__)){
 				return data }
 			//*/
-			var {tags, paths} = await data
 			// remove obsolete tags...
-			this.__tags.options.remove.call(this, data, name, path)
+			data = await this.__tags.options.remove.call(this, data, name, path)
 			// add...
+			var {tags, paths} = data
 			paths[path] = new Set(update.tags)
 			for(var tag of update.tags ?? []){
 				;(tags[tag] = 
@@ -572,6 +572,8 @@ module.BaseStore = {
 
 
 	// XXX EXPERIMENTAL...
+	// This keeps the changes between saves...
+	//
 	// XXX see issues with indexedDB...
 	// XXX not sure if we need this...
 	// XXX need a persistent fast store of changes...
@@ -603,13 +605,6 @@ module.BaseStore = {
 				data.then(_get)
 				: _get(data) },
 
-		// XXX do we need this???
-		'journal-clear': function(data, name){
-			this.__journal('clear')
-			this.__journal_db 
-				&& this.__journal_db.clear()
-			return data },
-
 		// XXX these need to be persistent...
 		update: async function(data, name, path, update){
 			var date = this.__journal_db ?
@@ -628,24 +623,19 @@ module.BaseStore = {
 			data.push([Date.now(), 'remove', path])
 			return data }, 
 
-		// XXX clear the .__journal_db...
 		save: async function(data, name){
-			data = await data
-			data.push([Date.now(), 'save'])
-			if(this.__cache_path__){
-				var path = this.__cache_path__ +'/'+ name+'_index'
-				this.update(path, {index: data}) }
-			return data},
-		// XXX populate the .__journal_db???
+			this.__journal_db
+				&& this.__journal_db.clear()
+			return [] },
+		// XXX if .__journal_db is not empty then need to apply it to the index???
 		load: async function(data, name){
-			// load...
-			if(this.__cache_path__){
-				var path = this.__cache_path__ +'/'+ name+'_index'
-				data = (await this.get(path) ?? {}).index ?? [] }
+			// XXX
 			return data }, 
+
 		reset: function(data, name){
-			this.__cache_path__
-				&& this.delete(this.__cache_path__ +'/'+ name+'_index') }, }),
+			this.__journal_db
+				&& this.__journal_db.clear()
+			return [] }, }),
 	journal: function(){
 		return this.__journal('__call__', ...arguments)},
 	//*/

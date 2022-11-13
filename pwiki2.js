@@ -26,6 +26,8 @@
 * 			- server / replication target
 * 			- management
 *
+*
+*
 * XXX things that will help:
 * 		- async render (infinite scroll + search + large pages)
 * 			unresolved -> dom placeholder
@@ -34,8 +36,14 @@
 * 		- 
 *
 *
-* XXX ASAP: do/test IndexedDB journal "live" store...
-* XXX BUG: <store>.tags.tags seems to be broken -- no paths in sets...
+* XXX index: need to disable index persistence on memory stores...
+* XXX index: would be nice to somehow persistently auto-generate index id's...
+* 		...maybe: "<prefix>:<path>" or something similar...
+* 		...would be nice to have store ids...
+* XXX <store>.journal: needed to break the update recursion -- i.e. decouple 
+* 		index .update(..) handlers from stored page updates by first 
+* 		updating the journal and on a timer updating the .cache/<index> page...
+* XXX do/test IndexedDB journal "live" store...
 * XXX BUG: indexedDB: .deleteDatabase(..) does not actually delete the 
 * 		database from the list until reload.
 * 		this breaks trying to open a database with the same name again...
@@ -387,10 +395,13 @@
 * Architecture:
 *
 * 			store <-> index
-* 			  ^
+* 			  ^			^
+* 			  |			|
+* 			  +---------+
 * 			  |
 * 			page <--> renderer
 * 			  ^
+* 			  |
 * 			  |
 * 			client
 *
