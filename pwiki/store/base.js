@@ -19,6 +19,10 @@ var index = require('../index')
 //---------------------------------------------------------------------
 
 // XXX EXPERIMENTAL...
+// XXX this will not work on nodejs...
+// 		...possible solutions would be: 
+// 			LevelDB
+// 			indexeddb (npm)
 // XXX see bugs/issues...
 // XXX not sure if we need this... 
 var JournalDB = 
@@ -122,9 +126,7 @@ object.Constructor('JournalDB', {
 				.objectStore('journal')
 					.add({
 						// high-resolution date...
-						date: 
-							performance.timing.navigationStart 
-							+ performance.now(),
+						date: Date.hires(),
 						path,
 						action,
 						data,
