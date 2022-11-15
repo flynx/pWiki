@@ -2,13 +2,6 @@
 * 
 *
 * XXX ASAP start writing docs in pwiki
-* 		- minimal/functional editor					- DONE
-* 			...<pre> sometimes ties formatting while <textarea>/<input type=text>
-* 			handle resizing in a really odd way...
-* 		- WYSIWYG markdown editor/viewer (ASAP)		- DONE (partial)
-* 			- need a UI a-la milkdown
-* 				...milkdown is good but 500mb dev-env and (apparently) 
-* 				no AMD support are problems -- need more testing...
 * 		- transparent sync/backup
 * 			- fs store/export in browser or a simple way to export/import...
 * 				...can't seem to get it to work without asking for permission
@@ -16,12 +9,19 @@
 * 				handler live in a service worker, but the hopes are low)...
 * 			- pouchdb-couchdb sync					- 
 * 			- pouchdb-pouchdb sync (p2p via webrtc) - XXX 
+* 		- images									- XXX 
+* 		- WYSIWYG markdown editor/viewer (ASAP)		- XXX
+* 			- need a UI a-la milkdown
+* 				...milkdown is good but 500mb dev-env and (apparently) 
+* 				no AMD support are problems -- need more testing...
+* 		- minimal/functional editor					- DONE
+* 			...<pre> sometimes ties formatting while <textarea>/<input type=text>
+* 			handle resizing in a really odd way...
 * 		- tags										- DONE
 * 		- search									- DONE
-* 		- images									- XXX 
 * 		- GUI										- 
 * 			general UI/UX
-* 			standalone
+* 			drag-n-drop
 * 		- CLI										- 
 * 			- server / replication target
 * 			- management
@@ -36,6 +36,39 @@
 * 		- 
 *
 *
+* XXX BUG /tree/time gives a blank time...
+* XXX BUG: count does not appear to affect /Test/list/generator and /Test/list/static...
+* 		...do we need to support this???
+* XXX BUG: parser:
+* 		This will break:
+* 			await pwiki.parse('<macro src=../tags join=", ">@source(.)</macro>')
+*		This will not:
+* 			await pwiki.parse('<macro src="../tags" join=", ">@source(.)</macro>')
+* XXX ASAP parser: error handling: must output to page and be informative...
+* XXX ASAP test: can we store the file handler with permissions in a ServiceWorker??
+* XXX the parser should handle all action return values, including:
+* 			- lists			-- XXX
+* 			- strings		-- DONE
+* 			- numbers		-- DONE
+* 			- misc:
+* 				dates		-- ???
+* 		note that an action returning a list is not the same as a list
+* 		stoted in <data>.text -- since we can't identify what an action
+* 		returns without calling it, and we only call actions on 
+* 		.raw/.text/.parse(..), we can't iterate over such results.
+* 		Q: can we make a list reder as a list of pages??
+* 			...likely no...
+* 			...would depend on where we iterate pages and on whether 
+* 			we can/should reach that spot from within the parser...
+* XXX ASAP revise/update sort...
+* XXX ASAP: MetaStore: need to correctly integrate the following store 
+* 		methods:
+* 			.get(..)					-- DONE
+* 			.metadata(..)				-- 
+* 			.delete(..)
+* 				XXX deleting something in .next will break stuff...
+* 			...
+* XXX FEATURE images...
 * XXX index: need to disable index persistence on memory stores...
 * XXX index: would be nice to somehow persistently auto-generate index id's...
 * 		...maybe: "<prefix>:<path>" or something similar...
@@ -47,7 +80,6 @@
 * XXX <store>.journal: needed to break the update recursion -- i.e. decouple 
 * 		index .update(..) handlers from stored page updates by first 
 * 		updating the journal and on a timer updating the .cache/<index> page...
-* XXX do/test IndexedDB journal "live" store...
 * XXX BUG: indexedDB: .deleteDatabase(..) does not actually delete the 
 * 		database from the list until reload.
 * 		this breaks trying to open a database with the same name again...
@@ -63,25 +95,16 @@
 * 			- ...
 * 		- state query -- pending/saved/...
 * XXX Q: can we get state and update in one go???
-* XXX stored index cache: need to define the save/load strategy + stored 
-* 		cache validation...
+* 		...usefull where we need to get state to update...
 * XXX macro: macro:count / macro:index vars can be overridden by count/index 
 * 		attributes....
-* 		...this needs testing...
+* 		...this can be usefull but this needs testing...
 * XXX should @macro(..) handle offset in the same manner as count???
-* XXX BUG: count does not appear to affext /Test/list/generator and /Test/list/static...
-* 		...do we need to support this???
 * XXX FEATURE store: mirror (slave) -- a way to hold data in one store 
 * 		and to mirror everything (async) to a separate store...
 * 		example:
 * 			PouchDB (main) -- FileSore (export)
-* XXX BUG: parser:
-* 		This will break:
-* 			await pwiki.parse('<macro src=../tags join=", ">@source(.)</macro>')
-*		This will not:
-* 			await pwiki.parse('<macro src="../tags" join=", ">@source(.)</macro>')
-* XXX parser: error handling: must output to page and be informative...
-* XXX Q: do we need a way to index a list item via path???
+* XXX Q: do we need a way to index/access a list item via path???
 * XXX STYLE: should style loading be done via the event mechanics 
 * 		(see: pwiki2.html) or via the base templates (see: pwiki/page.js:_view 
 * 		template)???
@@ -95,13 +118,10 @@
 * 		- tag cache <store>.tags					- DONE
 * 		- tag-path filtering...						- DONE
 * XXX TAGS add a more advanced query -- e.g. "/**:tagged=y,z:untagged=x" ???
-* XXX TAGS do we need page actions to tag/untag pages???
-* XXX INDEX persistent index -- store index (IndexedDB?) and update as 
-* 		the stores are updated...
 * XXX INDEX DOC can index validation be async???
 * 		...likely no
 * XXX INDEX add option to set default action (get/lazy/cached)
-* XXX CachedStore seems to be broken (see: pwiki/store/base.js:837)
+* XXX BUG: CachedStore seems to be broken (see: pwiki/store/base.js:837)
 * XXX might be a good idea to create memory store (sandbox) from the 
 * 		page API -- action??
 * XXX Chrome started spamming CORS error: 
@@ -109,7 +129,6 @@
 * 			from origin 'null' ...
 * 		not sure why...
 * 		(switched off in console filter for now)
-* XXX test: can we store the file handler with permissions in a ServiceWorker??
 * XXX might be a good idea to wrap the wysiwig editor into a separate template
 * 		and use it in the main edit template to make it user-selectable...
 * XXX generalize html/dom api...
@@ -118,40 +137,9 @@
 * XXX macros: .depends: need fast path pattern matching... 
 * XXX macros / CACHE: convert a /path/* dependency to /path/** if a script 
 * 		is recursive...
-* XXX CACHE make index data (.paths, .names, ...) be sync and in-memory...
 * XXX might also be a good idea to investigate a .tree directory index 
 * 		as a supplement to .paths()
-* XXX CACHE strategy and architecture
-* 		controlled caching
-* 			- cache is a layer of linked data
-* 			- linked via events and overloads
-* 		goals:
-* 			- generate data once
-* 			- fully transparent
-* 		levels:
-* 			- memory
-* 			- persistent (???)
 * XXX CACHE need to explicitly prevent caching of some actions/pages...
-* XXX IDEA: macros: might be fun to be able to use certain pages as 
-* 		macros...
-* 		...this might even extend to all macros being actions in something 
-* 		like /.system/macros/...
-* XXX the parser should handle all action return values, including:
-* 			- lists			-- XXX
-* 			- strings		-- DONE
-* 			- numbers		-- DONE
-* 			- misc:
-* 				dates		-- ???
-* 		note that an action returning a list is not the same as a list
-* 		stoted in <data>.text -- since we can't identify what an action
-* 		returns without calling it, and we only call actions on 
-* 		.raw/.text/.parse(..), we can't iterate over such results.
-* 		Q: can we make a list reder as a list of pages??
-* 			...likely no...
-* 			...would depend on where we iterate pages and on whether 
-* 			we can/should reach that spot from within the parser...
-* XXX revise/update sort...
-* XXX FEATURE images...
 * XXX async/live render...
 * 		might be fun to push the async parts of the render to the dom...
 * 		...i.e. return a partially rendered DOM with handlers to fill 
@@ -178,13 +166,6 @@
 * 				any resyrictions other than the internally reserved
 * 				cars...
 * 				(currently: '#', and ':')
-* XXX ASAP: MetaStore: need to correctly integrate the following store 
-* 		methods:
-* 			.get(..)					-- DONE
-* 			.metadata(..)				-- 
-* 			.delete(..)
-* 				XXX deleting something in .next will break stuff...
-* 			...
 * XXX ENERGETIC: Q: do we need to make this a path syntax thing???
 * 		...i.e. 
 * 			/some/path/action/! (current) 
@@ -198,14 +179,6 @@
 * 		level...
 * 		...another approach would be to make .get(..) accept a list of 
 * 		paths and return an iterator...
-* XXX OPTIMIZE page search: make things invariant via .names
-* 			- if a page is in a system path and there are no alternatives 
-* 				just return it and do not search.
-* 			- if there are alternatives rank them
-* 				- check the non-system ones (common sub-path?)
-* 				- return the first system
-* 		XXX sort paths in .names
-* 		XXX remove/mark shadowed paths???
 * XXX OPTIMIZE MATCH limit candidates to actual page name matches -- this will 
 * 		limit the number of requests to actual number of pages with that 
 * 		name...
@@ -249,9 +222,6 @@
 * 			2) all the macros that can source pages to produce generators (DONE)
 * XXX might be a good idea to parse a page into an executable/function
 * 		that would render self in a given context...
-* XXX differences in behaviour between _abc and abc, either need to make 
-* 		them the same or document the differences and the reasons behind 
-* 		them...
 * XXX add support for <join> tag in include/source/quote???
 * XXX introspection:
 * 			/stores								-- DONE
@@ -260,15 +230,18 @@
 *				list page/store info
 *			/storage							-- XXX
 *				list storage usage / limits
+*			/time								-- DONE
+*				time page load/render
 * XXX BUG: FF: conflict between object.run and PouchDB... 
 * 		...seems to be a race, also affects chrome sometimes...
-* XXX add action to reset overloaded (bootstrap/.next) pages...
+* XXX add a way to indicate and reset overloaded (bootstrap/.next) pages...
 * 		- per page
 * 		- global
 * XXX should render templates (_view and the like) be a special case
 * 		or render as any other page???
 * 		...currently they are rendered in the context of the page and
 * 		not in their own context...
+* 		...document this
 * XXX macros: add @defmacro(<name> ..) to be exactly as @macro(<name> ..) 
 * 		but defines a @<name>(..) macro...
 * 		...this would be useful for things like:
@@ -314,19 +287,17 @@
 * 		- render page								-- DONE
 * 		- navigation								-- DONE
 * 			- hash/anchor							-- DONE
-* 			- action redirects (see: System/delete)	-- DONE (XXX revise)
+* 			- action redirects (see: System/delete)	-- ??? (unify api)
 * 		- basic editor and interactivity			-- DONE
 * 		- export
 * 			- json									-- DONE
 * 			- zip (json/tree)						--
 * 		- sync (auto)								-- XXX
-* 		- page actions
-* 			- delete								-- DONE
-* 			- copy/move								-- DONE
-* 			- resolved (async)						-- DONE
+* 		- page actions								-- DONE
 * 		- migrate/rewrite bootstrap					--
 * 		- store topology							-- DONE
-* 		- images
+* 			- config???
+* 		- images XXX
 * 			- get 									-- 
 * 			- download								--
 * 			- upload								--
