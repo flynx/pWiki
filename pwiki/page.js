@@ -1756,9 +1756,10 @@ object.Constructor('Page', BasePage, {
 		} else {
 			var data = await page.data
 			data = 
-				typeof(data) == 'function' ?
-					//data
+				data instanceof types.Generator ?
 					await data()
+				: typeof(data) == 'function' ?
+					data
 				: 'text' in data ?
 					data.text
 				: null
@@ -2461,6 +2462,11 @@ module.System = {
 			Time to render: ${time}ms <br>
 			<hr>
 			${text}`},
+
+	// XXX REMOVE WHEN NOT NEEDED...
+	TEST: function(){
+		console.log('TEST')
+		return 'TEST' },
 	
 	// XXX EXPERIMENTAL -- page types...
 	isAction: async function(){

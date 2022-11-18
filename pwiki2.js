@@ -36,19 +36,6 @@
 * 		- 
 *
 *
-* XXX BUG /tree/time gives a blank time...
-* 		...problem: actions seem to be called twice, not yet sure why...
-* 		for an action:
-* 			TEST: async function(){
-* 				console.log('TEST')
-* 				return 'TEST' },
-* 		these call it twice:
-* 			await p.pwiki
-* 				.get('/moo/TEST').text
-* 			await p.pwiki
-* 				.get('/moo/TEST')
-* 					.parse('@source(.)')
-* 		XXX check if this applies to <page>.actions
 * XXX BUG: count does not appear to affect /Test/list/generator and /Test/list/static...
 * 		...do we need to support this???
 * XXX BUG: parser:
