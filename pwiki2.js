@@ -36,8 +36,9 @@
 * 		- 
 *
 *
-* XXX BUG? can't use < and > (both?) in page title...
 * XXX parser: error handling: revise page quoting... 
+* 		...need a standard mechanism to quote urls, url-args and paths...
+* XXX BUG? can't use < and > (both?) in page title...
 * XXX parser: error handling: add line number + context... (???) 
 * XXX BUG: parser:
 * 		This will break:
@@ -45,6 +46,9 @@
 *		This will not:
 * 			await pwiki.parse('<macro src="../tags" join=", ">@source(.)</macro>')
 * XXX ASAP test: can we store the file handler with permissions in a ServiceWorker??
+* XXX Q: do we need macros for printing errors and the like???
+* XXX Q: do we need a macro to define user macros???
+* 		...see: <page>.defmacro(..)
 * XXX the parser should handle all action return values, including:
 * 			- lists			-- XXX
 * 			- strings		-- DONE

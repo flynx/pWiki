@@ -838,8 +838,9 @@ object.Constructor('Page', BasePage, {
 	// 		-> <func>(<state>)
 	// 			-> ...
 	//
+	// XXX do we need to make .macro.__proto__ module level object???
 	// XXX ASYNC make these support async page getters...
-	macros: {
+	macros: { __proto__: {
 		//
 		//	@(<name>[ <default>][ local])
 		//	@(name=<name>[ default=<default>][ local])
@@ -855,6 +856,7 @@ object.Constructor('Page', BasePage, {
 		// 		- .renderer
 		// 		- .root
 		//
+		// NOTE: default value is parsed when accessed...
 		arg: Macro(
 			['name', 'default', ['local']],
 			function(args){
@@ -868,7 +870,8 @@ object.Constructor('Page', BasePage, {
 					args.name
 					: v
 				return v
-					|| args.default }),
+					|| (args.default 
+						&& this.parse(args.default)) }),
 		'': Macro(
 			['name', 'default', ['local']],
 			function(args){
@@ -887,6 +890,7 @@ object.Constructor('Page', BasePage, {
 		// 		<filter> <filter-spec>
 		// 		| -<filter> <filter-spec>
 		//
+		// XXX REVISE...
 		filter: function(args, body, state, expand=true){
 			var that = this
 
@@ -1299,6 +1303,9 @@ object.Constructor('Page', BasePage, {
 		'content': ['slot'],
 
 		// XXX EXPERIMENTAL...
+		//
+		// NOTE: var value is parsed only on assignment and not on dereferencing...
+		//
 		// XXX INC_DEC do we need inc/dec and parent???
 		'var': Macro(
 			['name', 'text', 
@@ -1616,7 +1623,23 @@ object.Constructor('Page', BasePage, {
 		// nesting rules...
 		'else': ['macro'],
 		'join': ['macro'],
-	},
+	} },
+
+	// XXX EXPERIMENTAL...
+	//
+	// 	Define a global macro...
+	// 	.defmacro(<name>, <func>)
+	// 	.defmacro(<name>, <args>, <func>)
+	// 		-> this
+	//
+	// XXX do we need this???
+	defmacro: function(name, args, func){
+		this.macros[name] = 
+			arguments.length == 2 ?
+				arguments[1]
+				: Macro(args, func)
+		return this },
+
 
 	// direct actions...
 	//
@@ -2413,8 +2436,8 @@ module.System = {
 		text: object.doc`
 			<slot title/>
 			<div class="error">
-				<div class="msg" wikiwords="no">ParseError: @(msg)</div>
-				Page: [@(path)]
+				<div class="msg" wikiwords="no">ParseError: @(msg "no message")</div>
+				Page: [@(path "@source(./path)")]
 			</div> `,},
 	RecursionError: {
 		text: 'RECURSION ERROR: @source(../path)' },

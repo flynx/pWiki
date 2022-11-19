@@ -256,7 +256,7 @@ module.BaseParser = {
 
 		// XXX should this be cached???
 		var macro_pattern = this.MACRO_PATTERN 
-			?? this.buildMacroPattern(Object.keys(page.macros))
+			?? this.buildMacroPattern(Object.deepKeys(page.macros))
 		var macro_pattern_groups = this.MACRO_PATTERN_GROUPS 
 			?? this.countMacroPatternGroups()
 		var macro_args_pattern = this.MACRO_ARGS_PATTERN 
@@ -482,7 +482,7 @@ module.BaseParser = {
 					// XXX add line number and page path...
 					'@include("./ParseError'
 						+':path='
-							// XXX use pwiki.encodeElem(..) ???
+							// XXX use pwpath.encodeElem(..) ???
 							+ page.path 
 						+':msg='
 							+ err.message 
