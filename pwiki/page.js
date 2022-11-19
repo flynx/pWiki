@@ -2409,9 +2409,16 @@ module.System = {
 	//
 	// NOTE: these are last resort pages, preferably overloaded in /Templates.
 	//
+	ParseError: {
+		text: object.doc`
+			<slot title/>
+			<div class="error">
+				<div class="msg" wikiwords="no">ParseError: @(msg)</div>
+				Page: [@(path)]
+			</div> `,},
 	RecursionError: {
 		text: 'RECURSION ERROR: @source(../path)' },
-	NotFoundError: { 
+	NotFoundError: {
 		//text: 'NOT FOUND ERROR: @source(./path)' },
 		text: object.doc`
 			<slot title/>

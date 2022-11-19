@@ -36,12 +36,14 @@
 * 		- 
 *
 *
+* XXX BUG? can't use < and > (bot?) in page title...
+* XXX parser: error handling: revise page quoting... 
+* XXX parser: error handling: add line number + context... (???) 
 * XXX BUG: parser:
 * 		This will break:
 * 			await pwiki.parse('<macro src=../tags join=", ">@source(.)</macro>')
 *		This will not:
 * 			await pwiki.parse('<macro src="../tags" join=", ">@source(.)</macro>')
-* XXX ASAP parser: error handling: must output to page and be informative...
 * XXX ASAP test: can we store the file handler with permissions in a ServiceWorker??
 * XXX the parser should handle all action return values, including:
 * 			- lists			-- XXX

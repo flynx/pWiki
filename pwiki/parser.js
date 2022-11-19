@@ -378,7 +378,7 @@ module.BaseParser = {
 			if(done){
 				if(to){
 					throw new Error(
-						'Premature end of input: Expected closing "'+ to +'"') }
+						'Premature end of input: Expected </'+ to +'>') }
 				return }
 
 			// special case: quoting -> collect text...
@@ -404,9 +404,9 @@ module.BaseParser = {
 					&& !(value.name == to 
 						&& value.type == 'closing')){
 				throw new Error(
-					'Unexpected "'+ value.name +'" macro' 
+					'Unexpected <'+ value.name +'> macro' 
 						+(to ? 
-							' in "'+to+'"' 
+							' in <'+to+'>' 
 							: '')) }
 			// open block...
 			if(value.type == 'opening'){
@@ -416,7 +416,7 @@ module.BaseParser = {
 			// close block...
 			} else if(value.type == 'closing'){
 				if(value.name != to){
-					throw new Error('Unexpected closing "'+ value.name +'"') }
+					throw new Error('Unexpected </'+ value.name +'>') }
 				// NOTE: we are intentionally not yielding the value here...
 				return } 
 			// normal value...
@@ -437,42 +437,66 @@ module.BaseParser = {
 	// 		one should only be used for parsing and be forgotten after 
 	// 		the ast is constructed the other should be part of the ast...
 	expand: async function*(page, ast, state={}){
-		ast = ast == null ?
-				//this.group(page)
-				this.group(page, await page.raw ?? '')
-			: typeof(ast) != 'object' ?
-				this.group(page, ast)
-			: ast instanceof types.Generator ?
-				ast
-			: ast.iter()
+		try{
+			ast = ast == null ?
+					//this.group(page)
+					this.group(page, await page.raw ?? '')
+				: typeof(ast) != 'object' ?
+					this.group(page, ast)
+				: ast instanceof types.Generator ?
+					ast
+				: ast.iter()
 
-		while(true){
-			var {value, done} = ast.next()
-			if(done){
-				return }
+			while(true){
+				var {value, done} = ast.next()
+				if(done){
+					return }
 
-			// text block...
-			if(typeof(value) == 'string'){
-				yield value 
-				continue }
+				// text block...
+				if(typeof(value) == 'string'){
+					yield value 
+					continue }
 
-			// macro...
-			var {name, args, body} = value
-			// nested macro -- skip...
-			if(typeof(page.macros[name]) != 'function'){
-				yield {...value, skip: true}
-				continue }
+				// macro...
+				var {name, args, body} = value
+				// nested macro -- skip...
+				if(typeof(page.macros[name]) != 'function'){
+					yield {...value, skip: true}
+					continue }
 
-			var res = 
-				await this.callMacro(page, name, args, body, state) 
-					?? ''
+				var res = 
+					await this.callMacro(page, name, args, body, state) 
+						?? ''
 
-			// result...
-			if(res instanceof Array 
-					|| page.macros[name] instanceof types.Generator){
-				yield* res
-			} else {
-				yield res } } },
+				// result...
+				if(res instanceof Array 
+						|| page.macros[name] instanceof types.Generator){
+					yield* res
+				} else {
+					yield res } } 
+
+			// error...
+			}catch(err){
+				console.error(err)
+				yield await page.parse(
+					// XXX add line number and page path...
+					'@include("./ParseError'
+						+':path='
+							// XXX use pwiki.encodeElem(..) ???
+							+ page.path 
+						+':msg='
+							+ err.message 
+								// quote html stuff...
+								.replace(/&/g, '&amp;')
+								.replace(/</g, '&lt;')
+								.replace(/>/g, '&gt;')
+								// quote argument syntax...
+								.replace(/["']/g, function(c){
+									return '%'+ c.charCodeAt().toString(16) })
+								.replace(/:/g, '&colon;')
+								.replace(/=/g, '&equals;')
+						+'")')
+				return } },
 
 	// recursively resolve and enumerate the ast...
 	//
