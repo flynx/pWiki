@@ -36,6 +36,8 @@
 * 		- 
 *
 *
+* XXX load new page at .scrollTop = 0 if no anchors are given...
+* 		... or remember scroll position per page...
 * XXX parser: error handling: revise page quoting... 
 * 		...need a standard mechanism to quote urls, url-args and paths...
 * XXX BUG? can't use < and > (both?) in page title...
@@ -46,8 +48,19 @@
 *		This will not:
 * 			await pwiki.parse('<macro src="../tags" join=", ">@source(.)</macro>')
 * XXX ASAP test: can we store the file handler with permissions in a ServiceWorker??
-* XXX Q: do we need macros for printing errors and the like???
-* XXX Q: do we need a macro to define user macros???
+* XXX macros: Q: do we need macros for printing errors and the like???
+* XXX macros: Q: do we need a macro to define user macros (live)???
+* 			...not yet sure...
+* 		Q: should the defined macro be global or local to page?
+* 			the obvious is to make it local (.defmacro(..) is global), the
+* 			next obvious thought is to add an ability to define global macros
+* 			via either a special page (better) or a special macro (worse)
+* 			...it would be nice to make the "globals" pages parse-on-write
+* 			...it is also obvious that "globals" pages can be placed in 
+* 			different parts of the tree and thus define different sub 
+* 			namespaces, this essentially leads to duplicating part of the
+* 			current functionality...
+* 		A: Global macros REJECTED, based on KISS
 * 		...see: <page>.defmacro(..)
 * XXX the parser should handle all action return values, including:
 * 			- lists			-- XXX
