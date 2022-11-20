@@ -37,7 +37,9 @@
 *
 *
 * XXX load new page at .scrollTop = 0 if no anchors are given...
-* 		...or remember scroll position per page...
+* 		...and/or remember scroll position per page...
+* XXX sort: define a generic sort path argument...
+* 		...this will unify all interfaces (macros/patterns/etc)
 * XXX macros: else/default macro args essentially mean the same thing, should we
 * 		unify them to use the same name???
 * XXX parser: error handling: revise page quoting... 
@@ -51,19 +53,6 @@
 * 			await pwiki.parse('<macro src="../tags" join=", ">@source(.)</macro>')
 * XXX ASAP test: can we store the file handler with permissions in a ServiceWorker??
 * XXX macros: Q: do we need macros for printing errors and the like???
-* XXX macros: Q: do we need a macro to define user macros (live)???
-* 			...not yet sure...
-* 		Q: should the defined macro be global or local to page?
-* 			the obvious is to make it local (.defmacro(..) is global), the
-* 			next obvious thought is to add an ability to define global macros
-* 			via either a special page (better) or a special macro (worse)
-* 			...it would be nice to make the "globals" pages parse-on-write
-* 			...it is also obvious that "globals" pages can be placed in 
-* 			different parts of the tree and thus define different sub 
-* 			namespaces, this essentially leads to duplicating part of the
-* 			current functionality...
-* 		A: Global macros REJECTED, based on KISS
-* 		...see: <page>.defmacro(..)
 * XXX the parser should handle all action return values, including:
 * 			- lists			-- XXX
 * 			- strings		-- DONE
@@ -272,6 +261,11 @@
 * 		...this is not possible because:
 * 			- we statically set the macro name list (regexp) parser.lex(..)
 * 			- we need this list to parser.group(..)
+* 		...i.e. it would require changing the regexp during and async parse, 
+*	 	potentially reparsing parsed sections agead of definition... this is 
+*	 	fixable (more general macro name pattern + ns matching) but I'm not 
+*	 	sure if this is worth it
+* 		...see: <page>.defmacro(..)
 * XXX EXPERIMENTAL DOC INHERIT_ARGS added a special-case...
 * 		as basename will get appended :$ARGS if no args are given...
 * 		...this only applies to paths referring to the current context 
