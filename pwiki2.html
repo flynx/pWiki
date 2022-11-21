@@ -378,22 +378,18 @@ require(['./browser'], function(browser){
 
 	// scroll...
 	// NOTE: we restore scroll position only on history navigation...
-	var save_scroll = function(){ 
-		history.replaceState(
-			{ 
-				path: pwiki.location,
-				// XXX HACK this will work only on full page...
-				scroll: document.scrollingElement.scrollTop,
-			}, 
-			'',
-			// XXX 
-			window.location.hash) }
+	var save_scroll = async function(){ 
+		history.replaceState({ 
+			path: pwiki.location,
+			// XXX HACK this will work only on full page...
+			scroll: document.scrollingElement.scrollTop,
+		}, '', window.location.hash) }
 	// save scroll position just after scroll is done...
-	var scrolling
+	var _scrolling
 	window.addEventListener('scroll', function(evt){
-		scrolling
-			&& clearTimeout(scrolling)
-		scrolling = setTimeout(save_scroll, 200) })
+		_scrolling
+			&& clearTimeout(_scrolling)
+		_scrolling = setTimeout(save_scroll, 200) })
 	// get scroll position from history state...
 	window.addEventListener('popstate', function(evt){
 		pwiki.__scroll = (evt.state ?? {}).scroll })
