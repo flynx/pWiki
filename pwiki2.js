@@ -36,8 +36,6 @@
 * 		- 
 *
 *
-* XXX load new page at .scrollTop = 0 if no anchors are given...
-* 		...and/or remember scroll position per page...
 * XXX sort: define a generic sort path argument...
 * 		...this will unify all interfaces (macros/patterns/etc)
 * XXX macros: else/default macro args essentially mean the same thing, should we
@@ -51,6 +49,10 @@
 * 			await pwiki.parse('<macro src=../tags join=", ">@source(.)</macro>')
 *		This will not:
 * 			await pwiki.parse('<macro src="../tags" join=", ">@source(.)</macro>')
+* XXX FEATURE: make the pwiki "widget" work bot as an element and as a 
+* 		full page (current)...
+* 		...would need to handle stuff like history, url, nav locally...
+* 		see: pwiki2.html
 * XXX ASAP test: can we store the file handler with permissions in a ServiceWorker??
 * XXX macros: Q: do we need macros for printing errors and the like???
 * XXX the parser should handle all action return values, including:

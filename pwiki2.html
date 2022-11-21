@@ -375,6 +375,29 @@ require(['./browser'], function(browser){
 		// NOTE: this seems not to work if the REFRESH_DELAY is too small...
 		setTimeout(function(){
 			pwiki.location = [path, hash] }, REFRESH_DELAY) })
+
+	// scroll...
+	// NOTE: we restore scroll position only on history navigation...
+	var save_scroll = function(){ 
+		history.replaceState(
+			{ 
+				path: pwiki.location,
+				// XXX HACK this will work only on full page...
+				scroll: document.scrollingElement.scrollTop,
+			}, 
+			'',
+			// XXX 
+			window.location.hash) }
+	// save scroll position just after scroll is done...
+	var scrolling
+	window.addEventListener('scroll', function(evt){
+		scrolling
+			&& clearTimeout(scrolling)
+		scrolling = setTimeout(save_scroll, 200) })
+	// get scroll position from history state...
+	window.addEventListener('popstate', function(evt){
+		pwiki.__scroll = (evt.state ?? {}).scroll })
+
 	pwiki
 		.onBeforeNavigate(function(){
 			saveAll() })
@@ -382,7 +405,7 @@ require(['./browser'], function(browser){
 			// NOTE: we do not need to directly update location.hash here as
 			//		that will push an extra history item...
 			history.replaceState(
-				{path: this.location}, 
+				{ path: this.location }, 
 				'',
 				'#'+this.location 
 					+(this.hash ? 
@@ -416,11 +439,15 @@ require(['./browser'], function(browser){
 				`${titles.length > 1 ? 
 					titles.at(-1).innerText
 					: this.title} &mdash; pWiki`
-			// scroll to anchor element...
-			this.hash
-				&& this.dom
+			// scroll...
+			this.hash ?
+				// to anchor element...
+				this.dom
 					.querySelector('#'+ this.hash)
 					.scrollIntoView() 
+				// restore history position...
+				// XXX HACK this will work only on full page...
+				: (document.scrollingElement.scrollTop = this.__scroll ?? 0)
 
 			// XXX MediumEditor...
 			//setupMediumEditor()
