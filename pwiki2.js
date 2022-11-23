@@ -36,8 +36,12 @@
 * 		- 
 *
 *
-* XXX sort: define a generic sort path argument...
-* 		...this will unify all interfaces (macros/patterns/etc)
+* XXX sort: define a generic sort path argument... DONE-ish
+* 		XXX sort chains still not totally correct...
+* 			This correctly shows Doc and WikiHome first
+* 				await pwiki.store.sort('*', 'tags')
+* 			This mixes them back up:
+* 				await pwiki.store.sort('*', 'tags', 'ctime')
 * XXX macros: else/default macro args essentially mean the same thing, should we
 * 		unify them to use the same name???
 * XXX parser: error handling: revise page quoting... 

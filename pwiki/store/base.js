@@ -643,6 +643,7 @@ module.BaseStore = {
 	//*/
 
 
+
 	//
 	// 	.exists(<path>)
 	// 		-> <normalized-path>
@@ -689,6 +690,83 @@ module.BaseStore = {
 			return false }
 		return pwpath.joinArgs(res, args) },
 	//*/
+	
+	// XXX EXPERIMENTAL...
+	// XXX should we handle undefined attr values???
+	// XXX BUG: chains still not working correctly...
+	sort: function(paths, ...by){
+		var that = this
+		paths = 
+			(paths.includes('*') 
+					|| paths.includes('**')) ?
+				this.match(paths).iter()
+				: paths
+		var _async = false
+		return paths
+			// pre-fetch all the needed data...
+			// XXX we can try and make this lazy and only get the data 
+			// 		we need when we need it (in sort)...
+			// 		...not sure if this is worth it...
+			.map(function(p, i){
+				var d
+				var res = []
+				for(var cmp of by){
+					res.push(
+						(cmp == 'path' 
+								|| cmp == 'location') ? 
+							p
+						: cmp == 'dir' ?
+							pwpath.dirname(p)
+						: cmp == 'name' ?
+							pwpath.basename(p)
+						: cmp == 'title' ?
+							pwpath.decodeElem(
+								pwpath.basename(p)) 
+						: cmp == 'depth' ?
+							pwpath.split(p).length
+						// async attr...
+						: typeof(cmp) == 'string' ?
+							// NOTE: we only get page data once per page...
+							(d = d ?? that.get(p))
+								.then(function(data){
+									return data[cmp] })
+						: null) }
+				_async = _async || !!d
+				return d ?
+					// wait for data to resolve...
+					Promise.all([i, p, Promise.all(res)])
+					: [i, p, res] })
+			// NOTE: if one of the sort attrs is async we need to wrap the 
+			// 		whole thing in a promise...
+			.run(function(){
+				return _async ?
+					Promise.all(this).iter() 
+					: this })
+			.sort(function([ia, a, ca], [ib, b, cb]){
+				for(var [i, cmp] of by.entries()){
+					var res =
+						typeof(cmp) == 'string' ?
+							((ca[i] == null 
+									&& cb[i] == null) ?
+								0
+							: (cb[i] == null 
+									|| ca[i] < cb[i]) ?
+								-1
+							: (ca[i] == null 
+									|| ca[i] > cb[i]) ?
+								1
+							: 0)
+						: typeof(cmp) == 'function' ?
+							cmp(a, b)
+						: 0
+					// got a non equal...
+					if(res != 0){
+						return res } }
+				// keep positions if all comparisons are equal...
+				return ia - ib }) 
+			.map(function([_, p]){
+				return p }) },
+
 	// find the closest existing alternative path...
 	find: async function(path, strict=false){
 		var {path, args} = pwpath.splitArgs(path)
@@ -709,7 +787,6 @@ module.BaseStore = {
 				: '/'+p
 			if(pages.has(p)){
 				return p+args } } },
-
 	// 
 	// 	Resolve page for path
 	// 	.match(<path>)
@@ -802,19 +879,20 @@ module.BaseStore = {
 		// pattern match * / **
 		if(path.includes('*') 
 				|| path.includes('**')){
-			var order = (this.metadata(path) ?? {}).order || []
-
 			var {path, args} = pwpath.splitArgs(path)
+			path = pwpath.sanitize(path)
+
 			var all = args.all
+			var sort = args.sort
 			var test = await this.__match_args(args)
 			args = pwpath.joinArgs('', args)
+
+			var order = (await this.metadata(path) ?? {}).order || []
 
 			// NOTE: we are matching full paths only here so leading and 
 			// 		trainling '/' are optional...
 			var pattern = new RegExp(`^\\/?`
-				+RegExp.quoteRegExp(
-					// remove leading/trailing '/'
-					path.replace(/^\/|\/$/g, ''))
+				+RegExp.quoteRegExp(path)
 					// pattern: **
 					.replace(/\\\*\\\*/g, '(.*)')
 					// pattern: *
@@ -860,7 +938,13 @@ module.BaseStore = {
 									m[0].slice(1) 
 									: m[0])
 						return res }, new Set())]
-				.sortAs(order)
+				// handle live sort...
+				.run(function(){
+					return (sort && sort !== true) ?
+						that
+							.sort(this, ...sort.split(/\s*[,\s]+/g))
+						:this
+							.sortAs(order) })
 				.map(function(p){
 					return p+args })}
 		// direct search...

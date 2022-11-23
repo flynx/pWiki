@@ -558,25 +558,16 @@ object.Constructor('BasePage', {
 
 	// sorting...
 	//
-	// XXX should this be page-level (current) store level???
-	// XXX when this is async, should this return a promise????
-	sort: async function(cmp){
-		// not sorting single pages...
-		//if(this.length <= 1){
-		if(!this.isPattern){
-			return this }
-		// sort...
+	sort: async function(...cmp){
+		// normalize to path...
 		this.metadata = 
-			{ order: (await this.each())
-				.sort(...arguments)
-				.map(function(p){
-					return p.path }) }
+			{ order: await this.store.sort(this.path, ...cmp) }
 		return this },
 	reverse: async function(){
 		// not sorting single pages...
 		if(this.length <= 1){
 			return this }
-		this.metadata = { order: (await this.match()).reverse() }
+		this.sort('reverse')
 		return this },
 
 	//
