@@ -2484,7 +2484,7 @@ module.System = {
 	// XXX this does not work as energetic...
 	time: async function(){
 		var t = Date.now()
-		var text = await this.get('../_text').text
+		var text = await this.get('../_text:$ARGS').text
 		var time = Date.now() - t
 		console.log('RENDER TIME:', time)
 		return object.doc`
