@@ -36,12 +36,6 @@
 * 		- 
 *
 *
-* XXX sort: define a generic sort path argument... DONE-ish
-* 		XXX sort chains still not totally correct...
-* 			This correctly shows Doc and WikiHome first
-* 				await pwiki.store.sort('*', 'tags')
-* 			This mixes them back up:
-* 				await pwiki.store.sort('*', 'tags', 'ctime')
 * XXX macros: else/default macro args essentially mean the same thing, should we
 * 		unify them to use the same name???
 * XXX parser: error handling: revise page quoting... 
@@ -74,7 +68,6 @@
 * 			...likely no...
 * 			...would depend on where we iterate pages and on whether 
 * 			we can/should reach that spot from within the parser...
-* XXX ASAP revise/update sort...
 * XXX ASAP: MetaStore: need to correctly integrate the following store 
 * 		methods:
 * 			.get(..)					-- DONE

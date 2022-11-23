@@ -692,8 +692,7 @@ module.BaseStore = {
 	//*/
 	
 	// XXX EXPERIMENTAL...
-	// XXX should we handle undefined attr values???
-	// XXX BUG: chains still not working correctly...
+	// XXX add sort order saving???
 	sort: function(paths, ...by){
 		var that = this
 		paths = 
@@ -710,7 +709,14 @@ module.BaseStore = {
 			.map(function(p, i){
 				var d
 				var res = []
-				for(var cmp of by){
+				// NOTE: this is the first and only instance so far where 
+				// 		using let is simpler than doing this below:
+				// 			function(cmp){
+				//				return (d = d ?? that.get(p))
+				//					.then(function(data){
+				//						return data[cmp] }) }.bind(this, cmp)
+				//		..still not sure if this is worth the special case...
+				for(let cmp of by){
 					res.push(
 						(cmp == 'path' 
 								|| cmp == 'location') ? 
