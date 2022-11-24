@@ -692,6 +692,26 @@ module.BaseStore = {
 	//*/
 	
 	// XXX EXPERIMENTAL...
+	//
+	//	.sort(<pattern>, <by>, ..)
+	//	.sort([<path>, ..], <by>, ..)
+	//		-> <paths>
+	//		-> <promise(paths)>
+	//
+	//	<by> ::=
+	//		'path'
+	//		| 'location'
+	//		| 'dir'
+	//		| 'name'
+	//		| 'title'
+	//		| 'depth'
+	//		| <attr>
+	//		| <cmp-func>
+	//
+	//
+	// NOTE: all path based <by> values are sync, not requireing a .gat(..) 
+	// 		and thus faster than sorting via arbitrary <attr>...
+	//
 	// XXX add sort order saving???
 	sort: function(paths, ...by){
 		var that = this
@@ -717,6 +737,12 @@ module.BaseStore = {
 				//						return data[cmp] }) }.bind(this, cmp)
 				//		..still not sure if this is worth the special case...
 				for(let cmp of by){
+					cmp = 
+						// ignore '-'/reverse
+						(typeof(cmp) == 'string' 
+								&& cmp[0] == '-') ?
+							cmp.slice(1)
+							: cmp
 					res.push(
 						(cmp == 'path' 
 								|| cmp == 'location') ? 
@@ -740,15 +766,15 @@ module.BaseStore = {
 				_async = _async || !!d
 				return d ?
 					// wait for data to resolve...
-					Promise.all([i, p, Promise.all(res)])
-					: [i, p, res] })
+					Promise.all([p, i, Promise.all(res)])
+					: [p, i, res] })
 			// NOTE: if one of the sort attrs is async we need to wrap the 
 			// 		whole thing in a promise...
 			.run(function(){
 				return _async ?
 					Promise.all(this).iter() 
 					: this })
-			.sort(function([ia, a, ca], [ib, b, cb]){
+			.sort(function([a, ia, ca], [b, ib, cb]){
 				for(var [i, cmp] of by.entries()){
 					var res =
 						typeof(cmp) == 'string' ?
@@ -765,12 +791,16 @@ module.BaseStore = {
 						: typeof(cmp) == 'function' ?
 							cmp(a, b)
 						: 0
+					// reverse...
+					res = cmp[0] == '-' ?
+						res * -1
+						: res
 					// got a non equal...
 					if(res != 0){
 						return res } }
 				// keep positions if all comparisons are equal...
 				return ia - ib }) 
-			.map(function([_, p]){
+			.map(function([p]){
 				return p }) },
 
 	// find the closest existing alternative path...

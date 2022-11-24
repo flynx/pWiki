@@ -389,6 +389,11 @@ object.Constructor('BasePage', {
 	get metadata(){
 		return this.store.metadata(this.path) },
 	set metadata(value){
+		// clear...
+		if(arguments.length > 0 
+				&& value == null){
+			return this.__delete__() }
+		// set...
 		this.__update__(value) },
 
 	get type(){ return async function(){
