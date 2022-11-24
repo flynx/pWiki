@@ -705,6 +705,7 @@ module.BaseStore = {
 	//		| 'name'
 	//		| 'title'
 	//		| 'depth'
+	//		| 'number'
 	//		| <attr>
 	//		| <cmp-func>
 	//
@@ -712,7 +713,25 @@ module.BaseStore = {
 	// NOTE: all path based <by> values are sync, not requireing a .gat(..) 
 	// 		and thus faster than sorting via arbitrary <attr>...
 	//
-	// XXX add sort order saving???
+	__sort_method__: {
+		// NOTE: path/location are special cases as they do not transform 
+		// 		the path -- they are hard-coded in .sort(..)...
+		//path: function(p){ return p },
+		//location: function(p){ return p },
+		dir: pwpath.dirname.bind(pwpath),
+		name: pwpath.basename.bind(pwpath),
+		title: function(p){
+			return pwpath.decodeElem(
+				pwpath.basename(p)) },
+		depth: function(p){
+			return pwpath.split(p).length },
+		// XXX this only accounts for the first number...
+		number: function(p){
+			return parseInt(p.split(/[^\d]+/)
+				.filter(function(e){ 
+					return e != '' })
+				.shift()) },
+	},
 	sort: function(paths, ...by){
 		var that = this
 		paths = 
@@ -747,15 +766,8 @@ module.BaseStore = {
 						(cmp == 'path' 
 								|| cmp == 'location') ? 
 							p
-						: cmp == 'dir' ?
-							pwpath.dirname(p)
-						: cmp == 'name' ?
-							pwpath.basename(p)
-						: cmp == 'title' ?
-							pwpath.decodeElem(
-								pwpath.basename(p)) 
-						: cmp == 'depth' ?
-							pwpath.split(p).length
+						: cmp in that.__sort_method__ ?
+							that.__sort_method__[cmp].call(that, p)
 						// async attr...
 						: typeof(cmp) == 'string' ?
 							// NOTE: we only get page data once per page...
