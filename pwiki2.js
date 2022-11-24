@@ -37,6 +37,16 @@
 * 		- 
 *
 *
+* XXX revise how we store order...
+* 			.metadata.order = [ .. ]
+* 			.metadata.order_<name> = [ .. ]
+* 			...
+* 		or:
+* 			.metadata.order = {
+* 				'default': [ .. ],
+* 				<name>: [ .. ]
+* 				...
+* 			}
 * XXX macros: else/default macro args essentially mean the same thing, should we
 * 		unify them to use the same name???
 * XXX parser: error handling: revise page quoting... 

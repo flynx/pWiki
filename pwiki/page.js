@@ -558,6 +558,7 @@ object.Constructor('BasePage', {
 
 	// sorting...
 	//
+	// XXX revise how we sore order...
 	sort: async function(...cmp){
 		// normalize to path...
 		this.metadata = 
@@ -570,7 +571,9 @@ object.Constructor('BasePage', {
 	sortAs: async function(order){
 		this.metadata = 
 			order instanceof Array ?
-				{ order }
+				{ order: order
+					.map(function(p){ 
+						return pwpath.sanitize(p) }) }
 				: { order: (await this.metadata)['order_'+ order] }
 		return this },
 	// XXX EXPERIMENTAL -- move this to store???
