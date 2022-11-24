@@ -22,6 +22,7 @@
 * 		- GUI										- 
 * 			general UI/UX
 * 			drag-n-drop
+* 			live search, render, ...etc.
 * 		- CLI										- 
 * 			- server / replication target
 * 			- management
