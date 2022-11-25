@@ -37,7 +37,7 @@
 * 		- 
 *
 *
-* XXX revise how we store order...
+* XXX sort: revise how we store order...
 * 			.metadata.order = [ .. ]
 * 			.metadata.order_<name> = [ .. ]
 * 			...
@@ -47,6 +47,8 @@
 * 				<name>: [ .. ]
 * 				...
 * 			}
+* 		...this would make updating order more complicated (i.e. require a fetch)
+* 		Q: will it be a good idea to use the cache/index api???
 * XXX macros: else/default macro args essentially mean the same thing, should we
 * 		unify them to use the same name???
 * XXX parser: error handling: revise page quoting... 

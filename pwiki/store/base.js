@@ -712,7 +712,11 @@ module.BaseStore = {
 	//
 	// NOTE: all path based <by> values are sync, not requireing a .gat(..) 
 	// 		and thus faster than sorting via arbitrary <attr>...
+	// NOTE: this performs a natural sort, i.e. numbers in strings are 
+	// 		treated as numbers and not as strings of characters making
+	// 		"page2" precede "page10".
 	//
+	// XXX should this be an index/cached??
 	__sort_method__: {
 		// NOTE: path/location are special cases as they do not transform 
 		// 		the path -- they are hard-coded in .sort(..)...
@@ -739,9 +743,36 @@ module.BaseStore = {
 					|| paths.includes('**')) ?
 				this.match(paths).iter()
 				: paths
+		// natural compare arrays...
+		var nsplit = function(e){
+			return typeof(e) == 'string' ?
+				e.split(/(\d+)/g)
+					.map(function(e){
+						var i = parseInt(e)
+						return isNaN(i) ?
+							e
+							: i }) 
+				: e }
+		var ncmp = function(a, b){
+			// skip the equal part...
+			var i = 0
+			while(a[i] != null 
+					&& b[i] != null 
+					&& a[i] == b[i]){ 
+				i++ }
+			return (a[i] == null 
+						&& b[i] == null) ?
+					0
+				: (a[i] == null 
+						|| a[i] < b[i]) ?
+					-1
+				: (b[i] == null
+						|| a[i] > b[i]) ?
+					1
+				: 0 }
 		var _async = false
 		return paths
-			// pre-fetch all the needed data...
+			// pre-fetch and prep all the needed data...
 			// XXX we can try and make this lazy and only get the data 
 			// 		we need when we need it (in sort)...
 			// 		...not sure if this is worth it...
@@ -763,18 +794,19 @@ module.BaseStore = {
 							cmp.slice(1)
 							: cmp
 					res.push(
-						(cmp == 'path' 
-								|| cmp == 'location') ? 
-							p
-						: cmp in that.__sort_method__ ?
-							that.__sort_method__[cmp].call(that, p)
-						// async attr...
-						: typeof(cmp) == 'string' ?
-							// NOTE: we only get page data once per page...
-							(d = d ?? that.get(p))
-								.then(function(data){
-									return data[cmp] })
-						: null) }
+						nsplit(
+							(cmp == 'path' 
+									|| cmp == 'location') ? 
+								p
+							: cmp in that.__sort_method__ ?
+								that.__sort_method__[cmp].call(that, p)
+							// async attr...
+							: typeof(cmp) == 'string' ?
+								// NOTE: we only get page data once per page...
+								(d = d ?? that.get(p))
+									.then(function(data){
+										return data[cmp] })
+							: null)) }
 				_async = _async || !!d
 				return d ?
 					// wait for data to resolve...
@@ -793,6 +825,15 @@ module.BaseStore = {
 							((ca[i] == null 
 									&& cb[i] == null) ?
 								0
+							// natural cmp...
+							: (ca[i] instanceof Array 
+									&& cb[i] instanceof Array) ?
+								ncmp(ca[i], cb[i])
+							: ca[i] instanceof Array ?
+								ncmp(ca[i], [cb[i]])
+							: cb[i] instanceof Array ?
+								ncmp([ca[i]], cb[i])
+							// normal indexed cmp...
 							: (cb[i] == null 
 									|| ca[i] < cb[i]) ?
 								-1
