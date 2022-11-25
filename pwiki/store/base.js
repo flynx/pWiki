@@ -710,6 +710,8 @@ module.BaseStore = {
 	//		| <cmp-func>
 	//
 	//
+	// NOTE: to reverse search order prepend '-' to method name, e.g. cahnge 
+	// 		'path' to '-path', etc.
 	// NOTE: all path based <by> values are sync, not requireing a .gat(..) 
 	// 		and thus faster than sorting via arbitrary <attr>...
 	// NOTE: this performs a natural sort, i.e. numbers in strings are 
@@ -729,12 +731,10 @@ module.BaseStore = {
 				pwpath.basename(p)) },
 		depth: function(p){
 			return pwpath.split(p).length },
-		// XXX this only accounts for the first number...
 		number: function(p){
-			return parseInt(p.split(/[^\d]+/)
-				.filter(function(e){ 
-					return e != '' })
-				.shift()) },
+			return p
+				.split(/[^\d]+/g)
+				.join(' ') },
 	},
 	sort: function(paths, ...by){
 		var that = this
