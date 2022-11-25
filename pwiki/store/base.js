@@ -731,10 +731,11 @@ module.BaseStore = {
 				pwpath.basename(p)) },
 		depth: function(p){
 			return pwpath.split(p).length },
-		number: function(p){
-			return p
-				.split(/[^\d]+/g)
-				.join(' ') },
+		// XXX not sure if this is needed...
+		//number: function(p){
+		//	return p
+		//		.split(/[^\d]+/g)
+		//		.join(' ') },
 	},
 	sort: function(paths, ...by){
 		var that = this
