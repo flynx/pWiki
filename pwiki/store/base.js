@@ -897,6 +897,12 @@ module.BaseStore = {
 	// actual existing pages, while in non-strict mode the pattern will 
 	// match all sub-paths.
 	//
+	// Handled path arguments:
+	// 		all
+	// 		sort=<methods>
+	// 		sortnewlast (default)
+	// 		sortnewfirst
+	//
 	__match_args__: {
 		//
 		//	<tag-name>: function(value, args){
@@ -974,6 +980,11 @@ module.BaseStore = {
 
 			var all = args.all
 			var sort = args.sort
+			var newlast = 
+				args.sortnewlast 
+					?? !(args.sortnewfirst 
+						// default is sortnewlast...
+						?? false)
 			var test = await this.__match_args(args)
 			args = pwpath.joinArgs('', args)
 
@@ -1034,7 +1045,10 @@ module.BaseStore = {
 						that
 							.sort(this, ...sort.split(/\s*[,\s]+/g))
 						:this
-							.sortAs(order) })
+							.sortAs(order, 
+								newlast ? 
+									'head' 
+									: 'tail') })
 				.map(function(p){
 					return p+args })}
 		// direct search...

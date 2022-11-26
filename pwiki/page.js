@@ -2474,7 +2474,7 @@ module.System = {
 				<div>
 					<b>Nested pages:</b><br>
 					<div style="padding-left: 30px">
-						<macro src="./*" join="<br>" else="@slot(nested)">
+						<macro src="./*:$ARGS" join="<br>" else="@slot(nested)">
 							<a href="#@source(s ./path)">@source(./title)</a>
 						</macro>
 					</div>

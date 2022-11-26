@@ -37,9 +37,6 @@
 * 		- 
 *
 *
-* XXX sort: for saved order, how do we handle items not in the metadata?
-* 		...there are three ways to handle this, put them first, last or 
-* 		add an option with a reasonable default...
 * XXX sort: revise how we store order...
 * 			.metadata.order = [ .. ]
 * 			.metadata.order_<name> = [ .. ]
