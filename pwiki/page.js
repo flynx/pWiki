@@ -10,6 +10,10 @@
 var object = require('ig-object')
 var types = require('ig-types')
 
+// XXX this should be optional...
+// XXX is this a good idea???
+//var dateparser = require('any-date-parser')
+
 var pwpath = require('./path')
 var parser = require('./parser')
 var filters = require('./filters/base')
