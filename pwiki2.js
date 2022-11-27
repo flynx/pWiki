@@ -37,6 +37,7 @@
 * 		- 
 *
 *
+* XXX sort: aliases (a-la imagegrid???)
 * XXX sort: revise how we store order...
 * 			.metadata.order = [ .. ]
 * 			.metadata.order_<name> = [ .. ]

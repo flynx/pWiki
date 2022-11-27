@@ -495,6 +495,7 @@ module.BaseStore = {
 			//*/
 			var {text, tags} = update
 			text = [
+				'',
 				path,
 				(text 
 						&& typeof(text) != 'function') ?
@@ -504,7 +505,8 @@ module.BaseStore = {
 					'#'+ tags.join(' #')
 					: '',
 			].join('\n\n')
-			;(await data).add(path, update.text) 
+			;(await data)
+				.add(path, text) 
 			// handle changes...
 			//this.__search.options.__save_changes.call(this, name, 'update', path, update)
 			return data },
