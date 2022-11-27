@@ -719,8 +719,6 @@ module.BaseStore = {
 	// NOTE: this performs a natural sort, i.e. numbers in strings are 
 	// 		treated as numbers and not as strings of characters making
 	// 		"page2" precede "page10".
-	//
-	// XXX should this be an index/cached??
 	__sort_method__: {
 		// NOTE: path/location are special cases as they do not transform 
 		// 		the path -- they are hard-coded in .sort(..)...

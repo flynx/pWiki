@@ -37,7 +37,8 @@
 * 		- 
 *
 *
-* XXX sort: aliases (a-la imagegrid???)
+*
+* XXX sort: aliases (a-la imagegrid)???
 * XXX sort: revise how we store order...
 * 			.metadata.order = [ .. ]
 * 			.metadata.order_<name> = [ .. ]
@@ -50,6 +51,9 @@
 * 			}
 * 		...this would make updating order more complicated (i.e. require a fetch)
 * 		Q: will it be a good idea to use the cache/index api???
+* XXX sort: might be a good idea to pre-sort (index) all the pages and 
+* 		simply reference that for sorts...
+* 		...this needs thought and weighing...
 * XXX macros: else/default macro args essentially mean the same thing, should we
 * 		unify them to use the same name???
 * XXX parser: error handling: revise page quoting... 
