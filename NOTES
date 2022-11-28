@@ -1,0 +1,10 @@
+
+Avoiding Async functions
+------------------------
+
+We are explicitly avoiding clean async functions if there is a possibility
+to return a value sync, especially in the genetal case. This is done to avoid
+jugling contexts between execution frames when this is not necessary.
+
+"await" is quite convenient but "async", if overused, can destroy performance by
+playing ping-pong with lots of balls (promises) and frames.
