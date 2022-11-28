@@ -648,52 +648,23 @@ module.BaseStore = {
 
 	//
 	// 	.exists(<path>)
+	// 		-> <promise>
 	// 		-> <normalized-path>
 	// 		-> false
 	//
-	// XXX INDEXED...
-	exists: async function(path){
+	exists: function(path){
 		var {path, args} = 
 			pwpath.splitArgs(
 				pwpath.sanitize(path, 'string'))
-		//return new Set(await this.paths).has(path) ?
-		//return (await this.paths).indexOf(path) != -1 ?
-		return (await this.paths).includes(path) ?
-			pwpath.joinArgs(path, args)
-			: undefined },
-	/*/
-	__exists__: async function(path){
-		return path in this.data
-				&& path },
-	// XXX might be a good idea to cache this...
-	exists: async function(path){
-		var {path, args} = 
-			pwpath.splitArgs(
-				pwpath.sanitize(path, 'string'))
-
-		// NOTE: all paths at this point and in store are 
-		// 		absolute, so we check both with the leading 
-		// 		'/' and without it to make things a bit more 
-		// 		relaxed and return the actual matching path...
-		var res = await this.__exists__(path)
-		// NOTE: res can be '' and thus we can't simply chain via || here...
-		typeof(res) != 'string'
-			&& (res = await this.__exists__('/'+ path))
-
-		// delegate to .next...
-		typeof(res) != 'string'
-			&& (this.next || {}).__exists__
-			&& (res = await this.next.__exists__(path))
-		typeof(res) != 'string'
-			&& (this.next || {}).__exists__
-			&& (res = await this.next.__exists__('/'+path))
-
-		if(typeof(res) != 'string'){
-			return false }
-		return pwpath.joinArgs(res, args) },
-	//*/
+		var test = function(paths){
+			return paths.includes(path) ?
+				pwpath.joinArgs(path, args)
+				: undefined }
+		var paths = this.paths
+		return paths instanceof Promise ?
+			paths.then(test)
+			: test(paths) },
 	
-	// XXX EXPERIMENTAL...
 	//
 	//	.sort(<pattern>, <by>, ..)
 	//	.sort([<path>, ..], <by>, ..)
@@ -707,7 +678,6 @@ module.BaseStore = {
 	//		| 'name'
 	//		| 'title'
 	//		| 'depth'
-	//		| 'number'
 	//		| <attr>
 	//		| <cmp-func>
 	//
@@ -1323,23 +1293,32 @@ module.BaseStore = {
 // XXX see inside...
 var metaProxy = 
 function(name, pre, post){
-	var func = async function(path, ...args){
+	var func = function(path, ...args){
+		var that = this
+		var _do = function(path){
+			var res
+			var p = that.substore(path)
+			if(p){
+				// XXX can this be strict in all cases???
+				res = that.substores[p][name](
+					path.slice(path.indexOf(p)+p.length),
+					...args) }
+			return res 
+				?? object.parentCall(MetaStore[name], that, ...arguments) }
+
 		path = pre ?
-			await pre.call(this, path, ...args)
+			pre.call(this, path, ...args)
 			: path
 
-		var res
-		var p = this.substore(path)
-		if(p){
-			// XXX can this be strict in all cases???
-			var res = this.substores[p][name](
-				path.slice(path.indexOf(p)+p.length),
-				...args) }
-		res = res 
-			?? object.parentCall(MetaStore[name], this, ...arguments)
+		var res = path instanceof Promise ?
+			path.then(_do)
+			: _do(path)
 
 		return post ?
-			post.call(this, await res, path, ...args)
+			(res instanceof Promise ?
+				res.then(function(res){
+					return post.call(that, res, path, ...args) })
+				: post.call(this, res, path, ...args))
 			: res }
 	Object.defineProperty(func, 'name', {value: name})
 	return func }
@@ -1532,7 +1511,7 @@ module.CachedStore = {
 		this.cache = {} 
 		return this },
 
-	exists: async function(path){
+	exists: function(path){
 		return (path in this.cache ?
 				path
 				: false)
