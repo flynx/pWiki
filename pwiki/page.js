@@ -2093,21 +2093,22 @@ object.Constructor('pWikiPageElement', Page, {
 
 	// XXX CACHE...
 	__last_refresh_location: undefined,
-	refresh: async function(full=false){
-		// drop cache if re-refreshing or when full refresh requested...
-		// XXX CACHE...
-		;(full
-				|| this.__last_refresh_location == this.location)	
-			&& this.cache 
-			&& (this.cache = null)
-		this.__last_refresh_location = this.location
-		var dom = this.dom
-		dom.innerHTML = await this.text 
-		for(var filter of Object.values(this.domFilters)){
-			filter
-				&& filter.call(this, dom) }
-		this.trigger('onLoad')
-		return this },
+	refresh: types.event.Event('refresh', 
+		async function(full=false){
+			// drop cache if re-refreshing or when full refresh requested...
+			// XXX CACHE...
+			;(full
+					|| this.__last_refresh_location == this.location)	
+				&& this.cache 
+				&& (this.cache = null)
+			this.__last_refresh_location = this.location
+			var dom = this.dom
+			dom.innerHTML = await this.text 
+			for(var filter of Object.values(this.domFilters)){
+				filter
+					&& filter.call(this, dom) }
+			this.trigger('onLoad')
+			return this }),
 
 	// handle dom as first argument...
 	__init__: function(dom, ...args){

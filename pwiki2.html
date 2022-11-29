@@ -374,11 +374,15 @@ var logTime = async function(promise, msg=''){
 REFRESH_DELAY = 20
 
 var refresh = async function(){
+	pwiki.__prev_path = pwiki.path
 	startSpinner()
 	setTimeout(function(){
 		logTime(
 			pwiki.refresh(), 
 			pwiki.location) }, REFRESH_DELAY) }
+
+
+history.scrollRestoration = 'manual'
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -425,6 +429,7 @@ require(['./browser'], function(browser){
 
 	pwiki
 		.onBeforeNavigate(function(){
+			this.__prev_path = this.path
 			saveAll() })
 		.navigate(async function(){
 			// NOTE: we do not need to directly update location.hash here as
@@ -471,11 +476,11 @@ require(['./browser'], function(browser){
 					.querySelector('#'+ this.hash)
 					.scrollIntoView() 
 				// restore history position...
-				// XXX HACK this will work only on full page...
-				: (document.scrollingElement.scrollTop = this.__scroll ?? 0)
-
-			// XXX MediumEditor...
-			//setupMediumEditor()
+				// NOTE: only on navigate to new page...
+				// XXX HACK this will work only on full page pWiki and 
+				//		not on a element/nested pWiki...
+				: (this.__prev_path != this.path 
+					&& (document.scrollingElement.scrollTop = this.__scroll ?? 0))
 
 			// handle refresh...
 			// NOTE: we need to do this as hashchange is only triggered 
