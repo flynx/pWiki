@@ -573,8 +573,6 @@ object.Constructor('BasePage', {
 		this.metadata = 
 			{ order: await this.store.sort(this.path, ...cmp) }
 		return this },
-
-	// XXX EXPERIMENTAL -- move this to store???
 	//	.sortAs(<name>)
 	//	.sortAs([<path>, .. ])
 	sortAs: async function(order){
@@ -585,7 +583,6 @@ object.Constructor('BasePage', {
 						return pwpath.sanitize(p) }) }
 				: { order: (await this.metadata)['order_'+ order] }
 		return this },
-	// XXX EXPERIMENTAL -- move this to store???
 	//	.saveSortAs(<name>)
 	//	.saveSortAs(<name>, [<path>, .. ])
 	saveSortAs: async function(name, order=null){
@@ -593,7 +590,6 @@ object.Constructor('BasePage', {
 			?? (await this.metadata).order
 		this.metadata = {['order_'+ name]: order}
 		return this },
-
 	reverse: async function(){
 		// not sorting single pages...
 		if(this.length <= 1){
@@ -744,7 +740,8 @@ function(spec, func){
 	// function...
 	func = args.pop()
 	// arg sepc...
-	;(args.length > 0 && args[args.length-1] instanceof Array)
+	;(args.length > 0 
+			&& args[args.length-1] instanceof Array)
 		&& (func.arg_spec = args.pop())
 	// XXX do we need anything else like .doc, attrs???
 	return func }

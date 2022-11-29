@@ -478,7 +478,7 @@ module.BaseParser = {
 			// error...
 			}catch(err){
 				console.error(err)
-				yield await page.parse(
+				yield page.parse(
 					// XXX add line number and page path...
 					'@include("./ParseError'
 						+':path='
@@ -495,8 +495,7 @@ module.BaseParser = {
 									return '%'+ c.charCodeAt().toString(16) })
 								.replace(/:/g, '&colon;')
 								.replace(/=/g, '&equals;')
-						+'")')
-				return } },
+						+'")') } },
 
 	// recursively resolve and enumerate the ast...
 	//

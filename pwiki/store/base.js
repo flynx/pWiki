@@ -158,6 +158,27 @@ object.Constructor('JournalDB', {
 })
 
 
+var awaitOrDo = 
+module.awaitOrDo =
+function(data, func){
+	if(arguments.length > 2){
+		data = [...arguments]
+		func = data.pop()
+		var promise = data
+			.reduce(function(res, e){
+				return res 
+					|| e instanceof Promise }, false) 
+		return promise ?
+			Promise.all(data)
+				.then(function(res){ 
+					return func(...res) })
+			: func(...data) 
+	// single data item...
+	} else {
+		return data instanceof Promise ?
+			data.then(func)
+			: func(data) } }
+
 
 //---------------------------------------------------------------------
 // Store...
@@ -647,25 +668,6 @@ module.BaseStore = {
 
 
 	//
-	// 	.exists(<path>)
-	// 		-> <promise>
-	// 		-> <normalized-path>
-	// 		-> false
-	//
-	exists: function(path){
-		var {path, args} = 
-			pwpath.splitArgs(
-				pwpath.sanitize(path, 'string'))
-		var test = function(paths){
-			return paths.includes(path) ?
-				pwpath.joinArgs(path, args)
-				: undefined }
-		var paths = this.paths
-		return paths instanceof Promise ?
-			paths.then(test)
-			: test(paths) },
-	
-	//
 	//	.sort(<pattern>, <by>, ..)
 	//	.sort([<path>, ..], <by>, ..)
 	//		-> <paths>
@@ -827,26 +829,45 @@ module.BaseStore = {
 			.map(function([p]){
 				return p }) },
 
+	//
+	// 	.exists(<path>)
+	// 		-> <promise>
+	// 		-> <normalized-path>
+	// 		-> false
+	//
+	exists: function(path){
+		var {path, args} = 
+			pwpath.splitArgs(
+				pwpath.sanitize(path, 'string'))
+		return awaitOrDo(
+			this.paths,
+			function(paths){
+				return paths.includes(path) ?
+					pwpath.joinArgs(path, args)
+					: undefined }) },
+	
 	// find the closest existing alternative path...
-	find: async function(path, strict=false){
+	find: function(path, strict=false){
 		var {path, args} = pwpath.splitArgs(path)
 		args = pwpath.joinArgs('', args)
-		// build list of existing page candidates...
-		var names = await this.names
-		var pages = new Set(
-			pwpath.names(path)
-				.map(function(name){
-					return names[name] ?? [] })
-				.flat())
-		// select accessible candidate...
-		for(var p of pwpath.paths(path, !!strict)){
-			if(pages.has(p)){
-				return p+args }
-			p = p[0] == '/' ? 
-				p.slice(1) 
-				: '/'+p
-			if(pages.has(p)){
-				return p+args } } },
+		return awaitOrDo(
+			this.names,
+			function(names){
+				// build list of existing page candidates...
+				var pages = new Set(
+					pwpath.names(path)
+						.map(function(name){
+							return names[name] ?? [] })
+						.flat())
+				// select accessible candidate...
+				for(var p of pwpath.paths(path, !!strict)){
+					if(pages.has(p)){
+						return p+args }
+					p = p[0] == '/' ? 
+						p.slice(1) 
+						: '/'+p
+					if(pages.has(p)){
+						return p+args } } }) },
 	// 
 	// 	Resolve page for path
 	// 	.match(<path>)

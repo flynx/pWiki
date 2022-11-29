@@ -38,6 +38,7 @@ var makeDecoder = function(name, encode, chars){
 				return String.fromCharCode('0x'+c) }) } }
 
 
+
 //---------------------------------------------------------------------
 // Path...
 
@@ -93,22 +94,6 @@ module = {
 	quote: makeEncoder('quote', 'UNENCODED_PATH'),
 	unquote: makeDecoder('unquote', 'quote', 'UNENCODED_PATH'),
 
-	/*/ XXX NORMCACHE...
-	__normalized_cache_threshold: 100,
-	__normalized_cache_size: 4096,
-	__normalized_cache: undefined,
-	get _normalized_cache(){
-		var norm = this.__normalized = 
-			this.__normalized 
-			?? new Set()
-		// trim to size...
-		var l = norm.size
-		var lim = this.__normalized_cache_size ?? 1000
-		var t = this.__normalized_cache_threshold ?? 100
-		if(l > lim){
-			norm = this.__normalized = new Set([...norm].slice(Math.max(l - lim - t, t))) }
-		return norm },
-	//*/
 
 	// Path utils...
 	//
@@ -119,12 +104,6 @@ module = {
 	// NOTE: trailing/leading '/' are represented by '' at end/start of 
 	// 		path list...
 	normalize: function(path='.', format='auto'){
-		/*/ XXX NORMCACHE...
-		if(typeof(path) == 'string' 
-				&& format != 'array' 
-				&& this._normalized_cache.has(path)){
-			return path }
-		//*/
 		format = format == 'auto' ?
 			(path instanceof Array ?
 				'array'
@@ -170,19 +149,6 @@ module = {
 			&& (path.push(
 				path.pop()
 					.replace(/:*$/, '')))
-		/*/ XXX NORMCACHE...
-		var res = format == 'string' ?
-			// special case: root -> keep '/'
-			((root 
-					&& path.length == 1 
-					&& path[0] == '') ?
-				('/'+ path.join('/'))
-				: path.join('/'))
-			: path 
-		typeof(res) == 'string'
-			&& this._normalized_cache.add(res)
-		return res },
-		/*/
 		return format == 'string' ?
 			// special case: root -> keep '/'
 			((root 
@@ -191,7 +157,6 @@ module = {
 				('/'+ path.join('/'))
 				: path.join('/'))
 			: path },
-		//*/
 	sanitize: function(path, format='auto'){
 		format = format == 'auto' ?
 			(path instanceof Array ?
