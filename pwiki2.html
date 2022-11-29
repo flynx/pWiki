@@ -150,6 +150,34 @@ body.loading .page.spinner span {
 	}
 }
 
+
+/* TOC */
+toc {
+	--toc-level-offset: 2em;
+}
+toc a {
+	display: block;
+}
+toc .h1 {
+	margin-left: 0em;
+}
+toc .h2 {
+	margin-left: calc(var(--toc-level-offset) * 1);
+}
+toc .h3 {
+	margin-left: calc(var(--toc-level-offset) * 2);
+}
+toc .h4 {
+	margin-left: calc(var(--toc-level-offset) * 3);
+}
+toc .h5 {
+	margin-left: calc(var(--toc-level-offset) * 4);
+}
+toc .h5 {
+	margin-left: calc(var(--toc-level-offset) * 5);
+}
+
+
 .error .msg {
 	font-weight: bold;
 	color: red;

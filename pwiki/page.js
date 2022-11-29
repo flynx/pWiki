@@ -1795,7 +1795,7 @@ object.Constructor('Page', BasePage, {
 					await data()
 				: typeof(data) == 'function' ?
 					data
-				: 'text' in data ?
+				: data && 'text' in data ?
 					data.text
 				: null
 			if(data instanceof Array
@@ -2021,6 +2021,7 @@ object.Constructor('CachedPage', Page, {
 
 //---------------------------------------------------------------------
 
+var toc = require('./dom/toc')
 var wikiword = require('./dom/wikiword')
 //var textarea = require('./dom/textarea')
 
@@ -2035,6 +2036,7 @@ object.Constructor('pWikiPageElement', Page, {
 
 
 	domFilters: {
+		toc: toc.makeToc,
 		// XXX see Page.filters.wikiword for notes...
 		wikiword: wikiword.wikiWordText,
 		//textarea: textarea.setupTextarea,
@@ -2263,6 +2265,7 @@ module.System = {
 			@load(./edit)
 
 			<macro texteditor>
+				<toc></toc>
 				<div class="editor"
 						wikiwords="no"
 						contenteditable
