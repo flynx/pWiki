@@ -422,9 +422,7 @@ object.Constructor('BasePage', {
 
 	// relative proxies to store...
 	exists: relProxy('exists'), 
-	//* XXX MATCH
 	match: relMatchProxy('match'), 
-	/*/
 	match: async function(path='.', strict=false){
 		if(path === true || path === false){
 			strict = path
@@ -548,11 +546,6 @@ object.Constructor('BasePage', {
 			: paths instanceof Promise ?
 				await paths
 			: [paths]
-		/*/ XXX MATCH
-		paths = paths.length == 0 ?
-			[await this.find(path)]
-			: paths
-		//*/
 		for(var path of paths){
 			yield this.get('/'+ path) } },
 	[Symbol.asyncIterator]: async function*(){
@@ -861,23 +854,23 @@ object.Constructor('Page', BasePage, {
 	// XXX ASYNC make these support async page getters...
 	macros: { __proto__: {
 		//
-		//	@(<name>[ <default>][ local])
-		//	@(name=<name>[ default=<default>][ local])
+		//	@(<name>[ <else>][ local])
+		//	@(name=<name>[ else=<value>][ local])
 		//
-		//	@arg(<name>[ <default>][ local])
-		//	@arg(name=<name>[ default=<value>][ local])
+		//	@arg(<name>[ <else>][ local])
+		//	@arg(name=<name>[ else=<value>][ local])
 		//
-		//	<arg <name>[ <default>][ local]/>
-		//	<arg name=<name>[ default=<value>][ local]/>
+		//	<arg <name>[ <else>][ local]/>
+		//	<arg name=<name>[ else=<value>][ local]/>
 		//
 		// Resolution order:
 		// 		- local
 		// 		- .renderer
 		// 		- .root
 		//
-		// NOTE: default value is parsed when accessed...
+		// NOTE: else (default) value is parsed when accessed...
 		arg: Macro(
-			['name', 'default', ['local']],
+			['name', 'else', ['local']],
 			function(args){
 				var v = this.args[args.name] 
 					|| (!args.local 
@@ -889,10 +882,10 @@ object.Constructor('Page', BasePage, {
 					args.name
 					: v
 				return v
-					|| (args.default 
-						&& this.parse(args.default)) }),
+					|| (args['else']
+						&& this.parse(args['else'])) }),
 		'': Macro(
-			['name', 'default', ['local']],
+			['name', 'else', ['local']],
 			function(args){
 				return this.macros.arg.call(this, args) }),
 		args: function(){

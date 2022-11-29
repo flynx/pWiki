@@ -38,22 +38,6 @@
 *
 *
 *
-* XXX sort: aliases (a-la imagegrid)???
-* XXX sort: revise how we store order...
-* 			.metadata.order = [ .. ]
-* 			.metadata.order_<name> = [ .. ]
-* 			...
-* 		or:
-* 			.metadata.order = {
-* 				'default': [ .. ],
-* 				<name>: [ .. ]
-* 				...
-* 			}
-* 		...this would make updating order more complicated (i.e. require a fetch)
-* 		Q: will it be a good idea to use the cache/index api???
-* XXX sort: might be a good idea to pre-sort (index) all the pages and 
-* 		simply reference that for sorts...
-* 		...this needs thought and weighing...
 * XXX macros: else/default macro args essentially mean the same thing, should we
 * 		unify them to use the same name???
 * XXX parser: error handling: revise page quoting... 
@@ -284,6 +268,22 @@
 *	 	fixable (more general macro name pattern + ns matching) but I'm not 
 *	 	sure if this is worth it
 * 		...see: <page>.defmacro(..)
+* XXX sort: revise how we store order...
+* 			.metadata.order = [ .. ]
+* 			.metadata.order_<name> = [ .. ]
+* 			...
+* 		or:
+* 			.metadata.order = {
+* 				'default': [ .. ],
+* 				<name>: [ .. ]
+* 				...
+* 			}
+* 		...this would make updating order more complicated (i.e. require a fetch)
+* 		Q: will it be a good idea to use the cache/index api???
+* XXX sort: aliases (a-la imagegrid)???
+* XXX sort/cache: might be a good idea to pre-sort (index) all the pages and 
+* 		simply reference that for sorts...
+* 		...this needs thought and weighing...
 * XXX EXPERIMENTAL DOC INHERIT_ARGS added a special-case...
 * 		as basename will get appended :$ARGS if no args are given...
 * 		...this only applies to paths referring to the current context 

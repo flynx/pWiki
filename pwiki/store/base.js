@@ -158,28 +158,6 @@ object.Constructor('JournalDB', {
 })
 
 
-var awaitOrDo = 
-module.awaitOrDo =
-function(data, func){
-	if(arguments.length > 2){
-		data = [...arguments]
-		func = data.pop()
-		var promise = data
-			.reduce(function(res, e){
-				return res 
-					|| e instanceof Promise }, false) 
-		return promise ?
-			Promise.all(data)
-				.then(function(res){ 
-					return func(...res) })
-			: func(...data) 
-	// single data item...
-	} else {
-		return data instanceof Promise ?
-			data.then(func)
-			: func(data) } }
-
-
 //---------------------------------------------------------------------
 // Store...
 
@@ -839,7 +817,7 @@ module.BaseStore = {
 		var {path, args} = 
 			pwpath.splitArgs(
 				pwpath.sanitize(path, 'string'))
-		return awaitOrDo(
+		return Promise.awaitOrRun(
 			this.paths,
 			function(paths){
 				return paths.includes(path) ?
@@ -850,7 +828,7 @@ module.BaseStore = {
 	find: function(path, strict=false){
 		var {path, args} = pwpath.splitArgs(path)
 		args = pwpath.joinArgs('', args)
-		return awaitOrDo(
+		return Promise.awaitOrRun(
 			this.names,
 			function(names){
 				// build list of existing page candidates...
