@@ -94,6 +94,17 @@ module = {
 	quote: makeEncoder('quote', 'UNENCODED_PATH'),
 	unquote: makeDecoder('unquote', 'quote', 'UNENCODED_PATH'),
 
+	quoteHTML: function(str){
+		return str
+			.replace(/&/g, '&amp;')
+			.replace(/>/g, '&gt;')
+			.replace(/</g, '&lt;') },
+	unquoteHTML: function(str){
+		return str
+			.replace(/&amp;/g, '&')
+			.replace(/&gt;/g, '>')
+			.replace(/&lt;/g, '<') },
+
 
 	// Path utils...
 	//
