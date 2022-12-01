@@ -385,10 +385,12 @@ var refresh = async function(){
 history.scrollRestoration = 'manual'
 
 
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 // start loading pWiki...
 require(['./browser'], function(browser){ 
 	var pwiki = window.pwiki = browser.pwiki 
+	//var pwpath = window.path = browser.pwpath
 	pwiki.dom = document.querySelector('#pWiki')
 
 	// handle location.hash/history (both directions)

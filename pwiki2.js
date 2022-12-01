@@ -38,12 +38,7 @@
 *
 *
 *
-* XXX BUG? can't use < and > (both?) in page title...
-* 		...can't seem to delete these pages -- seems to be a template problem...
-* 		...one of the issues is that we are reading .innerHTML and it gets 
-* 		all html reserved chars ("&<>") converted into enteties...
-* 		...another issue is that the entities get converted back in some 
-* 		cases wrecking havoc with links...
+* XXX .parse(..): should we handle pattern paths and lists of text???
 * XXX parser: error handling: add line number + context... (???) 
 * XXX BUG: parser:
 * 		This will break:

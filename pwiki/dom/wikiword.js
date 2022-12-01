@@ -7,6 +7,12 @@
 (function(require){ var module={} // make module AMD/node compatible...
 /*********************************************************************/
 
+
+var pwpath = require('../path')
+
+
+/*********************************************************************/
+
 var WIKIWORD_PATTERN =
 	RegExp('('+[
 		// /some/path | ./some/path | ../some/path | >>/some/path
@@ -87,8 +93,8 @@ function(elem){
 					|| text.parentNode.nodeName.toLowerCase() == 'script'
 					|| (text.parentNode.getAttribute('wikiwords') ?? '').toLowerCase() == 'no'){
 				return }
-			var t = text.nodeValue
-			var n = setWikiWords(text.nodeValue)
+			var t = pwpath.quoteHTML(text.nodeValue)
+			var n = setWikiWords(t)
 			if(t != n){
 				tmp.innerHTML = n
 				text.replaceWith(...tmp.childNodes) } }) }

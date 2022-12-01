@@ -238,7 +238,6 @@ object.Constructor('BasePage', {
 				to
 				: '../'+to) },
 
-	// XXX TITLE / EXPERIMENTAL...
 	get title(){
 		return pwpath.decodeElem(this.name) },
 	set title(value){
@@ -1126,7 +1125,7 @@ object.Constructor('Page', BasePage, {
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		quote: Macro(
 			['src', 'filter', 'text', 'join', 
-				['expandactions']],
+				['s', 'expandactions']],
 			async function*(args, body, state){
 				var src = args.src //|| args[0]
 				var base = this.get(this.path.split(/\*/).shift())
@@ -1145,6 +1144,8 @@ object.Constructor('Page', BasePage, {
 				var expandactions = 
 					args.expandactions
 						?? true
+				// XXX EXPERIMENTAL
+				var strquotes = args.s
 
 				var depends = state.depends = 
 					state.depends 
@@ -1180,6 +1181,11 @@ object.Constructor('Page', BasePage, {
 								&& await page.type == 'action') ?
 							base.get(this.QUOTE_ACTION_PAGE).raw
 						: await page.raw
+					text = strquotes ?
+						text
+							.replace(/["']/g, function(c){
+								return '%'+ c.charCodeAt().toString(16) })
+						: text
 
 					page.path
 						&& depends.add(page.path)
@@ -1665,12 +1671,25 @@ object.Constructor('Page', BasePage, {
 		...module.BasePage.prototype.actions,
 
 		'!': true,
+		// XXX EXPERIMENTAL...
+		quote: true,
 	},
 
+	// XXX should this be .raw or .parse()???
 	'!': Object.assign(
 		function(){
 			return this.get('..:$ARGS', {energetic: true}).raw },
 		{energetic: true}),
+	// XXX EXPERIMENTAL...
+	// XXX this is html/web specific, should it be here???
+	// 		...
+	// XXX should this be .raw or .parse()???
+	quote: function(){
+		return this.get('..:$ARGS').raw//parse()
+			.then(function(res){
+				return res instanceof Array ?
+					res.map(pwpath.quoteHTML)
+					: pwpath.quoteHTML(res) }) },
 
 
 	// events...
@@ -1692,6 +1711,7 @@ object.Constructor('Page', BasePage, {
 	// NOTE: .__debug_last_render_state is mainly exposed for introspection 
 	// 		and debugging, set comment it out to disable...
 	//__debug_last_render_state: undefined,
+	// XXX should this handle pattern paths???
 	parse: async function(text, state){
 		var that = this
 		text = await text
@@ -2061,6 +2081,7 @@ object.Constructor('pWikiPageElement', Page, {
 		hash: true,
 	},
 
+
 	// NOTE: setting location will reset .hash set it directly via either
 	// 		one of:
 	// 			.location = [path, hash]
@@ -2161,7 +2182,7 @@ module.System = {
 				<a href="#/list">&#9776</a>
 				<a href="#<slot parent>../</slot>">&#x21D1;</a>
 				<!-- XXX make this editable... -->
-				[<slot location>@source(./location/!)</slot>]
+				[<slot location>@source(./location/!/quote)</slot>]
 				<a href="javascript:refresh()">&#10227;</a>
 				<slot edit>
 					<a href="#@source(s ./path/!)/edit">&#9998;</a>
@@ -2175,7 +2196,7 @@ module.System = {
 			<!-- NOTE: this is not included directly to enable client code to 
 					set slots that are defined after the content... -->
 			<slot content>
-				<h1><slot title>@source(./title/!)</slot></h1>
+				<h1><slot title>@source(./title/!/quote)</slot></h1>
 				@include(.:$ARGS join="@source(file-separator)" recursive="")
 			</slot>
 			` },
@@ -2207,15 +2228,15 @@ module.System = {
 	/*/
 	_edit: {
 		text: 
-			'@source(./path/!)'
+			'@source(./path/!/quote)'
 			+'<hr>'
 			+'<macro src="." join="@source(file-separator)">'
 				+'<h1 '
 						+'wikiwords="no" '
 						+'contenteditable '
 						// XXX need to make this savable...
-						+'oninput="saveLiveContent(\'@source(s ./path)/name\')">' 
-					+'@source(./name)'
+						+'oninput="saveContent(\'@source(s ./path)/name\', this.innerText)">' 
+					+'@source(./title/quote)'
 				+'</h1>'
 				+'<pre class="editor" '
 						+'wikiwords="no" '
@@ -2233,7 +2254,7 @@ module.System = {
 							wikiwords="no"
 							contenteditable 
 							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
-						@source(./title)
+						@source(./title/quote)
 					</span>
 				</h1>
 			</macro>
@@ -2253,7 +2274,7 @@ module.System = {
 				<title>@source(../title) (edit)</title>
 			</slot>
 			<slot parent>../..</slot>
-			<slot location>@source(../location/!)</slot>
+			<slot location>@source(../location/!/quote)</slot>
 			<slot edit/>
 			<slot content>
 				<macro editor src=".."/>
@@ -2326,7 +2347,7 @@ module.System = {
 			</slot>
 			<macro src="../*:$ARGS" join="@source(line-separator)">
 				@var(path "@source(s ./path)")
-				<a href="#@var(path)">@source(./name)</a>
+				<a href="#@var(path)">@source(./name/quote)</a>
 				<sup>
 					<macro src="./isAction">
 						a
@@ -2356,7 +2377,7 @@ module.System = {
 				@var(path "@source(s ./path)")
 				<div>
 					<div class="item">
-						<a class="tree-page-title" href="#@var(path)">@source(./title)</a>
+						<a class="tree-page-title" href="#@var(path)">@source(./title/quote)</a>
 						<a class="show-on-hover" href="#@var(path)/info">&#128712;</a>
 						<a class="show-on-hover" 
 							href="javascript:pwiki.delete('@var(path)')"
@@ -2394,16 +2415,16 @@ module.System = {
 	info: {
 		text: object.doc`
 			<slot pre>
-				<title>@source(../title) (info)</title>
+				<title>@source(../title/quote) (info)</title>
 			</slot>
 			<slot title>
-				<h1><a href="#..">@source(../title)</a></h1>
+				<h1><a href="#..">@source(../title/quote)</a></h1>
 			</slot>
 
-			Path: [@source(../path) ]
+			Path: [@source(../path/quote)]
 				(<a href="#../edit">edit</a>)<br>
-			Resolved path: [/@source(../resolved)]<br>
-			Referrer: [@source(../referrer)]<br>
+			Resolved path: [/@source(../resolved/quote)]<br>
+			Referrer: [@source(../referrer/quote)]<br>
 			Args: <args/><br>
 
 			type: @source(../type)<br>
@@ -2453,10 +2474,10 @@ module.System = {
 			<slot title/>
 			<div class="error">
 				<div class="msg" wikiwords="no">ParseError: @(msg "no message")</div>
-				Page: [@(path "@source(./path)")]
+				Page: [@(path "@source(./path/quote)")]
 			</div> `,},
 	RecursionError: {
-		text: 'RECURSION ERROR: @source(../path)' },
+		text: 'RECURSION ERROR: @source(../path/quote)' },
 	NotFoundError: {
 		//text: 'NOT FOUND ERROR: @source(./path)' },
 		text: object.doc`
@@ -2469,20 +2490,20 @@ module.System = {
 					<b>Nested pages:</b><br>
 					<div style="padding-left: 30px">
 						<macro src="./*:$ARGS" join="<br>" else="@slot(nested)">
-							<a href="#@source(s ./path)">@source(./title)</a>
+							<a href="#@source(s ./path)">@source(./title/quote)</a>
 						</macro>
 					</div>
 				</div>
 			</slot>` },
 	NotFoundTemplateError: {
-		text: 'NOT FOUND TEMPLATE ERROR: @source(../path)' },
+		text: 'NOT FOUND TEMPLATE ERROR: @source(../path/quote)' },
 
 	DeletingPage: {
-		text: 'Deleting: @source(../path)' },
+		text: 'Deleting: @source(../path/quote)' },
 
 	PageTemplate: {
 		text: object.doc`
-			<slot header>@source(./path)/_edit</slot>
+			<slot header>@source(./path/quote)/edit</slot>
 			<hr>
 			<slot content></slot>
 			<hr>
@@ -2509,11 +2530,6 @@ module.System = {
 			<hr>
 			${text}`},
 
-	// XXX REMOVE WHEN NOT NEEDED...
-	TEST: function(){
-		console.log('TEST')
-		return 'TEST' },
-	
 	// XXX EXPERIMENTAL -- page types...
 	isAction: async function(){
 		return await this.get('..').type == 'action' ?
@@ -2600,7 +2616,7 @@ module.Templates = {
 		<macro src="*:$ARGS">
 			@var(path "@source(s ./path)")
 			<div class="item">
-				<a href="#@var(path)/edit">@source(./title)</a>
+				<a href="#@var(path)/edit">@source(./title/quote)</a>
 				<a class="show-on-hover" href="#@var(path)/info">&#128712;</a>
 				<a class="show-on-hover" 
 					href="javascript:pwiki.delete('@var(path)')"
