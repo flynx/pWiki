@@ -436,17 +436,27 @@ module.BaseParser = {
 	// XXX macros: we are mixing up ast state and parse state...
 	// 		one should only be used for parsing and be forgotten after 
 	// 		the ast is constructed the other should be part of the ast...
+	// XXX ASYNC...
 	expand: async function*(page, ast, state={}){
+	/*/
+	expand: function*(page, ast, state={}){
+	//*/
 		try{
 			ast = ast == null ?
-					//this.group(page)
+					// XXX ASYNC...
 					this.group(page, await page.raw ?? '')
+					/*/
+					page.raw
+						.then(function(raw){
+							return this.group(page, raw ?? '') })
+					//*/
 				: typeof(ast) != 'object' ?
 					this.group(page, ast)
 				: ast instanceof types.Generator ?
 					ast
 				: ast.iter()
 
+			//XXX ASYNC need to .awaitOrRun(ast, ...)...
 			while(true){
 				var {value, done} = ast.next()
 				if(done){
@@ -464,6 +474,7 @@ module.BaseParser = {
 					yield {...value, skip: true}
 					continue }
 
+				// XXX ASYNC...
 				var res = 
 					await this.callMacro(page, name, args, body, state) 
 						?? ''
@@ -474,6 +485,17 @@ module.BaseParser = {
 					yield* res
 				} else {
 					yield res } } 
+				/*/
+				yield* Promise.awaitOrRun(
+					this.callMacro(page, name, args, body, state), 
+					function*(res){
+						res = res ?? ''
+						if(res instanceof Array 
+								|| page.macros[name] instanceof types.Generator){
+							yield* res
+						} else {
+							yield res } })
+				//*/
 
 			// error...
 			}catch(err){
