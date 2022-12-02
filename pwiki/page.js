@@ -1673,7 +1673,6 @@ object.Constructor('Page', BasePage, {
 		'!': true,
 		// XXX EXPERIMENTAL...
 		quote: true,
-		'quote!': true,
 	},
 
 	// XXX should this be .raw or .parse()???
@@ -1691,10 +1690,6 @@ object.Constructor('Page', BasePage, {
 				return res instanceof Array ?
 					res.map(pwpath.quoteHTML)
 					: pwpath.quoteHTML(res) }) },
-	'quote!': Object.assign(
-		function(){
-			return this.quote(true) },
-		{energetic: true}),
 
 
 	// events...

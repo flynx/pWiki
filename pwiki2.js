@@ -38,6 +38,8 @@
 *
 *
 *
+* XXX BUG: seems that page caching stopped working...
+* 		...are we over-refreshing???
 * XXX BUG: for some reason editing the root page ('/') hangs /tree...
 * XXX .parse(..): should we handle pattern paths and lists of text???
 * XXX parser: error handling: add line number + context... (???) 
