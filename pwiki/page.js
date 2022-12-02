@@ -1673,6 +1673,7 @@ object.Constructor('Page', BasePage, {
 		'!': true,
 		// XXX EXPERIMENTAL...
 		quote: true,
+		'quote!': true,
 	},
 
 	// XXX should this be .raw or .parse()???
@@ -1684,12 +1685,16 @@ object.Constructor('Page', BasePage, {
 	// XXX this is html/web specific, should it be here???
 	// 		...
 	// XXX should this be .raw or .parse()???
-	quote: function(){
-		return this.get('..:$ARGS').raw//parse()
+	quote: async function(energetic=false){
+		return this.get('..:$ARGS', {energetic: await this.energetic}).raw//parse()
 			.then(function(res){
 				return res instanceof Array ?
 					res.map(pwpath.quoteHTML)
 					: pwpath.quoteHTML(res) }) },
+	'quote!': Object.assign(
+		function(){
+			return this.quote(true) },
+		{energetic: true}),
 
 
 	// events...
@@ -2182,7 +2187,7 @@ module.System = {
 				<a href="#/list">&#9776</a>
 				<a href="#<slot parent>../</slot>">&#x21D1;</a>
 				<!-- XXX make this editable... -->
-				[<slot location>@source(./location/!/quote)</slot>]
+				[<slot location>@source(./location/quote/!)</slot>]
 				<a href="javascript:refresh()">&#10227;</a>
 				<slot edit>
 					<a href="#@source(s ./path/!)/edit">&#9998;</a>
@@ -2196,7 +2201,7 @@ module.System = {
 			<!-- NOTE: this is not included directly to enable client code to 
 					set slots that are defined after the content... -->
 			<slot content>
-				<h1><slot title>@source(./title/!/quote)</slot></h1>
+				<h1><slot title>@source(./title/quote/!)</slot></h1>
 				@include(.:$ARGS join="@source(file-separator)" recursive="")
 			</slot>
 			` },
@@ -2228,7 +2233,7 @@ module.System = {
 	/*/
 	_edit: {
 		text: 
-			'@source(./path/!/quote)'
+			'@source(./path/quote/!)'
 			+'<hr>'
 			+'<macro src="." join="@source(file-separator)">'
 				+'<h1 '
@@ -2274,7 +2279,7 @@ module.System = {
 				<title>@source(../title) (edit)</title>
 			</slot>
 			<slot parent>../..</slot>
-			<slot location>@source(../location/!/quote)</slot>
+			<slot location>@source(../location/quote/!)</slot>
 			<slot edit/>
 			<slot content>
 				<macro editor src=".."/>

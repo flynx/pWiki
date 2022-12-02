@@ -38,6 +38,7 @@
 *
 *
 *
+* XXX BUG: for some reason editing the root page ('/') hangs /tree...
 * XXX .parse(..): should we handle pattern paths and lists of text???
 * XXX parser: error handling: add line number + context... (???) 
 * XXX BUG: parser:
@@ -438,6 +439,8 @@
 *
 *
 * XXX DOC:
+* 		-  .../quote/! is not the same as .../!/quote 
+* 			this is because actions are called right to left...
 * 		- macro isolation in relation to slots...
 * 		- paths in pWiki behave a bit differently than traditional 
 * 			file-system paths, this is due to one key distinction:
