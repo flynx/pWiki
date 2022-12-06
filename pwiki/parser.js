@@ -437,26 +437,26 @@ module.BaseParser = {
 	// 		one should only be used for parsing and be forgotten after 
 	// 		the ast is constructed the other should be part of the ast...
 	// XXX ASYNC...
-	expand: async function*(page, ast, state={}){
-	/*/
-	expand: function*(page, ast, state={}){
-	//*/
+	_expand: function*(page, ast, state={}){
+		var that = this
 		try{
 			ast = ast == null ?
-					// XXX ASYNC...
-					this.group(page, await page.raw ?? '')
-					/*/
-					page.raw
-						.then(function(raw){
-							return this.group(page, raw ?? '') })
-					//*/
+					Promise.awaitOrRun(
+						page.raw,
+						function(raw){
+							return that.group(page, raw ?? '') })
 				: typeof(ast) != 'object' ?
 					this.group(page, ast)
 				: ast instanceof types.Generator ?
 					ast
 				: ast.iter()
 
-			//XXX ASYNC need to .awaitOrRun(ast, ...)...
+			Promise.sync
+				.resolve(ast)
+				.then(function(ast){
+				})
+
+			// XXX SYNC need to optionally await for ast...
 			while(true){
 				var {value, done} = ast.next()
 				if(done){
@@ -474,7 +474,7 @@ module.BaseParser = {
 					yield {...value, skip: true}
 					continue }
 
-				// XXX ASYNC...
+				// XXX
 				var res = 
 					await this.callMacro(page, name, args, body, state) 
 						?? ''
@@ -485,17 +485,65 @@ module.BaseParser = {
 					yield* res
 				} else {
 					yield res } } 
-				/*/
-				yield* Promise.awaitOrRun(
-					this.callMacro(page, name, args, body, state), 
-					function*(res){
-						res = res ?? ''
-						if(res instanceof Array 
-								|| page.macros[name] instanceof types.Generator){
-							yield* res
-						} else {
-							yield res } })
-				//*/
+
+			// error...
+			}catch(err){
+				console.error(err)
+				yield page.parse(
+					// XXX add line number and page path...
+					'@include("./ParseError'
+						+':path='
+							// XXX use pwpath.encodeElem(..) ???
+							+ page.path 
+						+':msg='
+							+ err.message 
+								// quote html stuff...
+								.replace(/&/g, '&amp;')
+								.replace(/</g, '&lt;')
+								.replace(/>/g, '&gt;')
+								// quote argument syntax...
+								.replace(/["']/g, function(c){
+									return '%'+ c.charCodeAt().toString(16) })
+								.replace(/:/g, '&colon;')
+								.replace(/=/g, '&equals;')
+						+'")') } },
+	expand: async function*(page, ast, state={}){
+		try{
+			ast = ast == null ?
+					this.group(page, await page.raw ?? '')
+				: typeof(ast) != 'object' ?
+					this.group(page, ast)
+				: ast instanceof types.Generator ?
+					ast
+				: ast.iter()
+
+			while(true){
+				var {value, done} = ast.next()
+				if(done){
+					return }
+
+				// text block...
+				if(typeof(value) == 'string'){
+					yield value 
+					continue }
+
+				// macro...
+				var {name, args, body} = value
+				// nested macro -- skip...
+				if(typeof(page.macros[name]) != 'function'){
+					yield {...value, skip: true}
+					continue }
+
+				var res = 
+					await this.callMacro(page, name, args, body, state) 
+						?? ''
+
+				// result...
+				if(res instanceof Array 
+						|| page.macros[name] instanceof types.Generator){
+					yield* res
+				} else {
+					yield res } } 
 
 			// error...
 			}catch(err){
