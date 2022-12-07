@@ -436,60 +436,44 @@ module.BaseParser = {
 	// XXX macros: we are mixing up ast state and parse state...
 	// 		one should only be used for parsing and be forgotten after 
 	// 		the ast is constructed the other should be part of the ast...
-	// XXX ASYNC...
-	_expand: function*(page, ast, state={}){
+	// XXX ASYNC this does not yet work as a replacement for .expand(..), not sure why...
+	_expand: function(page, ast, state={}){
 		var that = this
-		try{
-			ast = ast == null ?
-					Promise.awaitOrRun(
-						page.raw,
-						function(raw){
-							return that.group(page, raw ?? '') })
-				: typeof(ast) != 'object' ?
-					this.group(page, ast)
-				: ast instanceof types.Generator ?
-					ast
-				: ast.iter()
+		ast = ast == null ?
+				Promise.awaitOrRun(
+					page.raw,
+					function(raw){
+						return that.group(page, raw ?? '') })
+			: typeof(ast) != 'object' ?
+				this.group(page, ast)
+			: ast instanceof types.Generator ?
+				ast
+			: ast.iter()
 
-			Promise.sync
-				.resolve(ast)
-				.then(function(ast){
-				})
-
-			// XXX SYNC need to optionally await for ast...
-			while(true){
-				var {value, done} = ast.next()
-				if(done){
-					return }
-
+		return Promise.iter(ast, 
+			function(value){
 				// text block...
 				if(typeof(value) == 'string'){
-					yield value 
-					continue }
-
+					return value }
 				// macro...
 				var {name, args, body} = value
 				// nested macro -- skip...
 				if(typeof(page.macros[name]) != 'function'){
-					yield {...value, skip: true}
-					continue }
-
-				// XXX
-				var res = 
-					await this.callMacro(page, name, args, body, state) 
-						?? ''
-
-				// result...
-				if(res instanceof Array 
-						|| page.macros[name] instanceof types.Generator){
-					yield* res
-				} else {
-					yield res } } 
-
-			// error...
-			}catch(err){
+					return {...value, skip: true} }
+				// macro call...
+				return Promise.awaitOrRun(
+					that.callMacro(page, name, args, body, state),
+					function(res){
+						res = res ?? ''
+						// result...
+						if(res instanceof Array 
+								|| page.macros[name] instanceof types.Generator){
+							return res
+						} else {
+							return [res] } }) },
+			function(err){
 				console.error(err)
-				yield page.parse(
+				return page.parse(
 					// XXX add line number and page path...
 					'@include("./ParseError'
 						+':path='
@@ -506,7 +490,9 @@ module.BaseParser = {
 									return '%'+ c.charCodeAt().toString(16) })
 								.replace(/:/g, '&colon;')
 								.replace(/=/g, '&equals;')
-						+'")') } },
+						+'")') })
+			.sync() },
+	//*/
 	expand: async function*(page, ast, state={}){
 		try{
 			ast = ast == null ?
@@ -566,6 +552,7 @@ module.BaseParser = {
 								.replace(/:/g, '&colon;')
 								.replace(/=/g, '&equals;')
 						+'")') } },
+	//*/
 
 	// recursively resolve and enumerate the ast...
 	//
