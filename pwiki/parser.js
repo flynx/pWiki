@@ -450,6 +450,12 @@ module.BaseParser = {
 				ast
 			: ast.iter()
 
+		// XXX this must execute sequentially for things that depend on 
+		// 		lexical scope not to get lost in the mess...
+		// 		...or it's a question of if we can maintain "slices" of 
+		// 		state per macro call that is both containing all the state 
+		// 		from previous macros, and is not affected by the changes 
+		// 		done by next macros (unless needed)...
 		return Promise.iter(ast, 
 			function(value){
 				// text block...

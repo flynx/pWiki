@@ -53,6 +53,26 @@
 * 				.resolve(..)
 * 				.parse(..)
 * 			- not handling the return value correctly in one or more macros
+*		seems to be an issue with slots (content) not being filled...
+*			could this be an issue with sequencing, i.e. trying to fill 
+*			the slot BEFORE it got a value???
+*			...but if this is the case, how could we have reached a point
+*			where we reached a point where something is needed after it 
+*			is introduced but before it had a change to run???
+*			(looks like the definition of what Promise.iter(..) is supposed 
+*			to do -> we need a way to carefully wait for all the prior 
+*			stuff to finish before filling slots)
+*				XXX this is an interesting question, we need to maintain 
+*					the "illusion" lexical scope (i.e. code order) regardless 
+*					of actual order of execution...
+*					...this has to be done in both directions, i.e. we need to
+*					wait for what came before and what comes after must 
+*					wait for us...
+*					...one simple way out of this is to do a less general 
+*					Promise.orderedIter(..) that will always execute in 
+*					order... (seems the simplest, we'll try this first)
+*					...this also feels a fundamental enough feature to 
+*					be implemented in ig-types
 * XXX ASAP need to add error handling to .awaitOrRun(..)
 * 		...might be even better to make it support the same interface as Promise...
 * XXX BUG: for some reason editing the root page ('/') hangs /tree...

@@ -2198,8 +2198,7 @@ module.System = {
 			<slot content>
 				<h1><slot title>@source(./title/quote/!)</slot></h1>
 				@include(.:$ARGS join="@source(file-separator)" recursive="")
-			</slot>
-			` },
+			</slot>` },
 	// XXX add join...
 	_raw: {
 		text: '@quote(.)' },
