@@ -446,7 +446,7 @@ module.BaseParser = {
 	//			old code:
 	//				await p.pwiki.parse('<slot moo/>!!! <slot moo>moo</slot>')
 	//					-> 'moo!!! '
-	//		...does not seem to affect named macros...
+	//		...does not seem to affect named macros, test var...
 	_expand: function(page, ast, state={}){
 		var that = this
 		ast = ast == null ?
