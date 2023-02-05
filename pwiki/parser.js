@@ -446,8 +446,37 @@ module.BaseParser = {
 	//			old code:
 	//				await p.pwiki.parse('<slot moo/>!!! <slot moo>moo</slot>')
 	//					-> 'moo!!! '
-	//		...does not seem to affect named macros...
-	_expand: function(page, ast, state={}){
+	//		...this affects @var(..) and @slot(..) and does not affect @macro(..)
+	//		The problem is that .callMacro(..) is for some execution paths is
+	//		called sync and in some paths after the current execution frame is 
+	//		done, i.e. async...
+	//		...turns out that the problem is in the inconsistent await behavior,
+	//		in var macro, as an example, there are two paths: the assign and 
+	//		the get, the assign calls .parse(..) and awaits for the result 
+	//		while the get path is "sync", this results in the first exec path
+	//		getting pushed to the next execution frame while the second is run
+	//		in sync with the caller, here is a simplified demo:
+	//			console.log(1)
+	//			// note that we are NOTE await'ing for the function here...
+	//			(async function f(){ 
+	//				console.log(2)})()
+	//			console.log(3)
+	//				-> prints 1, 2, 3
+	//		and:
+	//			console.log(1)
+	//			(async function f(){ 
+	//				// note the await -- this is the only difference...
+	//				console.log(await 2)})()
+	//			console.log(3)
+	//				-> prints 1, 3, 2
+	//		this could both be a bug or a feature depending on how you look
+	//		at it, but it makes promise sequencing very unpredictable...
+	//		...another problem here is that in the var macro, simply adding
+	//		an await of something does not fix the issue, we need to await 
+	//		for something significant -- await this.parse('') works, while
+	//		await vars[name] does not -- to the contrary of the above example...
+	// XXX EXPERIMENTAL...
+	expand: function(page, ast, state={}){
 		var that = this
 		ast = ast == null ?
 				Promise.awaitOrRun(
@@ -460,55 +489,54 @@ module.BaseParser = {
 				ast
 			: ast.iter()
 
-		// XXX this must execute sequentially for things that depend on 
+		// NOTE this must execute sequentially for things that depend on 
 		// 		lexical scope not to get lost in the mess...
-		// 		...or it's a question of if we can maintain "slices" of 
-		// 		state per macro call that is both containing all the state 
-		// 		from previous macros, and is not affected by the changes 
-		// 		done by next macros (unless needed)...
 		return Promise.seqiter(ast, 
-			function(value){
-				// text block...
-				if(typeof(value) == 'string'){
-					return value }
-				// macro...
-				var {name, args, body} = value
-				// nested macro -- skip...
-				if(typeof(page.macros[name]) != 'function'){
-					return {...value, skip: true} }
-				// macro call...
-				return Promise.awaitOrRun(
-					that.callMacro(page, name, args, body, state),
-					function(res){
-						res = res ?? ''
-						// result...
-						if(res instanceof Array 
-								|| page.macros[name] instanceof types.Generator){
-							return res
-						} else {
-							return [res] } }) },
-			function(err){
-				console.error(err)
-				return page.parse(
-					// XXX add line number and page path...
-					'@include("./ParseError'
-						+':path='
-							// XXX use pwpath.encodeElem(..) ???
-							+ page.path 
-						+':msg='
-							+ err.message 
-								// quote html stuff...
-								.replace(/&/g, '&amp;')
-								.replace(/</g, '&lt;')
-								.replace(/>/g, '&gt;')
-								// quote argument syntax...
-								.replace(/["']/g, function(c){
-									return '%'+ c.charCodeAt().toString(16) })
-								.replace(/:/g, '&colon;')
-								.replace(/=/g, '&equals;')
-						+'")') })
-			.sync() },
-	//*/
+				function(value){
+					// text block...
+					if(typeof(value) == 'string'){
+						return value }
+					// macro...
+					var {name, args, body} = value
+					// nested macro -- skip...
+					if(typeof(page.macros[name]) != 'function'){
+						return {...value, skip: true} }
+					// macro call...
+					return Promise.awaitOrRun(
+						// XXX due to the unpredictable behavior of await we 
+						// 		need to call this only AFTER the previous call
+						// 		is done...
+						that.callMacro(page, name, args, body, state),
+						function(res){
+							res = res ?? ''
+							// result...
+							if(res instanceof Array 
+									|| page.macros[name] instanceof types.Generator){
+								return res
+							} else {
+								return [res] } }) },
+				function(err){
+					console.error(err)
+					return page.parse(
+						// XXX add line number and page path...
+						'@include("./ParseError'
+							+':path='
+								// XXX use pwpath.encodeElem(..) ???
+								+ page.path 
+							+':msg='
+								+ err.message 
+									// quote html stuff...
+									.replace(/&/g, '&amp;')
+									.replace(/</g, '&lt;')
+									.replace(/>/g, '&gt;')
+									// quote argument syntax...
+									.replace(/["']/g, function(c){
+										return '%'+ c.charCodeAt().toString(16) })
+									.replace(/:/g, '&colon;')
+									.replace(/=/g, '&equals;')
+							+'")') })
+				.sync() },
+	/*/
 	expand: async function*(page, ast, state={}){
 		try{
 			ast = ast == null ?
