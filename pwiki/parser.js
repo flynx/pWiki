@@ -436,21 +436,7 @@ module.BaseParser = {
 	// XXX macros: we are mixing up ast state and parse state...
 	// 		one should only be used for parsing and be forgotten after 
 	// 		the ast is constructed the other should be part of the ast...
-	// XXX ASYNC this does not yet work as a replacement for .expand(..), 
-	// 		not sure why...
-	//		...seems that this breaks how slots and vars are handled...
-	//		to reproduce:
-	//			new code:
-	//				await p.pwiki.parse('<slot moo/>!!! <slot moo>moo</slot>')
-	//					-> '!!! '
-	//			old code:
-	//				await p.pwiki.parse('<slot moo/>!!! <slot moo>moo</slot>')
-	//					-> 'moo!!! '
-	//		...this affects @var(..) and @slot(..) and does not affect @macro(..)
-	//		The problem is that .callMacro(..) is for some execution paths is
-	//		called sync and in some paths after the current execution frame is 
-	//		done, i.e. async...
-	//		...turns out that the problem is in the inconsistent await behavior,
+	// XXX DOC inconsistent await behavior...
 	//		in var macro, as an example, there are two paths: the assign and 
 	//		the get, the assign calls .parse(..) and awaits for the result 
 	//		while the get path is "sync", this results in the first exec path
@@ -475,7 +461,7 @@ module.BaseParser = {
 	//		an await of something does not fix the issue, we need to await 
 	//		for something significant -- await this.parse('') works, while
 	//		await vars[name] does not -- to the contrary of the above example...
-	// XXX EXPERIMENTAL...
+	// XXX EXPERIMENTAL -- this seems to be slower than the original version...
 	expand: function(page, ast, state={}){
 		var that = this
 		ast = ast == null ?
@@ -515,6 +501,8 @@ module.BaseParser = {
 								return res
 							} else {
 								return [res] } }) },
+				// XXX BUG: this is not called on errors in:
+				// 			file:///L:/work/pWiki/pwiki2.html#/Tests/ParseErrorOutputTest
 				function(err){
 					console.error(err)
 					return page.parse(
