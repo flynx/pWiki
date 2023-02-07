@@ -296,6 +296,7 @@ var updateStyle = async function(){
 //*/
 
 // XXX might be a good idea to make this a method of pwiki???
+// XXX the page seems to be broken...
 var CONFIG_UPDATED = false
 var updateConfig = async function(){
 	// XXX need to set this to something...
@@ -449,11 +450,11 @@ require(['./browser'], function(browser){
 			if(STYLE_UPDATED){
 				STYLE_UPDATED = false
 				await updateStyle() }
-			//*/
 			// config...
 			if(CONFIG_UPDATED){
 				CONFIG_UPDATED = false
 				await updateConfig() }
+			//*/
 			// NOTE: we are intentionally not awaiting for this -- this 
 			//		separates the navigate and load events...
 			logTime(
@@ -510,7 +511,7 @@ require(['./browser'], function(browser){
 		// setup global stuff...
 		// XXX GLOBAL_STYLE
 		//updateStyle()
-		updateConfig()
+		//updateConfig()
 		// show current page...
 		pwiki.location = decodeURI(location.hash).slice(1) }) }) 
 

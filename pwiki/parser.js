@@ -489,9 +489,6 @@ module.BaseParser = {
 						return {...value, skip: true} }
 					// macro call...
 					return Promise.awaitOrRun(
-						// XXX due to the unpredictable behavior of await we 
-						// 		need to call this only AFTER the previous call
-						// 		is done...
 						that.callMacro(page, name, args, body, state),
 						function(res){
 							res = res ?? ''
@@ -501,8 +498,6 @@ module.BaseParser = {
 								return res
 							} else {
 								return [res] } }) },
-				// XXX BUG: this is not called on errors in:
-				// 			file:///L:/work/pWiki/pwiki2.html#/Tests/ParseErrorOutputTest
 				function(err){
 					console.error(err)
 					return page.parse(
