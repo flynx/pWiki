@@ -2180,9 +2180,20 @@ module.System = {
 
 			<slot header>
 				<a href="#/list">&#9776</a>
-				<a href="#<slot parent>../:@arg(all)</slot>">&#x21D1;</a>
+				<a href="javascript:history.back()">&#5130;</a>
+				<a href="javascript:history.foreward()">&#5125;</a>
+				<a href="#<slot parent>../:@arg(all)</slot>">&#5123;</a>
+				<!--
+				<a href="javascript:history.back()">&#129120;</a>
+				<a href="javascript:history.foreward()">&#129122;</a>
+				<a href="#<slot parent>../:@arg(all)</slot>">&#129121;</a>
+				-->
+				<!-- use css for spacing... -->
+				&nbsp;&nbsp;
 				<!-- XXX make this editable + inherit args... -->
 				[<slot location>@source(./location/quote/!)</slot>]
+				<!-- use css for spacing... -->
+				&nbsp;&nbsp;
 				<a href="javascript:refresh()">&#10227;</a>
 				<slot edit>
 					<a href="#@source(s ./path/!)/edit">&#9998;</a>
@@ -2341,7 +2352,10 @@ module.System = {
 		text: object.doc`
 			<slot header>
 				<a href="#/list">&#9776</a>
-				<a href="#@source(s ../../path)/list">&#x21D1;</a>
+				<a href="javascript:history.back()">&#5130;</a>
+				<a href="javascript:history.foreward()">&#5125;</a>
+				<a href="#@source(s ../../path)/list">&#5123;</a>
+				&nbsp;&nbsp;
 				@source(../path)
 			</slot>
 			<macro src="../*:$ARGS" join="@source(line-separator)">
