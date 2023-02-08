@@ -1324,11 +1324,16 @@ object.Constructor('Page', BasePage, {
 		//
 		// NOTE: var value is parsed only on assignment and not on dereferencing...
 		//
+		// XXX should alpha/Alpha be 0 (current) or 1 based???
 		// XXX INC_DEC do we need inc/dec and parent???
 		'var': Macro(
 			['name', 'text', 
 				// XXX INC_DEC
-				['shown', 'hidden', 'inc', 'dec', 'parent']],
+				['shown', 'hidden', 
+					'parent', 
+					'inc', 'dec', 
+					'alpha', 'Alpha',
+					'roman', 'Roman']],
 				/*/
 				['shown', 'hidden']],
 				//*/
@@ -1359,6 +1364,25 @@ object.Constructor('Page', BasePage, {
 							&& vars.__proto__ !== Object.prototype){
 						vars = vars.__proto__ } }
 
+				var handleFormat = function(value){
+					// roman number...
+					if(args.roman || args.Roman){
+						var n = parseInt(value)
+						return isNaN(n) ?
+								''
+							: args.Roman ?
+								n.toRoman()
+							: n.toRoman().toLowerCase() }
+					// alpha number...
+					if(args.alpha || args.Alpha){
+						var n = parseInt(value)
+						return isNaN(n) ?
+								''
+							: args.Alpha ?
+								n.toAlpha().toUpperCase()
+							: n.toAlpha() } 
+					return value }
+
 				// inc/dec...
 				if(inc || dec){
 					if(!(name in vars) 
@@ -1378,8 +1402,10 @@ object.Constructor('Page', BasePage, {
 							0
 						: parseInt(dec)
 					vars[name] = cur + ''
+
+					// as-is...
 					return show ?? true ?
-						vars[name]
+						handleFormat(vars[name])
 						: '' }
 				//*/
 
@@ -1392,8 +1418,7 @@ object.Constructor('Page', BasePage, {
 						: ''
 				// get...
 				} else {
-					return vars[name] 
-						?? '' } }),
+					return handleFormat(vars[name] ?? '') } }),
 		vars: async function(args, body, state){
 			var vars = state.vars = 
 				state.vars 
@@ -1425,12 +1450,17 @@ object.Constructor('Page', BasePage, {
 		// 		</else>
 		// 	</macro>
 		//
+		// Macro variables:
+		// 	macro:count
+		// 	macro:index
+		//
 		// NOTE: this handles src count argument internally partially 
 		// 		overriding <store>.match(..)'s implementation, this is done
 		// 		because @macro(..) needs to account for arbitrary nesting 
 		// 		that <store>.match(..) can not know about...
 		// 		XXX should we do the same for offset???
 		//
+		// XXX should macro:index be 0 or 1 (current) based???
 		// XXX SORT sorting not implemented yet...
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else',
@@ -2169,6 +2199,7 @@ module.System = {
 	// 		_list: {
 	//			text: '<macro src="." join="\n">- @source(.)</macro>' },
 	//
+	// XXX might be a good idea to add a history stack to the API (macros?)
 	// XXX all of these should support pattern pages...
 	_text: {
 		text: '@include(.:$ARGS isolated join="@source(file-separator)")' },
