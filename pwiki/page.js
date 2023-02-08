@@ -2180,8 +2180,8 @@ module.System = {
 
 			<slot header>
 				<a href="#/list">&#9776</a>
-				<a href="#<slot parent>../</slot>">&#x21D1;</a>
-				<!-- XXX make this editable... -->
+				<a href="#<slot parent>../:@arg(all)</slot>">&#x21D1;</a>
+				<!-- XXX make this editable + inherit args... -->
 				[<slot location>@source(./location/quote/!)</slot>]
 				<a href="javascript:refresh()">&#10227;</a>
 				<slot edit>
@@ -2376,7 +2376,7 @@ module.System = {
 				@var(path "@source(s ./path)")
 				<div>
 					<div class="item">
-						<a class="tree-page-title" href="#@var(path)">@source(./title/quote)</a>
+						<a class="tree-page-title" href="#@var(path):@arg(all)">@source(./title/quote)</a>
 						<a class="show-on-hover" href="#@var(path)/info">&#128712;</a>
 						<a class="show-on-hover" 
 							href="javascript:pwiki.delete('@var(path)')"
