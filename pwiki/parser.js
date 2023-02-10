@@ -587,9 +587,16 @@ module.BaseParser = {
 	// 	<item> ::=
 	// 		<string>
 	// 		| { data: <ast> }
+	// 		| <func>
+	//
+	// 	<func>(state)
+	// 		-> <ast>
+	//
+	//
+	// NOTE: <func>(..) is called in the context of page...
 	//
 	// XXX should this also resolve e.data???
-	/* XXX EXPERIMENTAL...
+	//* XXX EXPERIMENTAL...
 	resolve: function(page, ast, state={}){
 		var that = this
 		ast = ast 
@@ -598,6 +605,7 @@ module.BaseParser = {
 			this.expand(page, ast, state)
 			: ast
 
+		// NOTE: this expects .flat() on the containing array...
 		var handleItem = function(e){
 			// expand delayed sections...
 			e = typeof(e) == 'function' ?
@@ -618,24 +626,12 @@ module.BaseParser = {
 			} else {
 				return [e] } }
 
-		// XXX do we need this???
-		var issync = ast instanceof Array 
-			&& ast.reduce(function(e, res){
-				return res === false ?
-					res
-					: e instanceof Promise }, true)
-
-		// NOTE: we need to await for ast here as we need stage 2 of 
-		// 		parsing to happen AFTER everything else completes...
-		// 		XXX
-		return issync ?
-				Promise.all(ast)
-					.then(function(ast){
-						return ast.map(handleItem)
-							.flat() })
-			: ast instanceof Array ?
+		return ast instanceof Array ?
 				ast.map(handleItem)
 					.flat()
+			// NOTE: we need to await for ast here as we need stage 2 of 
+			// 		parsing to happen AFTER everything else completes...
+			// XXX
 			: ast.then(function(ast){
 					return ast.map(handleItem)
 						.flat() })
