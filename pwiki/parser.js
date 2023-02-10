@@ -589,6 +589,58 @@ module.BaseParser = {
 	// 		| { data: <ast> }
 	//
 	// XXX should this also resolve e.data???
+	/* XXX EXPERIMENTAL...
+	resolve: function(page, ast, state={}){
+		var that = this
+		ast = ast 
+			?? this.expand(page, null, state)
+		ast = typeof(ast) != 'object' ?
+			this.expand(page, ast, state)
+			: ast
+
+		var handleItem = function(e){
+			// expand delayed sections...
+			e = typeof(e) == 'function' ?
+				e.call(page, state)
+				: e
+			// expand arrays...
+			if(e instanceof Array 
+					| e instanceof types.Generator){
+				return that.resolve(page, e, state)
+			// data -- unwrap content...
+			} else if(e instanceof Object && 'data' in e){
+				return that.resolve(page, e.data, state)
+					.then(function(e){
+						return { data: e } })
+			// skipped items...
+			} else if(e instanceof Object && e.skip){
+				return []
+			} else {
+				return [e] } }
+
+		// XXX do we need this???
+		var issync = ast instanceof Array 
+			&& ast.reduce(function(e, res){
+				return res === false ?
+					res
+					: e instanceof Promise }, true)
+
+		// NOTE: we need to await for ast here as we need stage 2 of 
+		// 		parsing to happen AFTER everything else completes...
+		// 		XXX
+		return issync ?
+				Promise.all(ast)
+					.then(function(ast){
+						return ast.map(handleItem)
+							.flat() })
+			: ast instanceof Array ?
+				ast.map(handleItem)
+					.flat()
+			: ast.then(function(ast){
+					return ast.map(handleItem)
+						.flat() })
+				.iter() },
+	/*/
 	resolve: async function*(page, ast, state={}){
 		ast = ast 
 			?? this.expand(page, null, state)
@@ -598,12 +650,10 @@ module.BaseParser = {
 
 		// NOTE: we need to await for ast here as we need stage 2 of 
 		// 		parsing to happen AFTER everything else completes...
-		/* XXX GENERATOR -- this breaks the parser...
+		// XXX GENERATOR -- this breaks the parser...
 		//		...investigate the data flow...
-		for await (var e of ast){
-		/*/
+		//for await (var e of ast){
 		for(var e of await ast){
-		//*/
 			// expand delayed sections...
 			e = typeof(e) == 'function' ?
 				e.call(page, state)
@@ -620,6 +670,7 @@ module.BaseParser = {
 				continue
 			} else {
 				yield e } } },
+	//*/
 
 	// Fully parse a page...
 	//
