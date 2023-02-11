@@ -1742,6 +1742,32 @@ object.Constructor('Page', BasePage, {
 	// 		and debugging, set comment it out to disable...
 	//__debug_last_render_state: undefined,
 	// XXX should this handle pattern paths???
+	//* XXX EXPERIMENTAL
+	parse: function(text, state){
+		var that = this
+		return Promise.awaitOrRun(
+			text,
+			function(text){
+				// .parser(<state>)
+				if(arguments.length == 1 
+						&& text instanceof Object
+						&& !(text instanceof Array)){
+					state = text
+					text = null }
+				state = state ?? {}
+				state.renderer = state.renderer ?? that
+				// this is here for debugging and introspection...
+				'__debug_last_render_state' in that
+					&& (that.__debug_last_render_state = state)
+				// parse...
+				return that.__parser__.parse(
+					that.get('.', {
+						renderer: state.renderer,
+						args: that.args, 
+					}), 
+					text, 
+					state) }) },
+	/*/ // XXX ASYNC
 	parse: async function(text, state){
 		var that = this
 		text = await text
@@ -1764,6 +1790,7 @@ object.Constructor('Page', BasePage, {
 			}), 
 			text, 
 			state) },
+	//*/
 
 	// raw page text...
 	//

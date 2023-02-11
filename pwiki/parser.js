@@ -604,37 +604,36 @@ module.BaseParser = {
 		ast = typeof(ast) != 'object' ?
 			this.expand(page, ast, state)
 			: ast
-
-		// NOTE: this expects .flat() on the containing array...
-		var handleItem = function(e){
-			// expand delayed sections...
-			e = typeof(e) == 'function' ?
-				e.call(page, state)
-				: e
-			// expand arrays...
-			if(e instanceof Array 
-					| e instanceof types.Generator){
-				return that.resolve(page, e, state)
-			// data -- unwrap content...
-			} else if(e instanceof Object && 'data' in e){
-				return that.resolve(page, e.data, state)
-					.then(function(e){
-						return { data: e } })
-			// skipped items...
-			} else if(e instanceof Object && e.skip){
-				return []
-			} else {
-				return [e] } }
-
-		return ast instanceof Array ?
-				ast.map(handleItem)
-					.flat()
-			// NOTE: we need to await for ast here as we need stage 2 of 
-			// 		parsing to happen AFTER everything else completes...
-			: ast.then(function(ast){
-					return ast.map(handleItem)
-						.flat() })
-				.iter() },
+		// XXX .awaitOrRun(..) will check inside the array for promises, do 
+		// 		we need to do this???
+		ast = Promise.awaitOrRun(
+			ast,
+			function(ast){
+				return ast
+					.map(function(e){
+						// expand delayed sections...
+						e = typeof(e) == 'function' ?
+							e.call(page, state)
+							: e
+						// expand arrays...
+						if(e instanceof Array 
+								| e instanceof types.Generator){
+							return that.resolve(page, e, state)
+						// data -- unwrap content...
+						} else if(e instanceof Object && 'data' in e){
+							return that.resolve(page, e.data, state)
+								.then(function(e){
+									return { data: e } })
+						// skipped items...
+						} else if(e instanceof Object && e.skip){
+							return []
+						} else {
+							return [e] } })
+					.flat() })
+		return ast instanceof Promise ?
+			// keep the API consistently array-like...
+			ast.iter()
+			: ast },
 	/*/ // XXX ASYNC
 	resolve: async function*(page, ast, state={}){
 		ast = ast 
@@ -687,6 +686,43 @@ module.BaseParser = {
 	// 			a slot when loaded will replace the prior occurrences...
 	//
 	// XXX add a special filter to clear pending filters... (???)
+	//* XXX EXPERIMENTAL...
+	parse: function(page, ast, state={}){
+		var that = this
+		return this.resolve(page, ast, state)
+			// filters...
+			.map(function(section){
+				// normalize types...
+				section = 
+					typeof(section) == 'number' ?
+						section + ''
+					: section == null ?
+						''
+					: section
+				return (
+					// expand section...
+					typeof(section) != 'string' ?
+						section.data
+					// global filters... 
+					: state.filters ?
+						that.normalizeFilters(state.filters)
+							.reduce(function(res, filter){
+								// unknown filter...
+								// NOTE: we try not to break on user errors
+								// 		if we can help it...
+								if(page.filters[filter] == null){
+									console.warn(
+										'.parse(..): unsupported filter: '+ filter) 
+									return res }
+								// NOTE: if a filter returns falsy then it 
+								// 		will have no effect on the result...
+								return page.filters[filter].call(page, res) 
+									?? res }, section)
+					// no global filters...
+					: section ) })
+			.flat()
+			.join('') },
+	/*/ // XXX ASYNC
 	parse: async function(page, ast, state={}){
 		var that = this
 		return await this.resolve(page, ast, state)
@@ -722,6 +758,7 @@ module.BaseParser = {
 					: section ) })
 			.flat()
 			.join('') },
+	//*/
 }
 
 var parser =
