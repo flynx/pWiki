@@ -267,6 +267,20 @@ object.Constructor('BasePage', {
 		return this.store.delete(pwpath.relative(this.path, path)) },
 
 	__energetic: undefined,
+	//* XXX EXPERIMENTAL
+	get energetic(){
+		return this.__energetic === true
+			|| ((this.actions 
+				&& this.actions[this.name]
+				&& !!this[
+					this.actions[this.name] === true ?
+						this.name
+						: this.actions[this.name] ].energetic)
+			|| Promise.awaitOrRun(
+				this.store.isEnergetic(this.path),
+		   		function(res){
+					return !!res })) },
+	/*/ // XXX ASYNC
 	get energetic(){ return async function(){
 		return this.__energetic === true
 			|| ((this.actions 
@@ -276,12 +290,68 @@ object.Constructor('BasePage', {
 						this.name
 						: this.actions[this.name] ].energetic)
 			|| !!await this.store.isEnergetic(this.path)) }.call(this) },
+	//*/
 	set energetic(value){
 		this.__energetic = value },
 
 	// page data...
 	//
 	strict: undefined,
+	//* XXX EXPERIMENTAL
+	get data(){
+		var that = this
+		// direct actions...
+		if(this.actions 
+				&& this.actions[this.name]){
+			var name = 
+				this.actions[this.name] === true ?
+					this.name
+					: this.actions[this.name]
+			var args = this.args
+			var page = this.get('..', {args})
+			return Promise.awaitOrRun(
+				(this.isPattern 
+						&& !this.__energetic
+						&& !page[name].energetic) ?
+					page
+						.map(function(page){
+							var res = page[name] 
+							return typeof(res) == 'function' ?
+								res.bind(page.get(name, {args}))
+								: function(){ 
+									return res } })
+					: page[name],
+				function(res){
+					return typeof(res) == 'function' ?
+							res.bind(that)
+						: res instanceof Array ?
+							res
+						: function(){ 
+							return res } },
+				// NOTE: we are passing null into the error handler to 
+				// 		prevent the actual data (function) from being 
+				// 		consumed...
+				null) }
+		// store data...
+		return Promise.awaitOrRun(
+			this.energetic,
+			function(energetic){
+				// pattern...
+				// NOTE: we need to make sure each page gets the chance to handle 
+				// 		its context (i.e. bind action to page)....
+				if(that.isPattern
+						&& !energetic){
+					return that
+						.map(function(page){
+							return page.data }) }
+				// single page...
+				return Promise.awaitOrRun(
+					that.store.get(that.path, !!that.strict, !!energetic),
+					function(res){
+						return typeof(res) == 'function' ?
+							res.bind(that)
+							: res }) }) },
+	/*/ // XXX ASYNC
 	get data(){ return (async function(){
 		// direct actions...
 		if(this.actions 
@@ -325,6 +395,7 @@ object.Constructor('BasePage', {
 		return typeof(res) == 'function' ?
 			res.bind(this)
 			: res }).call(this) },
+	//*/
 	set data(value){
 		if(this.actions 
 				&& this.actions[this.name]){
@@ -399,6 +470,7 @@ object.Constructor('BasePage', {
 		// set...
 		this.__update__(value) },
 
+	// XXX ASYNC???
 	get type(){ return async function(){
 		return this.store.isStore(this.path) ?
 				'store'
@@ -1332,8 +1404,7 @@ object.Constructor('Page', BasePage, {
 				['shown', 'hidden', 
 					'parent', 
 					'inc', 'dec', 
-					'alpha', 'Alpha',
-					'roman', 'Roman']],
+					'alpha', 'Alpha', 'roman', 'Roman']],
 				/*/
 				['shown', 'hidden']],
 				//*/
@@ -1714,9 +1785,11 @@ object.Constructor('Page', BasePage, {
 	// XXX this is html/web specific, should it be here???
 	// 		...
 	// XXX should this be .raw or .parse()???
+	// XXX ASYNC???
 	quote: async function(energetic=false){
-		return this.get('..:$ARGS', {energetic: await this.energetic}).raw//parse()
-			.then(function(res){
+		return Promise.awaitOrRun(
+			this.get('..:$ARGS', {energetic: await this.energetic}).raw,
+			function(res){
 				return res instanceof Array ?
 					res.map(pwpath.quoteHTML)
 					: pwpath.quoteHTML(res) }) },
@@ -1798,6 +1871,45 @@ object.Constructor('Page', BasePage, {
 	// NOTE: when matching multiple pages this will return a list...
 	//
 	// XXX revise how we handle .strict mode...
+	// XXX EXPERIMENTAL
+	get raw(){
+		var that = this
+		return Promise.awaitOrRun(
+			this.data,
+			function(data){
+				// no data...
+				// NOTE: if we hit this it means that nothing was resolved, 
+				// 		not even the System/NotFound page, i.e. something 
+				// 		went really wrong...
+				// NOTE: in .strict mode this will explicitly fail and not try 
+				// 		to recover...
+				if(data == null){
+					if(!this.strict 
+							&& this.NOT_FOUND_ERROR){
+						var msg = this.get(this.NOT_FOUND_ERROR)
+						return Promise.awaitOrRun(
+							msg.match(),
+							function(msg){
+								return msg.raw }) }
+					// last resort...
+					throw new Error('NOT FOUND ERROR: '+ this.path) }
+				// get the data...
+				return (
+					// action...
+					typeof(data) == 'function' ?
+						data()
+					// multiple matches...
+					: data instanceof Array ?
+						// XXX
+						Promise.all(data
+							.map(function(d){
+								return typeof(d) == 'function'?
+									d()
+									: d.text })
+							.flat())
+					: data.text ) }, 
+			null) },
+	/*/ // XXX ASYNC
 	get raw(){ return (async function(){
 		var data = await this.data
 		// no data...
@@ -1828,6 +1940,7 @@ object.Constructor('Page', BasePage, {
 							: d.text })
 					.flat())
    			: data.text )}).call(this) },
+	//*/
 	set raw(value){
 		this.data = {text: value} },
 		//this.onTextUpdate(value) },
@@ -1896,7 +2009,45 @@ object.Constructor('Page', BasePage, {
 	// 		or render as any other page???
 	// 		...currently they are rendered in the context of the page and
 	// 		not in their own context...
-	// XXX revise how we handle strict mode...
+	/*/ XXX revise how we handle strict mode...
+	get text(){
+		// strict mode -- break on non-existing pages...
+		if(this.strict 
+				// XXX
+				&& !await this.resolve(true)){
+			throw new Error('NOT FOUND ERROR: '+ this.location) }
+
+		var path = pwpath.split(this.path)
+		;(path.at(-1) ?? '')[0] == '_'
+			|| path.push(this.PAGE_TEMPLATE)
+		var tpl = pwpath.join(path)
+		var tpl_name = path.pop()
+		//var tpl_name = path.at(-1)
+
+		// get the template relative to the top most pattern...
+		return Promise.awaitOrRun(
+			this.get(tpl).find(true),
+			function(tpl){
+				if(!tpl){
+					console.warn('UNKNOWN RENDER TEMPLATE: '+ tpl_name) 
+					return this.get(this.NOT_FOUND_TEMPLATE_ERROR).parse() }
+
+				var depends = this.depends = new Set([tpl])
+				// do the parse...
+				// NOTE: we render the template in context of page...
+				return that
+					// NOTE: this.path can both contain a template and not, this
+					// 		normalizes it to the path up to the template path...
+					.get(path, {args: this.args})
+					.parse(
+						this.get(
+							'/'+tpl, 
+							{args: this.args}).raw, 
+						{
+							depends, 
+							renderer: this,
+						}) }.bind(this)) },
+	/*/ // XXX ASYNC
 	get text(){ return (async function(){
 		// strict mode -- break on non-existing pages...
 		if(this.strict 
@@ -1931,6 +2082,7 @@ object.Constructor('Page', BasePage, {
 					depends, 
 					renderer: this,
 				}) }).call(this) },
+	//*/
 	set text(value){
 		this.data = {text: value} },
 		//this.onTextUpdate(value) },
@@ -2238,14 +2390,14 @@ module.System = {
 
 			<slot header>
 				<a href="#/list">&#9776</a>
+				<!--
 				<a href="javascript:history.back()">&#5130;</a>
 				<a href="javascript:history.foreward()">&#5125;</a>
 				<a href="#<slot parent>../:@arg(all)</slot>">&#5123;</a>
-				<!--
+				-->
 				<a href="javascript:history.back()">&#129120;</a>
 				<a href="javascript:history.foreward()">&#129122;</a>
 				<a href="#<slot parent>../:@arg(all)</slot>">&#129121;</a>
-				-->
 				<!-- use css for spacing... -->
 				&nbsp;&nbsp;
 				<!-- XXX make this editable + inherit args... -->
@@ -2410,9 +2562,14 @@ module.System = {
 		text: object.doc`
 			<slot header>
 				<a href="#/list">&#9776</a>
+				<a href="javascript:history.back()">&#129120;</a>
+				<a href="javascript:history.foreward()">&#129122;</a>
+				<a href="#<slot parent>../:@arg(all)</slot>">&#129121;</a>
+				<!--
 				<a href="javascript:history.back()">&#5130;</a>
 				<a href="javascript:history.foreward()">&#5125;</a>
 				<a href="#@source(s ../../path)/list">&#5123;</a>
+				-->
 				&nbsp;&nbsp;
 				@source(../path)
 			</slot>
