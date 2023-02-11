@@ -500,7 +500,7 @@ module.BaseParser = {
 								return [res] } }) },
 				function(err){
 					console.error(err)
-					return page.parse(
+					return [page.parse(
 						// XXX add line number and page path...
 						'@include("./ParseError'
 							+':path='
@@ -517,9 +517,9 @@ module.BaseParser = {
 										return '%'+ c.charCodeAt().toString(16) })
 									.replace(/:/g, '&colon;')
 									.replace(/=/g, '&equals;')
-							+'")') })
+							+'")')] })
 				.sync() },
-	/*/
+	/*/ // XXX ASYNC
 	expand: async function*(page, ast, state={}){
 		try{
 			ast = ast == null ?
@@ -631,12 +631,11 @@ module.BaseParser = {
 					.flat()
 			// NOTE: we need to await for ast here as we need stage 2 of 
 			// 		parsing to happen AFTER everything else completes...
-			// XXX
 			: ast.then(function(ast){
 					return ast.map(handleItem)
 						.flat() })
 				.iter() },
-	/*/
+	/*/ // XXX ASYNC
 	resolve: async function*(page, ast, state={}){
 		ast = ast 
 			?? this.expand(page, null, state)
