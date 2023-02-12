@@ -2014,6 +2014,10 @@ object.Constructor('Page', BasePage, {
 	// XXX EXPERIMENTAL
 	// XXX would be nice to be able to chain .awaitOrRun(..) calls instead 
 	// 		of nesting them like here...
+	// XXX BUG: this breaks on:
+	// 			pwiki = reqiter('./pwiki-test').pwiki
+	// 			await pwiki.get('./_text').text
+	// 		...seems to break the original vetsion too...
 	get text(){
 		var that = this
 		return Promise.awaitOrRun(
