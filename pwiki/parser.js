@@ -621,8 +621,9 @@ module.BaseParser = {
 							return that.resolve(page, e, state)
 						// data -- unwrap content...
 						} else if(e instanceof Object && 'data' in e){
-							return that.resolve(page, e.data, state)
-								.then(function(e){
+							return Promise.awaitOrRun(
+								that.resolve(page, e.data, state),
+								function(e){
 									return { data: e } })
 						// skipped items...
 						} else if(e instanceof Object && e.skip){
