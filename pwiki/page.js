@@ -2009,44 +2009,50 @@ object.Constructor('Page', BasePage, {
 	// 		or render as any other page???
 	// 		...currently they are rendered in the context of the page and
 	// 		not in their own context...
-	/*/ XXX revise how we handle strict mode...
+	// XXX revise how we handle strict mode...
+	//
+	// XXX EXPERIMENTAL
+	// XXX would be nice to be able to chain .awaitOrRun(..) calls instead 
+	// 		of nesting them like here...
 	get text(){
-		// strict mode -- break on non-existing pages...
-		if(this.strict 
-				// XXX
-				&& !await this.resolve(true)){
-			throw new Error('NOT FOUND ERROR: '+ this.location) }
-
-		var path = pwpath.split(this.path)
-		;(path.at(-1) ?? '')[0] == '_'
-			|| path.push(this.PAGE_TEMPLATE)
-		var tpl = pwpath.join(path)
-		var tpl_name = path.pop()
-		//var tpl_name = path.at(-1)
-
-		// get the template relative to the top most pattern...
 		return Promise.awaitOrRun(
-			this.get(tpl).find(true),
-			function(tpl){
-				if(!tpl){
-					console.warn('UNKNOWN RENDER TEMPLATE: '+ tpl_name) 
-					return this.get(this.NOT_FOUND_TEMPLATE_ERROR).parse() }
+			!this.strict
+				|| this.resolve(true),
+			function(exists){
+				// strict mode -- break on non-existing pages...
+				if(!exists){
+					throw new Error('NOT FOUND ERROR: '+ this.location) }
 
-				var depends = this.depends = new Set([tpl])
-				// do the parse...
-				// NOTE: we render the template in context of page...
-				return that
-					// NOTE: this.path can both contain a template and not, this
-					// 		normalizes it to the path up to the template path...
-					.get(path, {args: this.args})
-					.parse(
-						this.get(
-							'/'+tpl, 
-							{args: this.args}).raw, 
-						{
-							depends, 
-							renderer: this,
-						}) }.bind(this)) },
+				var path = pwpath.split(this.path)
+				;(path.at(-1) ?? '')[0] == '_'
+					|| path.push(this.PAGE_TEMPLATE)
+				var tpl = pwpath.join(path)
+				var tpl_name = path.pop()
+				//var tpl_name = path.at(-1)
+
+				// get the template relative to the top most pattern...
+				return Promise.awaitOrRun(
+					this.get(tpl).find(true),
+					function(tpl){
+						if(!tpl){
+							console.warn('UNKNOWN RENDER TEMPLATE: '+ tpl_name) 
+							return this.get(this.NOT_FOUND_TEMPLATE_ERROR).parse() }
+
+						var depends = this.depends = new Set([tpl])
+						// do the parse...
+						// NOTE: we render the template in context of page...
+						return this
+							// NOTE: this.path can both contain a template and not, this
+							// 		normalizes it to the path up to the template path...
+							.get(path, {args: this.args})
+							.parse(
+								this.get(
+									'/'+tpl, 
+									{args: this.args}).raw, 
+								{
+									depends, 
+									renderer: this,
+								}) }.bind(this)) }.bind(this)) },
 	/*/ // XXX ASYNC
 	get text(){ return (async function(){
 		// strict mode -- break on non-existing pages...
