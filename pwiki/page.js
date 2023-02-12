@@ -2015,44 +2015,45 @@ object.Constructor('Page', BasePage, {
 	// XXX would be nice to be able to chain .awaitOrRun(..) calls instead 
 	// 		of nesting them like here...
 	get text(){
+		var that = this
 		return Promise.awaitOrRun(
-			!this.strict
-				|| this.resolve(true),
+			!that.strict
+				|| that.resolve(true),
 			function(exists){
 				// strict mode -- break on non-existing pages...
 				if(!exists){
-					throw new Error('NOT FOUND ERROR: '+ this.location) }
+					throw new Error('NOT FOUND ERROR: '+ that.location) }
 
-				var path = pwpath.split(this.path)
+				var path = pwpath.split(that.path)
 				;(path.at(-1) ?? '')[0] == '_'
-					|| path.push(this.PAGE_TEMPLATE)
+					|| path.push(that.PAGE_TEMPLATE)
 				var tpl = pwpath.join(path)
 				var tpl_name = path.pop()
 				//var tpl_name = path.at(-1)
 
 				// get the template relative to the top most pattern...
 				return Promise.awaitOrRun(
-					this.get(tpl).find(true),
+					that.get(tpl).find(true),
 					function(tpl){
 						if(!tpl){
 							console.warn('UNKNOWN RENDER TEMPLATE: '+ tpl_name) 
-							return this.get(this.NOT_FOUND_TEMPLATE_ERROR).parse() }
+							return that.get(that.NOT_FOUND_TEMPLATE_ERROR).parse() }
 
-						var depends = this.depends = new Set([tpl])
+						var depends = that.depends = new Set([tpl])
 						// do the parse...
 						// NOTE: we render the template in context of page...
-						return this
-							// NOTE: this.path can both contain a template and not, this
+						return that
+							// NOTE: that.path can both contain a template and not, this
 							// 		normalizes it to the path up to the template path...
-							.get(path, {args: this.args})
+							.get(path, {args: that.args})
 							.parse(
-								this.get(
+								that.get(
 									'/'+tpl, 
-									{args: this.args}).raw, 
+									{args: that.args}).raw, 
 								{
 									depends, 
-									renderer: this,
-								}) }.bind(this)) }.bind(this)) },
+									renderer: that,
+								}) }) }) },
 	/*/ // XXX ASYNC
 	get text(){ return (async function(){
 		// strict mode -- break on non-existing pages...
