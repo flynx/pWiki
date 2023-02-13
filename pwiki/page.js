@@ -267,7 +267,6 @@ object.Constructor('BasePage', {
 		return this.store.delete(pwpath.relative(this.path, path)) },
 
 	__energetic: undefined,
-	//* XXX EXPERIMENTAL
 	get energetic(){
 		return this.__energetic === true
 			|| ((this.actions 
@@ -280,24 +279,12 @@ object.Constructor('BasePage', {
 				this.store.isEnergetic(this.path),
 		   		function(res){
 					return !!res })) },
-	/*/ // XXX ASYNC
-	get energetic(){ return async function(){
-		return this.__energetic === true
-			|| ((this.actions 
-				&& this.actions[this.name]
-				&& !!this[
-					this.actions[this.name] === true ?
-						this.name
-						: this.actions[this.name] ].energetic)
-			|| !!await this.store.isEnergetic(this.path)) }.call(this) },
-	//*/
 	set energetic(value){
 		this.__energetic = value },
 
 	// page data...
 	//
 	strict: undefined,
-	//* XXX EXPERIMENTAL
 	get data(){
 		var that = this
 		// direct actions...
@@ -351,51 +338,6 @@ object.Constructor('BasePage', {
 						return typeof(res) == 'function' ?
 							res.bind(that)
 							: res }) }) },
-	/*/ // XXX ASYNC
-	get data(){ return (async function(){
-		// direct actions...
-		if(this.actions 
-				&& this.actions[this.name]){
-			var name = 
-				this.actions[this.name] === true ?
-					this.name
-					: this.actions[this.name]
-			var args = this.args
-			var page = this.get('..', {args})
-			var res = (this.isPattern 
-					&& !this.__energetic
-					&& !page[name].energetic) ?
-				await page
-					.map(function(page){
-						var res = page[name] 
-						return typeof(res) == 'function' ?
-							res.bind(page.get(name, {args}))
-							: function(){ 
-								return res } })
-				: await page[name] 
-			return typeof(res) == 'function' ?
-					res.bind(this)
-				: res instanceof Array ?
-					res
-				: function(){ 
-					return res } }
-
-		var that = this
-		// NOTE: we need to make sure each page gets the chance to handle 
-		// 		its context (i.e. bind action to page)....
-		if(this.isPattern 
-				// XXX ENERGETIC...
-				&& !await this.energetic){
-			return this
-				.map(function(page){
-					return page.data }) }
-		// single page...
-		// XXX ENERGETIC...
-		var res = await this.store.get(this.path, !!this.strict, !!await this.energetic)
-		return typeof(res) == 'function' ?
-			res.bind(this)
-			: res }).call(this) },
-	//*/
 	set data(value){
 		if(this.actions 
 				&& this.actions[this.name]){
@@ -1815,7 +1757,6 @@ object.Constructor('Page', BasePage, {
 	// 		and debugging, set comment it out to disable...
 	//__debug_last_render_state: undefined,
 	// XXX should this handle pattern paths???
-	//* XXX EXPERIMENTAL
 	parse: function(text, state){
 		var that = this
 		return Promise.awaitOrRun(
@@ -1840,30 +1781,6 @@ object.Constructor('Page', BasePage, {
 					}), 
 					text, 
 					state) }) },
-	/*/ // XXX ASYNC
-	parse: async function(text, state){
-		var that = this
-		text = await text
-		// .parser(<state>)
-		if(arguments.length == 1 
-				&& text instanceof Object
-				&& !(text instanceof Array)){
-			state = text
-			text = null }
-		state = state ?? {}
-		state.renderer = state.renderer ?? this
-		// this is here for debugging and introspection...
-		'__debug_last_render_state' in this
-			&& (this.__debug_last_render_state = state)
-		// parse...
-		return this.__parser__.parse(
-			this.get('.', {
-				renderer: state.renderer,
-				args: this.args, 
-			}), 
-			text, 
-			state) },
-	//*/
 
 	// raw page text...
 	//
@@ -1871,7 +1788,6 @@ object.Constructor('Page', BasePage, {
 	// NOTE: when matching multiple pages this will return a list...
 	//
 	// XXX revise how we handle .strict mode...
-	// XXX EXPERIMENTAL
 	get raw(){
 		var that = this
 		return Promise.awaitOrRun(
@@ -1909,38 +1825,6 @@ object.Constructor('Page', BasePage, {
 							.flat())
 					: data.text ) }, 
 			null) },
-	/*/ // XXX ASYNC
-	get raw(){ return (async function(){
-		var data = await this.data
-		// no data...
-		// NOTE: if we hit this it means that nothing was resolved, 
-		// 		not even the System/NotFound page, i.e. something 
-		// 		went really wrong...
-		// NOTE: in .strict mode this will explicitly fail and not try 
-		// 		to recover...
-		if(data == null){
-			if(!this.strict 
-					&& this.NOT_FOUND_ERROR){
-				var msg = this.get(this.NOT_FOUND_ERROR)
-				if(await msg.match()){
-					return msg.raw } }
-			// last resort...
-			throw new Error('NOT FOUND ERROR: '+ this.path) }
-		// get the data...
-		return (
-			// action...
-			typeof(data) == 'function' ?
-				data()
-			// multiple matches...
-			: data instanceof Array ?
-				Promise.all(data
-					.map(function(d){
-						return typeof(d) == 'function'?
-							d()
-							: d.text })
-					.flat())
-   			: data.text )}).call(this) },
-	//*/
 	set raw(value){
 		this.data = {text: value} },
 		//this.onTextUpdate(value) },
@@ -2010,8 +1894,6 @@ object.Constructor('Page', BasePage, {
 	// 		...currently they are rendered in the context of the page and
 	// 		not in their own context...
 	// XXX revise how we handle strict mode...
-	//
-	// XXX EXPERIMENTAL
 	// XXX would be nice to be able to chain .awaitOrRun(..) calls instead 
 	// 		of nesting them like here...
 	get text(){
@@ -2054,42 +1936,6 @@ object.Constructor('Page', BasePage, {
 									depends, 
 									renderer: that,
 								}) }) }) },
-	/*/ // XXX ASYNC
-	get text(){ return (async function(){
-		// strict mode -- break on non-existing pages...
-		if(this.strict 
-				&& !await this.resolve(true)){
-			throw new Error('NOT FOUND ERROR: '+ this.location) }
-
-		var path = pwpath.split(this.path)
-		;(path.at(-1) ?? '')[0] == '_'
-			|| path.push(this.PAGE_TEMPLATE)
-		var tpl = pwpath.join(path)
-		var tpl_name = path.pop()
-		//var tpl_name = path.at(-1)
-
-		// get the template relative to the top most pattern...
-		tpl = await this.get(tpl).find(true)
-		if(!tpl){
-			console.warn('UNKNOWN RENDER TEMPLATE: '+ tpl_name) 
-			return this.get(this.NOT_FOUND_TEMPLATE_ERROR).parse() }
-
-		var depends = this.depends = new Set([tpl])
-		// do the parse...
-		// NOTE: we render the template in context of page...
-		return this
-			// NOTE: this.path can both contain a template and not, this
-			// 		normalizes it to the path up to the template path...
-			.get(path, {args: this.args})
-			.parse(
-				this.get(
-					'/'+tpl, 
-					{args: this.args}).raw, 
-				{
-					depends, 
-					renderer: this,
-				}) }).call(this) },
-	//*/
 	set text(value){
 		this.data = {text: value} },
 		//this.onTextUpdate(value) },

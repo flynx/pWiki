@@ -461,7 +461,6 @@ module.BaseParser = {
 	//		an await of something does not fix the issue, we need to await 
 	//		for something significant -- await this.parse('') works, while
 	//		await vars[name] does not -- to the contrary of the above example...
-	// XXX EXPERIMENTAL -- this seems to be slower than the original version...
 	expand: function(page, ast, state={}){
 		var that = this
 		ast = ast == null ?
@@ -519,67 +518,6 @@ module.BaseParser = {
 									.replace(/=/g, '&equals;')
 							+'")')] })
 				.sync() },
-	/*/ // XXX ASYNC
-	expand: async function*(page, ast, state={}){
-		try{
-			ast = ast == null ?
-					this.group(page, await page.raw ?? '')
-				: typeof(ast) != 'object' ?
-					this.group(page, ast)
-				: ast instanceof types.Generator ?
-					ast
-				: ast.iter()
-
-			while(true){
-				var {value, done} = ast.next()
-				if(done){
-					return }
-
-				// text block...
-				if(typeof(value) == 'string'){
-					yield value 
-					continue }
-
-				// macro...
-				var {name, args, body} = value
-				// nested macro -- skip...
-				if(typeof(page.macros[name]) != 'function'){
-					yield {...value, skip: true}
-					continue }
-
-				var res = 
-					await this.callMacro(page, name, args, body, state) 
-						?? ''
-
-				// result...
-				if(res instanceof Array 
-						|| page.macros[name] instanceof types.Generator){
-					yield* res
-				} else {
-					yield res } } 
-
-			// error...
-			}catch(err){
-				console.error(err)
-				yield page.parse(
-					// XXX add line number and page path...
-					'@include("./ParseError'
-						+':path='
-							// XXX use pwpath.encodeElem(..) ???
-							+ page.path 
-						+':msg='
-							+ err.message 
-								// quote html stuff...
-								.replace(/&/g, '&amp;')
-								.replace(/</g, '&lt;')
-								.replace(/>/g, '&gt;')
-								// quote argument syntax...
-								.replace(/["']/g, function(c){
-									return '%'+ c.charCodeAt().toString(16) })
-								.replace(/:/g, '&colon;')
-								.replace(/=/g, '&equals;')
-						+'")') } },
-	//*/
 
 	// recursively resolve and enumerate the ast...
 	//
@@ -596,7 +534,6 @@ module.BaseParser = {
 	// NOTE: <func>(..) is called in the context of page...
 	//
 	// XXX should this also resolve e.data???
-	//* XXX EXPERIMENTAL...
 	resolve: function(page, ast, state={}){
 		var that = this
 		ast = ast 
@@ -635,37 +572,6 @@ module.BaseParser = {
 			// keep the API consistently array-like...
 			ast.iter()
 			: ast },
-	/*/ // XXX ASYNC
-	resolve: async function*(page, ast, state={}){
-		ast = ast 
-			?? this.expand(page, null, state)
-		ast = typeof(ast) != 'object' ?
-			this.expand(page, ast, state)
-			: ast
-
-		// NOTE: we need to await for ast here as we need stage 2 of 
-		// 		parsing to happen AFTER everything else completes...
-		// XXX GENERATOR -- this breaks the parser...
-		//		...investigate the data flow...
-		//for await (var e of ast){
-		for(var e of await ast){
-			// expand delayed sections...
-			e = typeof(e) == 'function' ?
-				e.call(page, state)
-				: e
-			// expand arrays...
-			if(e instanceof Array 
-					| e instanceof types.Generator){
-				yield* this.resolve(page, e, state)
-			// data -- unwrap content...
-			} else if(e instanceof Object && 'data' in e){
-				yield { data: await this.resolve(page, e.data, state) }
-			// skipped items...
-			} else if(e instanceof Object && e.skip){
-				continue
-			} else {
-				yield e } } },
-	//*/
 
 	// Fully parse a page...
 	//
@@ -687,7 +593,6 @@ module.BaseParser = {
 	// 			a slot when loaded will replace the prior occurrences...
 	//
 	// XXX add a special filter to clear pending filters... (???)
-	//* XXX EXPERIMENTAL...
 	parse: function(page, ast, state={}){
 		var that = this
 		return this.resolve(page, ast, state)
@@ -723,43 +628,6 @@ module.BaseParser = {
 					: section ) })
 			.flat()
 			.join('') },
-	/*/ // XXX ASYNC
-	parse: async function(page, ast, state={}){
-		var that = this
-		return await this.resolve(page, ast, state)
-			// filters...
-			.map(function(section){
-				// normalize types...
-				section = 
-					typeof(section) == 'number' ?
-						section + ''
-					: section == null ?
-						''
-					: section
-				return (
-					// expand section...
-					typeof(section) != 'string' ?
-						section.data
-					// global filters... 
-					: state.filters ?
-						that.normalizeFilters(state.filters)
-							.reduce(function(res, filter){
-								// unknown filter...
-								// NOTE: we try not to break on user errors
-								// 		if we can help it...
-								if(page.filters[filter] == null){
-									console.warn(
-										'.parse(..): unsupported filter: '+ filter) 
-									return res }
-								// NOTE: if a filter returns falsy then it 
-								// 		will have no effect on the result...
-								return page.filters[filter].call(page, res) 
-									?? res }, section)
-					// no global filters...
-					: section ) })
-			.flat()
-			.join('') },
-	//*/
 }
 
 var parser =
