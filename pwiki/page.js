@@ -2593,7 +2593,9 @@ module.System = {
 				</sup>
 				(<a href="#@var(path)/list">@include(./*/length/!)</a>)
 				&nbsp;
-				<a href="#@var(path)/delete">&times;</a>
+				<a class="show-on-hover" 
+					href="javascript:pwiki.delete('@var(path)')"
+					>&times;</a>
 			</macro>` },
 	// XXX this is really slow...
 	// XXX need to handle count/offset arguments correctly...
