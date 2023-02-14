@@ -226,6 +226,11 @@ object.Constructor('JournalDB', {
 // 			.load(..)
 //
 //
+// NOTE: the level 2 read API is designed to be sync/async, i.e. if an 
+// 		underlying L1 method returns a promise the L2 method will also 
+// 		return a promise but if L1 is sync and returns an explicit value 
+// 		the L2 will also return an explicit value.
+// 		(use ig-types' Promise.awaitOrRun(..) to make this transparent)
 // NOTE: store keys must be normalized to avoid conditions where two
 // 		forms of the same path exist at the same time...
 //
@@ -1531,6 +1536,13 @@ var metaProxy =
 function(name, pre, post){
 	var func = function(path, ...args){
 		var that = this
+		path = pre ?
+			pre.call(this, path, ...args)
+			: path
+
+		// XXX this is mesurably faster than .awaitOrRun(..) while the 
+		// 		code in return is about the same or faster than the 
+		// 		non .awaitOrRun(..) version for some reason...
 		var _do = function(path){
 			var res
 			var p = that.substore(path)
@@ -1541,20 +1553,15 @@ function(name, pre, post){
 					...args) }
 			return res 
 				?? object.parentCall(MetaStore[name], that, ...arguments) }
-
-		path = pre ?
-			pre.call(this, path, ...args)
-			: path
-
 		var res = path instanceof Promise ?
 			path.then(_do)
 			: _do(path)
 
 		return post ?
-			(res instanceof Promise ?
-				res.then(function(res){
+			Promise.awaitOrRun(
+				res,
+				function(res){
 					return post.call(that, res, path, ...args) })
-				: post.call(this, res, path, ...args))
 			: res }
 	Object.defineProperty(func, 'name', {value: name})
 	return func }

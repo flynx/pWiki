@@ -246,6 +246,26 @@ object.Constructor('BasePage', {
 	get isPattern(){
 		return this.path.includes('*') },
 
+	// XXX EXPERIMENTAL...
+	get ctime(){
+		var that = this
+		return Promise.awaitOrRun(
+			this.data,
+			function(data){
+				var t = (data ?? {}).ctime
+				return t ?
+					new Date(t).getTimeStamp()
+					: t }) },
+	get mtime(){
+		var that = this
+		return Promise.awaitOrRun(
+			this.data,
+			function(data){
+				var t = (data ?? {}).mtime
+				return t ?
+					new Date(t).getTimeStamp()
+					: t }) },
+	/*/ // XXX ASYNC...
 	get ctime(){ return async function(){
 		var t = ((await this.data) ?? {}).ctime
 		return t ?
@@ -256,6 +276,7 @@ object.Constructor('BasePage', {
 		return t ?
 			new Date(t).getTimeStamp()
 			: t }.call(this) },
+	//*/
 	
 	// store interface...
 	//
@@ -435,7 +456,22 @@ object.Constructor('BasePage', {
 
 	// relative proxies to store...
 	exists: relProxy('exists'), 
-	match: relMatchProxy('match'), 
+	// XXX which match should we use???
+	//match: relMatchProxy('match'), 
+	match: function(path='.', strict=false){
+		var that = this
+		if(path === true || path === false){
+			strict = path
+			path = '.' }
+		path = pwpath.relative(this.path, path)
+		return Promise.awaitOrRun(
+			this.store.match(path, strict),
+			function(res){
+				return res.length == 0 ?
+					// XXX are we going outside of match semantics here???
+					that.store.find(path) 
+					: res }) },
+	/*/ // XXX ASYNC...
 	match: async function(path='.', strict=false){
 		if(path === true || path === false){
 			strict = path
@@ -596,6 +632,7 @@ object.Constructor('BasePage', {
 		for(var path of paths){
 			yield this.get('/'+ path) } },
 	//*/
+	// XXX is this correct here???
 	[Symbol.asyncIterator]: async function*(){
 		yield* this.each() },
 
