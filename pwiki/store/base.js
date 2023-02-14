@@ -1250,6 +1250,39 @@ module.BaseStore = {
 	// XXX should this return a map for pattern matches???
 	__get__: function(key){
 		return this.data[key] },
+	// XXX EXPERIMENTAL looks a bit convoluted...
+	get: function(path, strict=false, energetic=false){
+		var that = this
+		path = pwpath.sanitize(path, 'string')
+		var path = pwpath.splitArgs(path).path
+		var _path = path
+		path = Promise.awaitOrRun(
+			path.includes('*') 
+				&& (energetic == true ?
+					this.find(path)
+					: this.isEnergetic(path)),
+			function(p){
+				return p
+					|| that.resolve(_path, strict) })
+		return Promise.awaitOrRun(
+			path,
+			function(path){
+				return path instanceof Array ?
+					// XXX should we return matched paths???
+					Promise.iter(path)
+						.map(function(p){
+							// NOTE: p can match a non existing page at this point, 
+							// 		this can be the result of matching a/* in a a/b/c
+							// 		and returning a a/b which can be undefined...
+							return that.get(p, strict) })
+						.sync()
+					: Promise.awaitOrRun(
+						that.__get__(path),
+						function(res){
+							return res 
+								?? ((that.next || {}).get 
+									&& that.next.get(path, strict)) }) }) },
+	/*/ // XXX ASYNC...
 	get: async function(path, strict=false, energetic=false){
 		var that = this
 		path = pwpath.sanitize(path, 'string')
@@ -1259,7 +1292,6 @@ module.BaseStore = {
 				await this.find(path)
 				: await this.isEnergetic(path))
 			|| await this.resolve(path, strict)
-		//*/
 		return path instanceof Array ?
 			// XXX should we return matched paths???
    			Promise.iter(path)
@@ -1271,11 +1303,24 @@ module.BaseStore = {
 			: (await this.__get__(path) 
 				?? ((this.next || {}).get 
 					&& this.next.get(path, strict))) },
+	//*/
 
+	// XXX EXPERIMENTAL looks a bit convoluted...
+	isEnergetic: function(path){
+		var that = this
+		return Promise.awaitOrRun(
+			this.find(path),
+			function(p){
+				return Promise.awaitOrRun(
+					that.get(p, true),
+					function(e){
+						return !!(e ?? {}).energetic && p }) }) },
+	/*/ // XXX ASYNC...
 	isEnergetic: async function(path){
 		var p = await this.find(path)
 		return !!(await this.get(p, true) ?? {}).energetic 
 			&& p },
+	//*/
 
 	//
 	// 	Get metadata...
@@ -1294,6 +1339,27 @@ module.BaseStore = {
 	// 		and does not try to acquire a target page.
 	// NOTE: setting/removing metadata is done via .update(..) / .delete(..)
 	// NOTE: this uses .__get__(..) internally...
+	// XXX EXPERIMENTAL
+	metadata: function(path, ...args){
+		var that = this
+		path = pwpath.splitArgs(path).path
+		// set...
+		if(args.length > 0){
+			return this.update(path, ...args) }
+		// get...
+		return Promise.awaitOrRun(
+			this.exists(path),
+			function(path){
+				return path
+					&& Promise.awaitOrRun(
+						that.__get__(path),
+						function(res){
+							return res 
+								?? Promise.awaitOrRun(
+									that.next.metadata(path),
+							   		function(res){
+										return res || undefined }) }) }) },
+	/*/ // XXX ASYNC...
 	metadata: async function(path, ...args){
 		path = pwpath.splitArgs(path).path
 		// set...
@@ -1306,6 +1372,7 @@ module.BaseStore = {
 				?? (this.next 
 					&& await this.next.metadata(path)))
 			|| undefined },
+	//*/
 
 	// NOTE: deleting and updating only applies to explicit matching 
 	// 		paths -- no page acquisition is performed...
@@ -1583,6 +1650,26 @@ module.MetaStore = {
 				: s ?
 					pwpath.join(s, res)
 				: res }), 
+	// XXX EXPERIMENTAL
+	get: function(path, strict=false){
+		var that = this
+		var args = [...arguments]
+		return Promise.awaitOrRun(
+			this.resolve(path, strict),
+			function(path){
+				if(path == undefined){
+					return }
+				var p = that.substore(path)
+				return Promise.awaitOrRun(
+					p ?
+						that.substores[p].get(
+							path.slice(path.indexOf(p) + p.length),
+							true)
+						: undefined,
+					function(res){
+						return res 
+							?? object.parentCall(MetaStore.get, that, ...args) }) }) },
+	/*/ // XXX ASYNC...
 	get: async function(path, strict=false){
 		path = await this.resolve(path, strict) 
 		if(path == undefined){
@@ -1591,10 +1678,11 @@ module.MetaStore = {
 		var p = this.substore(path)
 		if(p){
 			res = await this.substores[p].get(
-				path.slice(path.indexOf(p)+p.length),
+				path.slice(path.indexOf(p) + p.length),
 				true) }
 		return res 
 			?? object.parentCall(MetaStore.get, this, ...arguments) },
+	//*/
 	// XXX can't reach .next on get but will cheerfully mess things up 
 	// 		on set (creating a local page)...
 	// 		...should copy and merge...
@@ -1686,10 +1774,20 @@ module.CachedStore = {
 				: false)
 			|| object.parentCall(CachedStore.exists, this, ...arguments) },
 	// XXX this sometimes caches promises...
+	// XXX EXPERIMENTAL
+	get: function(path){
+		var that = this
+		return this.cache[path] 
+			?? Promise.awaitOrRun(
+				object.parentCall(CachedStore.get, this, ...arguments),
+				function(res){
+					return (that.cache[path] = res) }) },
+	/*/ // XXX ASYNC...
 	get: async function(path){
 		return this.cache[path] 
 			?? (this.cache[path] = 
 				await object.parentCall(CachedStore.get, this, ...arguments)) },
+	//*/
 	__update: async function(path, data){
 		var that = this
 		delete this.cache[path]
