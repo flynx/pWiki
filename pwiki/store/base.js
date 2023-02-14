@@ -886,6 +886,27 @@ module.BaseStore = {
 		//
 		// NOTE: handlers are run in order of definition.
 		//
+		// XXX EXPERIMENTAL
+		tags: function(tags){
+			var that = this
+			tags = typeof(tags) == 'string' ?
+				this.parseTags(tags)
+				: false
+			return Promise.awaitOrRun(
+				tags 
+					&& this.tags,
+				function(tags){
+					return tags 
+						&& function(path){
+							// tags -> skip untagged pages...
+							var t = this.tags.paths[path]
+							if(!t){
+								return false }
+							for(var tag of tags){
+								if(!t || !t.has(tag)){
+									return false } } 
+							return true } }) },
+		/*/ // XXX ASYNC...
 		tags: async function(tags){
 			tags = typeof(tags) == 'string' ?
 				this.parseTags(tags)
@@ -901,6 +922,7 @@ module.BaseStore = {
 						if(!t || !t.has(tag)){
 							return false } } 
 					return true } },
+		//*/
 		search: async function(search){
 			search = search 
 				&& new Set(await this.search(search))
@@ -926,6 +948,27 @@ module.BaseStore = {
 					count--
 					return !!(count >= 0) } },
 	},
+	// XXX EXPERIMENTAL...
+	__match_args: function(args){
+		var that = this
+		var predicates = []
+		for(var [key, gen] of Object.entries(this.__match_args__ ?? {})){
+			var p = gen.call(this, args[key], args)
+			p && predicates.push(p) }
+		return Promise.awaitOrRun(
+			...predicates,
+			function(...predicates){
+				predicates = predicates
+					.filter(function(p){ return p })
+				return predicates.length > 0 ?
+					function(path){
+						for(var p of predicates){
+							if(!p.call(that, path)){
+								return false } }
+						return true }
+					: undefined },
+			null) },
+	/*/ // XXX ASYNC...
 	__match_args: async function(args){
 		var that = this
 		var predicates = []
@@ -939,7 +982,12 @@ module.BaseStore = {
 						return false } }
 				return true }
 			: undefined },
-	match: async function(path, strict=false){
+	//*/
+	// XXX EXPERIMENTAL...
+	// 		to be sync this needs:
+	// 			.__match_args(..) -- DONE
+	// 			.metadata(..)
+	match: function(path, strict=false){
 		var that = this
 		// pattern match * / **
 		if(path.includes('*') 
@@ -954,10 +1002,14 @@ module.BaseStore = {
 					?? !(args.sortnewfirst 
 						// default is sortnewlast...
 						?? false)
-			var test = await this.__match_args(args)
+
+			var test = this.__match_args(args)
 			args = pwpath.joinArgs('', args)
 
-			var order = (await this.metadata(path) ?? {}).order || []
+			var order = Promise.awaitOrRun(
+				this.metadata(path),
+				function(metadata){
+					return (metadata ?? {}).order || [] })
 
 			// NOTE: we are matching full paths only here so leading and 
 			// 		trainling '/' are optional...
@@ -970,58 +1022,149 @@ module.BaseStore = {
 					// 		dir for hidden tests...
 					.replace(/(^|\\\/+)(\\\.|)([^\/]*)\\\*/g, '$1$2($3[^\\/]*)')
 				+'(?=[\\/]|$)', 'g')
-			return [...(await this.paths)
-					// NOTE: we are not using .filter(..) here as wee 
-					// 		need to keep parts of the path only and not 
-					// 		return the whole thing...
-					.reduce(function(res, p){
-						// skip metadata paths...
-						if(p.includes('*')){
-							return res }
-						// check path: stage 1
-						var m = [...p.matchAll(pattern)]
-						var visible = m.length > 0
-							&& (!all ?
-								// test if we need to hide things....
-								m.reduce(function(res, m){
-									return res === false ?
-										res
-										: !/(^\.|[\\\/]\.)/.test(m[1])
-								}, true)
-								: true)
-						// args...
-						// NOTE: this needs to be between path checking 
-						// 		stages as we need to skip paths depending 
-						// 		on the all argument...
-						if(visible 
-								&& test 
-								&& !test(p)){
-							return res }
-						// check path: stage 2
-						visible
-							&& (m = m[0])
-							&& (!strict 
-								|| m[0] == p) 
-							&& res.add(
-								// normalize the path elements...
-								m[0][0] == '/' ? 
-									m[0].slice(1) 
-									: m[0])
-						return res }, new Set())]
-				// handle live sort...
-				.run(function(){
-					return (sort && sort !== true) ?
-						that
-							.sort(this, ...sort.split(/\s*[,\s]+/g))
-						:this
-							.sortAs(order, 
-								newlast ? 
-									'head' 
-									: 'tail') })
-				.map(function(p){
-					return p+args })}
-		// direct search...
-		return this.find(path, strict) },
+			// XXX ASYNC...
+			return Promise.awaitOrRun(
+				this.paths,
+				test,
+				order,
+				function(paths, test, order){
+					return [...paths
+						// NOTE: we are not using .filter(..) here as wee 
+						// 		need to keep parts of the path only and not 
+						// 		return the whole thing...
+						.reduce(function(res, p){
+							// skip metadata paths...
+							if(p.includes('*')){
+								return res }
+							// check path: stage 1
+							var m = [...p.matchAll(pattern)]
+							var visible = m.length > 0
+								&& (!all ?
+									// test if we need to hide things....
+									m.reduce(function(res, m){
+										return res === false ?
+											res
+											: !/(^\.|[\\\/]\.)/.test(m[1])
+									}, true)
+									: true)
+							// args...
+							// NOTE: this needs to be between path checking 
+							// 		stages as we need to skip paths depending 
+							// 		on the all argument...
+							if(visible 
+									&& test 
+									&& !test(p)){
+								return res }
+							// check path: stage 2
+							visible
+								&& (m = m[0])
+								&& (!strict 
+									|| m[0] == p) 
+								&& res.add(
+									// normalize the path elements...
+									m[0][0] == '/' ? 
+										m[0].slice(1) 
+										: m[0])
+							return res }, new Set())]
+					// handle live sort...
+					.run(function(){
+						return (sort && sort !== true) ?
+							that
+								.sort(this, ...sort.split(/\s*[,\s]+/g))
+							: this
+								.sortAs(order, 
+									newlast ? 
+										'head' 
+										: 'tail') })
+					.map(function(p){
+						return p+args }) }) }
+			// direct search...
+			return this.find(path, strict) },
+	// // XXX ASYNC...
+//	match: async function(path, strict=false){
+//		var that = this
+//		// pattern match * / **
+//		if(path.includes('*') 
+//				|| path.includes('**')){
+//			var {path, args} = pwpath.splitArgs(path)
+//			path = pwpath.sanitize(path)
+//
+//			var all = args.all
+//			var sort = args.sort
+//			var newlast = 
+//				args.sortnewlast 
+//					?? !(args.sortnewfirst 
+//						// default is sortnewlast...
+//						?? false)
+//			var test = await this.__match_args(args)
+//			args = pwpath.joinArgs('', args)
+//
+//			var order = (await this.metadata(path) ?? {}).order || []
+//
+//			// NOTE: we are matching full paths only here so leading and 
+//			// 		trainling '/' are optional...
+//			var pattern = new RegExp(`^\\/?`
+//				+RegExp.quoteRegExp(path)
+//					// pattern: **
+//					.replace(/\\\*\\\*/g, '(.*)')
+//					// pattern: *
+//					// NOTE: we are prepping the leading '.' of a pattern 
+//					// 		dir for hidden tests...
+//					.replace(/(^|\\\/+)(\\\.|)([^\/]*)\\\*/g, '$1$2($3[^\\/]*)')
+//				+'(?=[\\/]|$)', 'g')
+//			return [...(await this.paths)
+//					// NOTE: we are not using .filter(..) here as wee 
+//					// 		need to keep parts of the path only and not 
+//					// 		return the whole thing...
+//					.reduce(function(res, p){
+//						// skip metadata paths...
+//						if(p.includes('*')){
+//							return res }
+//						// check path: stage 1
+//						var m = [...p.matchAll(pattern)]
+//						var visible = m.length > 0
+//							&& (!all ?
+//								// test if we need to hide things....
+//								m.reduce(function(res, m){
+//									return res === false ?
+//										res
+//										: !/(^\.|[\\\/]\.)/.test(m[1])
+//								}, true)
+//								: true)
+//						// args...
+//						// NOTE: this needs to be between path checking 
+//						// 		stages as we need to skip paths depending 
+//						// 		on the all argument...
+//						if(visible 
+//								&& test 
+//								&& !test(p)){
+//							return res }
+//						// check path: stage 2
+//						visible
+//							&& (m = m[0])
+//							&& (!strict 
+//								|| m[0] == p) 
+//							&& res.add(
+//								// normalize the path elements...
+//								m[0][0] == '/' ? 
+//									m[0].slice(1) 
+//									: m[0])
+//						return res }, new Set())]
+//				// handle live sort...
+//				.run(function(){
+//					return (sort && sort !== true) ?
+//						that
+//							.sort(this, ...sort.split(/\s*[,\s]+/g))
+//						:this
+//							.sortAs(order, 
+//								newlast ? 
+//									'head' 
+//									: 'tail') })
+//				.map(function(p){
+//					return p+args })}
+//		// direct search...
+//		return this.find(path, strict) },
+	//*/
 	//
 	// 	.resolve(<path>)
 	// 		-> <path>
@@ -1039,6 +1182,32 @@ module.BaseStore = {
 	// 			-> ['System/tree', 'Dir/tree', ...]
 	//
 	// XXX should this be used by .get(..) instead of .match(..)???
+	// XXX EXPERIMENTAL
+	// 		to be sync requires:
+	// 			.match(..)
+	resolve: function(path, strict){
+		// pattern match * / **
+		if(path.includes('*') 
+				|| path.includes('**')){
+			var p = pwpath.splitArgs(path)
+			var args = pwpath.joinArgs('', p.args)
+			p = pwpath.split(p.path)
+			var tail = []
+			while(!p.at(-1).includes('*')){
+				tail.unshift(p.pop()) }
+			tail = tail.join('/')
+			if(tail.length > 0){
+				return Promise
+					.iter(this.match(
+						p.join('/') + args, 
+						strict))
+					.map(function(p){
+						var {path, args} = pwpath.splitArgs(p)
+						return pwpath.joinArgs(pwpath.join(path, tail), args) })
+		   			.sync() } }
+		// direct...
+		return this.match(path, strict) },
+	/*/ // XXX ASYNC...
 	resolve: async function(path, strict){
 		// pattern match * / **
 		if(path.includes('*') 
@@ -1059,6 +1228,7 @@ module.BaseStore = {
 						return pwpath.joinArgs(pwpath.join(path, tail), args) }) } }
 		// direct...
 		return this.match(path, strict) },
+	//*/
 	// 
 	// 	Resolve page
 	// 	.get(<path>)

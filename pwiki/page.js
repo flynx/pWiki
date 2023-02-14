@@ -541,6 +541,40 @@ object.Constructor('BasePage', {
 			}) },
 
 	// XXX should this be an iterator???
+	// XXX EXPERIMENTAL...
+	// 		to be sync this needs:
+	// 			.energetic
+	// 			.store.isEnergetic(..)
+	// 			.resolve(..) -> .store.resolve(..)
+	each: function(path){
+		var that = this
+		// NOTE: we are trying to avoid resolving non-pattern paths unless 
+		// 		we really have to...
+		path = path ?
+			pwpath.relative(this.path, path)
+			: this.location
+		var paths = path.includes('*') ?
+			Promise.awaitOrRun(
+				this.energetic,
+				this.store.isEnergetic(path),
+				function(a, b){
+					return !(a || b) ?
+						that.resolve(path)
+						: path })
+			: path
+		paths = Promise.awaitOrRun(
+			paths,
+			function(paths){
+				return (paths instanceof Array 
+							|| paths instanceof Promise) ?
+						paths
+					: [paths] })
+		return Promise.iter(
+			paths,
+			function(path){
+				return that.get('/'+ path) })
+			.sync() },
+	/*/ // XXX ASYNC...
 	each: async function*(path){
 		// NOTE: we are trying to avoid resolving non-pattern paths unless 
 		// 		we really have to...
@@ -561,14 +595,15 @@ object.Constructor('BasePage', {
 			: [paths]
 		for(var path of paths){
 			yield this.get('/'+ path) } },
+	//*/
 	[Symbol.asyncIterator]: async function*(){
 		yield* this.each() },
 
-	map: async function(func){
+	map: function(func){
 		return this.each().map(func) },
-	filter: async function(func){
+	filter: function(func){
 		return this.each().filter(func) },
-	reduce: async function(func, dfl){
+	reduce: function(func, dfl){
 		return this.each().reduce(func, dfl) },
 
 	// sorting...
@@ -1842,6 +1877,52 @@ object.Constructor('Page', BasePage, {
 	// 		actions...
 	//
 	// XXX revise name...
+	/*/ XXX EXPERIMENTAL
+	asPages: function(path='.:$ARGS', strict=false){
+		// options...
+		var args = [...arguments]
+		var opts = typeof(args.at(-1)) == 'object' ?
+			args.pop()
+			: {}
+		var {path, strict} = {
+			...opts,
+			path: typeof(args[0]) == 'string' ?
+				args.shift()
+				: '.:$ARGS',
+			strict: args.shift() 
+				?? false,
+		}
+
+		var page = this.get(path, strict)
+		// each...
+		if(page.isPattern){
+			return page.each()
+		// handle lists in pages (actions, ... etc.)...
+		} else {
+			return Promise.awaitOrRun(
+				page.data,
+				function(data){
+					data = 
+						data instanceof types.Generator ?
+							// XXX
+							//await data()
+							data()
+						: typeof(data) == 'function' ?
+							data
+						: data && 'text' in data ?
+							data.text
+						: null
+					if(data instanceof Array
+							|| data instanceof types.Generator){
+						return data
+							.map(function(p){
+								return page.virtual({text: p}) }) }
+					// do not iterate pages/actions that are undefined...
+					if(data == null){
+						return }
+
+					return page }) } },
+	/*/ // XXX ASYNC...
 	asPages: async function*(path='.:$ARGS', strict=false){
 		// options...
 		var args = [...arguments]
@@ -1883,6 +1964,7 @@ object.Constructor('Page', BasePage, {
 				return }
 
 			yield page } },
+	//*/
 
 	// expanded page text...
 	//
