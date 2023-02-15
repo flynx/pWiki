@@ -554,7 +554,7 @@ module.BaseParser = {
 							: e
 						// expand arrays...
 						if(e instanceof Array 
-								| e instanceof types.Generator){
+								|| e instanceof types.Generator){
 							return that.resolve(page, e, state)
 						// data -- unwrap content...
 						} else if(e instanceof Object && 'data' in e){
