@@ -987,6 +987,18 @@ object.Constructor('Page', BasePage, {
 		// 		<filter> <filter-spec>
 		// 		| -<filter> <filter-spec>
 		//
+		// XXX BUG: this does not show any results:
+		//			pwiki.parse('<filter test>moo test</filter>')
+		//				-> ''
+		//		while these do:
+		//    		pwiki.parse('<filter test/>moo test')
+		//				-> 'moo TEST'
+		//			await pwiki.parse('<filter test>moo test</filter>@var()')
+		//				-> 'moo TEST'
+		//		for more info see:
+		//			file:///L:/work/pWiki/pwiki2.html#/Editors/Results
+		//		XXX do we fix this or revise how/when filters work???
+		//			...including accounting for variables/expansions and the like...
 		// XXX REVISE...
 		filter: function(args, body, state, expand=true){
 			var that = this
