@@ -547,6 +547,14 @@ module.BaseParser = {
 			ast,
 			function(ast){
 				return ast
+					// XXX in case of @filter(..) can be a function that 
+					// 		returns a promise...
+					// 		...on a sync action this promise does not get a 
+					// 		chance to resolve, and thus its value is lost...
+					// 		...should this be fixed here or in filter??? 
+					// 			fixing it here -- mark and wrap ast in 
+					// 			Promise's .all(..), .iter(..) or .seqiter(..)
+					// 		...I'm leaning to fixing this in @filter(..)
 					.map(function(e){
 						// expand delayed sections...
 						e = typeof(e) == 'function' ?
