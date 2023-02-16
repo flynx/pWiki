@@ -254,16 +254,88 @@ module = {
 	//
 	// NOTE: if seen is given (when called recursively) this will not 
 	// 		search for .ALTERNATIVE_PAGES...
-	// NOTE: this will search for basename and each subpath, e.g:
-	// 			a/b/c	
-	// 				-> a/b/c/d
-	// 				-> a/c/d
-	// 				-> c/d
-	// 				-> d
-	// 				// now search for 'c/d'...
-	// 				-> a/c/d
-	// 				-> ...
 	// XXX should we keep the trailing '/'???
+	// XXX EXPERIMENTAL...
+	paths: function*(path='/', strict=false, seen=new Set()){
+		if(path === true || path === false){
+			strict = path
+			path = '/' }
+		if(strict instanceof Set){
+			seen = strict
+			strict = false }
+		var alt_pages = !strict
+		path = this.normalize(path, 'string')
+		// special case: root...
+		if(path == '/' || path == ''){
+			// normalize...
+			path = '/'
+			// as-is...
+			seen.add(path)
+			yield path
+			// special case: root page...
+			if(this.ROOT_PAGE){
+				yield* this.paths(this.normalize('/'+ this.ROOT_PAGE, 'string'), seen) }}
+		// NOTE: since path is already normalized we can trust the delimiter...
+		path = path.split(/\//g)
+		// normalize relative paths to root...
+		path[0] != ''
+			&& path.unshift('')
+		// paths ending in '/'...
+		if(path[path.length-1] == ''){
+			path.pop()
+			this.INDEX_PAGE
+				&& path.push(this.INDEX_PAGE) }
+
+		var searchPath = function*(path, search_paths){
+			// full path...
+			var p = this.normalize(['', ...path], 'string')
+			if(!seen.has(p)){
+				seen.add(p)
+				yield p }
+
+			path = path.slice()
+			search_paths = search_paths instanceof Array ?
+				search_paths
+				: [search_paths]
+			// search up the levels... 
+			var cur, sub, sub_cur
+			do{
+				cur = [path.pop(), ...(cur ?? [])]
+				sub = cur.slice()
+				sub_cur = []
+				// template paths...
+				for(var tpl of search_paths){
+					// search the sub paths in the template dir...
+					var parent = ['', ...path]
+					do{
+						sub_cur = [sub.pop(), ...(sub_cur ?? [])] 
+						p = this.relative(parent, tpl +'/'+ sub_cur.join('/'), 'string')
+						if(!seen.has(p)){
+							seen.add(p)
+							yield p }
+					}while(sub.length > 0)
+				}
+				// search the sub paths in the parent dir...
+				parent = parent.length > 1 ?
+					parent.slice(0, -1)
+					: parent
+				sub = cur.slice()
+				sub_cur = []
+				do{
+					sub_cur = [sub.pop(), ...(sub_cur ?? [])] 
+					p = this.relative(parent, sub_cur.join('/'), 'string')
+					if(!seen.has(p)){
+						seen.add(p)
+						yield p }
+				}while(sub.length > 0)
+			}while(path.length > 0) }.bind(this)
+
+		yield* searchPath(path, this.SEARCH_PATHS)
+		yield* searchPath(path, this.SYSTEM_PATH)
+		if(alt_pages){
+			for(var page of [...this.ALTERNATIVE_PAGES]){
+				yield* this.paths(path.slice(0, -1).concat(page), true, seen) } } },
+	/*/
 	paths: function*(path='/', strict=false){
 		if(path === true || path === false){
 			strict = path
@@ -320,6 +392,7 @@ module = {
 		if(alt_pages){
 			for(var page of [...this.ALTERNATIVE_PAGES]){
 				yield* this.paths(path.concat(page), seen) }} },
+	//*/
 
 	names: function(path='/'){
 		path = path == '' ?

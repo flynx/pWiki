@@ -759,8 +759,9 @@ module.BaseStore = {
 							// async attr...
 							: typeof(cmp) == 'string' ?
 								// NOTE: we only get page data once per page...
-								(d = d ?? that.get(p))
-									.then(function(data){
+								Promise.awaitOrRun(
+									(d = d ?? that.get(p)),
+									function(data){
 										return data[cmp] })
 							: null)) }
 				_async = _async || !!d
