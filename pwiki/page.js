@@ -1027,8 +1027,21 @@ object.Constructor('Page', BasePage, {
 					// 		escapes it from parsing...
 					: [body]
 
+				return function(state){
+					// XXX can we loose stuff from state this way???
+					// 		...at this stage it should more or less be static -- check!
+					return Promise.awaitOrRun(
+						this.__parser__.parse(this, ast, {
+							...state,
+							filters: local.includes(this.ISOLATED_FILTERS) ?
+								local
+								: [...outer, ...local],
+						}),
+						function(res){
+							return {data: res} }) }
+				/*/ // XXX ASYNC...
 				return async function(state){
-					// XXX can we lose stuff from state this way???
+					// XXX can we loose stuff from state this way???
 					// 		...at this stage it should more or less be static -- check!
 					var res = 
 						await this.__parser__.parse(this, ast, {
@@ -1038,6 +1051,7 @@ object.Constructor('Page', BasePage, {
 								: [...outer, ...local],
 						})
 					return {data: res} }
+				//*/
 
 			// global filters...
 			} else {
