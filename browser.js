@@ -44,6 +44,8 @@ module.store = {
 }
 //*/
 
+console.log('---', page.Config)
+
 module.setup = 
 Promise.all([
 	// static stores...

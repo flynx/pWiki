@@ -541,40 +541,46 @@ module.BaseParser = {
 		ast = typeof(ast) != 'object' ?
 			this.expand(page, ast, state)
 			: ast
-		// XXX .awaitOrRun(..) will check inside the array for promises, do 
+		// XXX .awaitOrRun(..) will check inside the input array for promises, do 
 		// 		we need to do this???
 		ast = Promise.awaitOrRun(
 			ast,
 			function(ast){
+				var async_content = false
 				return ast
-					// XXX in case of @filter(..) can be a function that 
-					// 		returns a promise...
-					// 		...on a sync action this promise does not get a 
-					// 		chance to resolve, and thus its value is lost...
-					// 		...should this be fixed here or in filter??? 
-					// 			fixing it here -- mark and wrap ast in 
-					// 			Promise's .all(..), .iter(..) or .seqiter(..)
-					// 		...I'm leaning to fixing this in @filter(..)
 					.map(function(e){
 						// expand delayed sections...
 						e = typeof(e) == 'function' ?
 							e.call(page, state)
 							: e
+						// promise...
+						if(e instanceof Promise){
+							async_content = true
+							return e
 						// expand arrays...
-						if(e instanceof Array 
+						} else if(e instanceof Array 
 								|| e instanceof types.Generator){
 							return that.resolve(page, e, state)
 						// data -- unwrap content...
 						} else if(e instanceof Object && 'data' in e){
-							return Promise.awaitOrRun(
+							var res = Promise.awaitOrRun(
 								that.resolve(page, e.data, state),
 								function(e){
 									return { data: e } })
+							res instanceof Promise
+								&& (async_content = true)
+							return res
 						// skipped items...
 						} else if(e instanceof Object && e.skip){
 							return []
 						} else {
 							return [e] } })
+					// NOTE: if we still have promises in the ast, wrap the 
+					// 		whole thing in a promise...
+					.run(function(){
+						return async_content ?
+								Promise.iter(this)
+								: this })
 					.flat() })
 		return ast instanceof Promise ?
 			// keep the API consistently array-like...
