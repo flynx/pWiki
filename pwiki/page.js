@@ -1445,6 +1445,8 @@ object.Constructor('Page', BasePage, {
 		// NOTE: var value is parsed only on assignment and not on dereferencing...
 		//
 		// XXX should alpha/Alpha be 0 (current) or 1 based???
+		// XXX do we need a default attr???
+		// 		...i.e. if not defined set to ..
 		// XXX INC_DEC do we need inc/dec and parent???
 		'var': Macro(
 			['name', 'text', 
@@ -2848,21 +2850,21 @@ module.Templates = {
 	// XXX for some reason this does not list files...
 	FlatNotes: {
 		text: object.doc`
-		@var(template FlatNotes/EmptyPage)
+		@var(editor_template FlatNotes/EmptyPage)
 
 		<slot title/>
-		<slot header><content/><a href="#./$NOW/edit:template=@var(template)">&#128462;</a></slot>
+		<slot header><content/><a href="#./$NOW/edit:template=@var(editor_template)">&#128462;</a></slot>
 		<macro src="*:sort=-mtime:$ARGS" strict>
 			@var(path "@source(s ./path)")
 			<div class="item">
-				<a href="#@var(path)/edit:template=@var(template)">@source(./title/quote)</a>
+				<a href="#@var(path)/edit:template=@var(editor_template)">@source(./title/quote)</a>
 				<a class="show-on-hover" href="#@var(path)/info">&#128712;</a>
 				<a class="show-on-hover" 
 					href="javascript:pwiki.delete('@var(path)')"
 					>&times;</a>
 			</div>
 			<else>
-				<a href="#./$NOW/edit:template=@var(template)" class="placeholder">Empty</a>
+				<a href="#./$NOW/edit:template=@var(editor_template)" class="placeholder">Empty</a>
 			</else>
 		</macro>` },
 	// XXX this is not resolved...
