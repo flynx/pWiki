@@ -1235,15 +1235,17 @@ object.Constructor('Page', BasePage, {
 		// NOTE: the filter argument uses the same filters as @filter(..)
 		//
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
+		// XXX should join/else be sub-tags???
 		quote: Macro(
-			['src', 'filter', 'text', 'join', 
-				['s', 'expandactions']],
+			['src', 'filter', 'text', 'join', 'else',
+				['s', 'expandactions', 'strict']],
 			async function*(args, body, state){
 				var src = args.src //|| args[0]
 				var base = this.get(this.path.split(/\*/).shift())
 				var text = args.text 
 					?? body 
 					?? []
+				var strict = args.strict ?? false
 				// parse arg values...
 				src = src ? 
 					await base.parse(src, state)
@@ -1269,14 +1271,20 @@ object.Constructor('Page', BasePage, {
 						(!expandactions 
 								&& await this.get(src).type == 'action' ?
 							base.get(this.QUOTE_ACTION_PAGE)
-							: this.get(src).asPages())
+							: await this.get(src).asPages(strict))
 					: text instanceof Array ?
 						[text.join('')]
 					: typeof(text) == 'string' ?
 						[text]
 					: text
+				// else...
+				pages = ((!pages
+				   			|| pages.length == 0)	
+						&& args['else']) ?
+					base.parse(args['else'], state)
+					: pages
 				// empty...
-				if(!pages){
+				if(!pages || pages.length == 0){
 					return }
 
 				var join = args.join 
@@ -1656,6 +1664,7 @@ object.Constructor('Page', BasePage, {
 					('strict' in args ?
 							args.strict 
 							: iargs.strict)
+						//?? true
 						?? false
 				var isolated = 
 					('isolated' in args ?
@@ -2481,7 +2490,7 @@ module.System = {
 						wikiwords="no"
 						contenteditable
 						oninput="saveLiveContent(\'@source(s ./path)\', this.innerText)"
-					><quote filter="quote-tags" src="."/></pre> 
+					><quote filter="quote-tags" src="@arg(template .)"/></pre> 
 			</macro>
 			<macro editor join="@source(file-separator)">
 				@macro(titleeditor .)
@@ -2495,7 +2504,7 @@ module.System = {
 			<slot location>@source(../location/quote/!)</slot>
 			<slot edit/>
 			<slot content>
-				<macro editor src=".."/>
+				<macro editor src=".." />
 			</slot>`},
 	// XXX EXPERIMENTAL...
 	ed: {
@@ -2839,20 +2848,25 @@ module.Templates = {
 	// XXX for some reason this does not list files...
 	FlatNotes: {
 		text: object.doc`
+		@var(template FlatNotes/EmptyPage)
+
 		<slot title/>
-		<slot header><content/><a href="#./$NOW/edit">&#128462;</a></slot>
-		<macro src="*:$ARGS">
+		<slot header><content/><a href="#./$NOW/edit:template=@var(template)">&#128462;</a></slot>
+		<macro src="*:sort=-mtime:$ARGS" strict>
 			@var(path "@source(s ./path)")
 			<div class="item">
-				<a href="#@var(path)/edit">@source(./title/quote)</a>
+				<a href="#@var(path)/edit:template=@var(template)">@source(./title/quote)</a>
 				<a class="show-on-hover" href="#@var(path)/info">&#128712;</a>
 				<a class="show-on-hover" 
 					href="javascript:pwiki.delete('@var(path)')"
 					>&times;</a>
 			</div>
+			<else>
+				<a href="#./$NOW/edit:template=@var(template)" class="placeholder">Empty</a>
+			</else>
 		</macro>` },
 	// XXX this is not resolved...
-	'FlatNotes/.templates/EmptyPage': {text: ' '},
+	'FlatNotes/EmptyPage': {text: ' '},
 }
 
 var Test =
