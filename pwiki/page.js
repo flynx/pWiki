@@ -2492,7 +2492,11 @@ module.System = {
 						wikiwords="no"
 						contenteditable
 						oninput="saveLiveContent(\'@source(s ./path)\', this.innerText)"
-					><quote filter="quote-tags" src="@arg(template .)"/></pre> 
+					><quote 
+						filter="quote-tags" 
+						src="."
+						else="@source(@arg(template @slot(editor-template .)))"
+					/></pre> 
 			</macro>
 			<macro editor join="@source(file-separator)">
 				@macro(titleeditor .)
