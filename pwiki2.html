@@ -126,11 +126,16 @@ body:not(.loading) .page.spinner {
 }
 body.loading .page.spinner {
 	opacity: 0.9;
-	animation: fadein 1s 1;
+	animation: none;
 }
 body.loading .page.spinner span {
 	font-size: 4em;
+	/*
 	animation: loading 2s infinite ;
+	animation-delay: calc(0.2s * var(--i));
+	*/
+	transform: rotateY(90deg);
+	animation: loading-ninty 2s infinite ;
 	animation-delay: calc(0.2s * var(--i));
 }
 @keyframes fadein {
@@ -146,6 +151,14 @@ body.loading .page.spinner span {
 }
 @keyframes loading {
 	0%, 60% {
+		transform: rotateY(360deg);
+	}
+}
+@keyframes loading-ninty {
+	0% {
+		transform: rotateY(90deg);
+	}
+	98% {
 		transform: rotateY(360deg);
 	}
 }
