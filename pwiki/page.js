@@ -1080,6 +1080,7 @@ object.Constructor('Page', BasePage, {
 		// 		not 100% correct manner focusing on path depth and ignoring
 		// 		the context, this potentially can lead to false positives.
 		// XXX need a way to make encode option transparent...
+		// XXX store a page cache in state...
 		include: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],
