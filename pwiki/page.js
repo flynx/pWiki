@@ -2025,6 +2025,9 @@ object.Constructor('Page', BasePage, {
 
 					return page }) } },
 	/*/ // XXX ASYNC...
+	// XXX BUG: this does not respect strict of single pages if they do 
+	// 		not exist...
+	// 		...see: @macro(..) bug + .each(..)
 	asPages: async function*(path='.:$ARGS', strict=false){
 		// options...
 		var args = [...arguments]
