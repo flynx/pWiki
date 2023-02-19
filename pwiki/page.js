@@ -2028,6 +2028,7 @@ object.Constructor('Page', BasePage, {
 	// XXX BUG: this does not respect strict of single pages if they do 
 	// 		not exist...
 	// 		...see: @macro(..) bug + .each(..)
+	// 		FIXED: revise...
 	asPages: async function*(path='.:$ARGS', strict=false){
 		// options...
 		var args = [...arguments]
@@ -2049,6 +2050,10 @@ object.Constructor('Page', BasePage, {
 			yield* page
 		// handle lists in pages (actions, ... etc.)...
 		} else {
+			// page does not exist...
+			if(strict 
+					&& !(await page.exists())){
+				return }
 			var data = await page.data
 			data = 
 				data instanceof types.Generator ?
