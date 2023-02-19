@@ -577,15 +577,8 @@ object.Constructor('BasePage', {
 			}) },
 
 	// XXX should this be an iterator???
-	// XXX EXPERIMENTAL...
-	// 		to be sync this needs:
-	// 			.energetic
-	// 			.store.isEnergetic(..)
-	// 			.resolve(..) -> .store.resolve(..)
-	// XXX should this support strict mode???
 	each: function(path, strict){
 		var that = this
-		// XXX STRICT...
 		if(path === true || path === false){
 			strict = path
 			path = null }
@@ -615,7 +608,6 @@ object.Constructor('BasePage', {
 		return Promise.iter(
 			paths,
 			function(path){
-				// XXX STRICT...
 				return strict ?
 					Promise.awaitOrRun(
 						that.exists('/'+path),
@@ -624,32 +616,7 @@ object.Constructor('BasePage', {
 								that.get('/'+ path)
 								: [] })
 					: that.get('/'+ path) })
-				/*/ // XXX STRICT...
-				return that.get('/'+ path) })
-				//*/
 			.sync() },
-	/*/ // XXX ASYNC...
-	each: async function*(path){
-		// NOTE: we are trying to avoid resolving non-pattern paths unless 
-		// 		we really have to...
-		path = path ?
-			pwpath.relative(this.path, path)
-			: this.location
-		var paths = path.includes('*') 
-				// XXX ENERGETIC...
-				&& !(await this.energetic
-					// XXX test if energetic action...
-					|| await this.store.isEnergetic(path)) ?
-			this.resolve(path)
-			: path
-		paths = paths instanceof Array ? 
-				paths 
-			: paths instanceof Promise ?
-				await paths
-			: [paths]
-		for(var path of paths){
-			yield this.get('/'+ path) } },
-	//*/
 	// XXX is this correct here???
 	[Symbol.asyncIterator]: async function*(){
 		yield* this.each() },
@@ -1979,52 +1946,6 @@ object.Constructor('Page', BasePage, {
 	// 		actions...
 	//
 	// XXX revise name...
-	/*/ XXX EXPERIMENTAL
-	asPages: function(path='.:$ARGS', strict=false){
-		// options...
-		var args = [...arguments]
-		var opts = typeof(args.at(-1)) == 'object' ?
-			args.pop()
-			: {}
-		var {path, strict} = {
-			...opts,
-			path: typeof(args[0]) == 'string' ?
-				args.shift()
-				: '.:$ARGS',
-			strict: args.shift() 
-				?? false,
-		}
-
-		var page = this.get(path, strict)
-		// each...
-		if(page.isPattern){
-			return page.each()
-		// handle lists in pages (actions, ... etc.)...
-		} else {
-			return Promise.awaitOrRun(
-				page.data,
-				function(data){
-					data = 
-						data instanceof types.Generator ?
-							// XXX
-							//await data()
-							data()
-						: typeof(data) == 'function' ?
-							data
-						: data && 'text' in data ?
-							data.text
-						: null
-					if(data instanceof Array
-							|| data instanceof types.Generator){
-						return data
-							.map(function(p){
-								return page.virtual({text: p}) }) }
-					// do not iterate pages/actions that are undefined...
-					if(data == null){
-						return }
-
-					return page }) } },
-	/*/ // XXX ASYNC...
 	// XXX BUG: this does not respect strict of single pages if they do 
 	// 		not exist...
 	// 		...see: @macro(..) bug + .each(..)
@@ -2050,7 +1971,7 @@ object.Constructor('Page', BasePage, {
 			yield* page
 		// handle lists in pages (actions, ... etc.)...
 		} else {
-			// page does not exist...
+			// strict + page does not exist...
 			if(strict 
 					&& !(await page.exists())){
 				return }
@@ -2074,7 +1995,6 @@ object.Constructor('Page', BasePage, {
 				return }
 
 			yield page } },
-	//*/
 
 	// expanded page text...
 	//
@@ -2521,9 +2441,9 @@ module.System = {
 							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
 						@source(./title/quote)
 					</span>
-					@macro(src="." strict 
-						text=""
-						else="<sup>*</sup>")
+					@macro(src="." 
+						strict 
+						else='<span class="new-page-indicator">new</sup>')
 				</h1>
 			</macro>
 			<macro texteditor>
@@ -2705,7 +2625,9 @@ module.System = {
 
 			Path: [@source(../path/quote)]
 				(<a href="#../edit">edit</a>)<br>
-			Resolved path: [/@source(../resolved/quote)]<br>
+			<macro src=".." strict><else>
+				Resolved path: [/@source(../resolved/quote)]<br>
+			</else></macro>
 			Referrer: [@source(../referrer/quote)]<br>
 			Args: <args/><br>
 
@@ -2721,6 +2643,8 @@ module.System = {
 			ctime: @source(../ctime)<br>
 			mtime: @source(../mtime)<br>
 
+			<br>
+			Resolved text:
 			<hr>
 			<pre wikiwords="no"><quote filter="quote-tags" src=".."/></pre> ` },
 
