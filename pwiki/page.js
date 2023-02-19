@@ -582,8 +582,15 @@ object.Constructor('BasePage', {
 	// 			.energetic
 	// 			.store.isEnergetic(..)
 	// 			.resolve(..) -> .store.resolve(..)
-	each: function(path){
+	// XXX should this support strict mode???
+	each: function(path, strict){
 		var that = this
+		// XXX STRICT...
+		if(path === true || path === false){
+			strict = path
+			path = null }
+		strict = strict 
+			?? this.strict
 		// NOTE: we are trying to avoid resolving non-pattern paths unless 
 		// 		we really have to...
 		path = path ?
@@ -608,7 +615,18 @@ object.Constructor('BasePage', {
 		return Promise.iter(
 			paths,
 			function(path){
+				// XXX STRICT...
+				return strict ?
+					Promise.awaitOrRun(
+						that.exists('/'+path),
+						function(exists){
+							return exists ?
+								that.get('/'+ path)
+								: [] })
+					: that.get('/'+ path) })
+				/*/ // XXX STRICT...
 				return that.get('/'+ path) })
+				//*/
 			.sync() },
 	/*/ // XXX ASYNC...
 	each: async function*(path){
@@ -1586,6 +1604,7 @@ object.Constructor('Page', BasePage, {
 		// 				@macro(src="./resolved-page" else="no" text="yes" strict)
 		// 					-> yes
 		// 			should be "no"
+		// 			...this seems to effect non-pattern pages...
 		// XXX should macro:index be 0 or 1 (current) based???
 		// XXX SORT sorting not implemented yet...
 		macro: Macro(
@@ -1705,6 +1724,7 @@ object.Constructor('Page', BasePage, {
 						&& await base.parse(join, state)
 
 					//var match = this.get(await base.parse(src, state))
+					//var match = this.get(src, strict)
 					var match = this.get(src)
 
 					// NOTE: thie does not introduce a dependency on each 
@@ -2493,6 +2513,9 @@ module.System = {
 							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
 						@source(./title/quote)
 					</span>
+					@macro(src="." strict 
+						text=""
+						else="<sup>*</sup>")
 				</h1>
 			</macro>
 			<macro texteditor>
