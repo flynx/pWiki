@@ -1582,11 +1582,15 @@ object.Constructor('Page', BasePage, {
 		// 		that <store>.match(..) can not know about...
 		// 		XXX should we do the same for offset???
 		//
+		// XXX BUG: strict does not seem to work:
+		// 				@macro(src="./resolved-page" else="no" text="yes" strict)
+		// 					-> yes
+		// 			should be "no"
 		// XXX should macro:index be 0 or 1 (current) based???
 		// XXX SORT sorting not implemented yet...
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else',
-				['strict', 'isolated', 'inheritmacros', 'inheritvars' ]],
+				['strict', 'isolated', 'inheritmacros', 'inheritvars']],
 			async function*(args, body, state){
 				var that = this
 
@@ -1867,17 +1871,20 @@ object.Constructor('Page', BasePage, {
 	// 		and debugging, set comment it out to disable...
 	//__debug_last_render_state: undefined,
 	// XXX should this handle pattern paths???
+	// XXX this might be a good spot to cache .raw in state...
 	parse: function(text, state){
 		var that = this
+		// .parser(<state>)
+		if(arguments.length == 1 
+				&& text instanceof Object
+				&& !(text instanceof Array)){
+			state = text
+			text = null }
 		return Promise.awaitOrRun(
-			text,
+			//text,
+			text 
+				?? this.raw,
 			function(text){
-				// .parser(<state>)
-				if(arguments.length == 1 
-						&& text instanceof Object
-						&& !(text instanceof Array)){
-					state = text
-					text = null }
 				state = state ?? {}
 				state.renderer = state.renderer ?? that
 				// this is here for debugging and introspection...
@@ -1889,7 +1896,7 @@ object.Constructor('Page', BasePage, {
 						renderer: state.renderer,
 						args: that.args, 
 					}), 
-					text, 
+					text,
 					state) }) },
 
 	// raw page text...
