@@ -1946,6 +1946,10 @@ object.Constructor('Page', BasePage, {
 	// 		actions...
 	//
 	// XXX revise name...
+	// XXX do we need both this and .each(..)
+	// 		...what is the difference???
+	// 			- handle path slightly differently...
+	// 			- .asPages(..) handles list/generator pages...
 	// XXX BUG: this does not respect strict of single pages if they do 
 	// 		not exist...
 	// 		...see: @macro(..) bug + .each(..)
@@ -2579,6 +2583,8 @@ module.System = {
 				@var(path "@source(s ./path)")
 				<div>
 					<div class="item">
+						<!-- XXX should we pass :all here??? 
+								it messes up "visited" link state... -->
 						<a class="tree-page-title" href="#@var(path):@arg(all)">@source(./title/quote)</a>
 						<a class="show-on-hover" href="#@var(path)/info">&#128712;</a>
 						<a class="show-on-hover" 
