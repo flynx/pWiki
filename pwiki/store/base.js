@@ -990,9 +990,6 @@ module.BaseStore = {
 			: undefined },
 	//*/
 	// XXX EXPERIMENTAL...
-	// 		to be sync this needs:
-	// 			.__match_args(..) -- DONE
-	// 			.metadata(..)
 	match: function(path, strict=false){
 		var that = this
 		// pattern match * / **
