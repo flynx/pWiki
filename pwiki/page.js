@@ -2937,6 +2937,7 @@ for(var i=0; i<PAGES; i++){
 
 var Config =
 module.Config = {
+	// XXX need an import button...
 	Export: {
 		text: '<button onclick="exportData()">Export</button>' },
 	// XXX
