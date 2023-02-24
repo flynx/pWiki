@@ -1219,6 +1219,7 @@ object.Constructor('Page', BasePage, {
 		// 		macro with one exception, when used in quote, the body is 
 		// 		not expanded...
 		// NOTE: the filter argument uses the same filters as @filter(..)
+		// NOTE: else argument implies strict mode...
 		//
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		// XXX should join/else be sub-tags???
@@ -1231,7 +1232,9 @@ object.Constructor('Page', BasePage, {
 				var text = args.text 
 					?? body 
 					?? []
-				var strict = args.strict ?? false
+				var strict = !!(args.strict 
+					?? args['else'] 
+					?? false)
 				// parse arg values...
 				src = src ? 
 					await base.parse(src, state)
@@ -1267,7 +1270,7 @@ object.Constructor('Page', BasePage, {
 				pages = ((!pages
 				   			|| pages.length == 0)	
 						&& args['else']) ?
-					base.parse(args['else'], state)
+					[await base.parse(args['else'], state)]
 					: pages
 				// empty...
 				if(!pages || pages.length == 0){
@@ -2442,7 +2445,7 @@ module.System = {
 					<span class="title-editor"
 							wikiwords="no"
 							contenteditable 
-							oninput="saveContent(\'@source(s ./path)/title\', this.innerText)">
+							oninput="saveContent('@source(s ./path)/title', this.innerText)">
 						@source(./title/quote)
 					</span>
 					@macro(src="." 
@@ -2454,16 +2457,17 @@ module.System = {
 				<pre class="editor"
 						wikiwords="no"
 						contenteditable
-						oninput="saveLiveContent(\'@source(s ./path)\', this.innerText)"
+						oninput="saveLiveContent('@source(s ./path)', this.innerText)"
 					><quote 
 						filter="quote-tags" 
 						src="."
-						else="@source(@arg(template @slot(editor-template .)))"
+						else="@source('@arg(template .)')"
+						<!--else="@source('@arg(template @slot(editor-template .))')"-->
 					/></pre> 
 			</macro>
 			<macro editor join="@source(file-separator)">
-				@macro(titleeditor .)
-				@macro(texteditor .)
+				@macro(titleeditor .:$ARGS)
+				@macro(texteditor .:$ARGS)
 			</macro>
 			
 			<slot pre>
@@ -2473,7 +2477,7 @@ module.System = {
 			<slot location>@source(../location/quote/!)</slot>
 			<slot edit/>
 			<slot content>
-				<macro editor src=".." />
+				<macro editor src="..:$ARGS" />
 			</slot>`},
 	// XXX EXPERIMENTAL...
 	ed: {
@@ -2938,8 +2942,7 @@ for(var i=0; i<PAGES; i++){
 var Config =
 module.Config = {
 	Import: {
-		text: '<input type="file" onchange="importData()" accept=".json, .pwiki">'
-	},
+		text: '<input type="file" onchange="importData()" accept=".json, .pwiki">' },
 	// XXX need an import button...
 	Export: {
 		text: '<button onclick="exportData()">Export</button>' },
