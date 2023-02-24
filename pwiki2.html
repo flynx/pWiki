@@ -545,7 +545,17 @@ require(['./browser'], function(browser){
 // Export/Import...
 
 // XXX
-var importData = function(){}
+var importData = function(evt){
+	var files = event.target.files
+	var reader = new FileReader()
+	reader.addEventListener('load', function(evt){
+		var json = JSON.parse(evt.target.result)
+		console.log('LOADING JSON:', json)
+		pwiki.store
+			.load(json)
+			.then(function(){
+				location.reload() }) })
+	reader.readAsText(files[0]) }
 
 // XXX
 var exportData = async function(options={}){
@@ -561,7 +571,7 @@ var exportData = async function(options={}){
     var blobURL = a.href = URL.createObjectURL(blob)
     a.download = filename
 		?? options.filename 
-		?? (Date.timeStamp() +'.pWiki.json')
+		?? (Date.timeStamp() +'.pWiki-export.pwiki')
 
     //document.body.appendChild(a)
     a.dispatchEvent(new MouseEvent("click"))

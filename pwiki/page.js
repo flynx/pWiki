@@ -2937,6 +2937,9 @@ for(var i=0; i<PAGES; i++){
 
 var Config =
 module.Config = {
+	Import: {
+		text: '<input type="file" onchange="importData()" accept=".json, .pwiki">'
+	},
 	// XXX need an import button...
 	Export: {
 		text: '<button onclick="exportData()">Export</button>' },
