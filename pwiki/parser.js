@@ -19,6 +19,9 @@ var types = require('ig-types')
 // 		without change...
 // XXX might be a good idea to both think of a good async parse and
 // 		create tools for sync parsing (get links etc.)...
+// XXX need to correctly handle nested and escaped quotes...
+// 		i.e.
+// 			"aaa \"bbb \\"ccc\\" bbb\" aaa"
 
 var BaseParser =
 module.BaseParser = {
