@@ -342,6 +342,10 @@ module.BaseParser = {
 					yield str }
 				macro = true } } },
 
+	// XXX move macros here from page.js...
+	macros: {
+	},
+
 	// Group block elements (generator)...
 	//
 	// 	<item> ::=
