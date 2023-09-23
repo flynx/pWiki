@@ -347,6 +347,8 @@ module.BaseParser = {
 					yield str }
 				macro = true } } },
 
+	// NOTE: so as to avod cluterring the main parser flow the macros are
+	// 		defined separtly below...
 	macros: undefined,
 
 	// Group block elements (generator)...
