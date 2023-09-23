@@ -9,6 +9,10 @@
 
 var types = require('ig-types')
 
+var pwpath = require('./path')
+
+
+
 
 
 //---------------------------------------------------------------------
@@ -343,9 +347,7 @@ module.BaseParser = {
 					yield str }
 				macro = true } } },
 
-	// XXX move macros here from page.js...
-	macros: {
-	},
+	macros: undefined,
 
 	// Group block elements (generator)...
 	//
@@ -652,9 +654,72 @@ module.BaseParser = {
 			.join('') },
 }
 
+
+// XXX do we need anything else like .doc, attrs???
+// XXX might be a good idea to offload arg value parsing to here...
+var Macro =
+module.Macro = 
+function(spec, func){
+	var args = [...arguments]
+	// function...
+	func = args.pop()
+	// arg sepc...
+	;(args.length > 0 
+			&& args[args.length-1] instanceof Array)
+		&& (func.arg_spec = args.pop())
+	return func }
+
+
 var parser =
 module.parser = {
 	__proto__: BaseParser,
+
+	// list of macros that will get raw text of their content...
+	QUOTING_MACROS: ['quote'],
+
+	// XXX move macros here from page.js...
+	macros: {
+		//
+		//	@(<name>[ <else>][ local])
+		//	@(name=<name>[ else=<value>][ local])
+		//
+		//	@arg(<name>[ <else>][ local])
+		//	@arg(name=<name>[ else=<value>][ local])
+		//
+		//	<arg <name>[ <else>][ local]/>
+		//	<arg name=<name>[ else=<value>][ local]/>
+		//
+		// Resolution order:
+		// 		- local
+		// 		- .renderer
+		// 		- .root
+		//
+		// NOTE: else (default) value is parsed when accessed...
+		arg: Macro(
+			['name', 'else', ['local']],
+			function(args){
+				var v = this.args[args.name] 
+					|| (!args.local 
+						&& (this.renderer
+							&& this.renderer.args[args.name])
+						|| (this.root
+							&& this.root.args[args.name]))
+				v = v === true ?
+					args.name
+					: v
+				return v
+					|| (args['else']
+						&& this.parse(args['else'])) }),
+		'': Macro(
+			['name', 'else', ['local']],
+			function(args){
+				return this.macros.arg.call(this, args) }),
+		args: function(){
+			return pwpath.obj2args(this.args) },
+
+		// XXX
+	},
+
 }
 
 
