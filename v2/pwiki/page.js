@@ -795,23 +795,6 @@ types.event.EventMixin(BasePage.prototype)
 
 //---------------------------------------------------------------------
 
-// XXX do we need anything else like .doc, attrs???
-var Macro =
-module.Macro = 
-function(spec, func){
-	var args = [...arguments]
-	// function...
-	func = args.pop()
-	// arg sepc...
-	;(args.length > 0 
-			&& args[args.length-1] instanceof Array)
-		&& (func.arg_spec = args.pop())
-	// XXX do we need anything else like .doc, attrs???
-	return func }
-
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
 var Page =
 module.Page = 
 object.Constructor('Page', BasePage, {
