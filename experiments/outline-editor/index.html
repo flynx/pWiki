@@ -1,0 +1,160 @@
+<html>
+<head>
+<style>
+
+:root {
+	font-family: sans-serif;
+	font-size: 5mm;
+}
+
+.editor div div {
+	margin-left: 2em;
+}
+.editor div span {
+	display: block;
+	padding: 0.2em;
+}
+
+.editor div:focus {
+	/*outline: solid 0.2em silver;*/
+	outline: none;
+}
+.editor div:focus>span {
+	background: silver;
+}
+
+</style>
+<script>
+
+var getFocused = function(offset=0){
+	var focused = document.querySelector('.editor :focus')
+	if(offset == 0){
+		return focused }
+
+	if(offset == 'parent'){
+		if(!focused){
+			return document.querySelector('.editor [tabindex]') }
+		var elem = focused.parentElement
+		return elem.classList.contains('editor') ?
+			undefined
+			: elem }
+
+	if(offset == 'child'){
+		if(!focused){
+			return document.querySelector('.editor [tabindex]') }
+		return focused.querySelector('div') }
+
+	if(offset == 'children'){
+		if(!focused){
+			return [] }
+		return [...focused.children]
+			.filter(function(elem){ 
+				return elem.getAttribute('tabindex') }) }
+
+	if(offset == 'siblings'){
+		if(!focused){
+			return [] }
+		return [...focused.parentElement.children]
+			.filter(function(elem){ 
+				return elem.getAttribute('tabindex') }) }
+
+	var focusable = [...document.querySelectorAll('.editor [tabindex]')]
+	if(offset == 'all'){
+		return focusable }
+
+	// offset from focused...
+	if(focused){
+		var i = focusable.indexOf(focused) + offset
+		i = i < 0 ?
+			focusable.length + i
+			: i % focusable.length
+		return focusable[i]
+
+	// nothing focused -> forst/last...
+	} else {
+		return focusable[offset > 0 ? 0 : focusable.length-1] } }
+
+
+
+var keyboard = {
+	ArrowDown: function(evt, offset=1){
+		getFocused(1)?.focus() },
+	ArrowUp: function(evt){
+		getFocused(-1)?.focus() },
+	ArrowLeft: function(evt){
+		getFocused('parent')?.focus() },
+	ArrowRight: function(evt){
+		getFocused('child')?.focus() },
+
+	Tab: function(evt){
+		evt.preventDefault()
+		var cur = getFocused()
+		if(!cur){
+			return }
+		var siblings = getFocused('siblings')
+		// deindent...
+		if(evt.shiftKey){
+			var parent = cur.parentElement
+			if(!parent.classList.contains('.editor')){
+				var children = siblings.slice(siblings.indexOf(cur)+1)
+				parent.after(cur)
+				children.length > 0
+					&& cur.append(...children)
+				cur.focus() }
+		// indent...
+		} else {
+			var parent = siblings[siblings.indexOf(cur) - 1]
+			if(parent){
+				parent.append(cur)
+				cur.focus() } } },
+}
+document.addEventListener('keydown', 
+	function(evt){
+		evt.key in keyboard 
+			&& keyboard[evt.key](evt) })
+
+
+</script>
+</head>
+<body>
+<pre>
+TODO:
+- <s>navigation</s>
+- expand/collapse subtree
+- <s>shift subtree up/down</s>
+- edit node
+- create node
+
+Controls:
+	up         - focus node above
+	down       - focus node below
+	left       - focus parent node
+	right      - focus first child node
+	s-left     - deindent node
+	s- right   - indent node
+</pre>
+
+<hr>
+
+<div class="editor">
+	<div tabindex=0><span>root</span>
+		<div tabindex=0><span>A</span>
+			<div tabindex=0><span>a</span>
+			</div>
+			<div tabindex=0><span>b</span>
+			</div>
+			<div tabindex=0><span>c</span>
+			</div>
+		</div>
+		<div tabindex=0><span>B</span>
+			<div tabindex=0><span>d</span>
+			</div>
+			<div tabindex=0><span>e</span>
+			</div>
+		</div>
+	</div>
+</div>
+
+</body>
+</html>
+<!-- vim:set ts=4 sw=4 : -->
