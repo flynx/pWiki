@@ -15,6 +15,13 @@
 	padding: 0.2em;
 }
 
+.editor div[collapsed] {
+	border-bottom: solid 1px silver;
+}
+.editor div[collapsed] div {
+	display: none;
+}
+
 .editor div:focus {
 	/*outline: solid 0.2em silver;*/
 	outline: none;
@@ -59,6 +66,8 @@ var getFocused = function(offset=0){
 				return elem.getAttribute('tabindex') }) }
 
 	var focusable = [...document.querySelectorAll('.editor [tabindex]')]
+		.filter(function(e){
+			return e.offsetParent != null })
 	if(offset == 'all'){
 		return focusable }
 
@@ -74,39 +83,91 @@ var getFocused = function(offset=0){
 	} else {
 		return focusable[offset > 0 ? 0 : focusable.length-1] } }
 
+var indentNode = function(indent=true){
+	var cur = getFocused()
+	if(!cur){
+		return }
+	var siblings = getFocused('siblings')
+	// deindent...
+	if(!indent){
+		var parent = cur.parentElement
+		if(!parent.classList.contains('.editor')){
+			var children = siblings.slice(siblings.indexOf(cur)+1)
+			parent.after(cur)
+			children.length > 0
+				&& cur.append(...children) }
+	// indent...
+	} else {
+		var parent = siblings[siblings.indexOf(cur) - 1]
+		if(parent){
+			parent.append(cur) } } 
+	return cur }
 
+var toggleCollapse = function(node, state='next'){
+	if(node == 'all'){
+		return getFocused('all')
+			.map(function(node){
+				return toggleCollapse(node, state) }) }
+
+	// state passed directly...
+	if(!(node instanceof HTMLElement) && node != null){
+		state = node
+		node = null }
+	node ??= getFocused()
+	if(!node){
+		return }
+	state = state == 'next' ?
+		!node.getAttribute('collapsed')
+		: state
+	state ?
+		node.setAttribute('collapsed', '')
+		: node.removeAttribute('collapsed')
+	return node }
+
+
+var LEFT_COLLAPSE = false
+var RIGHT_EXPAND = true
 
 var keyboard = {
+	// vertical navigation...
 	ArrowDown: function(evt, offset=1){
 		getFocused(1)?.focus() },
 	ArrowUp: function(evt){
 		getFocused(-1)?.focus() },
-	ArrowLeft: function(evt){
-		getFocused('parent')?.focus() },
-	ArrowRight: function(evt){
-		getFocused('child')?.focus() },
 
+	// horizontal navigation / collapse...
+	ArrowLeft: function(evt){
+		if(LEFT_COLLAPSE){
+				toggleCollapse(true)
+				getFocused('parent')?.focus()
+		} else { 
+			evt.shiftKey ?
+				toggleCollapse(true)
+				: getFocused('parent')?.focus() } },
+	ArrowRight: function(evt){
+		if(RIGHT_EXPAND){
+			toggleCollapse(false) 
+			var child = getFocused('child')
+			child?.focus()
+			if(!child){
+				getFocused(1)?.focus() }
+		} else {
+			evt.shiftKey ?
+				toggleCollapse(false)
+				: getFocused('child')?.focus() } },
+
+	// indent...
 	Tab: function(evt){
 		evt.preventDefault()
-		var cur = getFocused()
-		if(!cur){
-			return }
-		var siblings = getFocused('siblings')
-		// deindent...
-		if(evt.shiftKey){
-			var parent = cur.parentElement
-			if(!parent.classList.contains('.editor')){
-				var children = siblings.slice(siblings.indexOf(cur)+1)
-				parent.after(cur)
-				children.length > 0
-					&& cur.append(...children)
-				cur.focus() }
-		// indent...
-		} else {
-			var parent = siblings[siblings.indexOf(cur) - 1]
-			if(parent){
-				parent.append(cur)
-				cur.focus() } } },
+		indentNode(!evt.shiftKey)?.focus() },
+
+	// edit mode...
+	Enter: function(evt){
+		console.log('---', evt)
+	},
+	Escape: function(evt){
+		console.log('---', evt)
+	},
 }
 document.addEventListener('keydown', 
 	function(evt){
@@ -120,25 +181,29 @@ document.addEventListener('keydown',
 <pre>
 TODO:
 - <s>navigation</s>
-- expand/collapse subtree
+- <s>expand/collapse subtree</s>
 - <s>shift subtree up/down</s>
 - edit node
 - create node
+- mouse controls
+- touch controls
 
 Controls:
 	up         - focus node above
 	down       - focus node below
 	left       - focus parent node
 	right      - focus first child node
-	s-left     - deindent node
-	s- right   - indent node
+	tab        - indent node
+	s-tab      - deindent node
+	s-left     - collapse node
+	s-right    - expand node
 </pre>
 
 <hr>
 
 <div class="editor">
 	<div tabindex=0><span>root</span>
-		<div tabindex=0><span>A</span>
+		<div tabindex=0 collapsed><span>A</span>
 			<div tabindex=0><span>a</span>
 			</div>
 			<div tabindex=0><span>b</span>
