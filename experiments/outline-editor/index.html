@@ -7,14 +7,42 @@
 	font-size: 5mm;
 }
 
-.editor div div {
+.editor [tabindex] {
+	position: relative;
+}
+.editor div [tabindex] {
 	margin-left: 2em;
 }
-.editor div span {
-	display: block;
-	padding: 0.2em;
+.editor [tabindex]>span,
+.editor [tabindex]>textarea {
+	--padding: 0.2em;
 
+	display: block;
+	width: 100%;
+	padding: var(--padding);
+	margin: 0;
+
+	font-family: sans-serif;
+	font-size: 5mm;
 	white-space: pre;
+
+	outline: none;
+	border: none;
+}
+.editor [tabindex]>textarea {
+	height: calc(2 * var(--padding) + 1em);
+	overflow: hidden;
+	resize: none;
+}
+
+/* show/hide node's view/code... */
+.editor [tabindex]>span+textarea:not(:focus),
+/* XXX not sure how to do this without :has(..)... */
+.editor [tabindex]:has(>span+textarea:focus)>span:has(+textarea),
+.editor [tabindex]:focus>span+textarea {
+	position: absolute;
+	opacity: 0;
+	top: 0;
 }
 
 .editor div[collapsed] {
@@ -28,15 +56,23 @@
 	/*outline: solid 0.2em silver;*/
 	outline: none;
 }
-.editor div:focus>span {
+.editor div:focus>span,
+.editor div:focus>textarea {
 	background: silver;
 }
 
 </style>
 <script>
+var updateTextareaSize = function(elem){
+	elem.style.height = ''
+	elem.style.height = elem.scrollHeight + 'px'
+	return elem }
 
 var getFocused = function(offset=0, selector='[tabindex]'){
 	var focused = document.querySelector(`.editor ${selector}:focus`)
+		|| (selector != 'textarea' ? 
+			getEditable()?.parentElement
+			: null)
 	if(offset == 0){
 		return focused }
 
@@ -88,10 +124,10 @@ var getFocused = function(offset=0, selector='[tabindex]'){
 // XXX would also be nice to make the move only if at first/last line/char
 // XXX would be nice to keep the cursor at roughly the same left offset...
 var getEditable = function(offset){
-	return getFocused(offset, '[contenteditable]') }
+	return getFocused(offset, 'textarea') }
 
 var indentNode = function(indent=true){
-	var cur = getFocused()
+	var cur = getFocused() 
 	if(!cur){
 		return }
 	var siblings = getFocused('siblings')
@@ -127,69 +163,80 @@ var toggleCollapse = function(node, state='next'){
 	state = state == 'next' ?
 		!node.getAttribute('collapsed')
 		: state
-	state ?
+	if(state){
 		node.setAttribute('collapsed', '')
-		: node.removeAttribute('collapsed')
+	} else {
+		node.removeAttribute('collapsed')
+		for(var elem of [...node.querySelectorAll('textarea')]){
+			updateTextareaSize(elem) }
+	}
 	return node }
 
+// XXX add reference node...
+var createBlock = function(place=none){
+	var block = document.createElement('div')
+	block.setAttribute('tabindex', '0')
+	block.innerHTML = `<span></span><textarea></textarea>`
+	var cur = getFocused()
+		|| getEditable()?.parentElement
+	place && cur
+		&& cur[place](block)
+	return block }
+
+
+// XXX do a caret api...
 
 // XXX this works only on the current text node...
+// XXX only for text areas...
 var atLine = function(index){
-	// XXX get line
-	var sel = window.getSelection()
 	// XXX add support for range...
-	if(sel.type == 'Caret'){
-		var text = getEditable().innerText
-		var lines = text.split(/\n/g).length
-		var offset = sel.focusOffset
-		var line = text.slice(0, offset).split(/\n/g).length
+	var elem = getEditable()
+	var text = elem.value
+	var lines = text.split(/\n/g).length
+	var offset = elem.selectionStart
+	var line = text.slice(0, offset).split(/\n/g).length
 
-		console.log('---', line, 'of', lines, '---', offset)
+	//console.log('---', line, 'of', lines, '---', offset, sel)
 
-		// XXX STUB index handling...
-		// XXX need to account for multiple elements withn the block...
-		//		...this breaks if we insert an element into the text, 
-		//		e.g. something like <i>..</i>...
-		if(index == -1 && line == lines){
-			return true
-		} else if(index == 0 && line == 1){
-			return true
-		}
-		return false
+	// XXX STUB index handling...
+	if(index == -1 && line == lines){
+		return true
+	} else if(index == 0 && line == 1){
+		return true
 	}
-	return true
+	return false
 }
 
 var LEFT_COLLAPSE = false
 var RIGHT_EXPAND = true
 
+// XXX add scrollIntoView(..) to nav...
 var keyboard = {
 	// vertical navigation...
-	ArrowDown: function(evt, offset=1){
-		var action = getFocused
-		var edited = document.querySelector('.editor [contenteditable]:focus')
-		if(edited){
-			if(!atLine(-1)){
-				return }
-			evt.preventDefault() 
-			//window.getSelection()
-			action = getEditable }
-		action(1)?.focus() },
 	ArrowUp: function(evt){
 		var action = getFocused
-		var edited = document.querySelector('.editor [contenteditable]:focus')
+		var edited = document.querySelector('.editor textarea:focus')
 		if(edited){
 			if(!atLine(0)){
 				return }
-			evt.preventDefault() 
 			action = getEditable }
-		if(action === getEditable){
-			evt.preventDefault() }
+		evt.preventDefault() 
 		action(-1)?.focus() },
+	ArrowDown: function(evt, offset=1){
+		var action = getFocused
+		var edited = document.querySelector('.editor textarea:focus')
+		if(edited){
+			if(!atLine(-1)){
+				return }
+			//window.getSelection()
+			action = getEditable }
+		evt.preventDefault() 
+		action(1)?.focus() },
 
 	// horizontal navigation / collapse...
+	// XXX if at start/end of element move to prev/next...
 	ArrowLeft: function(evt){
-		if(document.querySelector('.editor [contenteditable]:focus')){
+		if(document.querySelector('.editor textarea:focus')){
 			// XXX if at end of element move to next...
 			return }
 		if(LEFT_COLLAPSE){
@@ -200,7 +247,7 @@ var keyboard = {
 				toggleCollapse(true)
 				: getFocused('parent')?.focus() } },
 	ArrowRight: function(evt){
-		if(document.querySelector('.editor [contenteditable]:focus')){
+		if(document.querySelector('.editor textarea:focus')){
 			// XXX if at end of element move to next...
 			return }
 		if(RIGHT_EXPAND){
@@ -217,35 +264,88 @@ var keyboard = {
 	// indent...
 	Tab: function(evt){
 		evt.preventDefault()
-		indentNode(!evt.shiftKey)?.focus() },
+		var editable = getEditable()
+		var node = indentNode(!evt.shiftKey)
+		;(editable ?
+			editable
+			: node)?.focus() },
 
 	// edit mode...
+	O: function(evt){
+		if(evt.target.nodeName != 'TEXTAREA'){
+			evt.preventDefault()
+			createBlock('before')?.querySelector('textarea')?.focus() } },
+	o: function(evt){
+		if(evt.target.nodeName != 'TEXTAREA'){
+			evt.preventDefault()
+			createBlock('after')?.querySelector('textarea')?.focus() } },
 	Enter: function(evt){
-		evt.shiftKey
-			|| evt.preventDefault()
-		getFocused()?.querySelector('[contenteditable]')?.focus() },
+		/*if(evt.target.isContentEditable){
+			// XXX create new node...
+			return }
+		//*/
+		if(evt.ctrlKey
+				|| evt.shiftKey){
+			return }
+		evt.preventDefault()
+		evt.target.nodeName == 'TEXTAREA' ?
+			createBlock('after')?.querySelector('textarea')?.focus()
+			: getFocused()?.querySelector('textarea')?.focus() },
 	Escape: function(evt){
-		document.querySelector('[contenteditable]:focus')?.parentElement?.focus() },
+		document.querySelector('textarea:focus')?.parentElement?.focus() },
+	Delete: function(evt){
+		if(evt.target.isContentEditable){
+			return }
+		var next = getFocused(1)
+		getFocused()?.remove() 
+		next?.focus() },
 }
 document.addEventListener('keydown', 
 	function(evt){
 		evt.key in keyboard 
 			&& keyboard[evt.key](evt) })
 
+document.addEventListener('input', 
+	function(evt){
+		updateTextareaSize(evt.target) })
+
+// XXX add support for markup handlers...
+document.addEventListener('focusin', 
+	function(evt){
+		var node = evt.target
+		if(node.nodeName == 'TEXTAREA' 
+				&& node?.previousElementSibling?.nodeName == 'SPAN'){
+			node.value = node.previousElementSibling.innerHTML 
+			updateTextareaSize(node) } })
+document.addEventListener('focusout', 
+	function(evt){
+		var node = evt.target
+		if(node.nodeName == 'TEXTAREA' 
+				&& node?.previousElementSibling?.nodeName == 'SPAN'){
+			node.previousElementSibling.innerHTML = node.value } })
+
+var setup = function(){
+	for(var elem of [...document.querySelectorAll('.editor textarea')]){
+		updateTextareaSize(elem) } }
 
 </script>
 </head>
-<body>
+<body onload="setup()">
 <pre>
 TODO:
 - <s>navigation</s>
 - <s>expand/collapse subtree</s>
 - <s>shift subtree up/down</s>
-- edit node
+- <s>create node</s>
+- <s>edit node</s>
+- undo delete node
+- copy/paste nodes/trees
+- shifting nodes up/down
 - multiple node selection
-- create node
 - mouse controls
 - touch controls
+- serialize/deserialize
+- add optional styling to nodes
 
 Controls:
 	up         - focus node above
@@ -256,31 +356,36 @@ Controls:
 	s-tab      - deindent node
 	s-left     - collapse node
 	s-right    - expand node
+	enter      - normal mode: edit node
+	           - edit mode: create node below
+	esc        - exit edit mode 
 </pre>
 
 <hr>
 
 <div class="editor">
-	<div tabindex=0><span contenteditable="true">root</span>
-		<div tabindex=0 collapsed><span contenteditable="true">A</span>
-			<div tabindex=0><span contenteditable="true">a</span>
+	<div tabindex=0>
+		<span><i>root</i></span><textarea></textarea>
+		<div tabindex=0 collapsed>
+			<span>A</span><textarea></textarea>
+			<div tabindex=0><span>a</span><textarea></textarea>
 			</div>
-			<div tabindex=0><span contenteditable="true">b</span>
+			<div tabindex=0><span>b</span><textarea></textarea>
 			</div>
-			<div tabindex=0><span contenteditable="true">c</span>
-			</div>
-		</div>
-		<div tabindex=0><span contenteditable="true">B</span>
-			<div tabindex=0><span contenteditable="true">d</span>
-			</div>
-			<div tabindex=0><span contenteditable="true">e</span>
+			<div tabindex=0><span>c</span><textarea></textarea>
 			</div>
 		</div>
-		<div tabindex=0><span contenteditable="true">C</span>
-			<div tabindex=0><span contenteditable="true">This is a line of text</span>
+		<div tabindex=0><span>B</span><textarea></textarea>
+			<div tabindex=0><span>d</span><textarea></textarea>
 			</div>
-			<div tabindex=0><span contenteditable="true">This is a set
-text lines</span>
+			<div tabindex=0><span>e</span><textarea></textarea>
+			</div>
+		</div>
+		<div tabindex=0><span>C</span><textarea></textarea>
+			<div tabindex=0><span>This is a line of text</span><textarea></textarea>
+			</div>
+			<div tabindex=0><span>This is a set
+text lines</span><textarea></textarea>
 			</div>
 		</div>
 	</div>
