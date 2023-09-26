@@ -13,6 +13,8 @@
 .editor div span {
 	display: block;
 	padding: 0.2em;
+
+	white-space: pre;
 }
 
 .editor div[collapsed] {
@@ -33,14 +35,14 @@
 </style>
 <script>
 
-var getFocused = function(offset=0){
-	var focused = document.querySelector('.editor :focus')
+var getFocused = function(offset=0, selector='[tabindex]'){
+	var focused = document.querySelector(`.editor ${selector}:focus`)
 	if(offset == 0){
 		return focused }
 
 	if(offset == 'parent'){
 		if(!focused){
-			return document.querySelector('.editor [tabindex]') }
+			return document.querySelector(`.editor ${selector}`) }
 		var elem = focused.parentElement
 		return elem.classList.contains('editor') ?
 			undefined
@@ -48,7 +50,7 @@ var getFocused = function(offset=0){
 
 	if(offset == 'child'){
 		if(!focused){
-			return document.querySelector('.editor [tabindex]') }
+			return document.querySelector(`.editor ${selector}`) }
 		return focused.querySelector('div') }
 
 	if(offset == 'children'){
@@ -65,7 +67,7 @@ var getFocused = function(offset=0){
 			.filter(function(elem){ 
 				return elem.getAttribute('tabindex') }) }
 
-	var focusable = [...document.querySelectorAll('.editor [tabindex]')]
+	var focusable = [...document.querySelectorAll(`.editor ${selector}`)]
 		.filter(function(e){
 			return e.offsetParent != null })
 	if(offset == 'all'){
@@ -82,6 +84,11 @@ var getFocused = function(offset=0){
 	// nothing focused -> forst/last...
 	} else {
 		return focusable[offset > 0 ? 0 : focusable.length-1] } }
+
+// XXX would also be nice to make the move only if at first/last line/char
+// XXX would be nice to keep the cursor at roughly the same left offset...
+var getEditable = function(offset){
+	return getFocused(offset, '[contenteditable]') }
 
 var indentNode = function(indent=true){
 	var cur = getFocused()
@@ -108,13 +115,14 @@ var toggleCollapse = function(node, state='next'){
 		return getFocused('all')
 			.map(function(node){
 				return toggleCollapse(node, state) }) }
-
-	// state passed directly...
+	// toggleCollapse(<state>)
 	if(!(node instanceof HTMLElement) && node != null){
 		state = node
 		node = null }
 	node ??= getFocused()
-	if(!node){
+	if(!node 
+			// only nodes with children can be collapsed...
+			|| !node.querySelector('[tabindex]')){
 		return }
 	state = state == 'next' ?
 		!node.getAttribute('collapsed')
@@ -125,18 +133,65 @@ var toggleCollapse = function(node, state='next'){
 	return node }
 
 
+// XXX this works only on the current text node...
+var atLine = function(index){
+	// XXX get line
+	var sel = window.getSelection()
+	// XXX add support for range...
+	if(sel.type == 'Caret'){
+		var text = getEditable().innerText
+		var lines = text.split(/\n/g).length
+		var offset = sel.focusOffset
+		var line = text.slice(0, offset).split(/\n/g).length
+
+		console.log('---', line, 'of', lines, '---', offset)
+
+		// XXX STUB index handling...
+		// XXX need to account for multiple elements withn the block...
+		//		...this breaks if we insert an element into the text, 
+		//		e.g. something like <i>..</i>...
+		if(index == -1 && line == lines){
+			return true
+		} else if(index == 0 && line == 1){
+			return true
+		}
+		return false
+	}
+	return true
+}
+
 var LEFT_COLLAPSE = false
 var RIGHT_EXPAND = true
 
 var keyboard = {
 	// vertical navigation...
 	ArrowDown: function(evt, offset=1){
-		getFocused(1)?.focus() },
+		var action = getFocused
+		var edited = document.querySelector('.editor [contenteditable]:focus')
+		if(edited){
+			if(!atLine(-1)){
+				return }
+			evt.preventDefault() 
+			//window.getSelection()
+			action = getEditable }
+		action(1)?.focus() },
 	ArrowUp: function(evt){
-		getFocused(-1)?.focus() },
+		var action = getFocused
+		var edited = document.querySelector('.editor [contenteditable]:focus')
+		if(edited){
+			if(!atLine(0)){
+				return }
+			evt.preventDefault() 
+			action = getEditable }
+		if(action === getEditable){
+			evt.preventDefault() }
+		action(-1)?.focus() },
 
 	// horizontal navigation / collapse...
 	ArrowLeft: function(evt){
+		if(document.querySelector('.editor [contenteditable]:focus')){
+			// XXX if at end of element move to next...
+			return }
 		if(LEFT_COLLAPSE){
 				toggleCollapse(true)
 				getFocused('parent')?.focus()
@@ -145,6 +200,9 @@ var keyboard = {
 				toggleCollapse(true)
 				: getFocused('parent')?.focus() } },
 	ArrowRight: function(evt){
+		if(document.querySelector('.editor [contenteditable]:focus')){
+			// XXX if at end of element move to next...
+			return }
 		if(RIGHT_EXPAND){
 			toggleCollapse(false) 
 			var child = getFocused('child')
@@ -163,11 +221,11 @@ var keyboard = {
 
 	// edit mode...
 	Enter: function(evt){
-		console.log('---', evt)
-	},
+		evt.shiftKey
+			|| evt.preventDefault()
+		getFocused()?.querySelector('[contenteditable]')?.focus() },
 	Escape: function(evt){
-		console.log('---', evt)
-	},
+		document.querySelector('[contenteditable]:focus')?.parentElement?.focus() },
 }
 document.addEventListener('keydown', 
 	function(evt){
@@ -184,6 +242,7 @@ TODO:
 - <s>expand/collapse subtree</s>
 - <s>shift subtree up/down</s>
 - edit node
+- multiple node selection
 - create node
 - mouse controls
 - touch controls
@@ -202,19 +261,26 @@ Controls:
 <hr>
 
 <div class="editor">
-	<div tabindex=0><span>root</span>
-		<div tabindex=0 collapsed><span>A</span>
-			<div tabindex=0><span>a</span>
+	<div tabindex=0><span contenteditable="true">root</span>
+		<div tabindex=0 collapsed><span contenteditable="true">A</span>
+			<div tabindex=0><span contenteditable="true">a</span>
 			</div>
-			<div tabindex=0><span>b</span>
+			<div tabindex=0><span contenteditable="true">b</span>
 			</div>
-			<div tabindex=0><span>c</span>
+			<div tabindex=0><span contenteditable="true">c</span>
 			</div>
 		</div>
-		<div tabindex=0><span>B</span>
-			<div tabindex=0><span>d</span>
+		<div tabindex=0><span contenteditable="true">B</span>
+			<div tabindex=0><span contenteditable="true">d</span>
 			</div>
-			<div tabindex=0><span>e</span>
+			<div tabindex=0><span contenteditable="true">e</span>
+			</div>
+		</div>
+		<div tabindex=0><span contenteditable="true">C</span>
+			<div tabindex=0><span contenteditable="true">This is a line of text</span>
+			</div>
+			<div tabindex=0><span contenteditable="true">This is a set
+text lines</span>
 			</div>
 		</div>
 	</div>
