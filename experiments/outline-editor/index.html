@@ -183,6 +183,30 @@ var createBlock = function(place=none){
 		&& cur[place](block)
 	return block }
 
+var json = function(node){
+	node ??= document.querySelector('.editor')
+	return [...node.children]
+		.map(function(elem){
+			return elem.nodeName != 'DIV' ?
+				[]
+				: [{
+					text: elem.querySelector('span').innerHTML,
+					collapsed: elem.getAttribute('collapsed') != null,
+					children: json(elem)
+				}] })
+		.flat() }
+var markdown = function(node, indent=''){
+	node ??= json(node)
+	var text = ''
+	for(var elem of node){
+		text += 
+			indent
+			+'- '
+			+ elem.text
+				.replace(/\n/g, '\n  '+indent) 
+			+'\n'
+			+ markdown(elem.children || [], indent+'  ') }
+	return text } 
 
 // XXX do a caret api...
 
@@ -331,38 +355,6 @@ var setup = function(){
 </script>
 </head>
 <body onload="setup()">
-<pre>
-TODO:
-- <s>navigation</s>
-- <s>expand/collapse subtree</s>
-- <s>shift subtree up/down</s>
-- <s>create node</s>
-- <s>edit node</s>
-- undo delete node
-- copy/paste nodes/trees
-- shifting nodes up/down
-- multiple node selection
-- mouse controls
-- touch controls
-- serialize/deserialize
-- add optional styling to nodes
-
-Controls:
-	up         - focus node above
-	down       - focus node below
-	left       - focus parent node
-	right      - focus first child node
-	tab        - indent node
-	s-tab      - deindent node
-	s-left     - collapse node
-	s-right    - expand node
-	enter      - normal mode: edit node
-	           - edit mode: create node below
-	esc        - exit edit mode 
-</pre>
-
-<hr>
-
 <div class="editor">
 	<div tabindex=0>
 		<span><i>root</i></span><textarea></textarea>
@@ -390,6 +382,38 @@ text lines</span><textarea></textarea>
 		</div>
 	</div>
 </div>
+
+<hr>
+
+<pre>
+TODO:
+- mouse controls
+- touch controls
+- <s>navigation</s>
+- <s>expand/collapse subtree</s>
+- <s>shift subtree up/down</s>
+- <s>create node</s>
+- <s>edit node</s>
+- undo delete node
+- copy/paste nodes/trees
+- shifting nodes up/down
+- multiple node selection
+- <s>serialize</s>/deserialize
+- add optional styling to nodes
+
+Controls:
+	up         - focus node above
+	down       - focus node below
+	left       - focus parent node
+	right      - focus first child node
+	tab        - indent node
+	s-tab      - deindent node
+	s-left     - collapse node
+	s-right    - expand node
+	enter      - normal mode: edit node
+	           - edit mode: create node below
+	esc        - exit edit mode 
+</pre>
 
 </body>
 </html>
