@@ -11,11 +11,38 @@
 var Outline = {
 	dom: undefined,
 
-	focused: function(){},
-	edited: function(){},
+	// config...
+	//
+	left_key_expands: false,
+	right_key_collapses: true,
 
-	focus: function(node=undefined){},
-	edit: function(node=undefined){},
+
+	// XXX revise name...
+	Block: function(place=none){
+		var block = document.createElement('div')
+		block.setAttribute('tabindex', '0')
+		block.append(
+			document.createElement('span'),
+			document.createElement('textarea')
+				.autoUpdateSize())
+		var cur = getFocused()
+			|| getEditable()?.parentElement
+		place && cur
+			&& cur[place](block)
+		return block },
+
+	// XXX
+	get: function(){
+	},
+	focused: function(offset, selector){
+	},
+	edited: function(offset){
+		return this.focused(offset, 'textarea')},
+
+	focus: function(node='focused'){},
+	edit: function(node='focused'){},
+	indent: function(node='focused'){},
+	collapse: function(node='focused'){},
 
 	// block serialization...
 	__code2html__: function(code){
@@ -23,6 +50,37 @@ var Outline = {
 	__html2code__: function(html){
 		return html },
 
+	// serialization...
+	json: function(node){
+		var that = this
+		node ??= this.dom
+		return [...node.children]
+			.map(function(elem){
+				return elem.nodeName != 'DIV' ?
+					[]
+					: [{
+						text: that.__html2code__ ?
+							that.__html2code__(elem.querySelector('span').innerHTML)
+							: elem.querySelector('span').innerHTML,
+						collapsed: elem.getAttribute('collapsed') != null,
+						children: that.json(elem)
+					}] })
+			.flat() },
+	text: function(node, indent=''){
+		node ??= this.json(node)
+		var text = ''
+		for(var elem of node){
+			text += 
+				indent
+				+'- '
+				+ elem.text
+					.replace(/\n/g, '\n  '+indent) 
+				+'\n'
+				+ this.text(elem.children || [], indent+'  ') }
+		return text },
+
+	// XXX use .__code2html__(..)
+	load: function(){},
 
 	keyboard: {
 		// vertical navigation...
@@ -52,7 +110,7 @@ var Outline = {
 			if(this.dom.querySelector('.editor textarea:focus')){
 				// XXX if at end of element move to next...
 				return }
-			if(LEFT_COLLAPSE){
+			if(this.left_key_expands){
 					toggleCollapse(true)
 					getFocused('parent')?.focus()
 			} else { 
@@ -63,7 +121,7 @@ var Outline = {
 			if(this.dom.querySelector('.editor textarea:focus')){
 				// XXX if at end of element move to next...
 				return }
-			if(RIGHT_EXPAND){
+			if(this.right_key_collapses){
 				toggleCollapse(false) 
 				var child = getFocused('child')
 				child?.focus()
@@ -87,11 +145,11 @@ var Outline = {
 		O: function(evt){
 			if(evt.target.nodeName != 'TEXTAREA'){
 				evt.preventDefault()
-				createBlock('before')?.querySelector('textarea')?.focus() } },
+				this.Block('before')?.querySelector('textarea')?.focus() } },
 		o: function(evt){
 			if(evt.target.nodeName != 'TEXTAREA'){
 				evt.preventDefault()
-				createBlock('after')?.querySelector('textarea')?.focus() } },
+				this.Block('after')?.querySelector('textarea')?.focus() } },
 		Enter: function(evt){
 			/*if(evt.target.isContentEditable){
 				// XXX create new node...
@@ -102,7 +160,7 @@ var Outline = {
 				return }
 			evt.preventDefault()
 			evt.target.nodeName == 'TEXTAREA' ?
-				createBlock('after')?.querySelector('textarea')?.focus()
+				this.Block('after')?.querySelector('textarea')?.focus()
 				: getFocused()?.querySelector('textarea')?.focus() },
 		Escape: function(evt){
 			this.dom.querySelector('textarea:focus')?.parentElement?.focus() },
@@ -148,11 +206,8 @@ var Outline = {
 							that.__code2html__(node.value)
 							: node.value } })
 
-
-
 		return this },
 }
-
 
 
 
@@ -267,43 +322,7 @@ var toggleCollapse = function(node, state='next'){
 	return node }
 
 // XXX add reference node...
-var createBlock = function(place=none){
-	var block = document.createElement('div')
-	block.setAttribute('tabindex', '0')
-	block.append(
-		document.createElement('span'),
-		document.createElement('textarea')
-			.autoUpdateSize())
-	var cur = getFocused()
-		|| getEditable()?.parentElement
-	place && cur
-		&& cur[place](block)
-	return block }
 
-var json = function(node){
-	node ??= document.querySelector('.editor')
-	return [...node.children]
-		.map(function(elem){
-			return elem.nodeName != 'DIV' ?
-				[]
-				: [{
-					text: elem.querySelector('span').innerHTML,
-					collapsed: elem.getAttribute('collapsed') != null,
-					children: json(elem)
-				}] })
-		.flat() }
-var markdown = function(node, indent=''){
-	node ??= json(node)
-	var text = ''
-	for(var elem of node){
-		text += 
-			indent
-			+'- '
-			+ elem.text
-				.replace(/\n/g, '\n  '+indent) 
-			+'\n'
-			+ markdown(elem.children || [], indent+'  ') }
-	return text } 
 
 // XXX do a caret api...
 
@@ -327,9 +346,6 @@ var atLine = function(index){
 	}
 	return false
 }
-
-var LEFT_COLLAPSE = false
-var RIGHT_EXPAND = true
 
 // XXX add scrollIntoView(..) to nav...
 
