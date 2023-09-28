@@ -5,6 +5,24 @@
 **********************************************************************/
 
 
+//---------------------------------------------------------------------
+
+// XXX do a caret api...
+
+// XXX only for text areas...
+var atLine = function(elem, index){
+	// XXX add support for range...
+	var text = elem.value
+	var lines = text.split(/\n/g).length
+	var line = elem.caretLine 
+
+	// XXX STUB index handling...
+	if((index == -1 && line == lines) 
+			|| (index == 0 && line == 1)){
+		return true }
+	return false }
+
+
 
 //---------------------------------------------------------------------
 
@@ -25,24 +43,179 @@ var Outline = {
 			document.createElement('span'),
 			document.createElement('textarea')
 				.autoUpdateSize())
-		var cur = getFocused()
-			|| getEditable()?.parentElement
+		var cur = this.get()
 		place && cur
 			&& cur[place](block)
 		return block },
 
-	// XXX
-	get: function(){
-	},
-	focused: function(offset, selector){
-	},
-	edited: function(offset){
-		return this.focused(offset, 'textarea')},
+	//
+	// 	.get([<offset>])
+	// 	.get('focused'[, <offset>])
+	// 		-> <node>
+	//
+	// 	.get('edited'[, <offset>])
+	// 		-> <node>
+	//
+	// 	.get('siblings')
+	// 	.get('focused', 'siblings')
+	// 		-> <nodes>
+	//
+	// 	.get('children')
+	// 	.get('focused', 'children')
+	// 		-> <nodes>
+	//
+	// 	.get('next')
+	// 	.get('focused', 'next')
+	// 		-> <node>
+	//
+	// 	.get('prev')
+	// 	.get('focused', 'prev')
+	// 		-> <node>
+	//
+	// 	.get('all')
+	// 	.get('visible')
+	// 	.get('editable')
+	// 	.get('selected')
+	// 	.get('top')
+	// 		-> <nodes>
+	//
+	// XXX add support for node ID...
+	get: function(node='focused', offset){
+		var that = this
+
+		// shorthands...
+		if(node == 'next'){
+			return this.get('focused', 1) }
+		if(node == 'prev' || node == 'previous'){
+			return this.get('focused', -1) }
+
+		// node lists...
+		var NO_NODES = {}
+		var nodes = 
+			node == 'all' ?
+				[...this.dom.querySelectorAll('[tabindex]')] 
+			: node == 'visible' ?
+				[...this.dom.querySelectorAll('[tabindex]')] 
+					.filter(function(e){
+						return e.offsetParent != null })
+			: node == 'editable' ?
+				[...this.dom.querySelectorAll('[tabindex]>textarea')] 
+			: node == 'selected' ?
+				[...this.dom.querySelectorAll('[tabindex].selected')]
+			: node == 'top' ?
+				[...this.dom.children]
+					.filter(function(elem){ 
+						return elem.getAttribute('tabindex') != null })
+			: ['siblings', 'children'].includes(node) ?
+				this.get('focused', node) 
+			: node instanceof Array ?
+				node
+			: NO_NODES
+		if(nodes !== NO_NODES){
+			return offset == null ?
+					nodes
+				: typeof(offset) == 'number' ?
+					nodes.at(offset)
+				: nodes
+					.map(function(elem){
+						return that.get(elem, offset) }) }
+
+		// single base node...
+		node = 
+			typeof(node) == 'number' ?
+				this.at(node)
+			: node == 'focused' ?
+				(this.dom.querySelector(`[tabindex]:focus`)
+					|| this.dom.querySelector(`textarea:focus`)?.parentElement)
+			: node == 'parent' ?
+				this.get('focused')?.parentElement
+			: node 
+		var edited
+		if(node == 'edited'){
+			edited = this.dom.querySelector(`textarea:focus`)
+			node = edited?.parentElement }
+
+		if(!node || typeof(node) == 'string'){
+			return undefined }
+
+		// children...
+		if(offset == 'children'){
+			return [...node.children]
+				.filter(function(elem){
+					return elem.getAttribute('tabindex') != null }) }
+
+		// siblings...
+		if(offset == 'siblings'){
+			return [...node.parentElement.children]
+				.filter(function(elem){
+					return elem.getAttribute('tabindex') != null }) }
+
+		// offset...
+		if(typeof(offset) == 'number'){
+			nodes = this.get('visible')
+			var i = nodes.indexOf(node) + offset
+			i = i < 0 ?
+				nodes.length + i
+				: i % nodes.length
+			node = nodes[i] 
+			edited = edited 
+				&& node.querySelector('textarea') }
+		return edited 
+			|| node },
+	at: function(index, nodes='visible'){
+		return this.get(nodes).at(index) },
 
 	focus: function(node='focused'){},
 	edit: function(node='focused'){},
-	indent: function(node='focused'){},
-	collapse: function(node='focused'){},
+
+	indent: function(node='focused', indent=true){
+		// .indent(<indent>)
+		if(node === true || node === false){
+			indent = node
+			node = 'focused' }
+		var cur = this.get(node) 
+		if(!cur){
+			return }
+		var siblings = this.get(node, 'siblings')
+		// deindent...
+		if(!indent){
+			var parent = cur.parentElement
+			if(!parent.classList.contains('.editor')){
+				var children = siblings.slice(siblings.indexOf(cur)+1)
+				parent.after(cur)
+				children.length > 0
+					&& cur.append(...children) }
+		// indent...
+		} else {
+			var parent = siblings[siblings.indexOf(cur) - 1]
+			if(parent){
+				parent.append(cur) } } 
+		return cur },
+	toggleCollapse: function(node='focused', state='next'){
+		var that = this
+		if(node == 'all'){
+			return this.get('all')
+				.map(function(node){
+					return that.toggleCollapse(node, state) }) }
+		// .toggleCollapse(<state>)
+		if(['next', true, false].includes(node)){
+			state = node
+			node = null }
+		node ??= this.get()
+		if(!node 
+				// only nodes with children can be collapsed...
+				|| !node.querySelector('[tabindex]')){
+			return }
+		state = state == 'next' ?
+			!node.getAttribute('collapsed')
+			: state
+		if(state){
+			node.setAttribute('collapsed', '')
+		} else {
+			node.removeAttribute('collapsed')
+			for(var elem of [...node.querySelectorAll('textarea')]){
+				elem.updateSize() } }
+		return node },
 
 	// block serialization...
 	__code2html__: function(code){
@@ -66,43 +239,49 @@ var Outline = {
 						children: that.json(elem)
 					}] })
 			.flat() },
-	text: function(node, indent=''){
+	text: function(node, indent, level){
+		// .text(<indent>, <level>)
+		if(typeof(node) == 'string'){
+			;[node, indent='  ', level=''] = [undefined, ...arguments] }
 		node ??= this.json(node)
+		indent ??= '  '
+		level ??= ''
 		var text = ''
 		for(var elem of node){
 			text += 
-				indent
+				level
 				+'- '
 				+ elem.text
-					.replace(/\n/g, '\n  '+indent) 
+					.replace(/\n/g, '\n'+ level +'  ') 
 				+'\n'
-				+ this.text(elem.children || [], indent+'  ') }
+				+ this.text(elem.children || [], indent, level+indent) }
 		return text },
 
 	// XXX use .__code2html__(..)
 	load: function(){},
 
+	// XXX add scrollIntoView(..) to nav...
 	keyboard: {
 		// vertical navigation...
 		ArrowUp: function(evt){
-			var action = getFocused
-			var edited = this.dom.querySelector('.editor textarea:focus')
+			var state = 'focused'
+			var edited = this.get('edited')
 			if(edited){
-				if(!atLine(0)){
+				if(!atLine(edited, 0)){
 					return }
-				action = getEditable }
+				state = 'edited' }
 			evt.preventDefault() 
-			action(-1)?.focus() },
+			this.get(state, -1)?.focus() },
 		ArrowDown: function(evt, offset=1){
-			var action = getFocused
-			var edited = this.dom.querySelector('.editor textarea:focus')
+			var state = 'focused'
+			var edited = this.get('edited')
 			if(edited){
-				if(!atLine(-1)){
+				if(!atLine(edited, -1)){
 					return }
 				//window.getSelection()
-				action = getEditable }
+				state = 'edited' }
 			evt.preventDefault() 
-			action(1)?.focus() },
+			this.get(state, 1)?.focus() },
 
 		// horizontal navigation / collapse...
 		// XXX if at start/end of element move to prev/next...
@@ -111,32 +290,32 @@ var Outline = {
 				// XXX if at end of element move to next...
 				return }
 			if(this.left_key_expands){
-					toggleCollapse(true)
-					getFocused('parent')?.focus()
+					this.toggleCollapse(true)
+					this.get('parent')?.focus()
 			} else { 
 				evt.shiftKey ?
-					toggleCollapse(true)
-					: getFocused('parent')?.focus() } },
+					this.toggleCollapse(true)
+					: this.get('parent')?.focus() } },
 		ArrowRight: function(evt){
 			if(this.dom.querySelector('.editor textarea:focus')){
 				// XXX if at end of element move to next...
 				return }
 			if(this.right_key_collapses){
-				toggleCollapse(false) 
-				var child = getFocused('child')
+				this.toggleCollapse(false) 
+				var child = this.get('children')[0]
 				child?.focus()
 				if(!child){
-					getFocused(1)?.focus() }
+					this.get('next')?.focus() }
 			} else {
 				evt.shiftKey ?
-					toggleCollapse(false)
-					: getFocused('child')?.focus() } },
+					this.toggleCollapse(false)
+					: this.get('children')[0]?.focus() } },
 
 		// indent...
 		Tab: function(evt){
 			evt.preventDefault()
-			var editable = getEditable()
-			var node = indentNode(!evt.shiftKey)
+			var editable = this.get('editable')
+			var node = this.indent(!evt.shiftKey)
 			;(editable ?
 				editable
 				: node)?.focus() },
@@ -161,14 +340,15 @@ var Outline = {
 			evt.preventDefault()
 			evt.target.nodeName == 'TEXTAREA' ?
 				this.Block('after')?.querySelector('textarea')?.focus()
-				: getFocused()?.querySelector('textarea')?.focus() },
+				: this.get()?.querySelector('textarea')?.focus() },
 		Escape: function(evt){
 			this.dom.querySelector('textarea:focus')?.parentElement?.focus() },
 		Delete: function(evt){
 			if(evt.target.isContentEditable){
 				return }
-			var next = getFocused(1)
-			getFocused()?.remove() 
+			this.toggleCollapse(true)
+			var next = this.get('next')
+			this.get()?.remove() 
 			next?.focus() },
 	},
 
@@ -208,147 +388,6 @@ var Outline = {
 
 		return this },
 }
-
-
-
-//---------------------------------------------------------------------
-
-
-
-var getFocused = function(offset=0, selector='[tabindex]'){
-	var focused = document.querySelector(`.editor ${selector}:focus`)
-		|| (selector != 'textarea' ? 
-			getEditable()?.parentElement
-			: null)
-	if(offset == 0){
-		return focused }
-
-	if(offset == 'parent'){
-		if(!focused){
-			return document.querySelector(`.editor ${selector}`) }
-		var elem = focused.parentElement
-		return elem.classList.contains('editor') ?
-			undefined
-			: elem }
-
-	if(offset == 'child'){
-		if(!focused){
-			return document.querySelector(`.editor ${selector}`) }
-		return focused.querySelector('div') }
-
-	if(offset == 'children'){
-		if(!focused){
-			return [] }
-		return [...focused.children]
-			.filter(function(elem){ 
-				return elem.getAttribute('tabindex') }) }
-
-	if(offset == 'siblings'){
-		if(!focused){
-			return [] }
-		return [...focused.parentElement.children]
-			.filter(function(elem){ 
-				return elem.getAttribute('tabindex') }) }
-
-	var focusable = [...document.querySelectorAll(`.editor ${selector}`)]
-		.filter(function(e){
-			return e.offsetParent != null })
-	if(offset == 'all'){
-		return focusable }
-
-	// offset from focused...
-	if(focused){
-		var i = focusable.indexOf(focused) + offset
-		i = i < 0 ?
-			focusable.length + i
-			: i % focusable.length
-		return focusable[i]
-
-	// nothing focused -> forst/last...
-	} else {
-		return focusable[offset > 0 ? 0 : focusable.length-1] } }
-
-// XXX would also be nice to make the move only if at first/last line/char
-// XXX would be nice to keep the cursor at roughly the same left offset...
-var getEditable = function(offset){
-	return getFocused(offset, 'textarea') }
-
-var indentNode = function(indent=true){
-	var cur = getFocused() 
-	if(!cur){
-		return }
-	var siblings = getFocused('siblings')
-	// deindent...
-	if(!indent){
-		var parent = cur.parentElement
-		if(!parent.classList.contains('.editor')){
-			var children = siblings.slice(siblings.indexOf(cur)+1)
-			parent.after(cur)
-			children.length > 0
-				&& cur.append(...children) }
-	// indent...
-	} else {
-		var parent = siblings[siblings.indexOf(cur) - 1]
-		if(parent){
-			parent.append(cur) } } 
-	return cur }
-
-var toggleCollapse = function(node, state='next'){
-	if(node == 'all'){
-		return getFocused('all')
-			.map(function(node){
-				return toggleCollapse(node, state) }) }
-	// toggleCollapse(<state>)
-	if(!(node instanceof HTMLElement) && node != null){
-		state = node
-		node = null }
-	node ??= getFocused()
-	if(!node 
-			// only nodes with children can be collapsed...
-			|| !node.querySelector('[tabindex]')){
-		return }
-	state = state == 'next' ?
-		!node.getAttribute('collapsed')
-		: state
-	if(state){
-		node.setAttribute('collapsed', '')
-	} else {
-		node.removeAttribute('collapsed')
-		for(var elem of [...node.querySelectorAll('textarea')]){
-			elem.updateSize()
-			//updateTextareaSize(elem) 
-		}
-	}
-	return node }
-
-// XXX add reference node...
-
-
-// XXX do a caret api...
-
-// XXX this works only on the current text node...
-// XXX only for text areas...
-var atLine = function(index){
-	// XXX add support for range...
-	var elem = getEditable()
-	var text = elem.value
-	var lines = text.split(/\n/g).length
-	var offset = elem.selectionStart
-	var line = text.slice(0, offset).split(/\n/g).length
-
-	//console.log('---', line, 'of', lines, '---', offset, sel)
-
-	// XXX STUB index handling...
-	if(index == -1 && line == lines){
-		return true
-	} else if(index == 0 && line == 1){
-		return true
-	}
-	return false
-}
-
-// XXX add scrollIntoView(..) to nav...
-
 
 
 

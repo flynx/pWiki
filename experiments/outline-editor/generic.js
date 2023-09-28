@@ -15,6 +15,18 @@ HTMLTextAreaElement.prototype.autoUpdateSize = function(){
 			that.updateSize() }) 
 	return this }
 
+Object.defineProperty(HTMLTextAreaElement.prototype, 'caretLine', {
+	enumerable: false,
+	get: function(){
+		var offset = this.selectionStart
+		return offset != null ?
+			this.value
+				.slice(0, offset)
+				.split(/\n/g)
+				.length
+			: undefined },
+})
+
 
 
 /**********************************************************************
