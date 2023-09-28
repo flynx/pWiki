@@ -314,10 +314,10 @@ var Outline = {
 		// indent...
 		Tab: function(evt){
 			evt.preventDefault()
-			var editable = this.get('editable')
+			var edited = this.get('edited')
 			var node = this.indent(!evt.shiftKey)
-			;(editable ?
-				editable
+			;(edited ?
+				edited
 				: node)?.focus() },
 
 		// edit mode...

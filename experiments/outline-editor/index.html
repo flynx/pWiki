@@ -1,67 +1,8 @@
 <html>
 <head>
+<link href="editor.css" rel="stylesheet"/>
 <style>
 
-:root {
-	font-family: sans-serif;
-	font-size: 5mm;
-}
-
-.editor [tabindex] {
-	position: relative;
-}
-.editor div [tabindex] {
-	margin-left: 2em;
-}
-.editor [tabindex]>span,
-.editor [tabindex]>textarea {
-	--padding: 0.2em;
-
-	display: block;
-	width: 100%;
-	/* XXX this is a tiny bit off and using textarea's height here is off too... */
-	min-height: 1em;
-	padding: var(--padding);
-	margin: 0;
-
-	font-family: sans-serif;
-	font-size: 5mm;
-	white-space: pre;
-
-	outline: none;
-	border: none;
-}
-.editor [tabindex]>textarea {
-	height: calc(2 * var(--padding) + 1em);
-	overflow: hidden;
-	resize: none;
-}
-
-/* show/hide node's view/code... */
-.editor [tabindex]>span+textarea:not(:focus),
-/* XXX not sure how to do this without :has(..)... */
-.editor [tabindex]:has(>span+textarea:focus)>span:has(+textarea),
-.editor [tabindex]:focus>span+textarea {
-	position: absolute;
-	opacity: 0;
-	top: 0;
-}
-
-.editor div[collapsed] {
-	border-bottom: solid 1px silver;
-}
-.editor div[collapsed] div {
-	display: none;
-}
-
-.editor div:focus {
-	/*outline: solid 0.2em silver;*/
-	outline: none;
-}
-.editor div:focus>span,
-.editor div:focus>textarea {
-	background: silver;
-}
 
 </style>
 <script src="generic.js"></script>
