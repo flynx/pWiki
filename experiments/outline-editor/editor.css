@@ -57,5 +57,5 @@
 }
 .editor div:focus>span,
 .editor div:focus>textarea {
-	background: silver;
+	background: rgba(0,0,0,0.1);
 }

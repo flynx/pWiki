@@ -31,8 +31,8 @@ var Outline = {
 
 	// config...
 	//
-	left_key_expands: false,
-	right_key_collapses: true,
+	left_key_collapses: true,
+	right_key_expands: true,
 
 
 	// XXX revise name...
@@ -289,18 +289,17 @@ var Outline = {
 			if(this.dom.querySelector('.editor textarea:focus')){
 				// XXX if at end of element move to next...
 				return }
-			if(this.left_key_expands){
-					this.toggleCollapse(true)
-					this.get('parent')?.focus()
-			} else { 
-				evt.shiftKey ?
-					this.toggleCollapse(true)
-					: this.get('parent')?.focus() } },
+			;((this.left_key_collapses 
+						|| evt.shiftKey)
+					&& this.get().getAttribute('collapsed') == null
+					&& this.get('children').length > 0) ?
+				this.toggleCollapse(true)
+				: this.get('parent')?.focus() },
 		ArrowRight: function(evt){
 			if(this.dom.querySelector('.editor textarea:focus')){
 				// XXX if at end of element move to next...
 				return }
-			if(this.right_key_collapses){
+			if(this.right_key_expands){
 				this.toggleCollapse(false) 
 				var child = this.get('children')[0]
 				child?.focus()
