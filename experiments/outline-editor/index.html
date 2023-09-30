@@ -9,12 +9,13 @@
 <script src="editor.js"></script>
 <script>
 
+var editor
+
 var setup = function(){
 	window.editor = {
 		__proto__: Outline,
 	}.setup(
-		document.querySelector('.editor'))
-}
+		document.querySelector('.editor')) }
 
 </script>
 </head>
@@ -58,7 +59,10 @@ TODO:
 - <s>shift subtree up/down</s>
 - <s>create node</s>
 - <s>edit node</s>
-- undo delete node
+- undo 
+  - delete node
+  - indent/deindent
+  - edit node
 - copy/paste nodes/trees
 - shifting nodes up/down
 - multiple node selection

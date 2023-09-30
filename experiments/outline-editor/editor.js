@@ -101,7 +101,7 @@ var Outline = {
 			: node == 'editable' ?
 				[...this.dom.querySelectorAll('[tabindex]>textarea')] 
 			: node == 'selected' ?
-				[...this.dom.querySelectorAll('[tabindex].selected')]
+				[...this.dom.querySelectorAll('[tabindex][selected]')]
 			: node == 'top' ?
 				[...this.dom.children]
 					.filter(function(elem){ 
@@ -349,6 +349,16 @@ var Outline = {
 			var next = this.get('next')
 			this.get()?.remove() 
 			next?.focus() },
+
+		// select...
+		' ': function(evt){
+			if(this.get('edited') != null){
+				return }
+			evt.preventDefault()
+			var focused = this.get()
+			focused.getAttribute('selected') != null ?
+				focused.removeAttribute('selected')
+				: focused.setAttribute('selected', '') },
 	},
 
 	setup: function(dom){

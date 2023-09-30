@@ -51,6 +51,11 @@
 	display: none;
 }
 
+/* XXX are we selecting subtrees or blocks??? */
+.editor [selected] {
+	background: silver;
+}
+
 .editor div:focus {
 	/*outline: solid 0.2em silver;*/
 	outline: none;
