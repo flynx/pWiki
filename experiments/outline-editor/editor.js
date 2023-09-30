@@ -26,6 +26,36 @@ var atLine = function(elem, index){
 
 //---------------------------------------------------------------------
 
+
+var Node = {
+	dom: undefined,
+	document: undefined,
+
+	get: function(){},
+
+	get root(){},
+	get parent(){},
+	get children(){},
+	get next(){},
+	get prev(){},
+
+	focus: function(){},
+	edit: function(){},
+
+	indent: function(){ },
+	deindent: function(){ },
+	toggleCollapse: function(){ },
+
+	remove: function(){},
+
+	json: function(){},
+	text: function(){},
+
+	load: function(){},
+}
+
+
+// XXX might be a good idea to do a view-action model...
 var Outline = {
 	dom: undefined,
 
@@ -191,6 +221,8 @@ var Outline = {
 			if(parent){
 				parent.append(cur) } } 
 		return cur },
+	deindent: function(node='focused', indent=false){
+		return this.indent(node, indent) },
 	toggleCollapse: function(node='focused', state='next'){
 		var that = this
 		if(node == 'all'){
@@ -216,6 +248,10 @@ var Outline = {
 			for(var elem of [...node.querySelectorAll('textarea')]){
 				elem.updateSize() } }
 		return node },
+
+	// XXX
+	remove: function(node){
+	},
 
 	// block serialization...
 	__code2html__: function(code){
@@ -351,6 +387,9 @@ var Outline = {
 			next?.focus() },
 
 		// select...
+		// XXX add:
+		// 		ctrl-A
+		// 		ctrl-D
 		' ': function(evt){
 			if(this.get('edited') != null){
 				return }
