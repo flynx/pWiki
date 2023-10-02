@@ -54,6 +54,17 @@ var Node = {
 	load: function(){},
 }
 
+var NodeGroup = {
+	__proto__: Node,
+}
+
+// XXX should this be Page or root??
+var Root = {
+	__proto__: NodeGroup,
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 // XXX might be a good idea to do a view-action model...
 var Outline = {
