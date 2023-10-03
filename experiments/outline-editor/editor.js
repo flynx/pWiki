@@ -167,7 +167,8 @@ var Outline = {
 				this.at(node)
 			: node == 'focused' ?
 				(this.dom.querySelector(`[tabindex]:focus`)
-					|| this.dom.querySelector(`textarea:focus`)?.parentElement)
+					|| this.dom.querySelector(`textarea:focus`)?.parentElement
+					|| this.dom.querySelector('[tabindex].focused'))
 			: node == 'parent' ?
 				this.get('focused')?.parentElement
 			: node 
@@ -221,7 +222,7 @@ var Outline = {
 		// deindent...
 		if(!indent){
 			var parent = cur.parentElement
-			if(!parent.classList.contains('.editor')){
+			if(!parent.classList.contains('.outline')){
 				var children = siblings.slice(siblings.indexOf(cur)+1)
 				parent.after(cur)
 				children.length > 0
@@ -260,9 +261,10 @@ var Outline = {
 				elem.updateSize() } }
 		return node },
 
-	// XXX
-	remove: function(node){
-	},
+	// XXX should this handle focus???
+	remove: function(node='focused', offset){
+		this.get(...arguments)?.remove()
+		return this },
 
 	// block serialization...
 	__code2html__: function(code){
@@ -333,7 +335,7 @@ var Outline = {
 		// horizontal navigation / collapse...
 		// XXX if at start/end of element move to prev/next...
 		ArrowLeft: function(evt){
-			if(this.dom.querySelector('.editor textarea:focus')){
+			if(this.dom.querySelector('.outline textarea:focus')){
 				// XXX if at end of element move to next...
 				return }
 			;((this.left_key_collapses 
@@ -343,7 +345,7 @@ var Outline = {
 				this.toggleCollapse(true)
 				: this.get('parent')?.focus() },
 		ArrowRight: function(evt){
-			if(this.dom.querySelector('.editor textarea:focus')){
+			if(this.dom.querySelector('.outline textarea:focus')){
 				// XXX if at end of element move to next...
 				return }
 			if(this.right_key_expands){
@@ -394,7 +396,7 @@ var Outline = {
 				return }
 			this.toggleCollapse(true)
 			var next = this.get('next')
-			this.get()?.remove() 
+			this.remove()
 			next?.focus() },
 
 		// select...
@@ -414,20 +416,26 @@ var Outline = {
 	setup: function(dom){
 		var that = this
 		this.dom = dom
+		var outline = dom.querySelector('.outline')
 		// update stuff already in DOM...
-		for(var elem of [...dom.querySelectorAll('.editor textarea')]){
+		for(var elem of [...outline.querySelectorAll('textarea')]){
 			elem.autoUpdateSize() } 
 
 		// heboard handling...
-		dom.addEventListener('keydown', 
+		outline.addEventListener('keydown', 
 			function(evt){
 				evt.key in that.keyboard 
 					&& that.keyboard[evt.key].call(that, evt) })
 
 		// toggle view/code of nodes...
-		dom.addEventListener('focusin', 
+		outline.addEventListener('focusin', 
 			function(evt){
 				var node = evt.target
+				// handle focus...
+				for(var e of [...that.dom.querySelectorAll('.focused')]){
+					e.classList.remove('focused') }
+				that.get('focused')?.classList?.add('focused')
+				// textarea...
 				if(node.nodeName == 'TEXTAREA' 
 						&& node?.previousElementSibling?.nodeName == 'SPAN'){
 					node.value = 
@@ -435,7 +443,7 @@ var Outline = {
 							that.__html2code__(node.previousElementSibling.innerHTML)
 							: node.previousElementSibling.innerHTML 
 					node.updateSize() } })
-		dom.addEventListener('focusout', 
+		outline.addEventListener('focusout', 
 			function(evt){
 				var node = evt.target
 				if(node.nodeName == 'TEXTAREA' 

@@ -21,30 +21,38 @@ var setup = function(){
 </head>
 <body onload="setup()">
 <div class="editor">
-	<div tabindex=0>
-		<span><i>root</i></span><textarea></textarea>
-		<div tabindex=0 collapsed>
-			<span>A</span><textarea></textarea>
-			<div tabindex=0><span>a</span><textarea></textarea>
+	<div class="outline">
+		<div tabindex=0>
+			<span><i>root</i></span><textarea></textarea>
+			<div tabindex=0 collapsed>
+				<span>A</span><textarea></textarea>
+				<div tabindex=0><span>a</span><textarea></textarea>
+				</div>
+				<div tabindex=0><span>b</span><textarea></textarea>
+				</div>
+				<div tabindex=0><span>c</span><textarea></textarea>
+				</div>
 			</div>
-			<div tabindex=0><span>b</span><textarea></textarea>
+			<div tabindex=0><span>B</span><textarea></textarea>
+				<div tabindex=0><span>d</span><textarea></textarea>
+				</div>
+				<div tabindex=0><span>e</span><textarea></textarea>
+				</div>
 			</div>
-			<div tabindex=0><span>c</span><textarea></textarea>
+			<div tabindex=0><span>C</span><textarea></textarea>
+				<div tabindex=0><span>This is a line of text</span><textarea></textarea>
+				</div>
+				<div tabindex=0><span>This is a set
+	text lines</span><textarea></textarea>
+				</div>
 			</div>
 		</div>
-		<div tabindex=0><span>B</span><textarea></textarea>
-			<div tabindex=0><span>d</span><textarea></textarea>
-			</div>
-			<div tabindex=0><span>e</span><textarea></textarea>
-			</div>
-		</div>
-		<div tabindex=0><span>C</span><textarea></textarea>
-			<div tabindex=0><span>This is a line of text</span><textarea></textarea>
-			</div>
-			<div tabindex=0><span>This is a set
-text lines</span><textarea></textarea>
-			</div>
-		</div>
+	</div>
+	<div class="toolbar">
+		<button onclick="editor.deindent()">&lt;</button>
+		<button onclick="editor.indent()">&gt;</button>
+		<button>indent</button>
+		<button>indent</button>
 	</div>
 </div>
 
