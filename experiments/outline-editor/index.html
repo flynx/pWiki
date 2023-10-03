@@ -51,8 +51,9 @@ var setup = function(){
 	<div class="toolbar">
 		<button onclick="editor.deindent()">&lt;</button>
 		<button onclick="editor.indent()">&gt;</button>
-		<button>indent</button>
-		<button>indent</button>
+		<button onclick="editor.Block('before').focus()">O</button>
+		<button onclick="editor.Block('after').focus()">o</button>
+		<button onclick="editor.remove()">&times;</button>
 	</div>
 </div>
 

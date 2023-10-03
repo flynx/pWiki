@@ -28,7 +28,7 @@
 	--padding: 0.2em;
 
 	display: block;
-	width: 100%
+	width: 100%;
 	/* XXX this is a tiny bit off and using textarea's height here is off too... */
 	min-height: 1em;
 	padding: var(--padding);

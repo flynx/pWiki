@@ -121,6 +121,7 @@ var Outline = {
 	// 		-> <nodes>
 	//
 	// XXX add support for node ID...
+	// XXX need to be able to get the next elem on same level...
 	get: function(node='focused', offset){
 		var that = this
 
@@ -193,6 +194,12 @@ var Outline = {
 					return elem.getAttribute('tabindex') != null }) }
 
 		// offset...
+		offset = 
+			offset == 'next' ? 
+				1
+			: offset == 'prev' ?
+				-1
+			: offset
 		if(typeof(offset) == 'number'){
 			nodes = this.get('visible')
 			var i = nodes.indexOf(node) + offset
@@ -207,8 +214,8 @@ var Outline = {
 	at: function(index, nodes='visible'){
 		return this.get(nodes).at(index) },
 
-	focus: function(node='focused'){},
-	edit: function(node='focused'){},
+	focus: function(node='focused', offset){},
+	edit: function(node='focused', offset){},
 
 	indent: function(node='focused', indent=true){
 		// .indent(<indent>)
@@ -261,9 +268,15 @@ var Outline = {
 				elem.updateSize() } }
 		return node },
 
-	// XXX should this handle focus???
 	remove: function(node='focused', offset){
-		this.get(...arguments)?.remove()
+		var elem = this.get(...arguments)
+		var next 
+		if(elem.classList.contains('focused')){
+			// XXX need to be able to get the next elem on same level...
+			this.toggleCollapse(elem)
+			next = this.get(elem, 'next') }
+		elem?.remove()
+		next?.focus()
 		return this },
 
 	// block serialization...
@@ -394,10 +407,7 @@ var Outline = {
 		Delete: function(evt){
 			if(evt.target.isContentEditable){
 				return }
-			this.toggleCollapse(true)
-			var next = this.get('next')
-			this.remove()
-			next?.focus() },
+			this.remove() },
 
 		// select...
 		// XXX add:
