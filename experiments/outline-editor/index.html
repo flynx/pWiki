@@ -3,6 +3,9 @@
 <link href="editor.css" rel="stylesheet"/>
 <style>
 
+.add-row {
+	height: 1.2em !important;
+}
 
 </style>
 <script src="generic.js"></script>
@@ -42,17 +45,19 @@ var setup = function(){
 			<div tabindex=0><span>C</span><textarea></textarea>
 				<div tabindex=0><span>This is a line of text</span><textarea></textarea>
 				</div>
-				<div tabindex=0><span>This is a set
-text lines</span><textarea></textarea>
+				<div tabindex=0><span>This is a set<br>
+					text lines</span><textarea></textarea>
 				</div>
 			</div>
 		</div>
 	</div>
+	<!-- toolbar (optional) -->
 	<div class="toolbar">
 		<button onclick="editor.deindent().focus()">&lt;</button>
 		<button onclick="editor.indent().focus()">&gt;</button>
-		<button onclick="editor.Block('before').focus()">-<sup>+</sup>-</button>
-		<button onclick="editor.Block('after').focus()">-<sub>+</sub>-</button>
+		<button onclick="editor.Block('before').focus()" class="add-row">+</button>
+		<hr>
+		<button onclick="editor.Block('after').focus()" class="add-row">+</button>
 		<button onclick="editor.toggleCollapse()?.focus()">&#709;&#708;</button>
 		<button onclick="editor.remove()">&times;</button>
 	</div>
@@ -70,13 +75,13 @@ TODO:
 - <s>shift subtree up/down</s>
 - <s>create node</s>
 - <s>edit node</s>
+- shifting nodes up/down
+- multiple node selection
 - undo 
   - delete node
   - indent/deindent
   - edit node
 - copy/paste nodes/trees
-- shifting nodes up/down
-- multiple node selection
 - <s>serialize</s>/deserialize
 - <s>add optional text styling to nodes</s>
 
@@ -93,6 +98,7 @@ Controls:
 	           - edit mode: create node below
 	esc        - exit edit mode 
 </pre>
+
 
 </body>
 </html>

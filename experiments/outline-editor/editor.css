@@ -14,7 +14,8 @@
 .editor .outline {
 	display: block;
 	position: relative;
-	width: calc(100% - var(--button-size));
+	/* XXX do a better calculation... */
+	width: calc(100% - (var(--button-size) + 4em));
 }
 
 .editor .outline [tabindex] {
@@ -36,7 +37,6 @@
 
 	font-family: sans-serif;
 	font-size: 5mm;
-	white-space: pre;
 
 	outline: none;
 	border: none;
@@ -92,10 +92,13 @@
 	right: 1em;
 }
 .editor .toolbar button {
+	--margin: 0.1em;
+
 	display: block;
 
-	width: var(--button-size);
+	width: calc(var(--button-size) + var(--margin) * 2);
 	height: var(--button-size);
+	margin: var(--margin);
 
 	font-size: var(--button-size);
 }

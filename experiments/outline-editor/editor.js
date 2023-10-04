@@ -289,13 +289,23 @@ var Outline = {
 	// block serialization...
 	__code2html__: function(code){
 		return code 
+			.replace(/\n\s*/g, '<br>')
 			// XXX STUB...
+			.replace(/^# (.*)\s*$/g, '<h1>$1</h1>')
+			.replace(/^## (.*)\s*$/g, '<h2>$1</h2>')
+			.replace(/^### (.*)\s*$/g, '<h3>$1</h3>')
+			.replace(/^#### (.*)\s*$/g, '<h4>$1</h4>')
 			.replace(/\*(.*)\*/g, '<b>$1</b>')
 			.replace(/~([^~]*)~/g, '<s>$1</s>')
 			.replace(/_([^_]*)_/g, '<i>$1</i>') },
 	__html2code__: function(html){
 		return html 
+			.replace(/<br>\s*/g, '\n')
 			// XXX STUB...
+			.replace(/^<h1>(.*)<\/h1>\s*$/g, '# $1')
+			.replace(/^<h2>(.*)<\/h2>\s*$/g, '## $1')
+			.replace(/^<h3>(.*)<\/h3>\s*$/g, '### $1')
+			.replace(/^<h4>(.*)<\/h4>\s*$/g, '#### $1')
 			.replace(/<b>(.*)<\/b>/g, '*$1*')
 			.replace(/<s>(.*)<\/s>/g, '~$1~')
 			.replace(/<i>(.*)<\/i>/g, '_$1_') },
@@ -347,6 +357,7 @@ var Outline = {
 	// XXX add scrollIntoView(..) to nav...
 	keyboard: {
 		// vertical navigation...
+		// XXX wrapped line navigation is broken...
 		ArrowUp: function(evt){
 			var state = 'focused'
 			var edited = this.get('edited')
