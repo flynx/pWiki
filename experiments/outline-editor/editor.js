@@ -23,15 +23,6 @@ var atLine = function(elem, index){
 	return false }
 
 
-// handle return of focus when clicking toolbar...
-var FOCUS_TEXTAREA
-var keepFocus = function(){
-	FOCUS_TEXTAREA = document.activeElement.nodeName == 'TEXTAREA' }
-var refocus = function(){
-	FOCUS_TEXTAREA ?
-		editor.get().querySelector('textarea').focus() 
-		: editor.get().focus()
-	FOCUS_TEXTAREA = undefined } 
 
 
 //---------------------------------------------------------------------
@@ -87,6 +78,8 @@ var Outline = {
 
 	get outline(){
 		return this.dom.querySelector('.outline') },
+	get toolbar(){
+		return this.dom.querySelector('.toolbar') },
 
 
 	// XXX revise name...
@@ -455,17 +448,17 @@ var Outline = {
 	setup: function(dom){
 		var that = this
 		this.dom = dom
+
+		// outline...
 		var outline = this.outline
 		// update stuff already in DOM...
 		for(var elem of [...outline.querySelectorAll('textarea')]){
 			elem.autoUpdateSize() } 
-
 		// heboard handling...
 		outline.addEventListener('keydown', 
 			function(evt){
 				evt.key in that.keyboard 
 					&& that.keyboard[evt.key].call(that, evt) })
-
 		// toggle view/code of nodes...
 		outline.addEventListener('focusin', 
 			function(evt){
@@ -491,6 +484,25 @@ var Outline = {
 						that.__code2html__ ?
 							that.__code2html__(node.value)
 							: node.value } })
+
+		// toolbar...
+		var toolbar = this.toolbar
+		if(toolbar){
+			// handle return of focus when clicking toolbar...
+			var focus_textarea
+			var cahceNodeType = function(){
+				// NOTE: for some reason .activeElement returns an element
+				// 		that is not in the DOM after the action is done...
+				focus_textarea = document.activeElement.nodeName == 'TEXTAREA' }
+			var refocusNode = function(){
+				focus_textarea ?
+					editor.get().querySelector('textarea').focus() 
+					: editor.get().focus()
+				focus_textarea = undefined } 
+			// cache the focused node type before focus changes...
+			toolbar.addEventListener('mousedown', cahceNodeType)
+			// refocus the node after we are done...
+			toolbar.addEventListener('click', refocusNode) }
 
 		return this },
 }
