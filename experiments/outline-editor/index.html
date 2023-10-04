@@ -43,18 +43,17 @@ var setup = function(){
 				<div tabindex=0><span>This is a line of text</span><textarea></textarea>
 				</div>
 				<div tabindex=0><span>This is a set
-	text lines</span><textarea></textarea>
+text lines</span><textarea></textarea>
 				</div>
 			</div>
 		</div>
 	</div>
-	<div class="toolbar">
-		<!-- XXX these all should focus the node back so as not to hide the keyboard on mobine -->
-		<button onclick="editor.deindent()">&lt;</button>
-		<button onclick="editor.indent()">&gt;</button>
-		<button onclick="editor.Block('before').focus()" style="text-decoration:underline">+</button>
-		<button onclick="editor.Block('after').focus()" style="text-decoration:overline">+</button>
-		<button onclick="editor.toggleCollapse()">+/-</button>
+	<div class="toolbar" onmousedown="keepFocus()" onclick="refocus()">
+		<button onclick="editor.deindent().focus()">&lt;</button>
+		<button onclick="editor.indent().focus()">&gt;</button>
+		<button onclick="editor.Block('before').focus()">-<sup>+</sup>-</button>
+		<button onclick="editor.Block('after').focus()">-<sub>+</sub>-</button>
+		<button onclick="editor.toggleCollapse()?.focus()">&#709;&#708;</button>
 		<button onclick="editor.remove()">&times;</button>
 	</div>
 </div>
@@ -63,8 +62,9 @@ var setup = function(){
 
 <pre>
 TODO:
-- mouse controls
-- touch controls
+- Firefox compatibility -- remove ':has(..)'
+- <s>focus management</s>
+- <s>mouse/touch controls</s>
 - <s>navigation</s>
 - <s>expand/collapse subtree</s>
 - <s>shift subtree up/down</s>

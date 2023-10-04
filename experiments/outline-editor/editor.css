@@ -1,6 +1,6 @@
 
 :root {
-	--button-size: 5em;
+	--button-size: 2em;
 
 	font-family: sans-serif;
 	font-size: 5mm;
@@ -93,8 +93,11 @@
 }
 .editor .toolbar button {
 	display: block;
+
 	width: var(--button-size);
 	height: var(--button-size);
+
+	font-size: var(--button-size);
 }
 
 

@@ -23,6 +23,16 @@ var atLine = function(elem, index){
 	return false }
 
 
+// handle return of focus when clicking toolbar...
+var FOCUS_TEXTAREA
+var keepFocus = function(){
+	FOCUS_TEXTAREA = document.activeElement.nodeName == 'TEXTAREA' }
+var refocus = function(){
+	FOCUS_TEXTAREA ?
+		editor.get().querySelector('textarea').focus() 
+		: editor.get().focus()
+	FOCUS_TEXTAREA = undefined } 
+
 
 //---------------------------------------------------------------------
 
@@ -73,6 +83,10 @@ var Outline = {
 	//
 	left_key_collapses: true,
 	right_key_expands: true,
+
+
+	get outline(){
+		return this.dom.querySelector('.outline') },
 
 
 	// XXX revise name...
@@ -130,21 +144,23 @@ var Outline = {
 		if(node == 'prev' || node == 'previous'){
 			return this.get('focused', -1) }
 
+		var outline = this.outline
+
 		// node lists...
 		var NO_NODES = {}
 		var nodes = 
 			node == 'all' ?
-				[...this.dom.querySelectorAll('[tabindex]')] 
+				[...outline.querySelectorAll('[tabindex]')] 
 			: node == 'visible' ?
-				[...this.dom.querySelectorAll('[tabindex]')] 
+				[...outline.querySelectorAll('[tabindex]')] 
 					.filter(function(e){
 						return e.offsetParent != null })
 			: node == 'editable' ?
-				[...this.dom.querySelectorAll('[tabindex]>textarea')] 
+				[...outline.querySelectorAll('[tabindex]>textarea')] 
 			: node == 'selected' ?
-				[...this.dom.querySelectorAll('[tabindex][selected]')]
+				[...outline.querySelectorAll('[tabindex][selected]')]
 			: node == 'top' ?
-				[...this.dom.children]
+				[...outline.children]
 					.filter(function(elem){ 
 						return elem.getAttribute('tabindex') != null })
 			: ['siblings', 'children'].includes(node) ?
@@ -166,15 +182,15 @@ var Outline = {
 			typeof(node) == 'number' ?
 				this.at(node)
 			: node == 'focused' ?
-				(this.dom.querySelector(`[tabindex]:focus`)
-					|| this.dom.querySelector(`textarea:focus`)?.parentElement
-					|| this.dom.querySelector('[tabindex].focused'))
+				(outline.querySelector(`[tabindex]:focus`)
+					|| outline.querySelector(`textarea:focus`)?.parentElement
+					|| outline.querySelector('[tabindex].focused'))
 			: node == 'parent' ?
 				this.get('focused')?.parentElement
 			: node 
 		var edited
 		if(node == 'edited'){
-			edited = this.dom.querySelector(`textarea:focus`)
+			edited = outline.querySelector(`textarea:focus`)
 			node = edited?.parentElement }
 
 		if(!node || typeof(node) == 'string'){
@@ -279,14 +295,22 @@ var Outline = {
 
 	// block serialization...
 	__code2html__: function(code){
-		return code },
+		return code 
+			// XXX STUB...
+			.replace(/\*(.*)\*/g, '<b>$1</b>')
+			.replace(/~([^~]*)~/g, '<s>$1</s>')
+			.replace(/_([^_]*)_/g, '<i>$1</i>') },
 	__html2code__: function(html){
-		return html },
+		return html 
+			// XXX STUB...
+			.replace(/<b>(.*)<\/b>/g, '*$1*')
+			.replace(/<s>(.*)<\/s>/g, '~$1~')
+			.replace(/<i>(.*)<\/i>/g, '_$1_') },
 
 	// serialization...
 	json: function(node){
 		var that = this
-		node ??= this.dom
+		node ??= this.outline
 		return [...node.children]
 			.map(function(elem){
 				return elem.nodeName != 'DIV' ?
@@ -318,7 +342,14 @@ var Outline = {
 		return text },
 
 	// XXX use .__code2html__(..)
-	load: function(){},
+	load: function(data){
+		// text...
+		if(typeof(data) == 'string'){
+			// XXX
+		} 
+		// json...
+		// XXX
+	},
 
 	// XXX add scrollIntoView(..) to nav...
 	keyboard: {
@@ -346,7 +377,7 @@ var Outline = {
 		// horizontal navigation / collapse...
 		// XXX if at start/end of element move to prev/next...
 		ArrowLeft: function(evt){
-			if(this.dom.querySelector('.outline textarea:focus')){
+			if(this.outline.querySelector('textarea:focus')){
 				// XXX if at end of element move to next...
 				return }
 			;((this.left_key_collapses 
@@ -356,7 +387,7 @@ var Outline = {
 				this.toggleCollapse(true)
 				: this.get('parent')?.focus() },
 		ArrowRight: function(evt){
-			if(this.dom.querySelector('.outline textarea:focus')){
+			if(this.outline.querySelector('textarea:focus')){
 				// XXX if at end of element move to next...
 				return }
 			if(this.right_key_expands){
@@ -401,7 +432,7 @@ var Outline = {
 				this.Block('after')?.querySelector('textarea')?.focus()
 				: this.get()?.querySelector('textarea')?.focus() },
 		Escape: function(evt){
-			this.dom.querySelector('textarea:focus')?.parentElement?.focus() },
+			this.outline.querySelector('textarea:focus')?.parentElement?.focus() },
 		Delete: function(evt){
 			if(evt.target.isContentEditable){
 				return }
@@ -424,7 +455,7 @@ var Outline = {
 	setup: function(dom){
 		var that = this
 		this.dom = dom
-		var outline = dom.querySelector('.outline')
+		var outline = this.outline
 		// update stuff already in DOM...
 		for(var elem of [...outline.querySelectorAll('textarea')]){
 			elem.autoUpdateSize() } 
