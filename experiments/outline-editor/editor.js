@@ -26,7 +26,6 @@ var atLine = function(elem, index){
 
 //---------------------------------------------------------------------
 
-
 var Node = {
 	dom: undefined,
 	document: undefined,
@@ -251,14 +250,14 @@ var Outline = {
 		// .toggleCollapse(<state>)
 		if(['next', true, false].includes(node)){
 			state = node
-			node = null }
-		node ??= this.get()
+			node = 'focused' }
+		node = this.get(node)
 		if(!node 
 				// only nodes with children can be collapsed...
 				|| !node.querySelector('[tabindex]')){
 			return }
 		state = state == 'next' ?
-			!node.getAttribute('collapsed')
+			node.getAttribute('collapsed') != ''
 			: state
 		if(state){
 			node.setAttribute('collapsed', '')
@@ -267,13 +266,12 @@ var Outline = {
 			for(var elem of [...node.querySelectorAll('textarea')]){
 				elem.updateSize() } }
 		return node },
-
 	remove: function(node='focused', offset){
 		var elem = this.get(...arguments)
 		var next 
 		if(elem.classList.contains('focused')){
 			// XXX need to be able to get the next elem on same level...
-			this.toggleCollapse(elem)
+			this.toggleCollapse(elem, true)
 			next = this.get(elem, 'next') }
 		elem?.remove()
 		next?.focus()

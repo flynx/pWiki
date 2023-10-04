@@ -49,10 +49,12 @@ var setup = function(){
 		</div>
 	</div>
 	<div class="toolbar">
+		<!-- XXX these all should focus the node back so as not to hide the keyboard on mobine -->
 		<button onclick="editor.deindent()">&lt;</button>
 		<button onclick="editor.indent()">&gt;</button>
-		<button onclick="editor.Block('before').focus()">O</button>
-		<button onclick="editor.Block('after').focus()">o</button>
+		<button onclick="editor.Block('before').focus()" style="text-decoration:underline">+</button>
+		<button onclick="editor.Block('after').focus()" style="text-decoration:overline">+</button>
+		<button onclick="editor.toggleCollapse()">+/-</button>
 		<button onclick="editor.remove()">&times;</button>
 	</div>
 </div>
