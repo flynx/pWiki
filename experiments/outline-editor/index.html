@@ -26,27 +26,29 @@ var setup = function(){
 <div class="editor">
 	<div class="outline">
 		<div tabindex=0>
-			<span><i>root</i></span><textarea></textarea>
+			<textarea></textarea><span><i>root</i></span>
 			<div tabindex=0 collapsed>
-				<span>A</span><textarea></textarea>
-				<div tabindex=0><span>a</span><textarea></textarea>
+				<textarea></textarea><span>A</span>
+				<div tabindex=0><textarea></textarea><span>a</span>
 				</div>
-				<div tabindex=0><span>b</span><textarea></textarea>
+				<div tabindex=0><textarea></textarea><span>b</span>
 				</div>
-				<div tabindex=0><span>c</span><textarea></textarea>
-				</div>
-			</div>
-			<div tabindex=0><span>B</span><textarea></textarea>
-				<div tabindex=0><span>d</span><textarea></textarea>
-				</div>
-				<div tabindex=0><span>e</span><textarea></textarea>
+				<div tabindex=0><textarea></textarea><span>c</span>
 				</div>
 			</div>
-			<div tabindex=0><span>C</span><textarea></textarea>
-				<div tabindex=0><span>This is a line of text</span><textarea></textarea>
+			<div tabindex=0><textarea></textarea><span>B</span>
+				<div tabindex=0><textarea></textarea><span>d</span>
 				</div>
-				<div tabindex=0><span>This is a set<br>
-					text lines</span><textarea></textarea>
+				<div tabindex=0><textarea></textarea><span>e</span>
+				</div>
+			</div>
+			<div tabindex=0><textarea></textarea><span>C</span>
+				<div tabindex=0><textarea></textarea><span>This is a line of text</span>
+				</div>
+				<div tabindex=0><textarea></textarea><span>This is a set<br>
+					text lines</span>
+				</div>
+				<div tabindex=0><textarea></textarea><span>Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text </span>
 				</div>
 			</div>
 		</div>
@@ -67,6 +69,8 @@ var setup = function(){
 
 <pre>
 TODO:
+- persistent empty first/last node (a button to create a new node)
+- loading from DOM -- fill textarea
 - Firefox compatibility -- remove ':has(..)'
 - <s>focus management</s>
 - <s>mouse/touch controls</s>

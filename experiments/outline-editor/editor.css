@@ -1,9 +1,13 @@
 
 :root {
+	--font-size: 5mm;
 	--button-size: 2em;
 
 	font-family: sans-serif;
-	font-size: 5mm;
+	font-size: var(--font-size);
+
+	/*text-size-adjust: none;*/
+	text-size-adjust: 150%;
 }
 
 .editor {
@@ -36,7 +40,7 @@
 	margin: 0;
 
 	font-family: sans-serif;
-	font-size: 5mm;
+	font-size: var(--font-size);
 
 	outline: none;
 	border: none;
@@ -49,9 +53,14 @@
 
 /* show/hide node's view/code... */
 .editor .outline [tabindex]>span+textarea:not(:focus),
-/* XXX not sure how to do this without :has(..)... */
-.editor .outline [tabindex]:has(>span+textarea:focus)>span:has(+textarea),
-.editor .outline [tabindex]:focus>span+textarea {
+.editor .outline [tabindex]:has(>span+textarea:focus)>span:first-child {
+	position: absolute;
+	opacity: 0;
+	top: 0;
+}
+
+.editor .outline [tabindex]>textarea:focus+span,
+.editor .outline [tabindex]>textarea:not(:focus) {
 	position: absolute;
 	opacity: 0;
 	top: 0;

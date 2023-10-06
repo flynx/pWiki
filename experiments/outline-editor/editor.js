@@ -87,9 +87,9 @@ var Outline = {
 		var block = document.createElement('div')
 		block.setAttribute('tabindex', '0')
 		block.append(
-			document.createElement('span'),
 			document.createElement('textarea')
-				.autoUpdateSize())
+				.autoUpdateSize(),
+			document.createElement('span'))
 		var cur = this.get()
 		place && cur
 			&& cur[place](block)
@@ -349,10 +349,18 @@ var Outline = {
 		// text...
 		if(typeof(data) == 'string'){
 			// XXX
+			data = data.split(/\n(\s*)- /g)
+			var level = function(lst){
+				while(lst.length > 0){
+				}
+			}
 		} 
 		// json...
 		// XXX
-	},
+
+		// generate dom...
+		// XXX
+		return this },
 
 	// XXX add scrollIntoView(..) to nav...
 	keyboard: {
@@ -480,18 +488,18 @@ var Outline = {
 				that.get('focused')?.classList?.add('focused')
 				// textarea...
 				if(node.nodeName == 'TEXTAREA' 
-						&& node?.previousElementSibling?.nodeName == 'SPAN'){
+						&& node?.nextElementSibling?.nodeName == 'SPAN'){
 					node.value = 
 						that.__html2code__ ?
-							that.__html2code__(node.previousElementSibling.innerHTML)
-							: node.previousElementSibling.innerHTML 
+							that.__html2code__(node.nextElementSibling.innerHTML)
+							: node.nextElementSibling.innerHTML 
 					node.updateSize() } })
 		outline.addEventListener('focusout', 
 			function(evt){
 				var node = evt.target
 				if(node.nodeName == 'TEXTAREA' 
-						&& node?.previousElementSibling?.nodeName == 'SPAN'){
-					node.previousElementSibling.innerHTML = 
+						&& node?.nextElementSibling?.nodeName == 'SPAN'){
+					node.nextElementSibling.innerHTML = 
 						that.__code2html__ ?
 							that.__code2html__(node.value)
 							: node.value } })

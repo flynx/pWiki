@@ -19,6 +19,7 @@ Object.defineProperty(HTMLTextAreaElement.prototype, 'caretLine', {
 	enumerable: false,
 	get: function(){
 		var offset = this.selectionStart
+		console.log('---', this)
 		return offset != null ?
 			this.value
 				.slice(0, offset)
