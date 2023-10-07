@@ -28,6 +28,8 @@ var setup = function(){
 	<div class="code">
 - # Outline editor prototype
 - ## TODO
+  - BUG: delete in edit mode deletes node...
+  - editor: enter on an expanded parent node should create child (currently next sibling)
   - editor: bksapce/del at start/end of a block should join it with prev/next
   - editor: pressing enter in text edit mode should split text into two blocks
   - editor: caret
@@ -35,7 +37,7 @@ var setup = function(){
     - handle up/down on wrapped blocks
       _...can't seem to get caret line in a non-hacky way_
   - persistent empty first/last node (a button to create a new node)
-  - loading from DOM -- fill textarea
+  - ~loading from DOM -- fill textarea~
   - ~focus management~
   - ~mouse/touch controls~
   - ~navigation~
@@ -54,6 +56,20 @@ var setup = function(){
   - ~add optional text styling to nodes~
   - 
 - ## TEST
+  - Formatting
+    - Styles
+      - # Heading 1
+      - ## Heading 2
+      - ### Heading 3
+      - #### Heading 4
+      - ##### Heading 5
+      - ###### Heading 6
+      - Text
+      - List::
+        - a
+        - b
+        - c
+    - basic inline *bold*, _italic_ and ~striked~
   - A
     collapsed:: true
     - a

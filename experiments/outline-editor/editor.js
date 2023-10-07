@@ -75,6 +75,7 @@ var Outline = {
 	left_key_collapses: true,
 	right_key_expands: true,
 	code_update_interval: 5000,
+	tab_size: 4,
 
 
 	get code(){
@@ -215,6 +216,30 @@ var Outline = {
 	focus: function(node='focused', offset){},
 	edit: function(node='focused', offset){},
 
+	// XXX should this handle children???
+	update: function(node='focused', data){
+		var node = this.get(node)
+		data.collapsed ?
+			node.setAttribute('collapsed', '')
+			: node.removeAttribute('collapsed')
+		if(data.text){
+			var text = node.querySelector('textarea')
+			var html = node.querySelector('span')
+			if(this.__code2html__){
+				// NOTE: we are ignoring the .collapsed attr here 
+				var parsed = this.__code2html__(data.text)
+				html.innerHTML = parsed.text
+				// heading...
+				parsed.style ?
+					node.classList.add(parsed.style)
+					: node.classList.remove(...this.__styles__)
+			} else {
+				html.innerHTML = data.text }
+			text.value = data.text
+			// XXX this does not see to work until we click in the textarea...
+			text.autoUpdateSize() }
+		return node },
+
 	indent: function(node='focused', indent=true){
 		// .indent(<indent>)
 		if(node === true || node === false){
@@ -284,10 +309,27 @@ var Outline = {
 	// XXX STUB...
 	// XXX shouild we support headings + other formatting per block???
 	// XXX these should be symetrical -- now one returns text the other an object...
+	__styles__: [
+		'heading-1',
+		'heading-2',
+		'heading-3',
+		'heading-4',
+		'heading-5',
+		'heading-6',
+		'list',
+	],
 	__code2html__: function(code){
 		var elem = {
 			collapsed: false,
 		}
+		var heading = function(level){
+			return function(_, text){
+				elem.style = 'heading-'+level
+				return text } }
+		var style = function(style){
+			return function(_, text){
+				elem.style = style 
+				return text } }
 		elem.text = code 
 			// attributes...
 			// XXX make this generic...
@@ -296,38 +338,20 @@ var Outline = {
 					elem.collapsed = value.trim() == 'true'
 					return '' })
 			// markdown...
-			.replace(/^######\s*(.*)\s*(\n|$)/, '<h6>$1</h6>')
-			.replace(/^#####\s*(.*)\s*(\n|$)/, '<h5>$1</h5>')
-			.replace(/^####\s*(.*)\s*(\n|$)/, '<h4>$1</h4>')
-			.replace(/^###\s*(.*)\s*(\n|$)/, '<h3>$1</h3>')
-			.replace(/^##\s*(.*)\s*(\n|$)/, '<h2>$1</h2>')
-			.replace(/^#\s*(.*)\s*(\n|$)/, '<h1>$1</h1>')
+			.replace(/^######\s*(.*)$/, style('heading-6'))
+			.replace(/^#####\s*(.*)$/, style('heading-5'))
+			.replace(/^####\s*(.*)$/, style('heading-4'))
+			.replace(/^###\s*(.*)$/, style('heading-3'))
+			.replace(/^##\s*(.*)$/, style('heading-2'))
+			.replace(/^#\s*(.*)$/, style('heading-1'))
+			//.replace(/^[-\*]\s*(.*)$/, style('list'))
+			.replace(/^\s*(.*):\s*$/, style('list'))
 			.replace(/\*(.*)\*/g, '<b>$1</b>')
 			.replace(/~([^~]*)~/g, '<s>$1</s>')
 			.replace(/_([^_]*)_/g, '<i>$1</i>') 
 			.replace(/(\n|^)---*\h*(\n|$)/, '$1<hr>')
 			.replace(/\n/g, '<br>\n')
 		return elem },
-	__html2code__: function(html){
-		var heading = function(level){
-			return function(_, text, rest){
-				return `${'#'.repeat(level)} ${text}${
-					(rest != '' ? 
-						'\n'+ rest
-						: '') }` } }
-		return html 
-			.replace(/<hr>$/, '---')
-			.replace(/<hr>/, '---\n')
-			.replace(/^<h6>(.*)<\/h6>(.*)$/g, heading(6))
-			.replace(/^<h5>(.*)<\/h5>(.*)$/g, heading(5))
-			.replace(/^<h4>(.*)<\/h4>(.*)$/g, heading(4))
-			.replace(/^<h3>(.*)<\/h3>(.*)$/g, heading(3))
-			.replace(/^<h2>(.*)<\/h2>(.*)$/g, heading(2))
-			.replace(/^<h1>(.*)<\/h1>(.*)$/g, heading(1))
-			.replace(/<b>(.*)<\/b>/g, '*$1*')
-			.replace(/<s>(.*)<\/s>/g, '~$1~')
-			.replace(/<i>(.*)<\/i>/g, '_$1_')
-			.replace(/<br>\s*/g, '\n') },
 
 	// serialization...
 	json: function(node){
@@ -338,13 +362,12 @@ var Outline = {
 				return elem.nodeName != 'DIV' ?
 					[]
 					: [{
-						text: that.__html2code__ ?
-							that.__html2code__(elem.querySelector('span').innerHTML)
-							: elem.querySelector('span').innerHTML,
+						text: elem.querySelector('textarea').value,
 						collapsed: elem.getAttribute('collapsed') != null,
 						children: that.json(elem)
 					}] })
 			.flat() },
+	// XXX add option to customize indent size...
 	text: function(node, indent, level){
 		// .text(<indent>, <level>)
 		if(typeof(node) == 'string'){
@@ -375,9 +398,10 @@ var Outline = {
 		text = ('\n' + text)
 			.split(/\n(\s*)- /g)
 			.slice(1)
+		var tab = ' '.repeat(this.tab_size || 8)
 		var level = function(lst, prev_sep=undefined, parent=[]){
 			while(lst.length > 0){
-				sep = lst[0]
+				sep = lst[0].replace(/\t/g, tab)
 				// deindent...
 				if(prev_sep != null 
 						&& sep.length < prev_sep.length){
@@ -411,19 +435,10 @@ var Outline = {
 			data = {} }
 		var block = document.createElement('div')
 		block.setAttribute('tabindex', '0')
-		data.collapsed
-			&& block.setAttribute('collapsed', '')
 		var text = document.createElement('textarea')
 		var html = document.createElement('span')
 		block.append(text, html)
-		if(data.text){
-			html.innerHTML = this.__code2html__ ?
-				// NOTE: we are ignoring the .collapsed attr here (XXX)
-				this.__code2html__(data.text).text
-				: data.text 
-			text.value = data.text
-			// XXX this does not see to work until we click in the textarea...
-			text.autoUpdateSize() }
+		this.update(block, data)
 		var cur = this.get()
 		place && cur
 			&& cur[place](block)
@@ -596,23 +611,14 @@ var Outline = {
 				// textarea...
 				if(node.nodeName == 'TEXTAREA' 
 						&& node?.nextElementSibling?.nodeName == 'SPAN'){
-					node.value = 
-						that.__html2code__ ?
-							that.__html2code__(node.nextElementSibling.innerHTML)
-							: node.nextElementSibling.innerHTML 
 					node.updateSize() } })
 		outline.addEventListener('focusout', 
 			function(evt){
 				var node = evt.target
 				if(node.nodeName == 'TEXTAREA' 
 						&& node?.nextElementSibling?.nodeName == 'SPAN'){
-					if(that.__code2html__){
-						var data = that.__code2html__(node.value)
-						node.nextElementSibling.innerHTML = data.text
-						data.collapsed 
-							&& node.parentElement.setAttribute('collapsed', '')
-					} else {
-						node.nextElementSibling.innerHTML = node.value } } })
+					var block = node.parentElement
+					that.update(block, { text: node.value }) } })
 		// update .code...
 		var update_code_timeout
 		outline.addEventListener('change', 
@@ -622,7 +628,6 @@ var Outline = {
 				update_code_timeout = setTimeout(
 					function(){
 						update_code_timeout = undefined
-						console.log('SYNC')
 						that.sync() }, 
 					that.code_update_interval || 5000) })
 

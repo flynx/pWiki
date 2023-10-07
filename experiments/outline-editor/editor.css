@@ -110,6 +110,56 @@
 }
 
 
+.editor .outline .heading-1>span,
+.editor .outline .heading-1>textarea,
+.editor .outline .heading-2>span,
+.editor .outline .heading-2>textarea,
+.editor .outline .heading-3>span,
+.editor .outline .heading-3>textarea,
+.editor .outline .heading-4>span,
+.editor .outline .heading-4>textarea,
+.editor .outline .heading-5>span,
+.editor .outline .heading-5>textarea,
+.editor .outline .heading-6>span,
+.editor .outline .heading-6>textarea {
+	font-weight: bold;
+}
+.editor .outline .heading-1>span,
+.editor .outline .heading-1>textarea {
+	font-size: 2.5em;
+}
+.editor .outline .heading-2>span,
+.editor .outline .heading-2>textarea {
+	font-size: 1.9em;
+}
+.editor .outline .heading-3>span,
+.editor .outline .heading-3>textarea {
+	font-size: 1.5em;
+}
+.editor .outline .heading-4>span,
+.editor .outline .heading-4>textarea {
+	font-size: 1.3em;
+}
+.editor .outline .heading-5>span,
+.editor .outline .heading-5>textarea {
+	font-size: 1.1em;
+}
+.editor .outline .heading-6>span,
+.editor .outline .heading-6>textarea {
+	font-size: 1em;
+}
+/* XXX EXPERIMENTAL -- not sure about this... */
+.editor .outline .list>[tabindex]:before {
+	display: inline-block;
+	position: absolute;
+	content: "";
+	top: 0.6em;
+	left: -0.8em;
+	width: 0.5em;
+	height: 0.5em;
+	background: silver;
+}
+
 .editor .outline h1,
 .editor .outline h2,
 .editor .outline h3,
@@ -119,5 +169,7 @@
 	margin-top: 0.5em;
 	margin-bottom: 0.5em;
 }
+
+
 
 
