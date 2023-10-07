@@ -28,7 +28,9 @@ var setup = function(){
 	<div class="code">
 - # Outline editor prototype
 - ## TODO
-  - BUG: delete in edit mode deletes node...
+  - BUG: delete in edit mode deletes node
+  - BUG: multiline blocks do not indent correctly in editor
+  - make checkboxes clickable
   - editor: enter on an expanded parent node should create child (currently next sibling)
   - editor: bksapce/del at start/end of a block should join it with prev/next
   - editor: pressing enter in text edit mode should split text into two blocks
@@ -69,7 +71,12 @@ var setup = function(){
         - a
         - b
         - c
+	- line
+		- ---
     - basic inline *bold*, _italic_ and ~striked~
+	- To do items
+	  - TODO undone item
+	  - DONE done item
   - A
     collapsed:: true
     - a

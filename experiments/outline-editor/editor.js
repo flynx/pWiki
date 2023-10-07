@@ -338,6 +338,8 @@ var Outline = {
 					elem.collapsed = value.trim() == 'true'
 					return '' })
 			// markdown...
+			.replace(/^TODO\s*(.*)$/, '<input type="checkbox"> $1')
+			.replace(/^DONE\s*(.*)$/, '<input type="checkbox" checked> $1')
 			.replace(/^######\s*(.*)$/, style('heading-6'))
 			.replace(/^#####\s*(.*)$/, style('heading-5'))
 			.replace(/^####\s*(.*)$/, style('heading-4'))
