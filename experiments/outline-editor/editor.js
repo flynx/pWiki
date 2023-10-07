@@ -82,19 +82,6 @@ var Outline = {
 		return this.dom.querySelector('.toolbar') },
 
 
-	// XXX revise name...
-	Block: function(place=none){
-		var block = document.createElement('div')
-		block.setAttribute('tabindex', '0')
-		block.append(
-			document.createElement('textarea')
-				.autoUpdateSize(),
-			document.createElement('span'))
-		var cur = this.get()
-		place && cur
-			&& cur[place](block)
-		return block },
-
 	//
 	// 	.get([<offset>])
 	// 	.get('focused'[, <offset>])
@@ -287,28 +274,47 @@ var Outline = {
 		return this },
 
 	// block serialization...
+	// XXX these should be symetrical...
 	__code2html__: function(code){
-		return code 
-			.replace(/\n\s*/g, '<br>')
+		var elem = {
+			collapsed: false,
+		}
+		elem.text = code 
+			// attributes...
+			// XXX make this generic...
+			.replace(/\n\s*collapsed::\s*(.*)\s*$/, 
+				function(_, value){
+					elem.collapsed = value.trim() == 'true'
+					return '' })
+			// markdown...
 			// XXX STUB...
-			.replace(/^# (.*)\s*$/g, '<h1>$1</h1>')
-			.replace(/^## (.*)\s*$/g, '<h2>$1</h2>')
-			.replace(/^### (.*)\s*$/g, '<h3>$1</h3>')
-			.replace(/^#### (.*)\s*$/g, '<h4>$1</h4>')
+			.replace(/^#\s*(.*)\s*(\n|$)/, '<h1>$1</h1>')
+			.replace(/^##\s*(.*)\s*(\n|$)/, '<h2>$1</h2>')
+			.replace(/^###\s*(.*)\s*(\n|$)/, '<h3>$1</h3>')
+			.replace(/^####\s*(.*)\s*(\n|$)/, '<h4>$1</h4>')
+			.replace(/^#####\s*(.*)\s*(\n|$)/, '<h5>$1</h5>')
+			.replace(/^######\s*(.*)\s*(\n|$)/, '<h6>$1</h6>')
 			.replace(/\*(.*)\*/g, '<b>$1</b>')
 			.replace(/~([^~]*)~/g, '<s>$1</s>')
-			.replace(/_([^_]*)_/g, '<i>$1</i>') },
+			.replace(/_([^_]*)_/g, '<i>$1</i>') 
+			.replace(/(\n|^)---*\h*(\n|$)/, '$1<hr>')
+			.replace(/\n/g, '<br>\n')
+		return elem },
 	__html2code__: function(html){
 		return html 
-			.replace(/<br>\s*/g, '\n')
 			// XXX STUB...
-			.replace(/^<h1>(.*)<\/h1>\s*$/g, '# $1')
-			.replace(/^<h2>(.*)<\/h2>\s*$/g, '## $1')
-			.replace(/^<h3>(.*)<\/h3>\s*$/g, '### $1')
-			.replace(/^<h4>(.*)<\/h4>\s*$/g, '#### $1')
+			.replace(/<hr>$/, '---')
+			.replace(/<hr>/, '---\n')
+			.replace(/^<h1>(.*)<\/h1>\s*(.*)$/g, '# $1\n$2')
+			.replace(/^<h2>(.*)<\/h2>\s*(.*)$/g, '## $1\n$2')
+			.replace(/^<h3>(.*)<\/h3>\s*(.*)$/g, '### $1\n$2')
+			.replace(/^<h4>(.*)<\/h4>\s*(.*)$/g, '#### $1\n$2')
+			.replace(/^<h5>(.*)<\/h5>\s*(.*)$/g, '##### $1\n$2')
+			.replace(/^<h6>(.*)<\/h6>\s*(.*)$/g, '###### $1\n$2')
 			.replace(/<b>(.*)<\/b>/g, '*$1*')
 			.replace(/<s>(.*)<\/s>/g, '~$1~')
-			.replace(/<i>(.*)<\/i>/g, '_$1_') },
+			.replace(/<i>(.*)<\/i>/g, '_$1_')
+			.replace(/<br>\s*/g, '\n') },
 
 	// serialization...
 	json: function(node){
@@ -341,23 +347,73 @@ var Outline = {
 				+ elem.text
 					.replace(/\n/g, '\n'+ level +'  ') 
 				+'\n'
+				+ (elem.collapsed ?
+					level+'  ' + 'collapsed:: true\n'
+					: '')
 				+ this.text(elem.children || [], indent, level+indent) }
 		return text },
 
+	parse: function(text){
+		text = ('\n' + text)
+			.split(/\n(\s*)- /g)
+			.slice(1)
+		var level = function(lst, prev_sep=undefined, parent=[]){
+			while(lst.length > 0){
+				sep = lst[0]
+				// deindent...
+				if(prev_sep != null 
+						&& sep.length < prev_sep.length){
+					break }
+				prev_sep ??= sep
+				// same level...
+				if(sep.length == prev_sep.length){
+					var [_, block] = lst.splice(0, 2)
+					var collapsed = false
+					block = block
+						.replace(/\n\s*collapsed::\s*(.*)\s*$/, 
+							function(_, value){
+								collapsed = value == 'true'
+								return '' })
+					parent.push({ 
+						text: block,
+						collapsed,
+						children: [],
+					})
+				// indent...
+				} else {
+					parent.at(-1).children = level(lst, sep) } }
+			return parent }
+		return level(text) },
+
+	// XXX revise name...
+	Block: function(data={}, place=null){
+		if(typeof(data) != 'object'){
+			place = data
+			data = {} }
+		var block = document.createElement('div')
+		block.setAttribute('tabindex', '0')
+		data.collapsed
+			&& block.setAttribute('collapsed', '')
+		var text
+		var html
+		block.append(
+			text = document.createElement('textarea')
+				.autoUpdateSize(),
+			html = document.createElement('span'))
+		if(data.text){
+			text.value = data.text
+			html.innerHTML = this.__code2html__ ?
+				this.__code2html__(data.text)
+				: data.text }
+		var cur = this.get()
+		place && cur
+			&& cur[place](block)
+		return block },
 	// XXX use .__code2html__(..)
 	load: function(data){
-		// text...
-		if(typeof(data) == 'string'){
-			// XXX
-			data = data.split(/\n(\s*)- /g)
-			var level = function(lst){
-				while(lst.length > 0){
-				}
-			}
-		} 
-		// json...
-		// XXX
-
+		data = typeof(data) == 'string' ?
+			this.parse(data)
+			: data
 		// generate dom...
 		// XXX
 		return this },
@@ -372,6 +428,8 @@ var Outline = {
 			if(edited){
 				if(!atLine(edited, 0)){
 					return }
+				/*/
+				//*/
 				state = 'edited' }
 			evt.preventDefault() 
 			this.get(state, -1)?.focus() },
@@ -381,16 +439,22 @@ var Outline = {
 			if(edited){
 				if(!atLine(edited, -1)){
 					return }
-				//window.getSelection()
 				state = 'edited' }
 			evt.preventDefault() 
 			this.get(state, 1)?.focus() },
 
 		// horizontal navigation / collapse...
-		// XXX if at start/end of element move to prev/next...
 		ArrowLeft: function(evt){
-			if(this.outline.querySelector('textarea:focus')){
-				// XXX if at end of element move to next...
+			var edited = this.get('edited')
+			if(edited){
+				// move caret to prev element...
+				if(edited.selectionStart == edited.selectionEnd
+						&& edited.selectionStart == 0){
+					evt.preventDefault()
+					edited = this.get('edited', 'prev') 
+					edited.focus() 
+					edited.selectionStart = 
+						edited.selectionEnd = edited.value.length + 1 }
 				return }
 			;((this.left_key_collapses 
 						|| evt.shiftKey)
@@ -399,8 +463,16 @@ var Outline = {
 				this.toggleCollapse(true)
 				: this.get('parent')?.focus() },
 		ArrowRight: function(evt){
-			if(this.outline.querySelector('textarea:focus')){
-				// XXX if at end of element move to next...
+			var edited = this.get('edited')
+			if(edited){
+				// move caret to next element...
+				if(edited.selectionStart == edited.selectionEnd
+						&& edited.selectionStart == edited.value.length){
+					evt.preventDefault()
+					edited = this.get('edited', 'next') 
+					edited.focus() 
+					edited.selectionStart = 
+						edited.selectionEnd = 0 }
 				return }
 			if(this.right_key_expands){
 				this.toggleCollapse(false) 
@@ -499,10 +571,13 @@ var Outline = {
 				var node = evt.target
 				if(node.nodeName == 'TEXTAREA' 
 						&& node?.nextElementSibling?.nodeName == 'SPAN'){
-					node.nextElementSibling.innerHTML = 
-						that.__code2html__ ?
-							that.__code2html__(node.value)
-							: node.value } })
+					if(that.__code2html__){
+						var data = that.__code2html__(node.value)
+						node.nextElementSibling.innerHTML = data.text
+						data.collapsed 
+							&& node.parentElement.setAttribute('collapsed', '')
+					} else {
+						node.nextElementSibling.innerHTML = node.value } } })
 
 		// toolbar...
 		var toolbar = this.toolbar

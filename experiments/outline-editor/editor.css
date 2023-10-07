@@ -52,13 +52,6 @@
 }
 
 /* show/hide node's view/code... */
-.editor .outline [tabindex]>span+textarea:not(:focus),
-.editor .outline [tabindex]:has(>span+textarea:focus)>span:first-child {
-	position: absolute;
-	opacity: 0;
-	top: 0;
-}
-
 .editor .outline [tabindex]>textarea:focus+span,
 .editor .outline [tabindex]>textarea:not(:focus) {
 	position: absolute;

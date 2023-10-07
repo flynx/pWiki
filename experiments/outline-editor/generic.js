@@ -15,18 +15,50 @@ HTMLTextAreaElement.prototype.autoUpdateSize = function(){
 			that.updateSize() }) 
 	return this }
 
+// calculate number of lines in text area (both wrapped and actual lines)
+Object.defineProperty(HTMLTextAreaElement.prototype, 'heightLines', {
+	enumerable: false,
+	get: function(){
+		var style = getComputedStyle(this)
+		return Math.floor(
+			(this.scrollHeight 
+				- parseFloat(style.paddingTop)
+				- parseFloat(style.paddingBottom)) 
+			/ (parseFloat(style.lineHeight) 
+				|| parseFloat(style.fontSize))) }, })
+Object.defineProperty(HTMLTextAreaElement.prototype, 'lines', {
+	enumerable: false,
+	get: function(){
+		return this.value
+			.split(/\n/g)
+			.length }, })
+// XXX this does not account for wrapping...
 Object.defineProperty(HTMLTextAreaElement.prototype, 'caretLine', {
 	enumerable: false,
 	get: function(){
 		var offset = this.selectionStart
-		console.log('---', this)
 		return offset != null ?
 			this.value
 				.slice(0, offset)
 				.split(/\n/g)
 				.length
-			: undefined },
+			: undefined }, })
+
+
+Object.defineProperty(HTMLTextAreaElement.prototype, 'caretOffset', {
+	enumerable: false,
+	get: function(){
+		var offset = this.selectionStart
+		var r = document.createRange()
+		r.setStart(this, offset)
+		r.setEnd(this, offset)
+		var rect = r.getBoundingClientRect()
+		return {
+			top: rect.top, 
+			left: rect.left,
+		} },
 })
+
 
 
 
