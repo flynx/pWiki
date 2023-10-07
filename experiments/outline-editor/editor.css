@@ -110,6 +110,8 @@
 }
 
 
+/* Styles */
+
 .editor .outline .heading-1>span,
 .editor .outline .heading-1>textarea,
 .editor .outline .heading-2>span,
@@ -148,6 +150,7 @@
 .editor .outline .heading-6>textarea {
 	font-size: 1em;
 }
+
 /* XXX EXPERIMENTAL -- not sure about this... */
 .editor .outline .list>[tabindex]:before {
 	display: inline-block;
@@ -158,16 +161,6 @@
 	width: 0.5em;
 	height: 0.5em;
 	background: silver;
-}
-
-.editor .outline h1,
-.editor .outline h2,
-.editor .outline h3,
-.editor .outline h4,
-.editor .outline h5,
-.editor .outline h6 {
-	margin-top: 0.5em;
-	margin-bottom: 0.5em;
 }
 
 
