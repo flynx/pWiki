@@ -15,6 +15,10 @@
 	position: relative;
 }
 
+.editor .code {
+	display: none;
+}
+
 .editor .outline {
 	display: block;
 	position: relative;
@@ -105,5 +109,15 @@
 	font-size: var(--button-size);
 }
 
+
+.editor .outline h1,
+.editor .outline h2,
+.editor .outline h3,
+.editor .outline h4,
+.editor .outline h5,
+.editor .outline h6 {
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
 
 

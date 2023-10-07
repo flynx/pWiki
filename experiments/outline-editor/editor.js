@@ -74,8 +74,11 @@ var Outline = {
 	//
 	left_key_collapses: true,
 	right_key_expands: true,
+	code_update_interval: 5000,
 
 
+	get code(){
+		return this.dom.querySelector('.code') },
 	get outline(){
 		return this.dom.querySelector('.outline') },
 	get toolbar(){
@@ -273,8 +276,14 @@ var Outline = {
 		next?.focus()
 		return this },
 
+	clear: function(){
+		this.outline.innerText = ''
+		return this },
+
 	// block serialization...
-	// XXX these should be symetrical...
+	// XXX STUB...
+	// XXX shouild we support headings + other formatting per block???
+	// XXX these should be symetrical -- now one returns text the other an object...
 	__code2html__: function(code){
 		var elem = {
 			collapsed: false,
@@ -287,13 +296,12 @@ var Outline = {
 					elem.collapsed = value.trim() == 'true'
 					return '' })
 			// markdown...
-			// XXX STUB...
-			.replace(/^#\s*(.*)\s*(\n|$)/, '<h1>$1</h1>')
-			.replace(/^##\s*(.*)\s*(\n|$)/, '<h2>$1</h2>')
-			.replace(/^###\s*(.*)\s*(\n|$)/, '<h3>$1</h3>')
-			.replace(/^####\s*(.*)\s*(\n|$)/, '<h4>$1</h4>')
-			.replace(/^#####\s*(.*)\s*(\n|$)/, '<h5>$1</h5>')
 			.replace(/^######\s*(.*)\s*(\n|$)/, '<h6>$1</h6>')
+			.replace(/^#####\s*(.*)\s*(\n|$)/, '<h5>$1</h5>')
+			.replace(/^####\s*(.*)\s*(\n|$)/, '<h4>$1</h4>')
+			.replace(/^###\s*(.*)\s*(\n|$)/, '<h3>$1</h3>')
+			.replace(/^##\s*(.*)\s*(\n|$)/, '<h2>$1</h2>')
+			.replace(/^#\s*(.*)\s*(\n|$)/, '<h1>$1</h1>')
 			.replace(/\*(.*)\*/g, '<b>$1</b>')
 			.replace(/~([^~]*)~/g, '<s>$1</s>')
 			.replace(/_([^_]*)_/g, '<i>$1</i>') 
@@ -301,16 +309,21 @@ var Outline = {
 			.replace(/\n/g, '<br>\n')
 		return elem },
 	__html2code__: function(html){
+		var heading = function(level){
+			return function(_, text, rest){
+				return `${'#'.repeat(level)} ${text}${
+					(rest != '' ? 
+						'\n'+ rest
+						: '') }` } }
 		return html 
-			// XXX STUB...
 			.replace(/<hr>$/, '---')
 			.replace(/<hr>/, '---\n')
-			.replace(/^<h1>(.*)<\/h1>\s*(.*)$/g, '# $1\n$2')
-			.replace(/^<h2>(.*)<\/h2>\s*(.*)$/g, '## $1\n$2')
-			.replace(/^<h3>(.*)<\/h3>\s*(.*)$/g, '### $1\n$2')
-			.replace(/^<h4>(.*)<\/h4>\s*(.*)$/g, '#### $1\n$2')
-			.replace(/^<h5>(.*)<\/h5>\s*(.*)$/g, '##### $1\n$2')
-			.replace(/^<h6>(.*)<\/h6>\s*(.*)$/g, '###### $1\n$2')
+			.replace(/^<h6>(.*)<\/h6>(.*)$/g, heading(6))
+			.replace(/^<h5>(.*)<\/h5>(.*)$/g, heading(5))
+			.replace(/^<h4>(.*)<\/h4>(.*)$/g, heading(4))
+			.replace(/^<h3>(.*)<\/h3>(.*)$/g, heading(3))
+			.replace(/^<h2>(.*)<\/h2>(.*)$/g, heading(2))
+			.replace(/^<h1>(.*)<\/h1>(.*)$/g, heading(1))
 			.replace(/<b>(.*)<\/b>/g, '*$1*')
 			.replace(/<s>(.*)<\/s>/g, '~$1~')
 			.replace(/<i>(.*)<\/i>/g, '_$1_')
@@ -339,21 +352,26 @@ var Outline = {
 		node ??= this.json(node)
 		indent ??= '  '
 		level ??= ''
-		var text = ''
+		var text = []
 		for(var elem of node){
-			text += 
-				level
-				+'- '
-				+ elem.text
-					.replace(/\n/g, '\n'+ level +'  ') 
-				+'\n'
-				+ (elem.collapsed ?
-					level+'  ' + 'collapsed:: true\n'
-					: '')
-				+ this.text(elem.children || [], indent, level+indent) }
-		return text },
+			text.push( 
+				level +'- '
+					+ elem.text
+						.replace(/\n/g, '\n'+ level +'  ') 
+					+ (elem.collapsed ?
+						'\n'+level+'  ' + 'collapsed:: true'
+						: ''),
+				(elem.children 
+						&& elem.children.length > 0) ?
+					this.text(elem.children || [], indent, level+indent) 
+					: [] ) }
+		return text
+			.flat()
+			.join('\n') },
 
 	parse: function(text){
+		text = text
+			.replace(/^\s*\n/, '')
 		text = ('\n' + text)
 			.split(/\n(\s*)- /g)
 			.slice(1)
@@ -385,6 +403,7 @@ var Outline = {
 			return parent }
 		return level(text) },
 
+	// XXX should this handle children???
 	// XXX revise name...
 	Block: function(data={}, place=null){
 		if(typeof(data) != 'object'){
@@ -394,28 +413,44 @@ var Outline = {
 		block.setAttribute('tabindex', '0')
 		data.collapsed
 			&& block.setAttribute('collapsed', '')
-		var text
-		var html
-		block.append(
-			text = document.createElement('textarea')
-				.autoUpdateSize(),
-			html = document.createElement('span'))
+		var text = document.createElement('textarea')
+		var html = document.createElement('span')
+		block.append(text, html)
 		if(data.text){
-			text.value = data.text
 			html.innerHTML = this.__code2html__ ?
-				this.__code2html__(data.text)
-				: data.text }
+				// NOTE: we are ignoring the .collapsed attr here (XXX)
+				this.__code2html__(data.text).text
+				: data.text 
+			text.value = data.text
+			// XXX this does not see to work until we click in the textarea...
+			text.autoUpdateSize() }
 		var cur = this.get()
 		place && cur
 			&& cur[place](block)
 		return block },
-	// XXX use .__code2html__(..)
 	load: function(data){
+		var that = this
 		data = typeof(data) == 'string' ?
 			this.parse(data)
 			: data
 		// generate dom...
-		// XXX
+		var level = function(lst){
+			return lst
+				.map(function(data){
+					var elem = that.Block(data) 
+					if((data.children || []).length > 0){
+						elem.append(...level(data.children)) }
+					return elem }) }
+		this
+			.clear()
+			.outline
+				.append(...level(data))
+		return this },
+
+	sync: function(){
+		var code = this.code
+		code 
+			&& (code.innerHTML = this.text())
 		return this },
 
 	// XXX add scrollIntoView(..) to nav...
@@ -578,6 +613,18 @@ var Outline = {
 							&& node.parentElement.setAttribute('collapsed', '')
 					} else {
 						node.nextElementSibling.innerHTML = node.value } } })
+		// update .code...
+		var update_code_timeout
+		outline.addEventListener('change', 
+			function(evt){
+				if(update_code_timeout){
+					return }
+				update_code_timeout = setTimeout(
+					function(){
+						update_code_timeout = undefined
+						console.log('SYNC')
+						that.sync() }, 
+					that.code_update_interval || 5000) })
 
 		// toolbar...
 		var toolbar = this.toolbar
@@ -597,6 +644,11 @@ var Outline = {
 			toolbar.addEventListener('mousedown', cahceNodeType)
 			// refocus the node after we are done...
 			toolbar.addEventListener('click', refocusNode) }
+
+		// code...
+		var code = this.code
+		if(code){
+			this.load(code.innerHTML) }
 
 		return this },
 }

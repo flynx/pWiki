@@ -24,35 +24,51 @@ var setup = function(){
 </head>
 <body onload="setup()">
 <div class="editor">
-	<div class="outline">
-		<div tabindex=0>
-			<textarea></textarea><span><i>root</i></span>
-			<div tabindex=0 collapsed>
-				<textarea></textarea><span>A</span>
-				<div tabindex=0><textarea></textarea><span>a</span>
-				</div>
-				<div tabindex=0><textarea></textarea><span>b</span>
-				</div>
-				<div tabindex=0><textarea></textarea><span>c</span>
-				</div>
-			</div>
-			<div tabindex=0><textarea></textarea><span>B</span>
-				<div tabindex=0><textarea></textarea><span>d</span>
-				</div>
-				<div tabindex=0><textarea></textarea><span>e</span>
-				</div>
-			</div>
-			<div tabindex=0><textarea></textarea><span>C</span>
-				<div tabindex=0><textarea></textarea><span>This is a line of text</span>
-				</div>
-				<div tabindex=0><textarea></textarea><span>This is a set<br>
-					text lines</span>
-				</div>
-				<div tabindex=0><textarea></textarea><span>Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text </span>
-				</div>
-			</div>
-		</div>
-	</div>
+	<!-- code -->
+	<div class="code">
+- # Outline editor prototype
+- ## TODO
+  - editor: bksapce/del at start/end of a block should join it with prev/next
+  - editor: pressing enter in text edit mode should split text into two blocks
+  - editor: caret
+    - ~go to next/prev element's start/end when moving off last/first char~
+    - handle up/down on wrapped blocks
+      _...can't seem to get caret line in a non-hacky way_
+  - persistent empty first/last node (a button to create a new node)
+  - loading from DOM -- fill textarea
+  - ~focus management~
+  - ~mouse/touch controls~
+  - ~navigation~
+  - ~expand/collapse subtree~
+  - ~shift subtree up/down~
+  - ~create node~
+  - ~edit node~
+  - shifting nodes up/down
+  - multiple node selection
+  - undo 
+    - delete node
+    - indent/deindent
+    - edit node
+  - copy/paste nodes/trees
+  - ~serialize~/deserialize
+  - ~add optional text styling to nodes~
+  - 
+- ## TEST
+  - A
+    collapsed:: true
+    - a
+    - b
+    - c
+  - B
+    - d
+    - e
+  - C
+    - This is a line of text
+    - This is a set
+      text lines
+    - Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text </div>
+	<!-- outline -->
+	<div class="outline"></div>
 	<!-- toolbar (optional) -->
 	<div class="toolbar">
 		<button onclick="editor.deindent().focus()">&lt;</button>
@@ -68,30 +84,6 @@ var setup = function(){
 <hr>
 
 <pre>
-TODO:
-- caret
-  - <s>go to next/prev element's start/end when moving off last/first char</s>
-  - handle up/down on wrapped blocks
-    <i>...can't seem to get caret line in a non-hacky way</i>
-- persistent empty first/last node (a button to create a new node)
-- loading from DOM -- fill textarea
-- Firefox compatibility -- remove ':has(..)'
-- <s>focus management</s>
-- <s>mouse/touch controls</s>
-- <s>navigation</s>
-- <s>expand/collapse subtree</s>
-- <s>shift subtree up/down</s>
-- <s>create node</s>
-- <s>edit node</s>
-- shifting nodes up/down
-- multiple node selection
-- undo 
-  - delete node
-  - indent/deindent
-  - edit node
-- copy/paste nodes/trees
-- <s>serialize</s>/deserialize
-- <s>add optional text styling to nodes</s>
 
 Controls:
 	up         - focus node above
