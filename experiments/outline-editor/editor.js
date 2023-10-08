@@ -27,46 +27,8 @@ var atLine = function(elem, index){
 
 //---------------------------------------------------------------------
 
-var Node = {
-	dom: undefined,
-	document: undefined,
-
-	get: function(){},
-
-	get root(){},
-	get parent(){},
-	get children(){},
-	get next(){},
-	get prev(){},
-
-	focus: function(){},
-	edit: function(){},
-
-	indent: function(){ },
-	deindent: function(){ },
-	toggleCollapse: function(){ },
-
-	remove: function(){},
-
-	json: function(){},
-	text: function(){},
-
-	load: function(){},
-}
-
-var NodeGroup = {
-	__proto__: Node,
-}
-
-// XXX should this be Page or root??
-var Root = {
-	__proto__: NodeGroup,
-}
-
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
-// XXX might be a good idea to do a view-action model...
+// XXX experiment with a concatinative model...
+// 		.get(..) -> Outline (view)
 var Outline = {
 	dom: undefined,
 
@@ -219,9 +181,10 @@ var Outline = {
 	// XXX should this handle children???
 	update: function(node='focused', data){
 		var node = this.get(node)
-		data.collapsed ?
-			node.setAttribute('collapsed', '')
-			: node.removeAttribute('collapsed')
+		typeof(data.collapsed) == 'boolean'
+			&& (data.collapsed ?
+				node.setAttribute('collapsed', '')
+				: node.removeAttribute('collapsed'))
 		if(data.text){
 			var text = node.querySelector('textarea')
 			var html = node.querySelector('span')
@@ -231,7 +194,7 @@ var Outline = {
 				html.innerHTML = parsed.text
 				// heading...
 				parsed.style ?
-					node.classList.add(parsed.style)
+					node.classList.add(...parsed.style)
 					: node.classList.remove(...this.__styles__)
 			} else {
 				html.innerHTML = data.text }
@@ -306,9 +269,10 @@ var Outline = {
 		return this },
 
 	// block serialization...
-	// XXX STUB...
 	// XXX shouild we support headings + other formatting per block???
-	// XXX these should be symetrical -- now one returns text the other an object...
+	// XXX split this up into a generic handler + plugins...
+	// XXX need a way to filter input text...
+	// 		use-case: hidden attributes...
 	__styles__: [
 		'heading-1',
 		'heading-2',
@@ -324,11 +288,13 @@ var Outline = {
 		}
 		var heading = function(level){
 			return function(_, text){
-				elem.style = 'heading-'+level
+				elem.style ??= []
+				elem.style.push('heading-'+level)
 				return text } }
 		var style = function(style){
 			return function(_, text){
-				elem.style = style 
+				elem.style ??= []
+				elem.style.push(style)
 				return text } }
 		elem.text = code 
 			// hidden attributes...
@@ -342,33 +308,37 @@ var Outline = {
 			// id...
 			.replace(/(\n|^)\s*id::\s*(.*)\s*(\n|$)/, 
 				function(_, value){
-					elem.collapsed = value.trim() == 'true'
+					elem.id = value.trim()
 					return '' })
 			// markdown...
-			// ToDo...
-			.replace(/^TODO\s*(.*)$/, '<input type="checkbox"> $1')
-			.replace(/^DONE\s*(.*)$/, '<input type="checkbox" checked> $1')
 			// style: headings...
-			.replace(/^######\s*(.*)$/, style('heading-6'))
-			.replace(/^#####\s*(.*)$/, style('heading-5'))
-			.replace(/^####\s*(.*)$/, style('heading-4'))
-			.replace(/^###\s*(.*)$/, style('heading-3'))
-			.replace(/^##\s*(.*)$/, style('heading-2'))
-			.replace(/^#\s*(.*)$/, style('heading-1'))
+			.replace(/^######\s*(.*)$/m, style('heading-6'))
+			.replace(/^#####\s*(.*)$/m, style('heading-5'))
+			.replace(/^####\s*(.*)$/m, style('heading-4'))
+			.replace(/^###\s*(.*)$/m, style('heading-3'))
+			.replace(/^##\s*(.*)$/m, style('heading-2'))
+			.replace(/^#\s*(.*)$/m, style('heading-1'))
 			// style: list...
-			.replace(/^[-\*]\s+(.*)$/, style('list-item'))
-			.replace(/^\s*(.*):\s*$/, style('list'))
+			.replace(/^[-\*]\s+(.*)$/m, style('list-item'))
+			.replace(/^\s*(.*):\s*$/m, style('list'))
 			// style: misc...
-			.replace(/^((\/\/|;)\s+.*)$/, style('comment'))
-			.replace(/^XXX\s+(.*)$/, style('XXX'))
-			.replace(/^(.*)\s*XXX$/, style('XXX'))
+			.replace(/^((\/\/|;)\s+.*)$/m, style('comment'))
+			.replace(/^XXX\s+(.*)$/m, style('XXX'))
+			.replace(/^(.*)\s*XXX$/m, style('XXX'))
 			// basic styling...
 			// XXX these are quite naive...
-			.replace(/\*(.*)\*/g, '<b>$1</b>')
-			.replace(/~([^~]*)~/g, '<s>$1</s>')
-			.replace(/_([^_]*)_/g, '<i>$1</i>') 
+			.replace(/\*(.*)\*/gm, '<b>$1</b>')
+			.replace(/~([^~]*)~/gm, '<s>$1</s>')
+			.replace(/_([^_]*)_/gm, '<i>$1</i>') 
 			// elements...
-			.replace(/(\n|^)---*\h*(\n|$)/, '$1<hr>')
+			.replace(/(\n|^)---*\h*(\n|$)/m, '$1<hr>')
+			// ToDo...
+			.replace(/^TODO\s*(.*)$/m, '<input class="todo" type="checkbox">$1')
+			.replace(/^DONE\s*(.*)$/m, '<input class="todo" type="checkbox" checked>$1')
+			// checkboxes...
+			// XXX these can not be clicked (yet)...
+			.replace(/\[ \]/gm, '<input class="check" type="checkbox">')
+			.replace(/\[[X]\]/gm, '<input class="check" type="checkbox" checked>')
 		return elem },
 
 	// serialization...
@@ -460,9 +430,19 @@ var Outline = {
 		var html = document.createElement('span')
 		block.append(text, html)
 		this.update(block, data)
+		// place...
 		var cur = this.get()
-		place && cur
-			&& cur[place](block)
+		if(place && cur){
+			place = place == 'prev' ?
+				'before'
+				: place
+			;(place == 'next' 
+					&& (cur.querySelector('[tabindex]') 
+						|| cur.nextElementSibling)) ?
+				this.get(place).before(block)
+			: (place == 'before' || place == 'after') ?
+				cur[place](block)
+			: undefined }
 		return block },
 	load: function(data){
 		var that = this
@@ -481,6 +461,9 @@ var Outline = {
 			.clear()
 			.outline
 				.append(...level(data))
+		// update sizes of all the textareas (transparent)...
+		for(var e of [...this.outline.querySelectorAll('textarea')]){
+			e.updateSize() }
 		return this },
 
 	sync: function(){
@@ -569,25 +552,31 @@ var Outline = {
 		O: function(evt){
 			if(evt.target.nodeName != 'TEXTAREA'){
 				evt.preventDefault()
-				this.Block('before')?.querySelector('textarea')?.focus() } },
+				this.Block('before')
+					?.querySelector('textarea')
+					?.focus() } },
 		o: function(evt){
 			if(evt.target.nodeName != 'TEXTAREA'){
 				evt.preventDefault()
-				this.Block('after')?.querySelector('textarea')?.focus() } },
+				this.Block('next')
+					?.querySelector('textarea')
+					?.focus() } },
 		Enter: function(evt){
-			/*if(evt.target.isContentEditable){
-				// XXX create new node...
-				return }
-			//*/
 			if(evt.ctrlKey
 					|| evt.shiftKey){
 				return }
 			evt.preventDefault()
 			evt.target.nodeName == 'TEXTAREA' ?
-				this.Block('after')?.querySelector('textarea')?.focus()
-				: this.get()?.querySelector('textarea')?.focus() },
+				this.Block('next')
+					?.querySelector('textarea')
+					?.focus()
+				: this.get()
+					?.querySelector('textarea')
+					?.focus() },
 		Escape: function(evt){
-			this.outline.querySelector('textarea:focus')?.parentElement?.focus() },
+			this.outline.querySelector('textarea:focus')
+				?.parentElement
+				?.focus() },
 		Delete: function(evt){
 			if(this.get('edited')){
 				return }
@@ -620,14 +609,27 @@ var Outline = {
 		outline.addEventListener('click', 
 			function(evt){
 				var elem = evt.target
-				// toggle checkbox...
-				if(elem.nodeName == 'INPUT' && elem.type == 'checkbox'){
+				// todo: toggle checkbox...
+				if(elem.classList.contains('todo')){
 					var node = elem.parentElement.parentElement
 					var text = node.querySelector('textarea')
 					text.value = 
 						elem.checked ?
 							text.value.replace(/^\s*TODO(\s*)/, 'DONE$1')
-							: text.value.replace(/^\s*DONE(\s*)/, 'TODO$1') } })
+							: text.value.replace(/^\s*DONE(\s*)/, 'TODO$1') } 
+				// check: toggle checkbox...
+				if(elem.classList.contains('check')){
+					var node = elem.parentElement.parentElement
+					var text = node.querySelector('textarea')
+					var i = [...node.querySelectorAll('.check')].indexOf(elem)
+					var to = elem.checked ?
+						'[X]'
+						: '[ ]'
+					var toggle = function(m){
+						return i-- == 0 ?
+							to
+							: m }
+					text.value = text.value.replace(/\[[X ]\]/g, toggle) } })
 		// heboard handling...
 		outline.addEventListener('keydown', 
 			function(evt){

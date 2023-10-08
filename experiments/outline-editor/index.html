@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
 <link href="editor.css" rel="stylesheet"/>
@@ -27,8 +28,7 @@ var setup = function(){
 	<!-- code -->
 	<div class="code">
 - # Outline editor prototype
-- ## TODO
-  - editor: enter on an expanded parent node should create child (currently next sibling)
+- ## ToDo
   - editor: bksapce/del at start/end of a block should join it with prev/next
   - editor: pressing enter in text edit mode should split text into two blocks
   - editor: caret
@@ -51,6 +51,7 @@ var setup = function(){
     - indent/deindent
     - edit node
   - copy/paste nodes/trees
+  - markdown tables
   - ~serialize~/deserialize
   - ~add optional text styling to nodes~
   - 
@@ -71,12 +72,14 @@ var setup = function(){
 	  - // C-style comment
 	  - ; ASM-style comment
 	  - XXX Highlight
-	- line
+	- Line
 		- ---
-    - basic inline *bold*, _italic_ and ~striked~
+    - Basic inline *bold*, _italic_ and ~striked~
 	- To do items
 	  - TODO undone item
 	  - DONE done item
+        _(clicking the checkbox updates the item)_
+    - Inline [X] checkboxes [ ]
   - A
     collapsed:: true
     - a

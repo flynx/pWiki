@@ -1,6 +1,7 @@
 
 :root {
 	--font-size: 5mm;
+	--item-padding: 0.2em;
 	--button-size: 2em;
 
 	font-family: sans-serif;
@@ -36,14 +37,16 @@
 }
 .editor .outline [tabindex]>span,
 .editor .outline [tabindex]>textarea {
-	--padding: 0.2em;
-
 	display: block;
 	width: 100%;
 	/* XXX this is a tiny bit off and using textarea's height here is off too... */
 	min-height: 1em;
-	padding: var(--padding);
+	padding-top: var(--item-padding);
+	padding-bottom: var(--item-padding);
+	padding-left: 0;
+	padding-right: 0;
 	margin: 0;
+	box-sizing: border-box;
 
 	font-family: sans-serif;
 	font-size: var(--font-size);
@@ -53,7 +56,7 @@
 	border: none;
 }
 .editor .outline [tabindex]>textarea {
-	height: calc(2 * var(--padding) + 1em);
+	height: calc(2 * var(--item-padding) + 1em);
 	overflow: hidden;
 	resize: none;
 }
@@ -131,6 +134,15 @@
 	font-weight: bold;
 }
 .editor .outline .heading-1>span,
+.editor .outline .heading-1>textarea,
+.editor .outline .heading-2>span,
+.editor .outline .heading-2>textarea,
+.editor .outline .heading-3>span,
+.editor .outline .heading-3>textarea {
+	border-bottom: solid 1px rgba(0,0,0,0.05);
+}
+
+.editor .outline .heading-1>span,
 .editor .outline .heading-1>textarea {
 	font-size: 2.5em;
 }
@@ -155,16 +167,20 @@
 	font-size: 1em;
 }
 
-/* XXX EXPERIMENTAL -- not sure about this... */
+/* XXX needs to be in the middle of the first span but with universal size... */
 .editor .outline .list-item:before,
-.editor .outline .list>[tabindex]:before {
+.editor .outline .list>[tabindex]>span:before {
+	--size: 0.5rem;
+
 	display: inline-block;
 	position: absolute;
 	content: "";
-	top: 0.6em;
-	left: -0.8em;
-	width: 0.5em;
-	height: 0.5em;
+	top: calc(0.6em + var(--item-padding));
+	left: calc(var(--size) * -2);
+	width: var(--size);
+	height: var(--size);
+	margin-top: calc(var(--size) / -2);
+
 	background: silver;
 }
 
@@ -172,15 +188,31 @@
 	background: yellow;
 }
 
+.editor.hide-comments .outline .comment {
+	display: none;
+}
 .editor .outline .comment>span {
 	color: silver;
 }
 
-.editor .outline [tabindex]>span>input[type=checkbox] {
-	--width: 3em;
+.editor .outline [tabindex]>span>input[type=checkbox].check,
+.editor .outline [tabindex]>span>input[type=checkbox].todo {
+	--size: 1.5rem;
+	--height: calc(var(--font-size) + 2 * var(--item-padding));
 
-	height: 1em;
-	width: var(--width);
-	margin-left: calc(-1 * var(--width));
+	top: calc(0.6em + var(--item-padding));
+	height: var(--size);
+	width: var(--size);
+	margin-top: calc(var(--size) / -2);
+
+	/* NOTE: this appears to be needed for the em sizes above to work correctly */
+	font-size: 1em;
+}
+.editor .outline [tabindex]>span>input[type=checkbox].todo {
+	position: absolute;
+	margin-left: calc(-1 * var(--size) - var(--item-padding));
+}
+.editor .outline [tabindex]>span>input[type=checkbox].check {
+	transform: translateY(calc(2 * var(--item-padding)));
 }
 
