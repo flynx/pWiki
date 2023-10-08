@@ -331,28 +331,44 @@ var Outline = {
 				elem.style = style 
 				return text } }
 		elem.text = code 
-			// attributes...
+			// hidden attributes...
 			// XXX make this generic...
-			.replace(/\n\s*collapsed::\s*(.*)\s*$/, 
+			// XXX should these be hidden from code too???
+			// collapsed...
+			.replace(/(\n|^)\s*collapsed::\s*(.*)\s*(\n|$)/, 
+				function(_, value){
+					elem.collapsed = value.trim() == 'true'
+					return '' })
+			// id...
+			.replace(/(\n|^)\s*id::\s*(.*)\s*(\n|$)/, 
 				function(_, value){
 					elem.collapsed = value.trim() == 'true'
 					return '' })
 			// markdown...
+			// ToDo...
 			.replace(/^TODO\s*(.*)$/, '<input type="checkbox"> $1')
 			.replace(/^DONE\s*(.*)$/, '<input type="checkbox" checked> $1')
+			// style: headings...
 			.replace(/^######\s*(.*)$/, style('heading-6'))
 			.replace(/^#####\s*(.*)$/, style('heading-5'))
 			.replace(/^####\s*(.*)$/, style('heading-4'))
 			.replace(/^###\s*(.*)$/, style('heading-3'))
 			.replace(/^##\s*(.*)$/, style('heading-2'))
 			.replace(/^#\s*(.*)$/, style('heading-1'))
-			//.replace(/^[-\*]\s*(.*)$/, style('list'))
+			// style: list...
+			.replace(/^[-\*]\s+(.*)$/, style('list-item'))
 			.replace(/^\s*(.*):\s*$/, style('list'))
+			// style: misc...
+			.replace(/^((\/\/|;)\s+.*)$/, style('comment'))
+			.replace(/^XXX\s+(.*)$/, style('XXX'))
+			.replace(/^(.*)\s*XXX$/, style('XXX'))
+			// basic styling...
+			// XXX these are quite naive...
 			.replace(/\*(.*)\*/g, '<b>$1</b>')
 			.replace(/~([^~]*)~/g, '<s>$1</s>')
 			.replace(/_([^_]*)_/g, '<i>$1</i>') 
+			// elements...
 			.replace(/(\n|^)---*\h*(\n|$)/, '$1<hr>')
-			.replace(/\n/g, '<br>\n')
 		return elem },
 
 	// serialization...
@@ -419,7 +435,10 @@ var Outline = {
 								collapsed = value == 'true'
 								return '' })
 					parent.push({ 
-						text: block,
+						text: block
+							// normalize indent...
+							.split(new RegExp('\n'+sep+'  ', 'g'))
+							.join('\n'),
 						collapsed,
 						children: [],
 					})
@@ -570,7 +589,7 @@ var Outline = {
 		Escape: function(evt){
 			this.outline.querySelector('textarea:focus')?.parentElement?.focus() },
 		Delete: function(evt){
-			if(evt.target.isContentEditable){
+			if(this.get('edited')){
 				return }
 			this.remove() },
 
@@ -597,6 +616,18 @@ var Outline = {
 		// update stuff already in DOM...
 		for(var elem of [...outline.querySelectorAll('textarea')]){
 			elem.autoUpdateSize() } 
+		// click...
+		outline.addEventListener('click', 
+			function(evt){
+				var elem = evt.target
+				// toggle checkbox...
+				if(elem.nodeName == 'INPUT' && elem.type == 'checkbox'){
+					var node = elem.parentElement.parentElement
+					var text = node.querySelector('textarea')
+					text.value = 
+						elem.checked ?
+							text.value.replace(/^\s*TODO(\s*)/, 'DONE$1')
+							: text.value.replace(/^\s*DONE(\s*)/, 'TODO$1') } })
 		// heboard handling...
 		outline.addEventListener('keydown', 
 			function(evt){
@@ -606,6 +637,16 @@ var Outline = {
 		outline.addEventListener('focusin', 
 			function(evt){
 				var node = evt.target
+				// scroll...
+				// XXX a bit odd still and not smooth...
+				;((node.nodeName == 'SPAN' 
+							|| node.nodeName == 'TEXTAREA') ?
+						node
+						: node.querySelector('textarea+span'))
+					?.scrollIntoView({ 
+						block: 'nearest', 
+						behavior: 'smooth',
+					})
 				// handle focus...
 				for(var e of [...that.dom.querySelectorAll('.focused')]){
 					e.classList.remove('focused') }
