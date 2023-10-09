@@ -134,13 +134,14 @@
 	opacity: 0.1;
 }
 /* click/tap zone for expand button... */
-.editor .outline [tabindex]>span:before {
+.editor .outline [tabindex]:before {
 	content: "";
 	position: absolute;
 	display: inline-block;
 	right: -2rem;
 	width: 2rem;
 	height: calc(1em + var(--item-padding) * 2);
+	background: transparent;
 }
 /*
 .editor .outline div[collapsed]:before,

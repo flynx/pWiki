@@ -596,6 +596,9 @@ var Outline = {
 				: focused.setAttribute('selected', '') },
 	},
 
+	// XXX might be a good idea to defer specific actions to event-like 
+	// 		handlers...
+	// 		e.g. clicking left if block -> .blockleft(..) ... etc.
 	setup: function(dom){
 		var that = this
 		this.dom = dom
@@ -609,22 +612,34 @@ var Outline = {
 		outline.addEventListener('click', 
 			function(evt){
 				var elem = evt.target
+
 				// expand/collapse
-				// NOTE: clicking outside the element to the right i.e. on :after/:before
 				if(elem.nodeName == 'DIV' 
-						&& elem.getAttribute('tabindex')
-						&& elem.offsetWidth < evt.offsetX){
-					that.toggleCollapse(elem) }
+						&& elem.getAttribute('tabindex')){
+					// click: left of elem (outside)
+					if(evt.offsetX < 0){
+						// XXX item menu?
+					
+					// click: right of elem (outside)
+					} else if(elem.offsetWidth < evt.offsetX){
+						that.toggleCollapse(elem)
+
+					// click inside element...
+					} else {
+						// XXX 
+					}
+
 				// todo: toggle checkbox...
-				if(elem.classList.contains('todo')){
+				} else if(elem.classList.contains('todo')){
 					var node = elem.parentElement.parentElement
 					var text = node.querySelector('textarea')
 					text.value = 
 						elem.checked ?
 							text.value.replace(/^\s*TODO(\s*)/, 'DONE$1')
-							: text.value.replace(/^\s*DONE(\s*)/, 'TODO$1') } 
+							: text.value.replace(/^\s*DONE(\s*)/, 'TODO$1') 
+
 				// check: toggle checkbox...
-				if(elem.classList.contains('check')){
+				} else if(elem.classList.contains('check')){
 					var node = elem.parentElement.parentElement
 					var text = node.querySelector('textarea')
 					var i = [...node.querySelectorAll('.check')].indexOf(elem)
