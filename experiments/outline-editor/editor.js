@@ -613,7 +613,7 @@ var Outline = {
 				// NOTE: clicking outside the element to the right i.e. on :after/:before
 				if(elem.nodeName == 'DIV' 
 						&& elem.getAttribute('tabindex')
-						&& evt.clientX > elem.offsetWidth){
+						&& elem.offsetWidth < evt.offsetX){
 					that.toggleCollapse(elem) }
 				// todo: toggle checkbox...
 				if(elem.classList.contains('todo')){
