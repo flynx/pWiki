@@ -195,7 +195,7 @@ var Outline = {
 				// heading...
 				parsed.style ?
 					node.classList.add(...parsed.style)
-					: node.classList.remove(...this.__styles__)
+					: node.classList.remove(...this.__styles)
 			} else {
 				html.innerHTML = data.text }
 			text.value = data.text
@@ -259,7 +259,9 @@ var Outline = {
 		if(elem.classList.contains('focused')){
 			// XXX need to be able to get the next elem on same level...
 			this.toggleCollapse(elem, true)
-			next = this.get(elem, 'next') }
+			next = elem === this.get(-1) ?
+				this.get(elem, 'prev') 
+				: this.get(elem, 'next') }
 		elem?.remove()
 		next?.focus()
 		return this },
@@ -269,33 +271,27 @@ var Outline = {
 		return this },
 
 	// block serialization...
-	// XXX shouild we support headings + other formatting per block???
 	// XXX split this up into a generic handler + plugins...
 	// XXX need a way to filter input text...
 	// 		use-case: hidden attributes...
-	__styles__: [
-		'heading-1',
-		'heading-2',
-		'heading-3',
-		'heading-4',
-		'heading-5',
-		'heading-6',
-		'list',
-	],
+	// NOTE: this is auto-populated by .__code2html__(..)
+	__styles: undefined,
 	__code2html__: function(code){
+		var that = this
 		var elem = {
 			collapsed: false,
 		}
-		var heading = function(level){
+		var style = function(style, code=undefined){
+			style = [style].flat()
+			that.__styles = [...new Set([
+				...(that.__styles ?? []),
+				...style,
+			])]
 			return function(_, text){
 				elem.style ??= []
-				elem.style.push('heading-'+level)
-				return text } }
-		var style = function(style){
-			return function(_, text){
-				elem.style ??= []
-				elem.style.push(style)
-				return text } }
+				elem.style.push(...style)
+				return code 
+					?? text } }
 		elem.text = code 
 			// hidden attributes...
 			// XXX make this generic...
@@ -328,12 +324,12 @@ var Outline = {
 			// elements...
 			.replace(/(\n|^)---*\h*(\n|$)/m, '$1<hr>')
 			// ToDo...
-			.replace(/^TODO\s*(.*)$/m, '<input class="todo" type="checkbox">$1')
-			.replace(/^DONE\s*(.*)$/m, '<input class="todo" type="checkbox" checked>$1')
+			.replace(/^TODO\s*/m, style('todo', '<input type="checkbox">'))
+			.replace(/^DONE\s*/m, style('todo', '<input type="checkbox" checked>'))
 			// checkboxes...
 			// XXX these can not be clicked (yet)...
-			.replace(/\[_\]/gm, '<input class="check" type="checkbox">')
-			.replace(/\[[X]\]/gm, '<input class="check" type="checkbox" checked>')
+			.replace(/\[_\]/gm, style('check', '<input class="check" type="checkbox">'))
+			.replace(/\[[X]\]/gm, style('check', '<input class="check" type="checkbox" checked>'))
 			// basic styling...
 			// XXX these are quite naive...
 			.replace(/\*(.*)\*/gm, '<b>$1</b>')
@@ -427,6 +423,7 @@ var Outline = {
 		var block = document.createElement('div')
 		block.setAttribute('tabindex', '0')
 		var text = document.createElement('textarea')
+			.autoUpdateSize()
 		var html = document.createElement('span')
 		block.append(text, html)
 		this.update(block, data)
@@ -437,9 +434,12 @@ var Outline = {
 				'before'
 				: place
 			;(place == 'next' 
-					&& (cur.querySelector('[tabindex]') 
+					&& (cur.querySelector('[tabindex]')
 						|| cur.nextElementSibling)) ?
 				this.get(place).before(block)
+			: (place == 'next' 
+					&& !cur.nextElementSibling) ?
+				cur.after(block)
 			: (place == 'before' || place == 'after') ?
 				cur[place](block)
 			: undefined }
@@ -609,6 +609,10 @@ var Outline = {
 		outline.addEventListener('click', 
 			function(evt){
 				var elem = evt.target
+				// expand/collapse...
+				// XXX
+				if(elem.getAttribute('collapsed')){
+				}
 				// todo: toggle checkbox...
 				if(elem.classList.contains('todo')){
 					var node = elem.parentElement.parentElement
