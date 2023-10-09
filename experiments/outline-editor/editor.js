@@ -609,10 +609,12 @@ var Outline = {
 		outline.addEventListener('click', 
 			function(evt){
 				var elem = evt.target
-				// expand/collapse...
-				// XXX
-				if(elem.getAttribute('collapsed')){
-				}
+				// expand/collapse
+				// NOTE: clicking outside the element to the right i.e. on :after/:before
+				if(elem.nodeName == 'DIV' 
+						&& elem.getAttribute('tabindex')
+						&& evt.clientX > elem.offsetWidth){
+					that.toggleCollapse(elem) }
 				// todo: toggle checkbox...
 				if(elem.classList.contains('todo')){
 					var node = elem.parentElement.parentElement
