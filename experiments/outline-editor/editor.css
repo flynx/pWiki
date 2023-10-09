@@ -250,9 +250,10 @@
 	font-size: 1em;
 }
 
+/* Lists... */
 /* XXX needs to be in the middle of the first span but with universal size... */
 .editor .outline .list-item:before,
-.editor .outline .list>[tabindex]>span:before {
+.editor .outline .list>[tabindex]>span:not(:empty):before {
 	--size: 0.5rem;
 
 	display: inline-block;
@@ -267,10 +268,16 @@
 	background: silver;
 }
 
+/* Highlightes... */
+.editor .outline .ASAP {
+	font-weight: bold;
+	background: yellow;
+}
 .editor .outline .XXX>span {
 	background: yellow;
 }
 
+/* Comments... */
 .editor.hide-comments .outline .comment {
 	display: none;
 }
@@ -279,7 +286,7 @@
 }
 
 
-/* checkboxes... */
+/* Checkboxes... */
 :root {
 	/* NOTE: this must have a unit... */
 	/* XXX move this to the config when fixed... */

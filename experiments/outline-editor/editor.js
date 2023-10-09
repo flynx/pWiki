@@ -281,6 +281,10 @@ var Outline = {
 		var elem = {
 			collapsed: false,
 		}
+		// only whitespace -> keep element blank...
+		if(code.trim() == ''){
+			elem.text = ''
+			return elem }
 		var style = function(style, code=undefined){
 			style = [style].flat()
 			that.__styles = [...new Set([
@@ -321,13 +325,13 @@ var Outline = {
 			.replace(/^((\/\/|;)\s+.*)$/m, style('comment'))
 			.replace(/^XXX\s+(.*)$/m, style('XXX'))
 			.replace(/^(.*)\s*XXX$/m, style('XXX'))
+			.replace(/(\s*)ASAP(\s*)/m, '$1<span class="ASAP">ASAP</span>$2')
 			// elements...
 			.replace(/(\n|^)---*\h*(\n|$)/m, '$1<hr>')
 			// ToDo...
 			.replace(/^TODO\s*/m, style('todo', '<input type="checkbox">'))
 			.replace(/^DONE\s*/m, style('todo', '<input type="checkbox" checked>'))
 			// checkboxes...
-			// XXX these can not be clicked (yet)...
 			.replace(/\[_\]/gm, style('check', '<input class="check" type="checkbox">'))
 			.replace(/\[[X]\]/gm, style('check', '<input class="check" type="checkbox" checked>'))
 			// basic styling...
