@@ -325,11 +325,6 @@ var Outline = {
 			.replace(/^((\/\/|;)\s+.*)$/m, style('comment'))
 			.replace(/^XXX\s+(.*)$/m, style('XXX'))
 			.replace(/^(.*)\s*XXX$/m, style('XXX'))
-			// basic styling...
-			// XXX these are quite naive...
-			.replace(/\*(.*)\*/gm, '<b>$1</b>')
-			.replace(/~([^~]*)~/gm, '<s>$1</s>')
-			.replace(/_([^_]*)_/gm, '<i>$1</i>') 
 			// elements...
 			.replace(/(\n|^)---*\h*(\n|$)/m, '$1<hr>')
 			// ToDo...
@@ -337,8 +332,13 @@ var Outline = {
 			.replace(/^DONE\s*(.*)$/m, '<input class="todo" type="checkbox" checked>$1')
 			// checkboxes...
 			// XXX these can not be clicked (yet)...
-			.replace(/\[ \]/gm, '<input class="check" type="checkbox">')
+			.replace(/\[_\]/gm, '<input class="check" type="checkbox">')
 			.replace(/\[[X]\]/gm, '<input class="check" type="checkbox" checked>')
+			// basic styling...
+			// XXX these are quite naive...
+			.replace(/\*(.*)\*/gm, '<b>$1</b>')
+			.replace(/~([^~]*)~/gm, '<s>$1</s>')
+			.replace(/_([^_]*)_/gm, '<i>$1</i>') 
 		return elem },
 
 	// serialization...
@@ -624,12 +624,12 @@ var Outline = {
 					var i = [...node.querySelectorAll('.check')].indexOf(elem)
 					var to = elem.checked ?
 						'[X]'
-						: '[ ]'
+						: '[_]'
 					var toggle = function(m){
 						return i-- == 0 ?
 							to
 							: m }
-					text.value = text.value.replace(/\[[X ]\]/g, toggle) } })
+					text.value = text.value.replace(/\[[X_]\]/g, toggle) } })
 		// heboard handling...
 		outline.addEventListener('keydown', 
 			function(evt){

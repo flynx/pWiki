@@ -210,7 +210,7 @@
 }
 .editor .outline [tabindex]>span>input[type=checkbox].todo {
 	position: absolute;
-	margin-left: calc(-1 * var(--size) - var(--item-padding));
+	margin-left: calc(-1 * var(--size) - var(--item-padding) * 2);
 }
 .editor .outline [tabindex]>span>input[type=checkbox].check {
 	transform: translateY(calc(2 * var(--item-padding)));
