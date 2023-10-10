@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <link href="editor.css" rel="stylesheet"/>
 <style>
 
@@ -35,11 +36,7 @@ var setup = function(){
 	- Bonsai
   - 
 - ## ToDo
-  - add completion percentage to blocks with todo's nested
-    either by default oron '%%' or '[%]' placeholder
-	...ratio between all nested open checkboxes to checked (???)
-  - do a better expand/collapse icon on hover
-  - read-only mode
+  - shifting nodes up/down
   - editor: bksapce/del at start/end of a block should join it with prev/next
   - editor: pressing enter in text edit mode should split text into two blocks
   - editor: caret
@@ -47,6 +44,11 @@ var setup = function(){
     - handle up/down on wrapped blocks
       _...can't seem to get caret line in a non-hacky way_
   - persistent empty first/last node (a button to create a new node)
+  - add completion percentage to blocks with todo's nested
+    either by default oron '%%' or '[%]' placeholder
+	...ratio between all nested open checkboxes to checked (???)
+  - read-only mode
+  - ~do a better expand/collapse icons~
   - ~loading from DOM -- fill textarea~
   - ~focus management~
   - ~mouse/touch controls~
@@ -55,13 +57,12 @@ var setup = function(){
   - ~shift subtree up/down~
   - ~create node~
   - ~edit node~
-  - shifting nodes up/down
   - multiple node selection
+  - copy/paste nodes/trees
   - undo 
     - delete node
     - indent/deindent
     - edit node
-  - copy/paste nodes/trees
   - markdown: tables
   - empty item height is a bit off...
   - ~serialize~/deserialize
@@ -125,6 +126,8 @@ var setup = function(){
 </div>
 
 <hr>
+
+<button onclick="editor.dom.classList.toggle('show-click-zones')">show/hide click zones</button>
 
 <pre>
 

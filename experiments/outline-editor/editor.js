@@ -618,15 +618,16 @@ var Outline = {
 				var elem = evt.target
 
 				// expand/collapse
-				if(elem.nodeName == 'DIV' 
-						&& elem.getAttribute('tabindex')){
+				if(elem.nodeName == 'SPAN' 
+						&& elem.parentElement.getAttribute('tabindex')){
 					// click: left of elem (outside)
 					if(evt.offsetX < 0){
 						// XXX item menu?
+						console.log('---', elem)
 					
 					// click: right of elem (outside)
 					} else if(elem.offsetWidth < evt.offsetX){
-						that.toggleCollapse(elem)
+						that.toggleCollapse(elem.parentElement)
 
 					// click inside element...
 					} else {
@@ -634,7 +635,8 @@ var Outline = {
 					}
 
 				// todo: toggle checkbox...
-				} else if(elem.classList.contains('todo')){
+				} else if(elem.type == 'checkbox'
+						&& elem.parentElement.parentElement.classList.contains('todo')){
 					var node = elem.parentElement.parentElement
 					var text = node.querySelector('textarea')
 					text.value = 
@@ -643,7 +645,8 @@ var Outline = {
 							: text.value.replace(/^\s*DONE(\s*)/, 'TODO$1') 
 
 				// check: toggle checkbox...
-				} else if(elem.classList.contains('check')){
+				} else if(elem.type == 'checkbox'
+						&& elem.classList.contains('check')){
 					var node = elem.parentElement.parentElement
 					var text = node.querySelector('textarea')
 					var i = [...node.querySelectorAll('.check')].indexOf(elem)

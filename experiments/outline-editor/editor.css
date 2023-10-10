@@ -7,7 +7,8 @@
 	--outline-padding: 5rem;
 
 	--item-indent: 2rem;
-	--item-padding: 0.2em;
+	--item-padding-ratio: 0.2;
+	--item-padding: calc(1em * var(--item-padding-ratio));
 
 	--checkbox-size: 1.5rem;
 
@@ -50,6 +51,8 @@
 
 .editor .outline [tabindex] {
 	position: relative;
+	outline: none;
+	border: none;
 }
 .editor .outline [tabindex] [tabindex] {
 	margin-left: var(--item-indent);
@@ -74,6 +77,26 @@
 	outline: none;
 	border: none;
 }
+/* show/hide node's view/code... */
+.editor .outline [tabindex]>textarea:focus+span,
+.editor .outline [tabindex]>textarea:not(:focus) {
+	position: absolute;
+	opacity: 0;
+	top: 0;
+}
+/* click through the span text to the textarea */
+.editor .outline [tabindex]>span {
+	position: relative;
+	pointer-events: none;
+}
+/* block hover... */
+.editor .outline [tabindex]:hover>span {
+	background: linear-gradient(
+		90deg, 
+			rgba(0,0,0,0.01) 0%, 
+			rgba(0,0,0,0.01) 80%, 
+			rgba(0,0,0,0.03) 100%);
+}
 .editor .outline [tabindex]>span:blank {
 	content: " ";
 }
@@ -83,16 +106,9 @@
 	resize: none;
 }
 
-/* show/hide node's view/code... */
-.editor .outline [tabindex]>textarea:focus+span,
-.editor .outline [tabindex]>textarea:not(:focus) {
-	position: absolute;
-	opacity: 0;
-	top: 0;
-}
 
 /* focus... */
-.editor .outline [tabindex]:focus {
+editor .outline [tabindex]:focus {
 	/*outline: solid 0.2em silver;*/
 	outline: none;
 }
@@ -105,71 +121,62 @@
 	background: rgba(0,0,0,0.05);
 }
 
-
 .editor .outline div[collapsed] {
 	border-bottom: solid 1px silver;
 }
-/* expand/collapse button... */
-.editor .outline [tabindex]:after {
-	--size: 0.5rem;
+
+/* click/tap zones for expand button... */
+.editor .outline [tabindex]>span:before,
+.editor .outline [tabindex]>span:after {
+	--size: 3rem;
 
 	content: "";
 	position: absolute;
-	display: inline-block;
-	top: calc(1em / 2);
-	right: calc(-1rem + -1 * var(--size) - var(--item-padding));
-	width: 0;
-	height: 0;
-	border: solid calc(var(--size) / 1.2) transparent;
-	border-top: solid var(--size) black;
-	opacity: 0;
-}
-.editor .outline [tabindex][collapsed]:after {
-	border: solid calc(var(--size) / 1.2) transparent;
-	border-left: solid var(--size) black;
-	margin-right: -0.25rem;
-	opacity: 0.1;
-}
-.editor .outline [tabindex]:hover:after {
-	opacity: 0.1;
-}
-/* click/tap zone for expand button... */
-.editor .outline [tabindex]:before {
-	content: "";
-	position: absolute;
-	display: inline-block;
-	right: -2rem;
-	width: 2rem;
-	height: calc(1em + var(--item-padding) * 2);
+	display: flex;
+	top: 0;
+	right: calc(-1 * var(--size));
+	width: var(--size);
+	height: 100%;
+
+	align-items: top;
+	justify-content: center;
+
+	box-sizing: border-box;
+	border-left: solid 0.5em transparent;
+	border-right: solid 0.5em transparent;
+
+	/* make the text align to the center of the first line... */
+	font-size: 1rem;
+	/* XXX the 1.1 coeficient here is a hack... */
+	line-height: calc(
+		var(--font-size)
+			* 1.1
+		+ var(--font-size) 
+			* var(--item-padding-ratio) 
+			* 2);
+
+	pointer-events: auto;
+
 	background: transparent;
 }
-/*
-.editor .outline div[collapsed]:before,
-.editor .outline div[collapsed]:after {
-	--size: 0.3em;
-
-	content: "";
-	display: inline-block;
-	position: absolute;
-	width: var(--size);
-	height: var(--size);
-	bottom: 0;
-	right: calc(-1 * var(--size));
-	margin-bottom: calc(var(--size) / -2 - 0.5px);
-	rotate: -45deg;
-	box-sizing: border-box;
-
-	color: silver;
-	border-top: solid 1px silver;
-	border-left: solid 1px silver;
-}
-.editor .outline div[collapsed]:before {
-	right: auto;
+/* left indicator */
+.editor .outline [tabindex]>span:before {
+	justify-content: right;
 	left: calc(-1 * var(--size));
-	rotate: 135deg;
 }
-*/
-.editor .outline div[collapsed] [tabindex] {
+/* right indicator (collapse/expand) */
+.editor .outline [tabindex]>span:after {
+	color: silver;
+}
+.editor .outline [tabindex]:has([tabindex])>span:after {
+	content: "○";
+}
+.editor .outline [tabindex][collapsed]>span:after {
+	content: "●";
+}
+
+/* collapse -- hide children... */
+.editor .outline [tabindex][collapsed] [tabindex] {
 	display: none;
 }
 
@@ -214,6 +221,7 @@
 .editor .outline .heading-5>textarea,
 .editor .outline .heading-6>span,
 .editor .outline .heading-6>textarea {
+	margin-top: 1rem;
 	font-weight: bold;
 }
 .editor .outline .heading-1>span,
@@ -227,46 +235,47 @@
 
 .editor .outline .heading-1>span,
 .editor .outline .heading-1>textarea {
-	font-size: 2.5em;
+	--font-size: 2.5em;
 }
 .editor .outline .heading-2>span,
 .editor .outline .heading-2>textarea {
-	font-size: 1.9em;
+	--font-size: 1.9em;
 }
 .editor .outline .heading-3>span,
 .editor .outline .heading-3>textarea {
-	font-size: 1.5em;
+	--font-size: 1.5em;
 }
 .editor .outline .heading-4>span,
 .editor .outline .heading-4>textarea {
-	font-size: 1.3em;
+	--font-size: 1.3em;
 }
 .editor .outline .heading-5>span,
 .editor .outline .heading-5>textarea {
-	font-size: 1.1em;
+	--font-size: 1.1em;
 }
 .editor .outline .heading-6>span,
 .editor .outline .heading-6>textarea {
-	font-size: 1em;
+	--font-size: 1em;
 }
+
 
 /* Lists... */
 /* XXX needs to be in the middle of the first span but with universal size... */
 .editor .outline .list-item:before,
 .editor .outline .list>[tabindex]>span:not(:empty):before {
-	--size: 0.5rem;
-
-	display: inline-block;
-	position: absolute;
-	content: "";
-	top: calc(0.6em + var(--item-padding));
-	left: calc(var(--size) * -2);
-	width: var(--size);
-	height: var(--size);
-	margin-top: calc(var(--size) / -2);
-
-	background: silver;
+	content: "◼";
+	color: gray;
 }
+.editor .outline .list>.list>[tabindex]>span:not(:empty):before {
+	content: "●";
+}
+.editor .outline .list>.list>.list>[tabindex]>span:not(:empty):before {
+	content: "○";
+}
+.editor .outline .list>.list>.list>.list>[tabindex]>span:not(:empty):before {
+	content: "▪";
+}
+
 
 /* Highlightes... */
 .editor .outline .ASAP {
@@ -276,6 +285,7 @@
 .editor .outline .XXX>span {
 	background: yellow;
 }
+
 
 /* Comments... */
 .editor.hide-comments .outline .comment {
@@ -295,8 +305,12 @@
 	* 	element -- can's seem to figure out a way to avoid this */
 	--checkbox-margin: 0em;
 }
-/* align todo checkboxes to indnt (otherwise they are on the indent) */
+.editor .outline input {
+	pointer-events: auto;
+}
 .editor .outline [tabindex].todo>span {
+	width: calc(100% - var(--checkbox-size));
+	/* align todo checkboxes to indnt (otherwise they are on the indent) */
 	margin-left: var(--checkbox-size);
 	padding-left: calc(
 		var(--item-padding)
@@ -325,8 +339,26 @@
 		var(--item-padding)
 		+ var(--checkbox-margin));
 }
+/* correct the left click zone... */
+.editor .outline [tabindex].todo>span:before {
+	margin-left: calc(-1 * var(--checkbox-size));
+}
 /* XXX need to remove left margin from strictly the first itme in block... */
 .editor .outline [tabindex].check>span>input[type=checkbox] {
 	/*margin-left: 0;*/
 }
+
+
+
+/*********************************************************************/
+
+.editor.show-click-zones .outline [tabindex]>span:before,
+.editor.show-click-zones .outline [tabindex]>span:after {
+	background: rgba(0,0,0,0.03);
+}
+.editor.show-click-zones .outline [tabindex]:hover>span:before,
+.editor.show-click-zones .outline [tabindex]:hover>span:after {
+	background: rgba(0,0,0,0.1);
+}
+
 
