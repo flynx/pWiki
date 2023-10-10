@@ -178,9 +178,9 @@ var Outline = {
 	focus: function(node='focused', offset){},
 	edit: function(node='focused', offset){},
 
-	// XXX should this handle children???
 	update: function(node='focused', data){
 		var node = this.get(node)
+		data ??= this.data(node, false)
 		typeof(data.collapsed) == 'boolean'
 			&& (data.collapsed ?
 				node.setAttribute('collapsed', '')
@@ -193,9 +193,9 @@ var Outline = {
 				var parsed = this.__code2html__(data.text)
 				html.innerHTML = parsed.text
 				// heading...
-				parsed.style ?
-					node.classList.add(...parsed.style)
-					: node.classList.remove(...this.__styles)
+				node.classList.remove(...this.__styles)
+				parsed.style
+					&& node.classList.add(...parsed.style)
 			} else {
 				html.innerHTML = data.text }
 			text.value = data.text
@@ -312,36 +312,50 @@ var Outline = {
 					return '' })
 			// markdown...
 			// style: headings...
-			.replace(/^######\s*(.*)$/m, style('heading-6'))
-			.replace(/^#####\s*(.*)$/m, style('heading-5'))
-			.replace(/^####\s*(.*)$/m, style('heading-4'))
-			.replace(/^###\s*(.*)$/m, style('heading-3'))
-			.replace(/^##\s*(.*)$/m, style('heading-2'))
-			.replace(/^#\s*(.*)$/m, style('heading-1'))
+			.replace(/^(?<!\\)######\s+(.*)$/m, style('heading-6'))
+			.replace(/^(?<!\\)#####\s+(.*)$/m, style('heading-5'))
+			.replace(/^(?<!\\)####\s+(.*)$/m, style('heading-4'))
+			.replace(/^(?<!\\)###\s+(.*)$/m, style('heading-3'))
+			.replace(/^(?<!\\)##\s+(.*)$/m, style('heading-2'))
+			.replace(/^(?<!\\)#\s+(.*)$/m, style('heading-1'))
 			// style: list...
-			.replace(/^[-\*]\s+(.*)$/m, style('list-item'))
-			.replace(/^\s*(.*):\s*$/m, style('list'))
+			.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
+			.replace(/^\s*(.*)(?<!\\):\s*$/m, style('list'))
 			// style: misc...
-			.replace(/^((\/\/|;)\s+.*)$/m, style('comment'))
-			.replace(/^XXX\s+(.*)$/m, style('XXX'))
-			.replace(/^(.*)\s*XXX$/m, style('XXX'))
-			.replace(/(\s*)ASAP(\s*)/m, '$1<span class="ASAP">ASAP</span>$2')
+			.replace(/^(?<!\\)((\/\/|;)\s+.*)$/m, style('comment'))
+			.replace(/^(?<!\\)XXX\s+(.*)$/m, style('XXX'))
+			.replace(/^(.*)\s*(?<!\\)XXX$/m, style('XXX'))
+			.replace(/(\s*)(?<!\\)ASAP(\s*)/m, '$1<span class="ASAP">ASAP</span>$2')
 			// elements...
-			.replace(/(\n|^)---*\h*(\n|$)/m, '$1<hr>')
+			.replace(/(\n|^)(?<!\\)---*\h*(\n|$)/m, '$1<hr>')
 			// ToDo...
-			.replace(/^TODO\s*/m, style('todo', '<input type="checkbox">'))
-			.replace(/^DONE\s*/m, style('todo', '<input type="checkbox" checked>'))
+			.replace(/^(?<!\\)TODO\s+/m, 
+				style('todo', '<input type="checkbox">'))
+			.replace(/^(?<!\\)DONE\s+/m, 
+				style('todo', '<input type="checkbox" checked>'))
 			// checkboxes...
-			.replace(/\[_\]/gm, style('check', '<input class="check" type="checkbox">'))
-			.replace(/\[[X]\]/gm, style('check', '<input class="check" type="checkbox" checked>'))
+			.replace(/(?<!\\)\[_\]/gm, 
+				style('check', '<input class="check" type="checkbox">'))
+			.replace(/(?<!\\)\[[X]\]/gm, 
+				style('check', '<input class="check" type="checkbox" checked>'))
 			// basic styling...
-			// XXX these are quite naive...
-			.replace(/\*(.*)\*/gm, '<b>$1</b>')
-			.replace(/~([^~]*)~/gm, '<s>$1</s>')
-			.replace(/_([^_]*)_/gm, '<i>$1</i>') 
+			.replace(/(?<!\\)\*(?=[^\s*])([^*]*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
+			.replace(/(?<!\\)~(?=[^\s~])([^~]*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
+			.replace(/(?<!\\)_(?=[^\s_])([^_]*[^\s_])(?<!\\)_/gm, '<i>$1</i>') 
+			// quoting...
+			.replace(/(?<!\\)\\(.)/gm, '$1') 
 		return elem },
 
 	// serialization...
+	data: function(elem, deep=true){
+		elem = this.get(elem)	
+		return {
+			text: elem.querySelector('textarea').value,
+			collapsed: elem.getAttribute('collapsed') != null,
+			...(deep ? 
+				{children: this.json(elem)}
+				: {}),
+		} },
 	json: function(node){
 		var that = this
 		node ??= this.outline
@@ -349,11 +363,7 @@ var Outline = {
 			.map(function(elem){
 				return elem.nodeName != 'DIV' ?
 					[]
-					: [{
-						text: elem.querySelector('textarea').value,
-						collapsed: elem.getAttribute('collapsed') != null,
-						children: that.json(elem)
-					}] })
+					: [that.data(elem)] })
 			.flat() },
 	// XXX add option to customize indent size...
 	text: function(node, indent, level){
@@ -661,6 +671,13 @@ var Outline = {
 		// heboard handling...
 		outline.addEventListener('keydown', 
 			function(evt){
+				var elem = evt.target
+				// update element state...
+				if(elem.nodeName == 'TEXTAREA'){
+					setTimeout(function(){
+						that.update(elem.parentElement) 
+						elem.updateSize() }, 0) }
+				// handle keyboard...
 				evt.key in that.keyboard 
 					&& that.keyboard[evt.key].call(that, evt) })
 		// toggle view/code of nodes...
