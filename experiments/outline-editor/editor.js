@@ -633,7 +633,6 @@ var Outline = {
 					// click: left of elem (outside)
 					if(evt.offsetX < 0){
 						// XXX item menu?
-						console.log('---', elem)
 					
 					// click: right of elem (outside)
 					} else if(elem.offsetWidth < evt.offsetX){

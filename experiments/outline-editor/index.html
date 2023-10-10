@@ -67,7 +67,8 @@ var setup = function(){
     - edit node
   - markdown: tables
   - empty item height is a bit off...
-  - ~serialize~/deserialize
+  - handle links gracefully
+  - ~serialize/deserialize~
   - ~add optional text styling to nodes~
   - 
 - ## TEST
@@ -116,7 +117,7 @@ var setup = function(){
 	<!-- outline -->
 	<div class="outline"></div>
 	<!-- toolbar (optional) -->
-	<div class="toolbar">
+	<!--div class="toolbar">
 		<button onclick="editor.deindent().focus()">&lt;</button>
 		<button onclick="editor.indent().focus()">&gt;</button>
 		<button onclick="editor.Block('before').focus()" class="add-row">+</button>
@@ -124,7 +125,7 @@ var setup = function(){
 		<button onclick="editor.Block('after').focus()" class="add-row">+</button>
 		<button onclick="editor.toggleCollapse()?.focus()">&#709;&#708;</button>
 		<button onclick="editor.remove()">&times;</button>
-	</div>
+	</div-->
 </div>
 
 <hr>

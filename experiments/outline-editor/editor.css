@@ -105,6 +105,11 @@
 	overflow: hidden;
 	resize: none;
 }
+/* clickable things in view */
+.editor .outline [tabindex]>span a,
+.editor .outline [tabindex]>span input {
+	pointer-events: auto;
+}
 
 
 /* focus... */
@@ -305,9 +310,6 @@ editor .outline [tabindex]:focus {
 	* 	element -- can's seem to figure out a way to avoid this */
 	--checkbox-margin: 0em;
 }
-.editor .outline input {
-	pointer-events: auto;
-}
 .editor .outline [tabindex].todo>span {
 	width: calc(100% - var(--checkbox-size));
 	/* align todo checkboxes to indnt (otherwise they are on the indent) */
@@ -355,6 +357,7 @@ editor .outline [tabindex]:focus {
 .editor.show-click-zones .outline [tabindex]>span:before,
 .editor.show-click-zones .outline [tabindex]>span:after {
 	background: rgba(0,0,0,0.03);
+	border: solid 1px silver;
 }
 .editor.show-click-zones .outline [tabindex]:hover>span:before,
 .editor.show-click-zones .outline [tabindex]:hover>span:after {
