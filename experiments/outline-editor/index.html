@@ -78,8 +78,16 @@ var setup = function(){
     - indent/deindent
     - edit node
   - markdown: tables
+	- /^\s*(\|\s+.*\s+\|)\s*$/m -&gt; &lt;table&gt;&lt;tr&gt;&lt;td&gt;$1&lt;/td&gt;&lt;/tr&gt;&lt;table&gt;
+	- /\n\s*\|\s+/ -&gt; &lt;tr&gt;&lt;td&gt;
+	- /\s+\|\s*\n/ -&gt; &lt;/td&gt;&lt;/tr&gt;
+	- /\s+\|\s+/ -&gt; &lt;/td&gt;&lt;td&gt;
+  - ASAP: fix quotes...
   - empty item height is a bit off...
-  - handle links gracefully
+  - ~handle links gracefully -- open/edit
+    _just click in the empty space_~
+	- ~<a href="about:blank">this takes the whole element</a>~
+    - this breaks if link is exactly line width -- should we ensure empty space?
   - ~serialize/deserialize~
   - ~add optional text styling to nodes~
   - 
@@ -110,6 +118,7 @@ var setup = function(){
 		- ---
 	- Markers: ASAP, BUG, FIX, HACK, STUB, WARNING, and CAUTION 
     - Basic inline *bold*, _italic_ and ~striked~
+    - Marking ==text==
     - Inline [X] checkboxes [_]
 	- To do items/blocks
 	  - [_] undone item

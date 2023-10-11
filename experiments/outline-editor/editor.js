@@ -193,7 +193,7 @@ var Outline = {
 			&& (data.collapsed ?
 				node.setAttribute('collapsed', '')
 				: node.removeAttribute('collapsed'))
-		if(data.text){
+		if(data.text != null){
 			var text = node.querySelector('textarea')
 			var html = node.querySelector('span')
 			if(this.__code2html__){
@@ -352,10 +352,13 @@ var Outline = {
 			.replace(/\s*(?<!\\)\[[Xx]\]\s*/gm, 
 				style('check', '<input type="checkbox" checked>'))
 			// basic styling...
+			// XXX revise...
 			.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
 			.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
 			.replace(/(?<!\\)_(?=[^\s_])(([^_]|\\_)*[^\s_])(?<!\\)_/gm, '<i>$1</i>') 
-			.replace(/(?<!\\)`(?=[^\s_])(([^`]|\\`)*[^\s_])(?<!\\)`/gm, '<code>$1</code>') 
+			.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, '<code>$1</code>') 
+			// XXX support "\==" in mark...
+			.replace(/(?<!\\)==(?=[^\s])(.*[^\s])(?<!\\)==/gm, '<mark>$1</mark>') 
 			// characters...
 			// XXX use ligatures for these???
 			.replace(/(?<!\\)---(?!-)/gm, '&mdash;') 
