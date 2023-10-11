@@ -175,9 +175,16 @@ var Outline = {
 			|| node },
 	at: function(index, nodes='visible'){
 		return this.get(nodes).at(index) },
-
-	focus: function(node='focused', offset){},
-	edit: function(node='focused', offset){},
+	focus: function(node='focused', offset){
+		var elem = this.get(...arguments)
+		elem?.focus()
+		return elem },
+	edit: function(node='focused', offset){
+		var elem = this.get(...arguments)
+		if(elem.nodeName != 'TEXTAREA'){
+			elem = elem.querySelector('textarea') }
+		elem?.focus()
+		return elem },
 
 	update: function(node='focused', data){
 		var node = this.get(node)
@@ -349,7 +356,12 @@ var Outline = {
 			.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
 			.replace(/(?<!\\)_(?=[^\s_])(([^_]|\\_)*[^\s_])(?<!\\)_/gm, '<i>$1</i>') 
 			.replace(/(?<!\\)`(?=[^\s_])(([^`]|\\`)*[^\s_])(?<!\\)`/gm, '<code>$1</code>') 
+			// characters...
+			// XXX use ligatures for these???
+			.replace(/(?<!\\)---(?!-)/gm, '&mdash;') 
+			.replace(/(?<!\\)--(?!-)/gm, '&ndash;') 
 			// quoting...
+			// NOTE: this must be last...
 			.replace(/(?<!\\)\\(.)/gm, '$1') 
 		return elem },
 	// XXX essentially here we need to remove service stuff like some 
@@ -523,13 +535,13 @@ var Outline = {
 						// needed to remember the position...
 						edited.selectionStart = c
 						edited.selectionEnd = c
-						that.get('edited', -1)?.focus() } }
+						that.focus('edited', -1) } }
 				this.carot_jump_edge_then_block ?
 					jump()
 					: setTimeout(jump, 0)
 			} else {
 				evt.preventDefault() 
-				this.get('focused', -1)?.focus() } },
+				this.focus('focused', -1) } },
 		ArrowDown: function(evt){
 			var that = this
 			var edited = this.get('edited')
@@ -540,13 +552,13 @@ var Outline = {
 						// needed to remember the position...
 						edited.selectionStart = c
 						edited.selectionEnd = c
-						that.get('edited', 1)?.focus() } }
+						that.focus('edited', 1) } }
 				this.carot_jump_edge_then_block ?
 					jump()
 					: setTimeout(jump, 0)
 			} else {
 				evt.preventDefault() 
-				this.get('focused', 1)?.focus() } },
+				this.focus('focused', 1) } },
 
 		// horizontal navigation / collapse...
 		ArrowLeft: function(evt){
@@ -556,8 +568,7 @@ var Outline = {
 				if(edited.selectionStart == edited.selectionEnd
 						&& edited.selectionStart == 0){
 					evt.preventDefault()
-					edited = this.get('edited', 'prev') 
-					edited.focus() 
+					edited = this.focus('edited', 'prev') 
 					edited.selectionStart = 
 						edited.selectionEnd = edited.value.length + 1 }
 				return }
@@ -566,7 +577,7 @@ var Outline = {
 					&& this.get().getAttribute('collapsed') == null
 					&& this.get('children').length > 0) ?
 				this.toggleCollapse(true)
-				: this.get('parent')?.focus() },
+				: this.focus('parent') },
 		ArrowRight: function(evt){
 			var edited = this.get('edited')
 			if(edited){
@@ -574,17 +585,15 @@ var Outline = {
 				if(edited.selectionStart == edited.selectionEnd
 						&& edited.selectionStart == edited.value.length){
 					evt.preventDefault()
-					edited = this.get('edited', 'next') 
-					edited.focus() 
+					edited = this.focus('edited', 'next') 
 					edited.selectionStart = 
 						edited.selectionEnd = 0 }
 				return }
 			if(this.right_key_expands){
 				this.toggleCollapse(false) 
-				var child = this.get('children')[0]
-				child?.focus()
+				var child = this.focus('children')[0]
 				if(!child){
-					this.get('next')?.focus() }
+					this.focus('next') }
 			} else {
 				evt.shiftKey ?
 					this.toggleCollapse(false)
@@ -765,7 +774,7 @@ var Outline = {
 			var refocusNode = function(){
 				focus_textarea ?
 					editor.get().querySelector('textarea').focus() 
-					: editor.get().focus()
+					: editor.focus()
 				focus_textarea = undefined } 
 			// cache the focused node type before focus changes...
 			toolbar.addEventListener('mousedown', cahceNodeType)
