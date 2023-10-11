@@ -337,6 +337,7 @@ editor .outline [tabindex]:focus {
 	content: "" !important;
 }
 /* correct the right click zone... */
+/* XXX need to account for nesting... (???) */
 .editor .outline [tabindex].NOTE>span:after,
 .editor .outline [tabindex].NOTE [tabindex]>span:after {
 	margin-right: calc(-1 * var(--padding-h));

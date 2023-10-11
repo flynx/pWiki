@@ -335,7 +335,7 @@ var Outline = {
 			.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/m, style('NOTE'))
 			.replace(/^\s*(?<!\\)XXX\s+(.*)$/m, style('XXX'))
 			.replace(/^(.*)\s*(?<!\\)XXX$/m, style('XXX'))
-			.replace(/(\s*)(?<!\\)(ASAP|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/m, 
+			.replace(/(\s*)(?<!\\)(ASAP|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/gm, 
 				'$1<span class="highlight $2">$2</span>$3')
 			// elements...
 			.replace(/(\n|^)(?<!\\)---*\h*(\n|$)/m, '$1<hr>')
