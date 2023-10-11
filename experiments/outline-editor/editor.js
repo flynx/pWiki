@@ -38,6 +38,7 @@ var Outline = {
 	right_key_expands: true,
 	code_update_interval: 5000,
 	tab_size: 4,
+	carot_jump_edge_then_block: false,
 
 
 	get code(){
@@ -322,23 +323,27 @@ var Outline = {
 			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
 			.replace(/^\s*(.*)(?<!\\):\s*$/m, style('list'))
 			// style: misc...
-			.replace(/^(?<!\\)>\s+(.*)$/m, style('quote'))
-			.replace(/^(?<!\\)((\/\/|;)\s+.*)$/m, style('comment'))
-			.replace(/^(?<!\\)XXX\s+(.*)$/m, style('XXX'))
+			.replace(/^\s*(?<!\\)>\s+(.*)$/m, style('quote'))
+			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, style('comment'))
+			.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/m, style('NOTE'))
+			.replace(/^\s*(?<!\\)XXX\s+(.*)$/m, style('XXX'))
 			.replace(/^(.*)\s*(?<!\\)XXX$/m, style('XXX'))
-			.replace(/(\s*)(?<!\\)ASAP(\s*)/m, '$1<span class="ASAP">ASAP</span>$2')
+			.replace(/(\s*)(?<!\\)(ASAP|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/m, 
+				'$1<span class="highlight $2">$2</span>$3')
 			// elements...
 			.replace(/(\n|^)(?<!\\)---*\h*(\n|$)/m, '$1<hr>')
 			// ToDo...
-			.replace(/^(?<!\\)TODO\s+/m, 
+			// NOTE: these are separate as we need to align block text 
+			// 		to leading chekbox...
+			.replace(/^\s*(?<!\\)\[[_ ]\]\s*/m, 
 				style('todo', '<input type="checkbox">'))
-			.replace(/^(?<!\\)DONE\s+/m, 
+			.replace(/^\s*(?<!\\)\[[Xx]\]\s*/m, 
 				style('todo', '<input type="checkbox" checked>'))
-			// checkboxes...
-			.replace(/(?<!\\)\[_\]/gm, 
-				style('check', '<input class="check" type="checkbox">'))
-			.replace(/(?<!\\)\[[X]\]/gm, 
-				style('check', '<input class="check" type="checkbox" checked>'))
+			// inline checkboxes...
+			.replace(/\s*(?<!\\)\[[_ ]\]\s*/gm, 
+				style('check', '<input type="checkbox">'))
+			.replace(/\s*(?<!\\)\[[Xx]\]\s*/gm, 
+				style('check', '<input type="checkbox" checked>'))
 			// basic styling...
 			.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
 			.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
@@ -415,7 +420,7 @@ var Outline = {
 		var tab = ' '.repeat(this.tab_size || 8)
 		var level = function(lst, prev_sep=undefined, parent=[]){
 			while(lst.length > 0){
-				sep = lst[0].replace(/\t/g, tab)
+				sep = lst[0].replace(/\t/gm, tab)
 				// deindent...
 				if(prev_sep != null 
 						&& sep.length < prev_sep.length){
@@ -505,27 +510,43 @@ var Outline = {
 	// XXX add scrollIntoView(..) to nav...
 	keyboard: {
 		// vertical navigation...
-		// XXX wrapped line navigation is broken...
+		// XXX this is a bit hacky but it works -- the caret blinks at 
+		// 		start/end of block before switching to next, would be 
+		// 		nice po prevent this...
 		ArrowUp: function(evt){
-			var state = 'focused'
+			var that = this
 			var edited = this.get('edited')
 			if(edited){
-				if(!atLine(edited, 0)){
-					return }
-				/*/
-				//*/
-				state = 'edited' }
-			evt.preventDefault() 
-			this.get(state, -1)?.focus() },
-		ArrowDown: function(evt, offset=1){
-			var state = 'focused'
+				var c = edited.selectionStart
+				var jump = function(){
+					if(edited.selectionStart == 0){
+						// needed to remember the position...
+						edited.selectionStart = c
+						edited.selectionEnd = c
+						that.get('edited', -1)?.focus() } }
+				this.carot_jump_edge_then_block ?
+					jump()
+					: setTimeout(jump, 0)
+			} else {
+				evt.preventDefault() 
+				this.get('focused', -1)?.focus() } },
+		ArrowDown: function(evt){
+			var that = this
 			var edited = this.get('edited')
 			if(edited){
-				if(!atLine(edited, -1)){
-					return }
-				state = 'edited' }
-			evt.preventDefault() 
-			this.get(state, 1)?.focus() },
+				var c = edited.selectionStart
+				var jump = function(){
+					if(edited.selectionStart == edited.value.length){
+						// needed to remember the position...
+						edited.selectionStart = c
+						edited.selectionEnd = c
+						that.get('edited', 1)?.focus() } }
+				this.carot_jump_edge_then_block ?
+					jump()
+					: setTimeout(jump, 0)
+			} else {
+				evt.preventDefault() 
+				this.get('focused', 1)?.focus() } },
 
 		// horizontal navigation / collapse...
 		ArrowLeft: function(evt){
@@ -657,24 +678,20 @@ var Outline = {
 					// click inside element...
 					} else {
 						// XXX 
-					}
+					} }
 
-				// todo: toggle checkbox...
-				} else if(elem.type == 'checkbox'
-						&& elem.parentElement.parentElement.classList.contains('todo')){
+				// edit of focus...
+				// NOTE: this is usefull if element text is hidden but the 
+				// 		frame is still visible...
+				if(elem.getAttribute('tabindex')){
+					elem.querySelector('textarea').focus() }
+
+				// toggle checkbox...
+				if(elem.type == 'checkbox'){
 					var node = elem.parentElement.parentElement
 					var text = node.querySelector('textarea')
-					text.value = 
-						elem.checked ?
-							text.value.replace(/^\s*TODO(\s*)/, 'DONE$1')
-							: text.value.replace(/^\s*DONE(\s*)/, 'TODO$1') 
-
-				// check: toggle checkbox...
-				} else if(elem.type == 'checkbox'
-						&& elem.classList.contains('check')){
-					var node = elem.parentElement.parentElement
-					var text = node.querySelector('textarea')
-					var i = [...node.querySelectorAll('.check')].indexOf(elem)
+					// get the checkbox order...
+					var i = [...node.querySelectorAll('input[type=checkbox]')].indexOf(elem)
 					var to = elem.checked ?
 						'[X]'
 						: '[_]'
@@ -682,7 +699,7 @@ var Outline = {
 						return i-- == 0 ?
 							to
 							: m }
-					text.value = text.value.replace(/\[[X_]\]/g, toggle) } })
+					text.value = text.value.replace(/\[[Xx_]\]/g, toggle) } })
 		// heboard handling...
 		outline.addEventListener('keydown', 
 			function(evt){

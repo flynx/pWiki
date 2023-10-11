@@ -36,14 +36,15 @@ var setup = function(){
 	- Bonsai
   - 
 - ## ToDo
+  - BUG? pressing down from a longer line will jump over a shorter line
+    - here is the line to jump from, for example from here
+      an we'll not get here...
   - ASAP: editor: bksapce/del at start/end of a block should join it with prev/next
   - ASAP: editor: pressing enter in text edit mode should split text into two blocks
   - ASAP: editor: shifting nodes up/down
   - ASAP: editor: `-` at start of line is interpreted as block marker...
-  - editor: caret
-    - ~go to next/prev element's start/end when moving off last/first char~
-    - handle up/down on wrapped blocks
-      _...can't seem to get caret line in a non-hacky way_
+  - ASAP: use \\t for indent...
+  - on item click, place the cursor where it was clicked before the code expanded...
   - ~editor: semi-live update styles~
   - need to reach checkboxes via keyboard
   - persistent empty first/last node (a button to create a new node)
@@ -96,6 +97,11 @@ var setup = function(){
         - b
         - c
 	  - &gt; quoted text
+      - Notes
+		  - NOTE: a note text
+          - NOTE:
+            - a root note can also be empty
+            - click on the outer border to edit root
 	  - // C-style comment
 	  - ; ASM-style comment
 	  - XXX Highlight
@@ -104,12 +110,12 @@ var setup = function(){
 	- Markers
 	  - Basic "as soon as posible" (ASAP)
     - Basic inline *bold*, _italic_ and ~striked~
-	- To do items
-	  - TODO undone item
-        _(clicking the checkbox updates the item)_
-	  - DONE done item
-	  - [_] a different way to draw a checkbox
     - Inline [X] checkboxes [_]
+	- To do items/blocks
+	  - [_] undone item
+        _(clicking the checkbox updates the item)_
+	  - [X] done item
+	  - [_] we can also add inline [x] checkboxes
 	- link <a href="about:blank">example</a>
 	- markdown:
       - code blocks

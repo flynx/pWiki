@@ -1,5 +1,8 @@
-
-/*********************************************************************/
+/**********************************************************************
+* 
+*
+*
+**********************************************************************/
 
 :root {
 	--font-size: 5mm;
@@ -10,6 +13,7 @@
 	--item-padding-ratio: 0.2;
 
 	--checkbox-size: 1.5rem;
+	--checkbox-margin: 0.5em;
 
 	--button-size: 2em;
 
@@ -89,7 +93,6 @@
 .editor .outline [tabindex]>textarea:not(:focus) {
 	position: absolute;
 	opacity: 0;
-	top: 0;
 }
 /* click through the span text to the textarea */
 .editor .outline [tabindex]>span {
@@ -217,8 +220,8 @@ editor .outline [tabindex]:focus {
 }
 
 
-/*-------------------------------------------------------------------*/
-/* Styles */
+
+/********************************************************** Styles ***/
 
 /* Headings... */
 .editor .outline .heading-1>span,
@@ -307,9 +310,37 @@ editor .outline [tabindex]:focus {
 	content: "▪";
 }
 
+/* Notes... */
+.editor .outline .NOTE {
+	--margin: 1rem;
+	--padding-h: 2rem;
+	--padding-v: 1.2em;
+
+	margin: var(--margin) 0;
+	padding: var(--padding-v) var(--padding-h);
+	border: solid 2px silver;
+	background: rgba(0,0,0,0.05);
+}
+/* XXX this prevents it from being accesible via click/tap... */
+.editor .outline .NOTE>span:empty {
+	display: none;
+}
+.editor .outline .NOTE>span:empty ~ [tabindex] {
+	/* XXX calculate this... */
+	margin-left: 1em;
+}
+.editor .outline .NOTE>span:before {
+	content: "" !important;
+}
+/* correct the right click zone... */
+.editor .outline [tabindex].NOTE>span:after,
+.editor .outline [tabindex].NOTE [tabindex]>span:after {
+	margin-right: calc(-1 * var(--padding-h));
+}
+
 
 /* Highlightes... */
-.editor .outline .ASAP {
+.editor .outline .highlight {
 	font-weight: bold;
 	background: yellow;
 }
@@ -328,21 +359,14 @@ editor .outline [tabindex]:focus {
 
 
 /* Checkboxes... */
-:root {
-	/* NOTE: this must have a unit... */
-	/* XXX move this to the config when fixed... */
-	/* XXX setting this to >0em will add margins to both sides of 
-	* 	the inline checkbox even if it is the first thing in the 
-	* 	element -- can's seem to figure out a way to avoid this */
-	--checkbox-margin: 0em;
-}
 .editor .outline [tabindex].todo>span {
-	width: calc(100% - var(--checkbox-size));
-	/* align todo checkboxes to indnt (otherwise they are on the indent) */
-	margin-left: var(--checkbox-size);
-	padding-left: calc(
-		var(--item-padding)
-		+ var(--checkbox-margin) * 2);
+	width: calc(
+		100% 
+		- var(--checkbox-size)
+		- var(--checkbox-margin));
+	margin-left: calc(
+		var(--checkbox-size)
+		+ var(--checkbox-margin));
 }
 .editor .outline [tabindex].check>span>input[type=checkbox],
 .editor .outline [tabindex].todo>span>input[type=checkbox] {
@@ -360,21 +384,16 @@ editor .outline [tabindex]:focus {
 }
 .editor .outline [tabindex].todo>span>input[type=checkbox]:first-child {
 	margin-left: calc(
-		var(--checkbox-size) * -1
-		- var(--item-padding)
-		- var(--checkbox-margin) * 2);
-	margin-right: calc(
-		var(--item-padding)
-		+ var(--checkbox-margin));
+		-1 * var(--checkbox-size)
+		- var(--checkbox-margin));
 }
 /* correct the left click zone... */
 .editor .outline [tabindex].todo>span:before {
-	margin-left: calc(-1 * var(--checkbox-size));
+	margin-left: calc(
+		-1 * var(--checkbox-size)
+		- var(--checkbox-margin));
 }
-/* XXX need to remove left margin from strictly the first itme in block... */
-.editor .outline [tabindex].check>span>input[type=checkbox] {
-	/*margin-left: 0;*/
-}
+
 
 /* code... */
 .editor .outline [tabindex]>span code {
@@ -385,7 +404,8 @@ editor .outline [tabindex]:focus {
 }
 
 
-/*********************************************************************/
+
+/********************************************************* Testing ***/
 
 .editor.show-click-zones .outline [tabindex]>span:before,
 .editor.show-click-zones .outline [tabindex]>span:after {
@@ -398,3 +418,5 @@ editor .outline [tabindex]:focus {
 }
 
 
+
+/*********************************************************************/
