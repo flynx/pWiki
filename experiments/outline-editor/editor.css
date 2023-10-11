@@ -8,7 +8,6 @@
 
 	--item-indent: 2rem;
 	--item-padding-ratio: 0.2;
-	--item-padding: calc(1em * var(--item-padding-ratio));
 
 	--checkbox-size: 1.5rem;
 
@@ -28,6 +27,14 @@
 
 	/*scroll-behavior: smooth;*/
 }
+
+.editor {
+	--item-padding: calc(1em * var(--item-padding-ratio));
+}
+
+
+
+/*********************************************************************/
 
 .editor {
 	display: block;
@@ -123,7 +130,7 @@ editor .outline [tabindex]:focus {
 }
 .editor .outline [tabindex].focused:not(:focus)>span,
 .editor .outline [tabindex].focused:not(:focus)>textarea {
-	background: rgba(0,0,0,0.05);
+	background: rgba(0,0,0,0.01);
 }
 
 .editor .outline div[collapsed] {
@@ -264,9 +271,28 @@ editor .outline [tabindex]:focus {
 }
 
 
+/* Quote... */
+.editor .outline .quote>span,
+.editor .outline .quote>textarea {
+	--item-padding-ratio: 0.7;
+	--indent: 1rem;
+
+	/* XXX for some reason if this is not set here it will not see the new --item-padding-ratio */
+	--item-padding: calc(1rem * var(--item-padding-ratio));
+
+	padding: var(--item-padding) 1.5rem;
+	color: rgba(0,0,0,0.8);
+
+	/* XXX border messes up bullet alignment... */
+	/*border-left: solid 0.2em silver;*/
+	box-shadow: inset 0.2em 0 0 0 silver;
+	background: rgba(0,0,0,0.05);
+}
+
+
 /* Lists... */
 /* XXX needs to be in the middle of the first span but with universal size... */
-.editor .outline .list-item:before,
+.editor .outline .list-item>span:before,
 .editor .outline .list>[tabindex]>span:not(:empty):before {
 	content: "◼";
 	color: gray;

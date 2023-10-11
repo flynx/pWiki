@@ -319,9 +319,10 @@ var Outline = {
 			.replace(/^(?<!\\)##\s+(.*)$/m, style('heading-2'))
 			.replace(/^(?<!\\)#\s+(.*)$/m, style('heading-1'))
 			// style: list...
-			.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
+			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
 			.replace(/^\s*(.*)(?<!\\):\s*$/m, style('list'))
 			// style: misc...
+			.replace(/^(?<!\\)>\s+(.*)$/m, style('quote'))
 			.replace(/^(?<!\\)((\/\/|;)\s+.*)$/m, style('comment'))
 			.replace(/^(?<!\\)XXX\s+(.*)$/m, style('XXX'))
 			.replace(/^(.*)\s*(?<!\\)XXX$/m, style('XXX'))
@@ -346,6 +347,20 @@ var Outline = {
 			// quoting...
 			.replace(/(?<!\\)\\(.)/gm, '$1') 
 		return elem },
+	// XXX essentially here we need to remove service stuff like some 
+	// 		attributes (collapsed, id, ...)...
+	// XXX also need to quote leading '- ' in block text here...
+	// 		e.g.
+	// 			- block
+	// 			  some text
+	// 			  - text in the above block ('-' needs to be quoted)
+	// 			- next block
+	__code2text__: function(code){
+		// XXX
+	},
+	__text2code__: function(text){
+		// XXX
+	},
 
 	// serialization...
 	data: function(elem, deep=true){
@@ -743,7 +758,9 @@ var Outline = {
 		// code...
 		var code = this.code
 		if(code){
-			this.load(code.innerHTML) }
+			this.load(code.innerHTML
+				.replace(/&lt;/g, '<')
+				.replace(/&gt;/g, '>')) }
 
 		return this },
 }
