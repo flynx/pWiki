@@ -74,10 +74,12 @@ var setup = function(){
   - multiple node selection
   - copy/paste nodes/trees
   - undo 
+    collapsed:: true
     - delete node
     - indent/deindent
     - edit node
   - markdown: tables
+    collapsed:: true
 	- /^\s*(\|\s+.*\s+\|)\s*$/m -&gt; &lt;table&gt;&lt;tr&gt;&lt;td&gt;$1&lt;/td&gt;&lt;/tr&gt;&lt;table&gt;
 	- /\n\s*\|\s+/ -&gt; &lt;tr&gt;&lt;td&gt;
 	- /\s+\|\s*\n/ -&gt; &lt;/td&gt;&lt;/tr&gt;
