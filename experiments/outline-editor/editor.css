@@ -94,11 +94,10 @@
 	position: absolute;
 	opacity: 0;
 }
-/* XXX not sure about this yet... */
+/* hide span content but show before/after -- keep bulets and touch zones... */
 .editor .outline [tabindex]>textarea:focus+span {
 	position: absolute;
 	top: 0;
-	margin-top: 0;
 	visibility: hidden;
 }
 .editor .outline [tabindex]>textarea:focus+span:before,
@@ -235,6 +234,14 @@ editor .outline [tabindex]:focus {
 /********************************************************** Styles ***/
 
 /* Headings... */
+.editor .outline .heading-1,
+.editor .outline .heading-2,
+.editor .outline .heading-3,
+.editor .outline .heading-4,
+.editor .outline .heading-5,
+.editor .outline .heading-6 {
+	margin-top: 1rem;
+}
 .editor .outline .heading-1>span,
 .editor .outline .heading-1>textarea,
 .editor .outline .heading-2>span,
@@ -247,7 +254,6 @@ editor .outline [tabindex]:focus {
 .editor .outline .heading-5>textarea,
 .editor .outline .heading-6>span,
 .editor .outline .heading-6>textarea {
-	margin-top: 1rem;
 	font-weight: bold;
 }
 .editor .outline .heading-1>span,

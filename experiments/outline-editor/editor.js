@@ -380,6 +380,9 @@ var Outline = {
 			.replace(/((?:https?:|ftps?:)[^\s]*)(\s*)/g, '<a href="$1">$1</a>$2')
 			// characters...
 			// XXX use ligatures for these???
+			.replace(/(?<!\\)\(i\)/gm, '🛈') 
+			.replace(/(?<!\\)\(c\)/gm, '©') 
+			.replace(/(?<!\\)\/!\\/gm, '⚠') 
 			.replace(/(?<!\\)---(?!-)/gm, '&mdash;') 
 			.replace(/(?<!\\)--(?!-)/gm, '&ndash;') 
 			// quoting...
