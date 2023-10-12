@@ -316,6 +316,8 @@ var Outline = {
 		if(code.trim() == ''){
 			elem.text = ''
 			return elem }
+
+		// helpers...
 		var style = function(style, code=undefined){
 			style = [style].flat()
 			that.__styles = [...new Set([
@@ -343,10 +345,10 @@ var Outline = {
 					.replace(/\s*\|\s*\n\s*\|\s*/gm, '</td></tr>\n<tr><td>')
 					.replace(/\s*\|\s*/gm, '</td><td>')
 			}</td></td></table>` }
+
 		elem.text = code 
 			// hidden attributes...
 			// XXX make this generic...
-			// XXX should these be hidden from code too???
 			// collapsed...
 			.replace(/(\n|^)\s*collapsed::\s*(.*)\s*(\n|$)/, 
 				function(_, value){
@@ -583,7 +585,9 @@ var Outline = {
 			&& (code.innerHTML = this.text())
 		return this },
 
+	// XXX move the code here into methods/actions...
 	// XXX add scrollIntoView(..) to nav...
+	// XXX use keyboard.js...
 	keyboard: {
 		// vertical navigation...
 		// XXX this is a bit hacky but it works -- the caret blinks at 

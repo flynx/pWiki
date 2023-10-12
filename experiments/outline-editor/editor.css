@@ -28,8 +28,6 @@
 
 	/*text-size-adjust: none;*/
 	text-size-adjust: 150%;
-
-
 }
 
 .editor {
@@ -233,7 +231,9 @@ editor .outline .block:focus {
 
 /********************************************************** Styles ***/
 
-/* Headings... */
+
+/*------------------------------------------------------ Headings ---*/
+
 .editor .outline .heading-1,
 .editor .outline .heading-2,
 .editor .outline .heading-3,
@@ -276,7 +276,8 @@ editor .outline .block:focus {
 }
 
 
-/* Quote... */
+/*--------------------------------------------------------- Quote ---*/
+
 .editor .outline .quote>.text {
 	--indent: 1rem;
 	--margin: 0.7rem;
@@ -298,8 +299,8 @@ editor .outline .block:focus {
 }
 
 
-/* List... */
-/* XXX needs to be in the middle of the first .view but with universal size... */
+/*---------------------------------------------------------- List ---*/
+
 .editor .outline .list-item>.view:before,
 .editor .outline .list>.children>.block>.view:not(:empty):before {
 	content: "◼";
@@ -325,16 +326,15 @@ editor .outline .block:focus {
 }
 
 
-/* List... */
-/* XXX nested lists are broken -- seems that I need a container for the children... */
-.editor .outline .numbered-list>.children {
-	counter-reset: numbered-list;
-}
+/*------------------------------------------------ Numbered lists ---*/
+
 .editor .outline .numbered-list>.children>.block>.view:not(:empty):before {
 	counter-increment: numbered-list; 
 	content: counter(numbered-list) ".";
 	color: gray;
 }
+
+/* numbered lists... */
 .editor .outline 
 		.numbered-list>.children
 		>.numbered-list>.children>.block>.view:not(:empty):before {
@@ -361,7 +361,8 @@ editor .outline .block:focus {
 }
 
 
-/* Notes... */
+/*--------------------------------------------------------- Notes ---*/
+
 .editor .outline .NOTE {
 	--margin: 1rem;
 	--padding-h: 2rem;
@@ -393,7 +394,8 @@ editor .outline .block:focus {
 }
 
 
-/* Highlightes... */
+/*--------------------------------------------------- Highlightes ---*/
+
 .editor .outline .highlight {
 	font-weight: bold;
 	background: yellow;
@@ -403,7 +405,8 @@ editor .outline .block:focus {
 }
 
 
-/* Comments... */
+/*------------------------------------------------------ Comments ---*/
+
 .editor.hide-comments .outline .comment {
 	display: none;
 }
@@ -412,7 +415,8 @@ editor .outline .block:focus {
 }
 
 
-/* Checkboxes... */
+/*---------------------------------------------------- Checkboxes ---*/
+
 .editor .outline .block.todo>.view {
 	width: calc(
 		100% 
@@ -449,7 +453,8 @@ editor .outline .block:focus {
 }
 
 
-/* code... */
+/*---------------------------------------------------------- Code ---*/
+
 .editor .outline .block>.view pre,
 .editor .outline .block>.view code {
 	padding: 0.1em 0.3em;
@@ -463,7 +468,8 @@ editor .outline .block:focus {
 }
 
 
-/* Tables... */
+/*-------------------------------------------------------- Tables ---*/
+
 .editor .outline .block>.view>table {
 	width: 100%;
 	border-collapse: collapse;

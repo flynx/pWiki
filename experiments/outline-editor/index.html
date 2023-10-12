@@ -37,9 +37,14 @@ var setup = function(){
   - 
 - ## Bugs:
   - BUG: ASAP: editor: `-` at start of line is interpreted as block marker...
+    - need to either:
+      - quote the `-` in .text() -- _preferreed_
+      - split the lines starting with `-` into nested nodes (a-la .load())
   - BUG? pressing down from a longer line will jump over a shorter line
-    - here is the line to jump from, for example from here
-      an we'll not get here...
+    - to reproduce\:
+      - here is the line to jump from, for example from here
+        an we'll not get here...
+  -
 - ## ToDo:
   - ASAP: editor: bksapce/del at start/end of a block should join it with prev/next
   - ASAP: editor: pressing enter in text edit mode should split text into two blocks
@@ -54,7 +59,7 @@ var setup = function(){
     - _...use `[%]`, `%%`, or something similar..._
   - read-only mode
   - should bulets be on the same level as nodes or offset??
-    - A) justified to bulet:
+    - A) justified to bullet:
          * list item
          * list item
          block text
@@ -63,6 +68,8 @@ var setup = function(){
          * list item
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
+  - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
+  - Nerd fonts (options?)
   - ~do a better expand/collapse icons~
   - ~loading from DOM -- fill textarea~
   - ~focus management~
