@@ -36,6 +36,7 @@ var setup = function(){
 	- Bonsai
   - 
 - ## Bugs:
+  - BUG: ASAP: editor: `-` at start of line is interpreted as block marker...
   - BUG? pressing down from a longer line will jump over a shorter line
     - here is the line to jump from, for example from here
       an we'll not get here...
@@ -43,7 +44,6 @@ var setup = function(){
   - ASAP: editor: bksapce/del at start/end of a block should join it with prev/next
   - ASAP: editor: pressing enter in text edit mode should split text into two blocks
   - ASAP: editor: shifting nodes up/down
-  - ASAP: editor: `-` at start of line is interpreted as block marker...
   - ASAP: use \\t for indent...
   - ASAP: scroll into view is bad...
   - on item click, place the cursor where it was clicked before the code expanded...
@@ -131,36 +131,39 @@ var setup = function(){
 	  - ; ASM-style comment
 	  - XXX Highlight
     - Basic inline *bold*, _italic_ and ~striked~
-    - Code
-	  - Quoting `html <b>code</b>`
     - Marking ==text==
+    - Code
+	  - Inline quoting `html <b>code</b>`
+      - code blocks
+        ```
+        var text = 'Hello, world!'
+
+        console.log(text)
+        ```
+        _syntax higlighting not yet supported..._
 	- Line
 		- ---
 	- Markers: ASAP, BUG, FIX, HACK, STUB, WARNING, and CAUTION 
-    - Inline [X] checkboxes [_]
-	- To do items/blocks
-	  - [_] undone item
-        _(clicking the checkbox updates the item)_
-	  - [X] done item
-	  - [_] we can also add inline [x] checkboxes
-	- link 
+    - Basic task management
+      - Inline [X] checkboxes [_]
+	  - To do items/blocks
+	    - [_] undone item
+          _(clicking the checkbox updates the item)_
+	    - [X] done item
+	    - [_] we can also add inline [x] checkboxes
+	- links
       - [example](about:blank)
       - https://example.com
-      - ./path/to/file /path/to -- not supported yet
+      - ./path/to/file /path/to -- _not supported yet_
     - Tables
       - | a | b | c |
         | 1 | 2 | 3 |
         | 11 | 22 | 33 |
-    - Symbols -- should these be ligatures?
+    - Symbols -- _should these be ligatures?_
       - (i), (c), /!\, ...
       - -- and ---
-	- markdown:
-      - numbered lists
-      - ~tables~
-      - code blocks
-      - ~alerts~
-      - footnotes??
-	- 
+    - 
+  - ---
   - ### Playground for testing
     - A
       collapsed:: true

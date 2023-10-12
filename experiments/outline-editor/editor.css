@@ -450,11 +450,16 @@ editor .outline .block:focus {
 
 
 /* code... */
+.editor .outline .block>.view pre,
 .editor .outline .block>.view code {
 	padding: 0.1em 0.3em;
 	font-family: monospace;
 	background: rgba(0,0,0,0.07);
 	border-radius: 0.2em;
+}
+.editor .outline .block>.view pre {
+	padding: 1em 1em;
+	padding-bottom: 1.5em;
 }
 
 

@@ -327,18 +327,22 @@ var Outline = {
 				elem.style.push(...style)
 				return code 
 					?? text } }
-		var quote = function(_, code){
-			code = code
+		var quoteText = function(text){
+			return text
 				.replace(/(?<!\\)&/g, '&amp;')
 				.replace(/(?<!\\)</g, '&lt;')
 				.replace(/(?<!\\)>/g, '&gt;')
-				.replace(/\\(?!`)/g, '\\\\')
-			return `<code>${code}</code>` }
+				.replace(/\\(?!`)/g, '\\\\') }
+		var quote = function(_, code){
+			return `<code>${quoteText(code)}</code>` }
+		var pre = function(_, code){
+			return `<pre>${ quoteText(code) }</pre>` }
 		var table = function(_, body){
-			body = body
-				.replace(/\s*\|\s*\n\s*\|\s*/gm, '</td></tr>\n<tr><td>')
-				.replace(/\s*\|\s*/gm, '</td><td>')
-			return `<table><tr><td>${body}</td></td></table>` }
+			return `<table><tr><td>${
+				body
+					.replace(/\s*\|\s*\n\s*\|\s*/gm, '</td></tr>\n<tr><td>')
+					.replace(/\s*\|\s*/gm, '</td><td>')
+			}</td></td></table>` }
 		elem.text = code 
 			// hidden attributes...
 			// XXX make this generic...
@@ -394,6 +398,8 @@ var Outline = {
 			.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
 			.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
 			.replace(/(?<!\\)_(?=[^\s_])(([^_]|\\_)*[^\s_])(?<!\\)_/gm, '<i>$1</i>') 
+		    // code/quoting...
+			.replace(/(?<!\\)```\s*\n((\n|.)*)\h*(?<!\\)```\s*/g, pre) 
 			.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, quote) 
 			// XXX support "\==" in mark...
 			.replace(/(?<!\\)==(?=[^\s])(.*[^\s])(?<!\\)==/gm, '<mark>$1</mark>') 
