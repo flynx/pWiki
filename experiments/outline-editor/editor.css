@@ -376,9 +376,11 @@ editor .outline .block:focus {
 .editor .outline .NOTE>.view:empty {
 	display: none;
 }
-.editor .outline .NOTE>.view:empty ~ .block {
-	/* XXX calculate this... */
-	margin-left: 1em;
+.editor .outline .NOTE:focus>.view:empty {
+	display: block;
+}
+.editor .outline .NOTE>.view:empty ~ .children {
+	margin-left: -1rem;
 }
 .editor .outline .NOTE>.view:before {
 	content: "" !important;

@@ -35,17 +35,17 @@ var setup = function(){
 	- Tomboy
 	- Bonsai
   - 
-- ## ToDo:
+- ## Bugs:
   - BUG? pressing down from a longer line will jump over a shorter line
     - here is the line to jump from, for example from here
       an we'll not get here...
-  - ASAP: fix quotes
-	- Example: /\n\s*\|\s+/ -&gt; &lt;tr&gt;&lt;td&gt;
+- ## ToDo:
   - ASAP: editor: bksapce/del at start/end of a block should join it with prev/next
   - ASAP: editor: pressing enter in text edit mode should split text into two blocks
   - ASAP: editor: shifting nodes up/down
   - ASAP: editor: `-` at start of line is interpreted as block marker...
   - ASAP: use \\t for indent...
+  - ASAP: scroll into view is bad...
   - on item click, place the cursor where it was clicked before the code expanded...
   - ~editor: semi-live update styles~
   - need to reach checkboxes via keyboard
@@ -80,10 +80,6 @@ var setup = function(){
     - indent/deindent
     - edit node
   - empty item height is a bit off...
-  - ~handle links gracefully -- open/edit
-    _just click in the empty space_~
-	- ~<a href="about:blank">this takes the whole element</a>~
-    - this breaks if link is exactly line width -- should we ensure empty space?
   - ~serialize/deserialize~
   - ~add optional text styling to nodes~
   - 
@@ -125,7 +121,7 @@ var setup = function(){
             - y
             - z
           - c
-	  - &gt; quoted text
+	  - > quote
       - Notes
 		  - NOTE: a note text
           - NOTE:
@@ -135,6 +131,8 @@ var setup = function(){
 	  - ; ASM-style comment
 	  - XXX Highlight
     - Basic inline *bold*, _italic_ and ~striked~
+    - Code
+	  - Quoting `html <b>code</b>`
     - Marking ==text==
 	- Line
 		- ---
