@@ -36,7 +36,6 @@ var setup = function(){
 	- Bonsai
   - 
 - ## ToDo:
-  - BUG? odd/random focus jumps on refocusing page (can't reporduce yet)
   - BUG? pressing down from a longer line will jump over a shorter line
     - here is the line to jump from, for example from here
       an we'll not get here...
@@ -100,13 +99,29 @@ var setup = function(){
       - Text
       - Lists::
         - bullet:
-          - a
+          - a:
+            collapsed:: true
+            - bullets:
+              - in:
+                - very:
+                  - deep:
+                    - list:
+                      - of:
+                        - items:
           - b
           - c
         - numbered#
           - a
           - b#
-            - x
+            - x#
+              collapsed:: true
+              - bullets#
+                - in#
+                  - very#
+                    - deep#
+                      - list#
+                        - of#
+                          - items#
             - y
             - z
           - c

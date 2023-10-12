@@ -84,6 +84,111 @@ var Outline = {
 	// XXX need to be able to get the next elem on same level...
 	get: function(node='focused', offset){
 		var that = this
+		offset =
+			offset == 'next' ?
+				1
+			: offset == 'prev' ?
+				-1
+			: offset
+		var outline = this.outline
+
+		// root nodes...
+		if(node == 'top'){
+			return [...outline.children] }
+		// groups defaulting to .outline as base...
+		if(['all', 'visible', 'editable', 'selected'].includes(node)){
+			return this.get(outline, node) }
+		// groups defaulting to .focused as base...
+		if(['parent', 'next', 'prev', 'children', 'siblings'].includes(node)){
+			return this.get('focused', node) }
+
+		// helpers...
+		var parent = function(node){
+			return node === outline ?
+				node
+				: node?.parentElement?.parentElement }
+		var children = function(node){
+			return node === outline ?
+				[...node.children]
+				: [...node?.lastChild?.children] }
+
+		// single base node...
+		var edited
+		;[node, edited] = 
+			typeof(node) == 'number' ?
+				[this.get('visible').at(node), 
+					edited]
+			: (node == 'outline' || node == 'root') ?
+				[outline, edited]
+			: node == 'focused' ?
+				[outline.querySelector(`.block:focus`)
+						|| outline.querySelector(`.code:focus`)
+						|| outline.querySelector('.block.focused'), 
+					edited]
+			: node == 'edited' ?
+				[outline.querySelector(`.code:focus`),
+					outline.querySelector(`.code:focus`)]
+			: [node , edited]
+
+		// get the .block...
+		if(node instanceof HTMLElement){
+			while(node !== outline
+					&& !node.classList.contains('block')){
+				node = node.parentElement } }
+
+		// no reference node...
+		if(node == null 
+				|| typeof(node) == 'string'){
+			return undefined }
+
+		// parent...
+		if(offset == 'parent'){
+			return edited ?
+				parent(node).querySelector('.code')
+				: parent(node) }
+
+		// node groups...
+		var nodes = 
+			typeof(offset) == 'number' ?
+				this.get('visible')
+			: offset == 'all' ?
+				[...node.querySelectorAll('.block')]
+			: offset == 'visible' ?
+				[...node.querySelectorAll('.block')] 
+					.filter(function(e){
+						return e.offsetParent != null })
+			: offset == 'editable' ?
+				[...node.querySelectorAll('.block>.code')] 
+			: offset == 'selected' ?
+				[...node.querySelectorAll('.block[selected]')] 
+					.filter(function(e){
+						return e.offsetParent != null }) 
+			: offset == 'children' ?
+				children(node)
+			: offset == 'siblings' ?
+				children(parent(node))
+			: undefined
+
+		// get node by offset...
+		if(typeof(offset) == 'number'){
+			node = nodes.at(nodes.indexOf(node) + offset) 
+				?? nodes[0]
+			edited = edited ?
+				node.querySelector('.code')
+				: edited
+			nodes = undefined }
+
+		return nodes !== undefined ?
+				edited ?
+					nodes
+						.map(function(){
+							return node.querySelector('.code') })
+					: nodes
+			: (edited 
+				?? node) },
+	/*/
+	get: function(node='focused', offset){
+		var that = this
 
 		// shorthands...
 		if(node == 'next'){
@@ -93,10 +198,15 @@ var Outline = {
 
 		var outline = this.outline
 
+		var parent = function(node){
+			return node?.parentElement?.parentElement }
+		var children = function(node){
+			return [...node?.lastChild?.children] }
+
 		// get parent node...
 		if(node instanceof HTMLElement){
-			while(!node.getAttribute('tabindex')){
-				node = node.parentElement 
+			while(!node.classList.contains('block')){
+				node = node.parentElement
 				if(node === this.outline){
 					return undefined } } }
 
@@ -104,15 +214,15 @@ var Outline = {
 		var NO_NODES = {}
 		var nodes = 
 			node == 'all' ?
-				[...outline.querySelectorAll('[tabindex]')] 
+				[...outline.querySelectorAll('.block')] 
 			: node == 'visible' ?
-				[...outline.querySelectorAll('[tabindex]')] 
+				[...outline.querySelectorAll('.block')] 
 					.filter(function(e){
 						return e.offsetParent != null })
 			: node == 'editable' ?
-				[...outline.querySelectorAll('[tabindex]>textarea')] 
+				[...outline.querySelectorAll('.block>textarea')] 
 			: node == 'selected' ?
-				[...outline.querySelectorAll('[tabindex][selected]')]
+				[...outline.querySelectorAll('.block[selected]')]
 			: node == 'top' ?
 				[...outline.children]
 					.filter(function(elem){ 
@@ -136,11 +246,11 @@ var Outline = {
 			typeof(node) == 'number' ?
 				this.at(node)
 			: node == 'focused' ?
-				(outline.querySelector(`[tabindex]:focus`)
+				(outline.querySelector(`.block:focus`)
 					|| outline.querySelector(`textarea:focus`)?.parentElement
-					|| outline.querySelector('[tabindex].focused'))
+					|| outline.querySelector('.block.focused'))
 			: node == 'parent' ?
-				this.get('focused')?.parentElement
+				parent(this.get('focused'))
 			: node 
 		var edited
 		if(node == 'edited'){
@@ -152,15 +262,11 @@ var Outline = {
 
 		// children...
 		if(offset == 'children'){
-			return [...node.children]
-				.filter(function(elem){
-					return elem.getAttribute('tabindex') != null }) }
+			return children(node) }
 
 		// siblings...
 		if(offset == 'siblings'){
-			return [...node.parentElement.children]
-				.filter(function(elem){
-					return elem.getAttribute('tabindex') != null }) }
+			return children(parent(node)) }
 
 		// offset...
 		offset = 
@@ -177,9 +283,10 @@ var Outline = {
 				: i % nodes.length
 			node = nodes[i] 
 			edited = edited 
-				&& node.querySelector('textarea') }
+				&& node.querySelector('.code') }
 		return edited 
 			|| node },
+	//*/
 	at: function(index, nodes='visible'){
 		return this.get(nodes).at(index) },
 	focus: function(node='focused', offset){
@@ -229,20 +336,30 @@ var Outline = {
 		var siblings = this.get(node, 'siblings')
 		// deindent...
 		if(!indent){
-			var parent = cur.parentElement
+			var parent = this.get(node, 'parent')
 			if(!parent.classList.contains('.outline')){
-				var children = siblings.slice(siblings.indexOf(cur)+1)
+				var children = siblings
+					.slice(siblings.indexOf(cur)+1)
 				parent.after(cur)
 				children.length > 0
-					&& cur.append(...children) }
+					&& cur.lastChild.append(...children) }
 		// indent...
 		} else {
 			var parent = siblings[siblings.indexOf(cur) - 1]
 			if(parent){
-				parent.append(cur) } } 
+				parent.lastChild.append(cur) } } 
 		return cur },
 	deindent: function(node='focused', indent=false){
 		return this.indent(node, indent) },
+	show: function(node='focused', offset){
+		var node = this.get(...arguments)
+		var outline = this.outline
+		var parent = node
+		do{
+			parent = parent.parentElement
+			parent.removeAttribute('collapsed')
+		} while(parent !== outline)
+		return node },
 	toggleCollapse: function(node='focused', state='next'){
 		var that = this
 		if(node == 'all'){
@@ -256,7 +373,7 @@ var Outline = {
 		node = this.get(node)
 		if(!node 
 				// only nodes with children can be collapsed...
-				|| !node.querySelector('[tabindex]')){
+				|| !node.querySelector('.block')){
 			return }
 		state = state == 'next' ?
 			node.getAttribute('collapsed') != ''
@@ -417,12 +534,9 @@ var Outline = {
 	json: function(node){
 		var that = this
 		node ??= this.outline
-		return [...node.children]
+		return [...node.lastChild.children]
 			.map(function(elem){
-				return elem.nodeName != 'DIV' ?
-					[]
-					: [that.data(elem)] })
-			.flat() },
+				return that.data(elem) }) },
 	// XXX add option to customize indent size...
 	text: function(node, indent, level){
 		// .text(<indent>, <level>)
@@ -489,16 +603,29 @@ var Outline = {
 	// XXX should this handle children???
 	// XXX revise name...
 	Block: function(data={}, place=null){
+		var that = this
 		if(typeof(data) != 'object'){
 			place = data
 			data = {} }
+
+		// block...
 		var block = document.createElement('div')
+		block.classList.add('block')
 		block.setAttribute('tabindex', '0')
-		var text = document.createElement('textarea')
+		// code...
+		var code = document.createElement('textarea')
 			.autoUpdateSize()
+		code.classList.add('code', 'text')
+		// view...
 		var html = document.createElement('span')
-		block.append(text, html)
+		html.classList.add('view', 'text')
+		// children...
+		var children = document.createElement('div')
+		children.classList.add('children')
+		children.setAttribute('tabindex', '-1')
+		block.append(code, html, children)
 		this.update(block, data)
+
 		// place...
 		var cur = this.get()
 		if(place && cur){
@@ -506,7 +633,7 @@ var Outline = {
 				'before'
 				: place
 			;(place == 'next' 
-					&& (cur.querySelector('[tabindex]')
+					&& (cur.querySelector('.block')
 						|| cur.nextElementSibling)) ?
 				this.get(place).before(block)
 			: (place == 'next' 
@@ -527,7 +654,8 @@ var Outline = {
 				.map(function(data){
 					var elem = that.Block(data) 
 					if((data.children || []).length > 0){
-						elem.append(...level(data.children)) }
+						elem.lastChild
+							.append(...level(data.children)) }
 					return elem }) }
 		this
 			.clear()
@@ -616,19 +744,19 @@ var Outline = {
 				return }
 			if(this.right_key_expands){
 				this.toggleCollapse(false) 
-				var child = this.focus('children')[0]
-				if(!child){
-					this.focus('next') }
+				this.focus('next')
 			} else {
 				evt.shiftKey ?
 					this.toggleCollapse(false)
-					: this.get('children')[0]?.focus() } },
+					: this.focus('next') } },
 
 		// indent...
 		Tab: function(evt){
 			evt.preventDefault()
 			var edited = this.get('edited')
-			var node = this.indent(!evt.shiftKey)
+			var node = this.show(
+				this.indent(!evt.shiftKey))
+			// keep focus in node...
 			;(edited ?
 				edited
 				: node)?.focus() },
@@ -698,8 +826,11 @@ var Outline = {
 			function(evt){
 				var elem = evt.target
 
+				if(elem.classList.contains('children')){
+					return }
+
 				// expand/collapse
-				if(elem.nodeName == 'SPAN' 
+				if(elem.classList.contains('view')
 						&& elem.parentElement.getAttribute('tabindex')){
 					// click: left of elem (outside)
 					if(evt.offsetX < 0){
@@ -718,12 +849,12 @@ var Outline = {
 				// NOTE: this is usefull if element text is hidden but the 
 				// 		frame is still visible...
 				if(elem.getAttribute('tabindex')){
-					elem.querySelector('textarea').focus() }
+					elem.querySelector('.code').focus() }
 
 				// toggle checkbox...
 				if(elem.type == 'checkbox'){
 					var node = that.get(elem)
-					var text = node.querySelector('textarea')
+					var text = node.querySelector('.code')
 					// get the checkbox order...
 					var i = [...node.querySelectorAll('input[type=checkbox]')].indexOf(elem)
 					var to = elem.checked ?
@@ -749,25 +880,27 @@ var Outline = {
 		// toggle view/code of nodes...
 		outline.addEventListener('focusin', 
 			function(evt){
-				var node = evt.target
-				// scroll...
-				// XXX a bit odd still and not smooth...
-				;((node.nodeName == 'SPAN' 
-							|| node.nodeName == 'TEXTAREA') ?
-						node
-						: node.querySelector('textarea+span'))
-					?.scrollIntoView({ 
-						block: 'nearest', 
-						behavior: 'smooth',
-					})
+				var elem = evt.target
+
+				if(elem.classList.contains('children')){
+					return }
+
 				// handle focus...
 				for(var e of [...that.dom.querySelectorAll('.focused')]){
 					e.classList.remove('focused') }
 				that.get('focused')?.classList?.add('focused')
 				// textarea...
-				if(node.nodeName == 'TEXTAREA' 
-						&& node?.nextElementSibling?.nodeName == 'SPAN'){
-					node.updateSize() } })
+				if(elem.classList.contains('code')){
+					elem.updateSize() } 
+
+				/*/ scroll...
+				that.get(node).querySelector('view')
+					?.scrollIntoView({ 
+						block: 'nearest', 
+						behavior: 'smooth',
+					})
+				//*/
+			})
 		outline.addEventListener('focusout', 
 			function(evt){
 				var node = evt.target
@@ -809,9 +942,11 @@ var Outline = {
 		// code...
 		var code = this.code
 		if(code){
+			var t = Date.now()
 			this.load(code.innerHTML
 				.replace(/&lt;/g, '<')
-				.replace(/&gt;/g, '>')) }
+				.replace(/&gt;/g, '>')) 
+			console.log(`Parse: ${Date.now() - t}ms`)}
 
 		return this },
 }

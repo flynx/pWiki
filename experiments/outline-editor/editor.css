@@ -29,7 +29,7 @@
 	/*text-size-adjust: none;*/
 	text-size-adjust: 150%;
 
-	/*scroll-behavior: smooth;*/
+
 }
 
 .editor {
@@ -49,6 +49,9 @@
 	display: none;
 }
 
+.editor .children {
+}
+
 .editor .outline {
 	display: block;
 	position: relative;
@@ -60,19 +63,18 @@
 	padding-right: var(--outline-padding);
 }
 
-.editor .outline [tabindex] {
+.editor .outline .block {
 	position: relative;
 	outline: none;
 	border: none;
 }
-.editor .outline [tabindex] [tabindex] {
+.editor .outline .block .block {
 	margin-left: var(--item-indent);
 }
-.editor .outline [tabindex]>span,
-.editor .outline [tabindex]>textarea {
+.editor .outline .block>.text {
 	display: block;
 	width: 100%;
-	/* XXX this is a tiny bit off and using textarea's height here is off too... */
+	/* XXX this is a tiny bit off and using .code's height here is off too... */
 	min-height: calc(1em + var(--item-padding) * 2);
 	padding-top: var(--item-padding);
 	padding-bottom: var(--item-padding);
@@ -89,60 +91,58 @@
 	border: none;
 }
 /* show/hide node's view/code... */
-/*.editor .outline [tabindex]>textarea:focus+span,*/
-.editor .outline [tabindex]>textarea:not(:focus) {
+/*.editor .outline .block>.code:focus+.view,*/
+.editor .outline .block>.code:not(:focus) {
 	position: absolute;
 	opacity: 0;
 }
-/* hide span content but show before/after -- keep bulets and touch zones... */
-.editor .outline [tabindex]>textarea:focus+span {
+/* hide .view content but show before/after -- keep bulets and touch zones... */
+.editor .outline .block>.code:focus+.view {
 	position: absolute;
 	top: 0;
 	visibility: hidden;
 }
-.editor .outline [tabindex]>textarea:focus+span:before,
-.editor .outline [tabindex]>textarea:focus+span:after {
+.editor .outline .block>.code:focus+.view:before,
+.editor .outline .block>.code:focus+.view:after {
 	visibility: visible;
 }
-/* click through the span text to the textarea */
-.editor .outline [tabindex]>span {
+/* click through the .view text to the .code */
+.editor .outline .block>.view {
 	position: relative;
 	pointer-events: none;
 }
 /* block hover... */
-.editor .outline [tabindex]:hover>span {
+.editor .outline .block:hover>.view {
 	background: linear-gradient(
 		90deg, 
 			rgba(0,0,0,0.01) 0%, 
 			rgba(0,0,0,0.01) 80%, 
 			rgba(0,0,0,0.03) 100%);
 }
-.editor .outline [tabindex]>span:blank {
+.editor .outline .block>.view:blank {
 	content: " ";
 }
-.editor .outline [tabindex]>textarea {
+.editor .outline .block>.code {
 	height: calc(2 * var(--item-padding) + 1em);
 	overflow: hidden;
 	resize: none;
 }
 /* clickable things in view */
-.editor .outline [tabindex]>span a,
-.editor .outline [tabindex]>span input {
+.editor .outline .block>.view a,
+.editor .outline .block>.view input {
 	pointer-events: auto;
 }
 
 
 /* focus... */
-editor .outline [tabindex]:focus {
+editor .outline .block:focus {
 	/*outline: solid 0.2em silver;*/
 	outline: none;
 }
-.editor .outline [tabindex]:focus>span,
-.editor .outline [tabindex]:focus>textarea {
+.editor .outline .block:focus>.text {
 	background: rgba(0,0,0,0.1);
 }
-.editor .outline [tabindex].focused:not(:focus)>span,
-.editor .outline [tabindex].focused:not(:focus)>textarea {
+.editor .outline .block.focused:not(:focus)>.text {
 	background: rgba(0,0,0,0.01);
 }
 
@@ -151,8 +151,8 @@ editor .outline [tabindex]:focus {
 }
 
 /* click/tap zones for expand button... */
-.editor .outline [tabindex]>span:before,
-.editor .outline [tabindex]>span:after {
+.editor .outline .block>.view:before,
+.editor .outline .block>.view:after {
 	--size: 3rem;
 
 	content: "";
@@ -185,23 +185,23 @@ editor .outline [tabindex]:focus {
 	background: transparent;
 }
 /* left indicator */
-.editor .outline [tabindex]>span:before {
+.editor .outline .block>.view:before {
 	justify-content: right;
 	left: calc(-1 * var(--size));
 }
 /* right indicator (collapse/expand) */
-.editor .outline [tabindex]>span:after {
+.editor .outline .block>.view:after {
 	color: silver;
 }
-.editor .outline [tabindex]:has([tabindex])>span:after {
+.editor .outline .block:has(.block)>.view:after {
 	content: "○";
 }
-.editor .outline [tabindex][collapsed]>span:after {
+.editor .outline .block[collapsed]>.view:after {
 	content: "●";
 }
 
 /* collapse -- hide children... */
-.editor .outline [tabindex][collapsed] [tabindex] {
+.editor .outline .block[collapsed] .block {
 	display: none;
 }
 
@@ -242,58 +242,42 @@ editor .outline [tabindex]:focus {
 .editor .outline .heading-6 {
 	margin-top: 1rem;
 }
-.editor .outline .heading-1>span,
-.editor .outline .heading-1>textarea,
-.editor .outline .heading-2>span,
-.editor .outline .heading-2>textarea,
-.editor .outline .heading-3>span,
-.editor .outline .heading-3>textarea,
-.editor .outline .heading-4>span,
-.editor .outline .heading-4>textarea,
-.editor .outline .heading-5>span,
-.editor .outline .heading-5>textarea,
-.editor .outline .heading-6>span,
-.editor .outline .heading-6>textarea {
+.editor .outline .heading-1>.text,
+.editor .outline .heading-2>.text,
+.editor .outline .heading-3>.text,
+.editor .outline .heading-4>.text,
+.editor .outline .heading-5>.text,
+.editor .outline .heading-6>.text {
 	font-weight: bold;
 }
-.editor .outline .heading-1>span,
-.editor .outline .heading-1>textarea,
-.editor .outline .heading-2>span,
-.editor .outline .heading-2>textarea,
-.editor .outline .heading-3>span,
-.editor .outline .heading-3>textarea {
+.editor .outline .heading-1>.text,
+.editor .outline .heading-2>.text,
+.editor .outline .heading-3>.text {
 	border-bottom: solid 1px rgba(0,0,0,0.1);
 }
 
-.editor .outline .heading-1>span,
-.editor .outline .heading-1>textarea {
+.editor .outline .heading-1>.text {
 	--font-size: 2.5em;
 }
-.editor .outline .heading-2>span,
-.editor .outline .heading-2>textarea {
+.editor .outline .heading-2>.text {
 	--font-size: 1.9em;
 }
-.editor .outline .heading-3>span,
-.editor .outline .heading-3>textarea {
+.editor .outline .heading-3>.text {
 	--font-size: 1.5em;
 }
-.editor .outline .heading-4>span,
-.editor .outline .heading-4>textarea {
+.editor .outline .heading-4>.text {
 	--font-size: 1.3em;
 }
-.editor .outline .heading-5>span,
-.editor .outline .heading-5>textarea {
+.editor .outline .heading-5>.text {
 	--font-size: 1.1em;
 }
-.editor .outline .heading-6>span,
-.editor .outline .heading-6>textarea {
+.editor .outline .heading-6>.text {
 	--font-size: 1em;
 }
 
 
 /* Quote... */
-.editor .outline .quote>span,
-.editor .outline .quote>textarea {
+.editor .outline .quote>.text {
 	--indent: 1rem;
 	--margin: 0.7rem;
 	--item-padding-ratio: 0.7;
@@ -315,31 +299,64 @@ editor .outline [tabindex]:focus {
 
 
 /* List... */
-/* XXX needs to be in the middle of the first span but with universal size... */
-.editor .outline .list-item>span:before,
-.editor .outline .list>[tabindex]>span:not(:empty):before {
+/* XXX needs to be in the middle of the first .view but with universal size... */
+.editor .outline .list-item>.view:before,
+.editor .outline .list>.children>.block>.view:not(:empty):before {
 	content: "◼";
 	color: gray;
 }
-.editor .outline .list>.list>[tabindex]>span:not(:empty):before {
+.editor .outline 
+		.list>.children
+		>.list>.children>.block>.view:not(:empty):before {
 	content: "●";
 }
-.editor .outline .list>.list>.list>[tabindex]>span:not(:empty):before {
+.editor .outline 
+		.list>.children
+		>.list>.children
+		>.list>.children>.block>.view:not(:empty):before {
 	content: "○";
 }
-.editor .outline .list>.list>.list>.list>[tabindex]>span:not(:empty):before {
+.editor .outline 
+		.list>.children
+		>.list>.children
+		>.list>.children
+		>.list>.children>.block>.view:not(:empty):before {
 	content: "▪";
 }
 
 
 /* List... */
 /* XXX nested lists are broken -- seems that I need a container for the children... */
-.editor .outline .numbered-list {
+.editor .outline .numbered-list>.children {
 	counter-reset: numbered-list;
 }
-.editor .outline .numbered-list>[tabindex]>span:not(:empty):before {
+.editor .outline .numbered-list>.children>.block>.view:not(:empty):before {
 	counter-increment: numbered-list; 
 	content: counter(numbered-list) ".";
+	color: gray;
+}
+.editor .outline 
+		.numbered-list>.children
+		>.numbered-list>.children>.block>.view:not(:empty):before {
+	counter-increment: numbered-list; 
+	content: counter(numbered-list, lower-alpha) ".";
+	color: gray;
+}
+.editor .outline 
+		.numbered-list>.children
+		>.numbered-list>.children
+		>.numbered-list>.children>.block>.view:not(:empty):before {
+	counter-increment: numbered-list; 
+	content: counter(numbered-list, lower-roman) ".";
+	color: gray;
+}
+.editor .outline 
+		.numbered-list>.children
+		>.numbered-list>.children
+		>.numbered-list>.children
+		>.numbered-list>.children>.block>.view:not(:empty):before {
+	counter-increment: numbered-list; 
+	content: counters(numbered-list, ".") ".";
 	color: gray;
 }
 
@@ -356,20 +373,20 @@ editor .outline [tabindex]:focus {
 	background: rgba(0,0,0,0.05);
 }
 /* XXX this prevents it from being accesible via click/tap... */
-.editor .outline .NOTE>span:empty {
+.editor .outline .NOTE>.view:empty {
 	display: none;
 }
-.editor .outline .NOTE>span:empty ~ [tabindex] {
+.editor .outline .NOTE>.view:empty ~ .block {
 	/* XXX calculate this... */
 	margin-left: 1em;
 }
-.editor .outline .NOTE>span:before {
+.editor .outline .NOTE>.view:before {
 	content: "" !important;
 }
 /* correct the right click zone... */
 /* XXX need to account for nesting... (???) */
-.editor .outline [tabindex].NOTE>span:after,
-.editor .outline [tabindex].NOTE [tabindex]>span:after {
+.editor .outline .block.NOTE>.view:after,
+.editor .outline .block.NOTE .block>.view:after {
 	margin-right: calc(-1 * var(--padding-h));
 }
 
@@ -379,7 +396,7 @@ editor .outline [tabindex]:focus {
 	font-weight: bold;
 	background: yellow;
 }
-.editor .outline .XXX>span {
+.editor .outline .XXX>.view {
 	background: yellow;
 }
 
@@ -388,13 +405,13 @@ editor .outline [tabindex]:focus {
 .editor.hide-comments .outline .comment {
 	display: none;
 }
-.editor .outline .comment>span {
+.editor .outline .comment>.view {
 	color: silver;
 }
 
 
 /* Checkboxes... */
-.editor .outline [tabindex].todo>span {
+.editor .outline .block.todo>.view {
 	width: calc(
 		100% 
 		- var(--checkbox-size)
@@ -403,8 +420,8 @@ editor .outline [tabindex]:focus {
 		var(--checkbox-size)
 		+ var(--checkbox-margin));
 }
-.editor .outline [tabindex].check>span input[type=checkbox],
-.editor .outline [tabindex].todo>span input[type=checkbox] {
+.editor .outline .block.check>.view input[type=checkbox],
+.editor .outline .block.todo>.view input[type=checkbox] {
 	height: var(--checkbox-size);
 	width: var(--checkbox-size);
 
@@ -417,13 +434,13 @@ editor .outline [tabindex]:focus {
 	/* NOTE: this appears to be needed for the em sizes above to work correctly */
 	font-size: 1em;
 }
-.editor .outline [tabindex].todo>span input[type=checkbox]:first-child {
+.editor .outline .block.todo>.view input[type=checkbox]:first-child {
 	margin-left: calc(
 		-1 * var(--checkbox-size)
 		- var(--checkbox-margin));
 }
 /* correct the left click zone... */
-.editor .outline [tabindex].todo>span:before {
+.editor .outline .block.todo>.view:before {
 	margin-left: calc(
 		-1 * var(--checkbox-size)
 		- var(--checkbox-margin));
@@ -431,7 +448,7 @@ editor .outline [tabindex]:focus {
 
 
 /* code... */
-.editor .outline [tabindex]>span code {
+.editor .outline .block>.view code {
 	padding: 0.1em 0.3em;
 	font-family: monospace;
 	background: rgba(0,0,0,0.07);
@@ -440,19 +457,19 @@ editor .outline [tabindex]:focus {
 
 
 /* Tables... */
-.editor .outline [tabindex]>span>table {
+.editor .outline .block>.view>table {
 	width: 100%;
 	border-collapse: collapse;
 }
-.editor .outline [tabindex]>span>table tr:nth-child(odd) {
+.editor .outline .block>.view>table tr:nth-child(odd) {
 	background: rgba(0,0,0,0.03);
 }
-.editor .outline [tabindex]>span>table tr:first-child {
+.editor .outline .block>.view>table tr:first-child {
 	font-weight: bold;
 	border-bottom: solid 0.1rem silver;
 	background: transparent;
 }
-.editor .outline [tabindex]>span>table td {
+.editor .outline .block>.view>table td {
 	height: calc(1em + var(--item-padding) * 2);
 	padding: 0 1em;
 	/*text-align: center;*/
@@ -461,13 +478,13 @@ editor .outline [tabindex]:focus {
 
 /********************************************************* Testing ***/
 
-.editor.show-click-zones .outline [tabindex]>span:before,
-.editor.show-click-zones .outline [tabindex]>span:after {
+.editor.show-click-zones .outline .block>.view:before,
+.editor.show-click-zones .outline .block>.view:after {
 	background: rgba(0,0,0,0.03);
 	border: solid 1px silver;
 }
-.editor.show-click-zones .outline [tabindex]:hover>span:before,
-.editor.show-click-zones .outline [tabindex]:hover>span:after {
+.editor.show-click-zones .outline .block:hover>.view:before,
+.editor.show-click-zones .outline .block:hover>.view:after {
 	background: rgba(0,0,0,0.1);
 }
 
