@@ -89,10 +89,21 @@
 	border: none;
 }
 /* show/hide node's view/code... */
-.editor .outline [tabindex]>textarea:focus+span,
+/*.editor .outline [tabindex]>textarea:focus+span,*/
 .editor .outline [tabindex]>textarea:not(:focus) {
 	position: absolute;
 	opacity: 0;
+}
+/* XXX not sure about this yet... */
+.editor .outline [tabindex]>textarea:focus+span {
+	position: absolute;
+	top: 0;
+	margin-top: 0;
+	visibility: hidden;
+}
+.editor .outline [tabindex]>textarea:focus+span:before,
+.editor .outline [tabindex]>textarea:focus+span:after {
+	visibility: visible;
 }
 /* click through the span text to the textarea */
 .editor .outline [tabindex]>span {
@@ -297,7 +308,7 @@ editor .outline [tabindex]:focus {
 }
 
 
-/* Lists... */
+/* List... */
 /* XXX needs to be in the middle of the first span but with universal size... */
 .editor .outline .list-item>span:before,
 .editor .outline .list>[tabindex]>span:not(:empty):before {
@@ -313,6 +324,19 @@ editor .outline [tabindex]:focus {
 .editor .outline .list>.list>.list>.list>[tabindex]>span:not(:empty):before {
 	content: "▪";
 }
+
+
+/* List... */
+/* XXX nested lists are broken -- seems that I need a container for the children... */
+.editor .outline .numbered-list {
+	counter-reset: numbered-list;
+}
+.editor .outline .numbered-list>[tabindex]>span:not(:empty):before {
+	counter-increment: numbered-list; 
+	content: counter(numbered-list) ".";
+	color: gray;
+}
+
 
 /* Notes... */
 .editor .outline .NOTE {
@@ -373,8 +397,8 @@ editor .outline [tabindex]:focus {
 		var(--checkbox-size)
 		+ var(--checkbox-margin));
 }
-.editor .outline [tabindex].check>span>input[type=checkbox],
-.editor .outline [tabindex].todo>span>input[type=checkbox] {
+.editor .outline [tabindex].check>span input[type=checkbox],
+.editor .outline [tabindex].todo>span input[type=checkbox] {
 	height: var(--checkbox-size);
 	width: var(--checkbox-size);
 
@@ -387,7 +411,7 @@ editor .outline [tabindex]:focus {
 	/* NOTE: this appears to be needed for the em sizes above to work correctly */
 	font-size: 1em;
 }
-.editor .outline [tabindex].todo>span>input[type=checkbox]:first-child {
+.editor .outline [tabindex].todo>span input[type=checkbox]:first-child {
 	margin-left: calc(
 		-1 * var(--checkbox-size)
 		- var(--checkbox-margin));
@@ -408,6 +432,25 @@ editor .outline [tabindex]:focus {
 	border-radius: 0.2em;
 }
 
+
+/* Tables... */
+.editor .outline [tabindex]>span>table {
+	width: 100%;
+	border-collapse: collapse;
+}
+.editor .outline [tabindex]>span>table tr:nth-child(odd) {
+	background: rgba(0,0,0,0.03);
+}
+.editor .outline [tabindex]>span>table tr:first-child {
+	font-weight: bold;
+	border-bottom: solid 0.1rem silver;
+	background: transparent;
+}
+.editor .outline [tabindex]>span>table td {
+	height: calc(1em + var(--item-padding) * 2);
+	padding: 0 1em;
+	/*text-align: center;*/
+}
 
 
 /********************************************************* Testing ***/

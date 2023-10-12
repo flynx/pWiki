@@ -93,6 +93,13 @@ var Outline = {
 
 		var outline = this.outline
 
+		// get parent node...
+		if(node instanceof HTMLElement){
+			while(!node.getAttribute('tabindex')){
+				node = node.parentElement 
+				if(node === this.outline){
+					return undefined } } }
+
 		// node lists...
 		var NO_NODES = {}
 		var nodes = 
@@ -304,6 +311,12 @@ var Outline = {
 				elem.style.push(...style)
 				return code 
 					?? text } }
+		var table = function(_, body){
+			return `<table><tr><td>${
+				body
+					.replace(/\s*\|\s*\n\s*\|\s*/gm, '</td></tr>\n<tr><td>')
+					.replace(/\s*\|\s*/gm, '</td><td>')
+			}</td></td></table>` }
 		elem.text = code 
 			// hidden attributes...
 			// XXX make this generic...
@@ -329,6 +342,7 @@ var Outline = {
 			// style: list...
 			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
 			.replace(/^\s*(.*)(?<!\\):\s*$/m, style('list'))
+			.replace(/^\s*(.*)(?<!\\)#\s*$/m, style('numbered-list'))
 			// style: misc...
 			.replace(/^\s*(?<!\\)>\s+(.*)$/m, style('quote'))
 			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, style('comment'))
@@ -351,6 +365,8 @@ var Outline = {
 				style('check', '<input type="checkbox">'))
 			.replace(/\s*(?<!\\)\[[Xx]\]\s*/gm, 
 				style('check', '<input type="checkbox" checked>'))
+			// tables...
+			.replace(/^\s*(?<!\\)\|\s*((.|\n)*)\s*\|\s*$/, table)
 			// basic styling...
 			// XXX revise...
 			.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
@@ -359,6 +375,9 @@ var Outline = {
 			.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, '<code>$1</code>') 
 			// XXX support "\==" in mark...
 			.replace(/(?<!\\)==(?=[^\s])(.*[^\s])(?<!\\)==/gm, '<mark>$1</mark>') 
+			// links...
+			.replace(/(?<!\\)\[([^\]]*)\]\(([^)]*)\)/g, '<a href="$2">$1</a>')
+			.replace(/((?:https?:|ftps?:)[^\s]*)(\s*)/g, '<a href="$1">$1</a>$2')
 			// characters...
 			// XXX use ligatures for these???
 			.replace(/(?<!\\)---(?!-)/gm, '&mdash;') 
@@ -685,7 +704,7 @@ var Outline = {
 					
 					// click: right of elem (outside)
 					} else if(elem.offsetWidth < evt.offsetX){
-						that.toggleCollapse(elem.parentElement)
+						that.toggleCollapse(that.get(elem))
 
 					// click inside element...
 					} else {
@@ -700,7 +719,7 @@ var Outline = {
 
 				// toggle checkbox...
 				if(elem.type == 'checkbox'){
-					var node = elem.parentElement.parentElement
+					var node = that.get(elem)
 					var text = node.querySelector('textarea')
 					// get the checkbox order...
 					var i = [...node.querySelectorAll('input[type=checkbox]')].indexOf(elem)

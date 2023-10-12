@@ -40,6 +40,8 @@ var setup = function(){
   - BUG? pressing down from a longer line will jump over a shorter line
     - here is the line to jump from, for example from here
       an we'll not get here...
+  - ASAP: fix quotes
+	- Example: /\n\s*\|\s+/ -&gt; &lt;tr&gt;&lt;td&gt;
   - ASAP: editor: bksapce/del at start/end of a block should join it with prev/next
   - ASAP: editor: pressing enter in text edit mode should split text into two blocks
   - ASAP: editor: shifting nodes up/down
@@ -78,14 +80,6 @@ var setup = function(){
     - delete node
     - indent/deindent
     - edit node
-  - markdown: tables
-    collapsed:: true
-	- /^\s*(\|\s+.*\s+\|)\s*$/m -&gt; &lt;table&gt;&lt;tr&gt;&lt;td&gt;$1&lt;/td&gt;&lt;/tr&gt;&lt;table&gt;
-	- /\n\s*\|\s+/ -&gt; &lt;tr&gt;&lt;td&gt;
-	- /\s+\|\s*\n/ -&gt; &lt;/td&gt;&lt;/tr&gt;
-	- /\s+\|\s+/ -&gt; &lt;/td&gt;&lt;td&gt;
-  - ASAP: fix quotes
-	- Example: /\n\s*\|\s+/ -&gt; &lt;tr&gt;&lt;td&gt;
   - empty item height is a bit off...
   - ~handle links gracefully -- open/edit
     _just click in the empty space_~
@@ -104,10 +98,18 @@ var setup = function(){
       - ##### Heading 5
       - ###### Heading 6
       - Text
-      - List::
-        - a
-        - b
-        - c
+      - Lists::
+        - bullet:
+          - a
+          - b
+          - c
+        - numbered#
+          - a
+          - b#
+            - x
+            - y
+            - z
+          - c
 	  - &gt; quoted text
       - Notes
 		  - NOTE: a note text
@@ -117,21 +119,28 @@ var setup = function(){
 	  - // C-style comment
 	  - ; ASM-style comment
 	  - XXX Highlight
+    - Basic inline *bold*, _italic_ and ~striked~
+    - Marking ==text==
 	- Line
 		- ---
 	- Markers: ASAP, BUG, FIX, HACK, STUB, WARNING, and CAUTION 
-    - Basic inline *bold*, _italic_ and ~striked~
-    - Marking ==text==
     - Inline [X] checkboxes [_]
 	- To do items/blocks
 	  - [_] undone item
         _(clicking the checkbox updates the item)_
 	  - [X] done item
 	  - [_] we can also add inline [x] checkboxes
-	- link <a href="about:blank">example</a>
+	- link 
+      - [example](about:blank)
+      - https://example.com
+      - ./path/to/file /path/to -- not supported yet
+    - Tables
+      - | a | b | c |
+        | 1 | 2 | 3 |
+        | 11 | 22 | 33 |
 	- markdown:
       - numbered lists
-      - tables
+      - ~tables~
       - code blocks
       - ~alerts~
       - footnotes??
