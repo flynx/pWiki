@@ -281,13 +281,13 @@ var Outline = {
 			indent = node
 			node = 'focused' }
 		var cur = this.get(node) 
-		if(!cur){
+		if(!cur){ 
 			return }
 		var siblings = this.get(node, 'siblings')
 		// deindent...
 		if(!indent){
 			var parent = this.get(node, 'parent')
-			if(!parent.classList.contains('.outline')){
+			if(parent != this.outline){
 				var children = siblings
 					.slice(siblings.indexOf(cur)+1)
 				parent.after(cur)
