@@ -161,7 +161,7 @@ var syntax = {
 	__setup__: function(editor){
 		return this.update() },
 	// XXX make a local update...
-	__changed__: function(editor, node){
+	__changed__: function(evt, editor, node){
 		return this.update() },
 }
 
@@ -281,8 +281,6 @@ var tasks = {
 
 	__setup__: function(editor){
 		return this.updateAll(editor) },
-	__changed__: function(editor, node){
-		return this.updateBranch(editor, node) },
 	__parse__: function(text, editor, elem){
 		return text
 			// block checkboxes...
@@ -300,6 +298,26 @@ var tasks = {
 			// completion...
 			// XXX add support for being like a todo checkbox...
 			.replace(/(?<!\\)\[[%]\]/gm, '<span class="completion"></span>') },
+	__changed__: function(evt, editor, node){
+		return this.updateBranch(editor, node) },
+	__click__: function(evt, editor, elem){
+		// toggle checkbox...
+		if(elem.type == 'checkbox'){
+			var node = editor.get(elem)
+			var text = node.querySelector('.code')
+			// get the checkbox order...
+			var i = [...node.querySelectorAll('input[type=checkbox]')].indexOf(elem)
+			var to = elem.checked ?
+				'[X]'
+				: '[_]'
+			var toggle = function(m){
+				return i-- == 0 ?
+					to
+					: m }
+			text.value = text.value.replace(/\[[Xx_]\]/g, toggle) 
+			// update status...
+			this.updateBranch(editor, node) } 
+		return this },
 }
 
 
@@ -1020,22 +1038,7 @@ var Outline = {
 				if(elem.getAttribute('tabindex')){
 					elem.querySelector('.code').focus() }
 
-				// toggle checkbox...
-				if(elem.type == 'checkbox'){
-					var node = that.get(elem)
-					var text = node.querySelector('.code')
-					// get the checkbox order...
-					var i = [...node.querySelectorAll('input[type=checkbox]')].indexOf(elem)
-					var to = elem.checked ?
-						'[X]'
-						: '[_]'
-					var toggle = function(m){
-						return i-- == 0 ?
-							to
-							: m }
-					text.value = text.value.replace(/\[[Xx_]\]/g, toggle) 
-					// update status...
-					tasks.updateBranch(that, node) } })
+				that.runPlugins('__click__', evt, that, elem) })
 		// keyboard handling...
 		outline.addEventListener('keydown', 
 			function(evt){
@@ -1105,9 +1108,7 @@ var Outline = {
 						&& node?.nextElementSibling?.nodeName == 'SPAN'){
 					var block = node.parentElement
 					that.update(block, { text: node.value }) 
-
-					that.runPlugins('__changed__', that, node)
-				} })
+					that.runPlugins('__changed__', evt, that, node) } })
 		// update .code...
 		var update_code_timeout
 		outline.addEventListener('change', 
