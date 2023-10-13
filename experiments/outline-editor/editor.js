@@ -337,8 +337,11 @@ var Outline = {
 				.replace(/\\(?!`)/g, '\\\\') }
 		var quote = function(_, code){
 			return `<code>${quoteText(code)}</code>` }
-		var pre = function(_, code){
-			return `<pre>${ quoteText(code) }</pre>` }
+		var pre = function(_, language, code){
+			language = language ?
+				'language-'+language
+				: language
+			return `<pre><code class="${language}">${ quoteText(code) }</code></pre>` }
 		var table = function(_, body){
 			return `<table><tr><td>${
 				body
@@ -401,7 +404,7 @@ var Outline = {
 			.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
 			.replace(/(?<!\\)_(?=[^\s_])(([^_]|\\_)*[^\s_])(?<!\\)_/gm, '<i>$1</i>') 
 		    // code/quoting...
-			.replace(/(?<!\\)```\s*\n((\n|.)*)\h*(?<!\\)```\s*/g, pre) 
+			.replace(/(?<!\\)```(.*)\s*\n((\n|.)*)\h*(?<!\\)```\s*/g, pre) 
 			.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, quote) 
 			// XXX support "\==" in mark...
 			.replace(/(?<!\\)==(?=[^\s])(.*[^\s])(?<!\\)==/gm, '<mark>$1</mark>') 
@@ -822,7 +825,11 @@ var Outline = {
 				if(node.nodeName == 'TEXTAREA' 
 						&& node?.nextElementSibling?.nodeName == 'SPAN'){
 					var block = node.parentElement
-					that.update(block, { text: node.value }) } })
+					that.update(block, { text: node.value }) } 
+				
+				// XXX do a plugin...
+				window.hljs
+					&& hljs.highlightAll() })
 		// update .code...
 		var update_code_timeout
 		outline.addEventListener('change', 

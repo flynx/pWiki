@@ -2,7 +2,10 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<link href="editor.css" rel="stylesheet"/>
+<link rel="stylesheet" href="css/default.css">
+
+<link rel="stylesheet" href="editor.css"/>
+
 <style>
 
 .add-row {
@@ -10,6 +13,9 @@
 }
 
 </style>
+
+<script src="lib/highlight.min.js"></script>
+
 <script src="generic.js"></script>
 <script src="editor.js"></script>
 <script>
@@ -20,7 +26,11 @@ var setup = function(){
 	window.editor = {
 		__proto__: Outline,
 	}.setup(
-		document.querySelector('.editor')) }
+		document.querySelector('.editor')) 
+
+	// XXX make this a plugin...
+	window.hljs
+		&& hljs.highlightAll() }
 
 </script>
 </head>
@@ -142,12 +152,11 @@ var setup = function(){
     - Code
 	  - Inline quoting `html <b>code</b>`
       - code blocks
-        ```
+        ```javascript
         var text = 'Hello, world!'
 
         console.log(text)
         ```
-        _syntax higlighting not yet supported..._
 	- Line
 		- ---
 	- Markers: ASAP, BUG, FIX, HACK, STUB, WARNING, and CAUTION 
