@@ -465,6 +465,11 @@ editor .outline .block:focus {
 		-1 * var(--checkbox-size)
 		- var(--checkbox-margin));
 }
+/* status... */
+.editor .outline .block>.view .completion[completion]:before {
+	content: "(" attr(completion) ")";
+	color: gray;
+}
 
 
 /*---------------------------------------------------------- Code ---*/

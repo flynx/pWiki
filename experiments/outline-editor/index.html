@@ -57,8 +57,6 @@ var setup = function(){
   - ASAP: editor: shifting nodes up/down
   - ASAP: scroll into view is bad...
   - ASAP: need to reach checkboxes via keyboard
-  - FEATURE: "percentage complete" in parent blocks with todo's nested
-    - _...use `[%]` (preferred), `%%`, or something similar..._
   - FEATURE: read-only mode
   - FEATURE: `collapse-children:: true` block option -- when loading collapse all immediate children
   - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
@@ -67,7 +65,7 @@ var setup = function(){
       code
       ```
     - _bullet should be either in the middle of the block or at the first line of code (preferred)..._
-  - custom element...
+  - editor as a custom element...
   - Nerd fonts (option???)
   - multiple node selection
   - copy/paste nodes/trees
@@ -76,6 +74,13 @@ var setup = function(){
     - delete node
     - indent/deindent
     - edit node
+  - FEATURE? block templates...
+    collapsed:: true
+	- something like: `TPL: [_] <editable/> -- <editable/>`
+      - `TPL:` -- template marker
+	  - `<editable/>` -- field marker
+      - each child node will copy the template and allow editing of only fields
+      - not clear how to handle template changes...
   - Q: can we get the caret line in a textarea???
     - _...this will fix a lot of issues with moving between blocks in edit mode..._
   - Q: do we use \\t for indent? (option???)
@@ -96,8 +101,9 @@ var setup = function(){
          * list item
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
-  - ~Q: can we edit code in a code block directly? (a-la Logseq)~
   - empty item height is a bit off...
+  - ~Q: can we edit code in a code block directly? (a-la Logseq)~
+  - ~"percentage complete" in parent blocks with todo's nested~
   - ~`.editor .outline:empty` view and behavior...~
   - ~editor: semi-live update styles~
   - ~do a better expand/collapse icons~
@@ -113,11 +119,11 @@ var setup = function(){
   - ~add optional text styling to nodes~
   - 
 - ## Refactoring:
+  - Plugin architecture
   - Item parser (`.__code2html__(..)`)
-    - split out
-    - define api
-    - define a way to extend/stack parsers
-      _...add wikiwords, ..._
+    - ~split out~
+    - ~define~/doc api
+    - ~define a way to extend/stack parsers~
   - Format parser/generator
     - split out
     - define api
@@ -193,12 +199,13 @@ var setup = function(){
 		- ---
 	- Markers: ASAP, BUG, FIX, HACK, STUB, WARNING, and CAUTION 
     - Basic task management
-      - Inline [X] checkboxes [_]
-	  - To do items/blocks
-	    - [_] undone item
-          _(clicking the checkbox updates the item)_
-	    - [X] done item
-	    - [_] we can also add inline [x] checkboxes
+      - [%] Completion status
+        - Inline [X] checkboxes [_]
+	    - To do items/blocks
+	      - [_] undone item
+            _(clicking the checkbox updates the item)_
+	      - [X] done item
+	      - [_] we can also add inline [x] checkboxes and states: [%]
 	- links
       - [example](about:blank)
       - https://example.com

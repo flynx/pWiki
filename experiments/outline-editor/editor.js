@@ -27,37 +27,106 @@ var atLine = function(elem, index){
 
 //---------------------------------------------------------------------
 
-var codeBlock = {
-	// can be used in:
-	// 		<string>.replace(codeBlock.pattern, codeBlock.handler)
-	// or:
-	// 		codeBlock
-	pattern: /(?<!\\)```(.*\s*\n)((\n|.)*?)\h*(?<!\\)```/g,
-	handler: function(_, language, code){
-		var quote = this?.quote 
-			|| codeBlock.quote
-		language = language.trim()
-		language = language ?
-			'language-'+language
-			: language
-		return `<pre>`
-				+`<code contenteditable="true" class="${language}">${ 
-					quote ?
-						quote(code)
-						: code
-				}</code>`
-			+`</pre>` },
+var plugin = {
+	// XXX make this more generic...
+	style: function(editor, elem, style, code=undefined){
+		style = [style].flat()
+		editor.__styles = [...new Set([
+			...(editor.__styles ?? []),
+			...style,
+		])]
+		return function(_, text){
+			elem.style ??= []
+			elem.style.push(...style)
+			return code 
+				?? text } },
+}
 
-	quote: function(text){
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
+var attributes = {
+	__proto__: plugin,
+
+	__pre_parse__: function(text, editor, elem){
+		return text 
+			// hidden attributes...
+			// XXX make this generic...
+			// collapsed...
+			.replace(/(\n|^)\s*collapsed::\s*(.*)\s*(\n|$)/, 
+				function(_, value){
+					elem.collapsed = value.trim() == 'true'
+					return '' })
+			// id...
+			.replace(/(\n|^)\s*id::\s*(.*)\s*(\n|$)/, 
+				function(_, value){
+					elem.id = value.trim()
+					return '' }) },
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
+var blocks = {
+	__proto__: plugin,
+
+	__pre_parse__: function(text, editor, elem){
+		return text 
+			// markdown...
+			// style: headings...
+			.replace(/^(?<!\\)######\s+(.*)$/m, this.style(editor, elem, 'heading-6'))
+			.replace(/^(?<!\\)#####\s+(.*)$/m, this.style(editor, elem, 'heading-5'))
+			.replace(/^(?<!\\)####\s+(.*)$/m, this.style(editor, elem, 'heading-4'))
+			.replace(/^(?<!\\)###\s+(.*)$/m, this.style(editor, elem, 'heading-3'))
+			.replace(/^(?<!\\)##\s+(.*)$/m, this.style(editor, elem, 'heading-2'))
+			.replace(/^(?<!\\)#\s+(.*)$/m, this.style(editor, elem, 'heading-1'))
+			// style: list...
+			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
+			.replace(/^\s*(.*)(?<!\\):\s*$/m, this.style(editor, elem, 'list'))
+			.replace(/^\s*(.*)(?<!\\)#\s*$/m, this.style(editor, elem, 'numbered-list'))
+			// style: misc...
+			.replace(/^\s*(?<!\\)>\s+(.*)$/m, this.style(editor, elem, 'quote'))
+			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, this.style(editor, elem, 'comment'))
+			.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/m, this.style(editor, elem, 'NOTE'))
+			.replace(/^\s*(?<!\\)XXX\s+(.*)$/m, this.style(editor, elem, 'XXX'))
+			.replace(/^(.*)\s*(?<!\\)XXX$/m, this.style(editor, elem, 'XXX')) } ,
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
+// XXX add actions...
+var quoted = {
+	__proto__: plugin,
+
+	encode: function(text){
 		return text
 			.replace(/(?<!\\)&/g, '&amp;')
 			.replace(/(?<!\\)</g, '&lt;')
 			.replace(/(?<!\\)>/g, '&gt;')
 			.replace(/\\(?!`)/g, '\\\\') },
 
-	map: function(text, func){
-		return text.replace(this.pattern, func) },
+	// can be used in:
+	// 		<string>.replace(quoted.pattern, quoted.handler)
+	quote_pattern: /(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm,
+	quote: function(_, code){
+		return `<code>${ this.encode(code) }</code>` },
 
+	pre_pattern: /(?<!\\)```(.*\s*\n)((\n|.)*?)\h*(?<!\\)```/g,
+	pre: function(_, language, code){
+		language = language.trim()
+		language = language ?
+			'language-'+language
+			: language
+		return `<pre>`
+				+`<code contenteditable="true" class="${language}">${ 
+					this.encode(code)
+				}</code>`
+			+`</pre>` },
+
+	map: function(text, func){
+		return text.replace(this.pre_pattern, func) },
 	replace: function(text, index, updated){
 		return this.map(text, 
 			function(match, language, code){
@@ -68,9 +137,169 @@ var codeBlock = {
 							updated(code)
 							: updated)
 						+'```') }) },
-
 	toHTML: function(text){
 		return this.map(text, this.handler) },
+
+	__pre_parse__: function(text, editor, elem){
+		return text
+			.replace(this.pre_pattern, this.pre.bind(this)) 
+			.replace(this.quote_pattern, this.quote.bind(this)) },
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
+// XXX Hackish...
+var syntax = {
+	__proto__: plugin,
+
+	update: function(){
+		window.hljs
+			&& hljs.highlightAll() 
+		return this },
+
+	__setup__: function(editor){
+		return this.update() },
+	// XXX make a local update...
+	__changed__: function(editor, node){
+		return this.update() },
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
+var tables = {
+	__proto__: plugin,
+
+	__parse__: function(text, editor, elem){
+		return text
+			.replace(/^\s*(?<!\\)\|\s*((.|\n)*)\s*\|\s*$/, 
+				function(_, body){
+					return `<table><tr><td>${
+						body
+							.replace(/\s*\|\s*\n\s*\|\s*/gm, '</td></tr>\n<tr><td>')
+							.replace(/\s*\|\s*/gm, '</td><td>')
+					}</td></td></table>` }) },
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
+var styling = {
+	__proto__: plugin,
+
+	__parse__: function(text, editor, elem){
+		return text
+			// markers...
+			.replace(/(\s*)(?<!\\)(FEATURE:|Q:|Question:|Note:)(\s*)/gm, 
+				'$1<b class="$2">$2</b>$3')
+			.replace(/(\s*)(?<!\\)(ASAP|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/gm, 
+				'$1<span class="highlight $2">$2</span>$3')
+			// elements...
+			.replace(/(\n|^)(?<!\\)---*\h*(\n|$)/m, '$1<hr>')
+			// basic styling...
+			// XXX revise...
+			.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
+			.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
+			.replace(/(?<!\\)_(?=[^\s_])(([^_]|\\_)*[^\s_])(?<!\\)_/gm, '<i>$1</i>') 
+			// code/quoting...
+			//.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, quote) 
+			// XXX support "\==" in mark...
+			.replace(/(?<!\\)==(?=[^\s])(.*[^\s])(?<!\\)==/gm, '<mark>$1</mark>') 
+			// links...
+			.replace(/(?<!\\)\[([^\]]*)\]\(([^)]*)\)/g, '<a href="$2">$1</a>')
+			.replace(/((?:https?:|ftps?:)[^\s]*)(\s*)/g, '<a href="$1">$1</a>$2') },
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
+// XXX use ligatures for these???
+var symbols = {
+	__proto__: plugin,
+
+	__parse__: function(text, editor, elem){
+		return text
+			// characters...
+			.replace(/(?<!\\)\(i\)/gm, '🛈') 
+			.replace(/(?<!\\)\(c\)/gm, '©') 
+			.replace(/(?<!\\)\/!\\/gm, '⚠') 
+			.replace(/(?<!\\)---(?!-)/gm, '&mdash;') 
+			.replace(/(?<!\\)--(?!-)/gm, '&ndash;') },
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
+var escaping = {
+	__proto__: plugin,
+
+	__post_parse__: function(text, editor, elem){
+		return text
+			// quoting...
+			// NOTE: this must be last...
+			.replace(/(?<!\\)\\(.)/gm, '$1') },
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
+// XXX add actions...
+var tasks = {
+	__proto__: plugin,
+
+	updateStatus: function(editor, node){
+		node = editor.get(node)
+		if(node == null){
+			return this }
+		var state = node
+			.querySelector('.view')
+				.querySelector('.completion')
+		if(state){
+			var c = 
+				((node.querySelectorAll('input[type=checkbox]:checked').length
+						/ node.querySelectorAll('input[type=checkbox]').length)
+					* 100)
+				.toFixed(0)
+			!isNaN(c)
+				&& state.setAttribute('completion', c +'%') }
+		return this },
+	updateBranch: function(editor, node){
+		if(!node){
+			return this }
+		var outline = editor.outline
+		var p = node
+		while(p !== outline){
+			this.updateStatus(editor, p)
+			p = editor.get(p, 'parent') } 
+		return this },
+	updateAll: function(editor){
+		for(var e of [...editor.outline.querySelectorAll('.block>.view .completion')]){
+			this.updateStatus(editor, e) }
+		return this },
+
+
+	__setup__: function(editor){
+		return this.updateAll(editor) },
+	__changed__: function(editor, node){
+		return this.updateBranch(editor, node) },
+	__parse__: function(text, editor, elem){
+		return text
+			// block checkboxes...
+			// NOTE: these are separate as we need to align block text 
+			// 		to leading chekbox...
+			.replace(/^\s*(?<!\\)\[[_ ]\]\s*/m, 
+				this.style(editor, elem, 'todo', '<input type="checkbox">'))
+			.replace(/^\s*(?<!\\)\[[Xx]\]\s*/m, 
+				this.style(editor, elem, 'todo', '<input type="checkbox" checked>'))
+			// inline checkboxes...
+			.replace(/\s*(?<!\\)\[[_ ]\]\s*/gm, 
+				this.style(editor, elem, 'check', '<input type="checkbox">'))
+			.replace(/\s*(?<!\\)\[[Xx]\]\s*/gm, 
+				this.style(editor, elem, 'check', '<input type="checkbox" checked>'))
+			// completion...
+			// XXX add support for being like a todo checkbox...
+			.replace(/(?<!\\)\[[%]\]/gm, '<span class="completion"></span>') },
 }
 
 
@@ -89,6 +318,32 @@ var Outline = {
 	code_update_interval: 5000,
 	tab_size: 4,
 	carot_jump_edge_then_block: false,
+
+
+	plugins: [
+		attributes,
+		blocks,
+		quoted,
+		styling,
+		tables,
+		symbols,
+		syntax,
+		tasks,
+
+		// keep this last...
+		// XXX revise -- should this be external???
+		escaping,
+	],
+	runPlugins: function(method, ...args){
+		for(var plugin of this.plugins){
+			method in plugin
+				&& plugin[method](...args) } 
+		return this },
+	threadPlugins: function(method, value, ...args){
+		for(var plugin of this.plugins){
+			method in plugin
+				&& (value = plugin[method](value, ...args)) }
+		return value },
 
 
 	get code(){
@@ -363,154 +618,49 @@ var Outline = {
 		var elem = {
 			collapsed: false,
 		}
+
 		// only whitespace -> keep element blank...
 		if(code.trim() == ''){
 			elem.text = ''
 			return elem }
 
 		// helpers...
-		var style = function(style, code=undefined){
-			style = [style].flat()
-			that.__styles = [...new Set([
-				...(that.__styles ?? []),
-				...style,
-			])]
-			return function(_, text){
-				elem.style ??= []
-				elem.style.push(...style)
-				return code 
-					?? text } }
-		var quoteText = function(text){
-			return text
-				.replace(/(?<!\\)&/g, '&amp;')
-				.replace(/(?<!\\)</g, '&lt;')
-				.replace(/(?<!\\)>/g, '&gt;')
-				.replace(/\\(?!`)/g, '\\\\') }
-		var quote = function(_, code){
-			return `<code>${quoteText(code)}</code>` }
-		var table = function(_, body){
-			return `<table><tr><td>${
-				body
-					.replace(/\s*\|\s*\n\s*\|\s*/gm, '</td></tr>\n<tr><td>')
-					.replace(/\s*\|\s*/gm, '</td><td>')
-			}</td></td></table>` }
+		var run = function(stage, text){
+			var meth = {
+				pre: '__pre_parse__',
+				main: '__parse__',
+				post: '__post_parse__',
+			}[stage]
+			return that.threadPlugins(meth, text, that, elem) }
 
-		var preParse = function(text){
-			return text 
-				// hidden attributes...
-				// XXX make this generic...
-				// collapsed...
-				.replace(/(\n|^)\s*collapsed::\s*(.*)\s*(\n|$)/, 
-					function(_, value){
-						elem.collapsed = value.trim() == 'true'
-						return '' })
-				// id...
-				.replace(/(\n|^)\s*id::\s*(.*)\s*(\n|$)/, 
-					function(_, value){
-						elem.id = value.trim()
-						return '' }) }
-		var blockParse = function(text){
-			return text 
-				// markdown...
-				// style: headings...
-				.replace(/^(?<!\\)######\s+(.*)$/m, style('heading-6'))
-				.replace(/^(?<!\\)#####\s+(.*)$/m, style('heading-5'))
-				.replace(/^(?<!\\)####\s+(.*)$/m, style('heading-4'))
-				.replace(/^(?<!\\)###\s+(.*)$/m, style('heading-3'))
-				.replace(/^(?<!\\)##\s+(.*)$/m, style('heading-2'))
-				.replace(/^(?<!\\)#\s+(.*)$/m, style('heading-1'))
-				// style: list...
-				//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
-				.replace(/^\s*(.*)(?<!\\):\s*$/m, style('list'))
-				.replace(/^\s*(.*)(?<!\\)#\s*$/m, style('numbered-list'))
-
-				// style: misc...
-				.replace(/^\s*(?<!\\)>\s+(.*)$/m, style('quote'))
-				.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, style('comment'))
-				.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/m, style('NOTE'))
-				.replace(/^\s*(?<!\\)XXX\s+(.*)$/m, style('XXX'))
-				.replace(/^(.*)\s*(?<!\\)XXX$/m, style('XXX')) }
-		var quoteParse = function(text){
-			return text
-				.replace(codeBlock.pattern, codeBlock.handler)
-				.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, quote) }
-		var inlineParse = function(text){
-			return text 
-				.replace(/(\s*)(?<!\\)(FEATURE:|Q:|Question:|Note:)(\s*)/gm, 
-					'$1<b class="$2">$2</b>$3')
-				.replace(/(\s*)(?<!\\)(ASAP|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/gm, 
-					'$1<span class="highlight $2">$2</span>$3')
-				// elements...
-				.replace(/(\n|^)(?<!\\)---*\h*(\n|$)/m, '$1<hr>')
-				// ToDo...
-				// NOTE: these are separate as we need to align block text 
-				// 		to leading chekbox...
-				.replace(/^\s*(?<!\\)\[[_ ]\]\s*/m, 
-					style('todo', '<input type="checkbox">'))
-				.replace(/^\s*(?<!\\)\[[Xx]\]\s*/m, 
-					style('todo', '<input type="checkbox" checked>'))
-				// inline checkboxes...
-				.replace(/\s*(?<!\\)\[[_ ]\]\s*/gm, 
-					style('check', '<input type="checkbox">'))
-				.replace(/\s*(?<!\\)\[[Xx]\]\s*/gm, 
-					style('check', '<input type="checkbox" checked>'))
-				// tables...
-				.replace(/^\s*(?<!\\)\|\s*((.|\n)*)\s*\|\s*$/, table)
-				// basic styling...
-				// XXX revise...
-				.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
-				.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
-				.replace(/(?<!\\)_(?=[^\s_])(([^_]|\\_)*[^\s_])(?<!\\)_/gm, '<i>$1</i>') 
-				// code/quoting...
-				//.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, quote) 
-				// XXX support "\==" in mark...
-				.replace(/(?<!\\)==(?=[^\s])(.*[^\s])(?<!\\)==/gm, '<mark>$1</mark>') 
-				// links...
-				.replace(/(?<!\\)\[([^\]]*)\]\(([^)]*)\)/g, '<a href="$2">$1</a>')
-				.replace(/((?:https?:|ftps?:)[^\s]*)(\s*)/g, '<a href="$1">$1</a>$2')
-				// characters...
-				// XXX use ligatures for these???
-				.replace(/(?<!\\)\(i\)/gm, '🛈') 
-				.replace(/(?<!\\)\(c\)/gm, '©') 
-				.replace(/(?<!\\)\/!\\/gm, '⚠') 
-				.replace(/(?<!\\)---(?!-)/gm, '&mdash;') 
-				.replace(/(?<!\\)--(?!-)/gm, '&ndash;') }
-		var postParse = function(text){
-			return text
-				// quoting...
-				// NOTE: this must be last...
-				.replace(/(?<!\\)\\(.)/gm, '$1') }
-
-		var parse = function(text){
-			// split text into parsable and non-parsable sections...
+		// stage: pre...
+		var text = run('pre', 
+			// pre-sanitize...
+			code.replace(/\x00/g, ''))
+		// split text into parsable and non-parsable sections...
+		var sections = text
 			// split fomat:
 			// 	[ text <match> <type> <body>, ... ]
-			var pattern = /(<(pre|code)(?:|\s[^>]*)>((?:\n|.)*)<\/\2>)/g
-			var sections = 
-				quoteParse(
-						blockParse(
-							preParse(text
-								.replace(/\x00/g, ''))))
-					.split(pattern)
-			// sort out the sections...
-			var parsable = [] 
-			var quoted = []
-			while(sections.length > 0){
-				var [section, match] = sections.splice(0, 4)
-				parsable.push(section)
-				quoted.push(match) }
-			// parse only the parsable sections...
-			return postParse(
-				inlineParse(
-						parsable
-							.join('\x00'))
-					.split(/\x00/g)
-					.map(function(section){
-						return [section, quoted.shift() ?? '']	})
-					.flat()
-					.join('')) }
-
-		elem.text = parse(code)
+			.split(/(<(pre|code)(?:|\s[^>]*)>((?:\n|.)*)<\/\2>)/g)
+		// sort out the sections...
+		var parsable = [] 
+		var quoted = []
+		while(sections.length > 0){
+			var [section, match] = sections.splice(0, 4)
+			parsable.push(section)
+			quoted.push(match) }
+		// stage: main...
+		text = run('main', 
+				// parse only the parsable sections...
+				parsable.join('\x00'))
+			.split(/\x00/g)
+			// merge the quoted sections back in...
+			.map(function(section){
+				return [section, quoted.shift() ?? '']	})
+			.flat()
+			.join('') 
+		// stage: post...
+		elem.text = run('post', text) 
 
 		return elem },
 	// XXX essentially here we need to remove service stuff like some 
@@ -835,6 +985,7 @@ var Outline = {
 			function(evt){
 				var elem = evt.target
 
+				// prevent focusing parent by clicking between blocks...
 				if(elem.classList.contains('children')){
 					return }
 
@@ -882,7 +1033,9 @@ var Outline = {
 						return i-- == 0 ?
 							to
 							: m }
-					text.value = text.value.replace(/\[[Xx_]\]/g, toggle) } })
+					text.value = text.value.replace(/\[[Xx_]\]/g, toggle) 
+					// update status...
+					tasks.updateBranch(that, node) } })
 		// keyboard handling...
 		outline.addEventListener('keydown', 
 			function(evt){
@@ -918,7 +1071,7 @@ var Outline = {
 							.querySelectorAll('.view code[contenteditable=true]')]
 						.indexOf(elem)
 					// update element content...
-					code.value = codeBlock.replace(code.value, i, update)
+					code.value = quoted.replace(code.value, i, update)
 
 					return } })
 		// toggle view/code of nodes...
@@ -951,12 +1104,10 @@ var Outline = {
 				if(node.nodeName == 'TEXTAREA' 
 						&& node?.nextElementSibling?.nodeName == 'SPAN'){
 					var block = node.parentElement
-					that.update(block, { text: node.value }) } 
-				
-				// XXX do a plugin...
-				window.hljs
-					&& hljs.highlightAll() 
-			})
+					that.update(block, { text: node.value }) 
+
+					that.runPlugins('__changed__', that, node)
+				} })
 		// update .code...
 		var update_code_timeout
 		outline.addEventListener('change', 
@@ -997,9 +1148,7 @@ var Outline = {
 				.replace(/&gt;/g, '>')) 
 			console.log(`Parse: ${Date.now() - t}ms`)}
 
-		// XXX do a plugin...
-		window.hljs
-			&& hljs.highlightAll() 
+		this.runPlugins('__setup__', this)
 		
 		return this },
 }
