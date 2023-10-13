@@ -26,11 +26,7 @@ var setup = function(){
 	window.editor = {
 		__proto__: Outline,
 	}.setup(
-		document.querySelector('.editor')) 
-
-	// XXX make this a plugin...
-	window.hljs
-		&& hljs.highlightAll() }
+		document.querySelector('.editor')) }
 
 </script>
 </head>
@@ -56,19 +52,41 @@ var setup = function(){
         an we'll not get here...
   -
 - ## ToDo:
-  - ASAP: editor: bksapce/del at start/end of a block should join it with prev/next
+  - ASAP: editor: backsapce/del at start/end of a block should join it with prev/next
   - ASAP: editor: pressing enter in text edit mode should split text into two blocks
   - ASAP: editor: shifting nodes up/down
-  - ASAP: use \\t for indent...
   - ASAP: scroll into view is bad...
-  - on item click, place the cursor where it was clicked before the code expanded...
-  - ~editor: semi-live update styles~
-  - need to reach checkboxes via keyboard
-  - persistent empty first/last node (a button to create a new node)
-  - add completion percentage to blocks with todo's nested
-    - _...use `[%]`, `%%`, or something similar..._
-  - read-only mode
-  - should bulets be on the same level as nodes or offset??
+  - ASAP: need to reach checkboxes via keyboard
+  - FEATURE: "percentage complete" in parent blocks with todo's nested
+    - _...use `[%]` (preferred), `%%`, or something similar..._
+  - FEATURE: read-only mode
+  - FEATURE: `collapse-children:: true` block option -- when loading collapse all immediate children
+  - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
+  - Code blocks and bullets:
+    - ```
+      code
+      ```
+    - _bullet should be either in the middle of the block or at the first line of code (preferred)..._
+  - custom element...
+  - Nerd fonts (option???)
+  - multiple node selection
+  - copy/paste nodes/trees
+  - undo 
+    collapsed:: true
+    - delete node
+    - indent/deindent
+    - edit node
+  - Q: can we get the caret line in a textarea???
+    - _...this will fix a lot of issues with moving between blocks in edit mode..._
+  - Q: do we use \\t for indent? (option???)
+  - Q: can we place the cursor on item click where it was clicked before before the code expanded?
+    collapsed:: true
+    - for example
+      - #### Click in this line and see where the cursor goes
+    - _not sure how..._
+  - Q: persistent empty first/last node (a button to create a new node)?
+  - Q: should bullets be on the same level as nodes or offset??
+    collapsed:: true
     - A) justified to bullet:
          * list item
          * list item
@@ -78,8 +96,10 @@ var setup = function(){
          * list item
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
-  - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
-  - Nerd fonts (options?)
+  - ~Q: can we edit code in a code block directly? (a-la Logseq)~
+  - empty item height is a bit off...
+  - ~`.editor .outline:empty` view and behavior...~
+  - ~editor: semi-live update styles~
   - ~do a better expand/collapse icons~
   - ~loading from DOM -- fill textarea~
   - ~focus management~
@@ -89,17 +109,29 @@ var setup = function(){
   - ~shift subtree up/down~
   - ~create node~
   - ~edit node~
-  - multiple node selection
-  - copy/paste nodes/trees
-  - undo 
-    collapsed:: true
-    - delete node
-    - indent/deindent
-    - edit node
-  - empty item height is a bit off...
   - ~serialize/deserialize~
   - ~add optional text styling to nodes~
   - 
+- ## Refactoring:
+  - Item parser (`.__code2html__(..)`)
+    - split out
+    - define api
+    - define a way to extend/stack parsers
+      _...add wikiwords, ..._
+  - Format parser/generator
+    - split out
+    - define api
+    - experiment with clean markdown as format
+  - CSS
+    - separate out theming
+    - separate out settings
+  - Actions -- move user actions (code in `.keyboard`) into methods
+  - Move to `keyboard.js`
+  - Plugin architecture
+    - Q: do we need `features.js` and/or `actions.js`
+  - Q: do we need a concatenative API??
+	- `<block>.get() -> <block>`
+  -
 - ## TEST
   - ### Formatting:
     - Styles

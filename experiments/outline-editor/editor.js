@@ -27,6 +27,56 @@ var atLine = function(elem, index){
 
 //---------------------------------------------------------------------
 
+var codeBlock = {
+	// can be used in:
+	// 		<string>.replace(codeBlock.pattern, codeBlock.handler)
+	// or:
+	// 		codeBlock
+	pattern: /(?<!\\)```(.*\s*\n)((\n|.)*?)\h*(?<!\\)```/g,
+	handler: function(_, language, code){
+		var quote = this?.quote 
+			|| codeBlock.quote
+		language = language.trim()
+		language = language ?
+			'language-'+language
+			: language
+		return `<pre>`
+				+`<code contenteditable="true" class="${language}">${ 
+					quote ?
+						quote(code)
+						: code
+				}</code>`
+			+`</pre>` },
+
+	quote: function(text){
+		return text
+			.replace(/(?<!\\)&/g, '&amp;')
+			.replace(/(?<!\\)</g, '&lt;')
+			.replace(/(?<!\\)>/g, '&gt;')
+			.replace(/\\(?!`)/g, '\\\\') },
+
+	map: function(text, func){
+		return text.replace(this.pattern, func) },
+
+	replace: function(text, index, updated){
+		return this.map(text, 
+			function(match, language, code){
+				return index-- != 0 ?
+					match
+					: ('```'+language
+						+ (typeof(updated) == 'function' ?
+							updated(code)
+							: updated)
+						+'```') }) },
+
+	toHTML: function(text){
+		return this.map(text, this.handler) },
+}
+
+
+
+//---------------------------------------------------------------------
+
 // XXX experiment with a concatinative model...
 // 		.get(..) -> Outline (view)
 var Outline = {
@@ -101,12 +151,13 @@ var Outline = {
 		// groups defaulting to .focused as base...
 		if(['parent', 'next', 'prev', 'children', 'siblings'].includes(node)){
 			return this.get('focused', node) }
-
 		// helpers...
 		var parent = function(node){
 			return node === outline ?
-				node
-				: node?.parentElement?.parentElement }
+					outline
+				: node.parentElement === outline ?
+					outline
+				: node.parentElement.parentElement }
 		var children = function(node){
 			return node === outline ?
 				[...node.children]
@@ -337,11 +388,6 @@ var Outline = {
 				.replace(/\\(?!`)/g, '\\\\') }
 		var quote = function(_, code){
 			return `<code>${quoteText(code)}</code>` }
-		var pre = function(_, language, code){
-			language = language ?
-				'language-'+language
-				: language
-			return `<pre><code class="${language}">${ quoteText(code) }</code></pre>` }
 		var table = function(_, body){
 			return `<table><tr><td>${
 				body
@@ -349,78 +395,123 @@ var Outline = {
 					.replace(/\s*\|\s*/gm, '</td><td>')
 			}</td></td></table>` }
 
-		elem.text = code 
-			// hidden attributes...
-			// XXX make this generic...
-			// collapsed...
-			.replace(/(\n|^)\s*collapsed::\s*(.*)\s*(\n|$)/, 
-				function(_, value){
-					elem.collapsed = value.trim() == 'true'
-					return '' })
-			// id...
-			.replace(/(\n|^)\s*id::\s*(.*)\s*(\n|$)/, 
-				function(_, value){
-					elem.id = value.trim()
-					return '' })
-			// markdown...
-			// style: headings...
-			.replace(/^(?<!\\)######\s+(.*)$/m, style('heading-6'))
-			.replace(/^(?<!\\)#####\s+(.*)$/m, style('heading-5'))
-			.replace(/^(?<!\\)####\s+(.*)$/m, style('heading-4'))
-			.replace(/^(?<!\\)###\s+(.*)$/m, style('heading-3'))
-			.replace(/^(?<!\\)##\s+(.*)$/m, style('heading-2'))
-			.replace(/^(?<!\\)#\s+(.*)$/m, style('heading-1'))
-			// style: list...
-			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
-			.replace(/^\s*(.*)(?<!\\):\s*$/m, style('list'))
-			.replace(/^\s*(.*)(?<!\\)#\s*$/m, style('numbered-list'))
-			// style: misc...
-			.replace(/^\s*(?<!\\)>\s+(.*)$/m, style('quote'))
-			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, style('comment'))
-			.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/m, style('NOTE'))
-			.replace(/^\s*(?<!\\)XXX\s+(.*)$/m, style('XXX'))
-			.replace(/^(.*)\s*(?<!\\)XXX$/m, style('XXX'))
-			.replace(/(\s*)(?<!\\)(ASAP|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/gm, 
-				'$1<span class="highlight $2">$2</span>$3')
-			// elements...
-			.replace(/(\n|^)(?<!\\)---*\h*(\n|$)/m, '$1<hr>')
-			// ToDo...
-			// NOTE: these are separate as we need to align block text 
-			// 		to leading chekbox...
-			.replace(/^\s*(?<!\\)\[[_ ]\]\s*/m, 
-				style('todo', '<input type="checkbox">'))
-			.replace(/^\s*(?<!\\)\[[Xx]\]\s*/m, 
-				style('todo', '<input type="checkbox" checked>'))
-			// inline checkboxes...
-			.replace(/\s*(?<!\\)\[[_ ]\]\s*/gm, 
-				style('check', '<input type="checkbox">'))
-			.replace(/\s*(?<!\\)\[[Xx]\]\s*/gm, 
-				style('check', '<input type="checkbox" checked>'))
-			// tables...
-			.replace(/^\s*(?<!\\)\|\s*((.|\n)*)\s*\|\s*$/, table)
-			// basic styling...
-			// XXX revise...
-			.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
-			.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
-			.replace(/(?<!\\)_(?=[^\s_])(([^_]|\\_)*[^\s_])(?<!\\)_/gm, '<i>$1</i>') 
-		    // code/quoting...
-			.replace(/(?<!\\)```(.*)\s*\n((\n|.)*)\h*(?<!\\)```\s*/g, pre) 
-			.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, quote) 
-			// XXX support "\==" in mark...
-			.replace(/(?<!\\)==(?=[^\s])(.*[^\s])(?<!\\)==/gm, '<mark>$1</mark>') 
-			// links...
-			.replace(/(?<!\\)\[([^\]]*)\]\(([^)]*)\)/g, '<a href="$2">$1</a>')
-			.replace(/((?:https?:|ftps?:)[^\s]*)(\s*)/g, '<a href="$1">$1</a>$2')
-			// characters...
-			// XXX use ligatures for these???
-			.replace(/(?<!\\)\(i\)/gm, '🛈') 
-			.replace(/(?<!\\)\(c\)/gm, '©') 
-			.replace(/(?<!\\)\/!\\/gm, '⚠') 
-			.replace(/(?<!\\)---(?!-)/gm, '&mdash;') 
-			.replace(/(?<!\\)--(?!-)/gm, '&ndash;') 
-			// quoting...
-			// NOTE: this must be last...
-			.replace(/(?<!\\)\\(.)/gm, '$1') 
+		var preParse = function(text){
+			return text 
+				// hidden attributes...
+				// XXX make this generic...
+				// collapsed...
+				.replace(/(\n|^)\s*collapsed::\s*(.*)\s*(\n|$)/, 
+					function(_, value){
+						elem.collapsed = value.trim() == 'true'
+						return '' })
+				// id...
+				.replace(/(\n|^)\s*id::\s*(.*)\s*(\n|$)/, 
+					function(_, value){
+						elem.id = value.trim()
+						return '' }) }
+		var blockParse = function(text){
+			return text 
+				// markdown...
+				// style: headings...
+				.replace(/^(?<!\\)######\s+(.*)$/m, style('heading-6'))
+				.replace(/^(?<!\\)#####\s+(.*)$/m, style('heading-5'))
+				.replace(/^(?<!\\)####\s+(.*)$/m, style('heading-4'))
+				.replace(/^(?<!\\)###\s+(.*)$/m, style('heading-3'))
+				.replace(/^(?<!\\)##\s+(.*)$/m, style('heading-2'))
+				.replace(/^(?<!\\)#\s+(.*)$/m, style('heading-1'))
+				// style: list...
+				//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
+				.replace(/^\s*(.*)(?<!\\):\s*$/m, style('list'))
+				.replace(/^\s*(.*)(?<!\\)#\s*$/m, style('numbered-list'))
+
+				// style: misc...
+				.replace(/^\s*(?<!\\)>\s+(.*)$/m, style('quote'))
+				.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, style('comment'))
+				.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/m, style('NOTE'))
+				.replace(/^\s*(?<!\\)XXX\s+(.*)$/m, style('XXX'))
+				.replace(/^(.*)\s*(?<!\\)XXX$/m, style('XXX')) }
+		var quoteParse = function(text){
+			return text
+				.replace(codeBlock.pattern, codeBlock.handler)
+				.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, quote) }
+		var inlineParse = function(text){
+			return text 
+				.replace(/(\s*)(?<!\\)(FEATURE:|Q:|Question:|Note:)(\s*)/gm, 
+					'$1<b class="$2">$2</b>$3')
+				.replace(/(\s*)(?<!\\)(ASAP|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/gm, 
+					'$1<span class="highlight $2">$2</span>$3')
+				// elements...
+				.replace(/(\n|^)(?<!\\)---*\h*(\n|$)/m, '$1<hr>')
+				// ToDo...
+				// NOTE: these are separate as we need to align block text 
+				// 		to leading chekbox...
+				.replace(/^\s*(?<!\\)\[[_ ]\]\s*/m, 
+					style('todo', '<input type="checkbox">'))
+				.replace(/^\s*(?<!\\)\[[Xx]\]\s*/m, 
+					style('todo', '<input type="checkbox" checked>'))
+				// inline checkboxes...
+				.replace(/\s*(?<!\\)\[[_ ]\]\s*/gm, 
+					style('check', '<input type="checkbox">'))
+				.replace(/\s*(?<!\\)\[[Xx]\]\s*/gm, 
+					style('check', '<input type="checkbox" checked>'))
+				// tables...
+				.replace(/^\s*(?<!\\)\|\s*((.|\n)*)\s*\|\s*$/, table)
+				// basic styling...
+				// XXX revise...
+				.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
+				.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
+				.replace(/(?<!\\)_(?=[^\s_])(([^_]|\\_)*[^\s_])(?<!\\)_/gm, '<i>$1</i>') 
+				// code/quoting...
+				//.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, quote) 
+				// XXX support "\==" in mark...
+				.replace(/(?<!\\)==(?=[^\s])(.*[^\s])(?<!\\)==/gm, '<mark>$1</mark>') 
+				// links...
+				.replace(/(?<!\\)\[([^\]]*)\]\(([^)]*)\)/g, '<a href="$2">$1</a>')
+				.replace(/((?:https?:|ftps?:)[^\s]*)(\s*)/g, '<a href="$1">$1</a>$2')
+				// characters...
+				// XXX use ligatures for these???
+				.replace(/(?<!\\)\(i\)/gm, '🛈') 
+				.replace(/(?<!\\)\(c\)/gm, '©') 
+				.replace(/(?<!\\)\/!\\/gm, '⚠') 
+				.replace(/(?<!\\)---(?!-)/gm, '&mdash;') 
+				.replace(/(?<!\\)--(?!-)/gm, '&ndash;') }
+		var postParse = function(text){
+			return text
+				// quoting...
+				// NOTE: this must be last...
+				.replace(/(?<!\\)\\(.)/gm, '$1') }
+
+		var parse = function(text){
+			// split text into parsable and non-parsable sections...
+			// split fomat:
+			// 	[ text <match> <type> <body>, ... ]
+			var pattern = /(<(pre|code)(?:|\s[^>]*)>((?:\n|.)*)<\/\2>)/g
+			var sections = 
+				quoteParse(
+						blockParse(
+							preParse(text
+								.replace(/\x00/g, ''))))
+					.split(pattern)
+			// sort out the sections...
+			var parsable = [] 
+			var quoted = []
+			while(sections.length > 0){
+				var [section, match] = sections.splice(0, 4)
+				parsable.push(section)
+				quoted.push(match) }
+			// parse only the parsable sections...
+			return postParse(
+				inlineParse(
+						parsable
+							.join('\x00'))
+					.split(/\x00/g)
+					.map(function(section){
+						return [section, quoted.shift() ?? '']	})
+					.flat()
+					.join('')) }
+
+		elem.text = parse(code)
+
 		return elem },
 	// XXX essentially here we need to remove service stuff like some 
 	// 		attributes (collapsed, id, ...)...
@@ -482,7 +573,7 @@ var Outline = {
 		text = text
 			.replace(/^\s*\n/, '')
 		text = ('\n' + text)
-			.split(/\n(\s*)- /g)
+			.split(/\n(\s*)(?:- |-\s*$)/gm)
 			.slice(1)
 		var tab = ' '.repeat(this.tab_size || 8)
 		var level = function(lst, prev_sep=undefined, parent=[]){
@@ -747,6 +838,15 @@ var Outline = {
 				if(elem.classList.contains('children')){
 					return }
 
+				// empty outline -> create new eleemnt...
+				if(elem.classList.contains('outline')
+						&& elem.children.length == 0){
+					// create new eleemnt and edit it...
+					var block = that.Block()
+					that.outline.append(block)
+					that.edit(block)
+					return }
+
 				// expand/collapse
 				if(elem.classList.contains('view')
 						&& elem.parentElement.getAttribute('tabindex')){
@@ -783,10 +883,14 @@ var Outline = {
 							to
 							: m }
 					text.value = text.value.replace(/\[[Xx_]\]/g, toggle) } })
-		// heboard handling...
+		// keyboard handling...
 		outline.addEventListener('keydown', 
 			function(evt){
 				var elem = evt.target
+				// code editing...
+				if(elem.nodeName == 'CODE' 
+						&& elem.getAttribute('contenteditable') == 'true'){
+					return }
 				// update element state...
 				if(elem.nodeName == 'TEXTAREA'){
 					setTimeout(function(){
@@ -795,6 +899,28 @@ var Outline = {
 				// handle keyboard...
 				evt.key in that.keyboard 
 					&& that.keyboard[evt.key].call(that, evt) })
+		// update code block...
+		outline.addEventListener('keyup', 
+			function(evt){
+				var elem = evt.target
+				// editable code...
+				if(elem.nodeName == 'CODE' 
+						&& elem.getAttribute('contenteditable') == 'true'){
+					// XXX should we clear the syntax???
+					// XXX do this only if things changed...
+					delete elem.dataset.highlighted
+
+					var block = that.get(elem)
+					var code = block.querySelector('.code')
+
+					var update = elem.innerText
+					var i = [...block
+							.querySelectorAll('.view code[contenteditable=true]')]
+						.indexOf(elem)
+					// update element content...
+					code.value = codeBlock.replace(code.value, i, update)
+
+					return } })
 		// toggle view/code of nodes...
 		outline.addEventListener('focusin', 
 			function(evt){
@@ -829,7 +955,8 @@ var Outline = {
 				
 				// XXX do a plugin...
 				window.hljs
-					&& hljs.highlightAll() })
+					&& hljs.highlightAll() 
+			})
 		// update .code...
 		var update_code_timeout
 		outline.addEventListener('change', 
@@ -870,6 +997,10 @@ var Outline = {
 				.replace(/&gt;/g, '>')) 
 			console.log(`Parse: ${Date.now() - t}ms`)}
 
+		// XXX do a plugin...
+		window.hljs
+			&& hljs.highlightAll() 
+		
 		return this },
 }
 

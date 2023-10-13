@@ -54,12 +54,22 @@
 	display: block;
 	position: relative;
 
-	/* XXX do a better calculation... */
 	width: calc(100% - var(--button-size) - var(--outline-padding) * 2);
 
-	padding-left: var(--outline-padding);
-	padding-right: var(--outline-padding);
+	padding: 1em var(--outline-padding);
+	padding-bottom: 1.2em
 }
+
+/* virtual empty block... */
+.editor .outline:empty:after {
+	content: "Empty";
+	display: block;
+	font-style: italic;
+	color: rgba(0,0,0,0.2);
+}
+.editor .outline:empty:hover:after {
+}
+
 
 .editor .outline .block {
 	position: relative;
@@ -110,6 +120,7 @@
 	pointer-events: none;
 }
 /* block hover... */
+.editor .outline:empty:hover:after,
 .editor .outline .block:hover>.view {
 	background: linear-gradient(
 		90deg, 
@@ -127,6 +138,7 @@
 }
 /* clickable things in view */
 .editor .outline .block>.view a,
+.editor .outline .block>.view pre,
 .editor .outline .block>.view input {
 	pointer-events: auto;
 }
@@ -138,7 +150,7 @@ editor .outline .block:focus {
 	outline: none;
 }
 .editor .outline .block:focus>.text {
-	background: rgba(0,0,0,0.1);
+	background: rgba(0,0,0,0.07);
 }
 .editor .outline .block.focused:not(:focus)>.text {
 	background: rgba(0,0,0,0.01);
@@ -464,11 +476,13 @@ editor .outline .block:focus {
 	font-family: monospace;
 	background: rgba(0,0,0,0.07);
 	border-radius: 0.2em;
+	outline: none;
 }
 .editor .outline .block>.view pre>code {
 	display: block;
 	padding: 0.6em 0.6em;
 	padding-bottom: 0.8em;
+	outline: none;
 }
 
 
