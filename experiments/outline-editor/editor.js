@@ -255,7 +255,7 @@ var styling = {
 	__parse__: function(text, editor, elem){
 		return text
 			// markers...
-			.replace(/(\s*)(?<!\\)(FEATURE:|Q:|Question:|Note:)(\s*)/gm, 
+			.replace(/(\s*)(?<!\\)(FEATURE[:?]|Q:|Question:|Note:)(\s*)/gm, 
 				'$1<b class="$2">$2</b>$3')
 			.replace(/(\s*)(?<!\\)(ASAP|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/gm, 
 				'$1<span class="highlight $2">$2</span>$3')
