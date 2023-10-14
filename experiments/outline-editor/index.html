@@ -47,14 +47,12 @@ var setup = function(){
   - BUG: last node seems to get trash tags added to it's end...
   -
 - ## ToDo:
-  - ASAP: editor: backsapce/del at start/end of a block should join it with prev/next
-  - ASAP: editor: pressing enter in text edit mode should split text into two blocks
-  - ASAP: editor: shifting nodes up/down
   - ASAP: scroll into view is bad...
   - ASAP: need to reach checkboxes via keyboard
   - FEATURE: read-only mode
   - FEATURE: `collapse-children:: true` block option -- when loading collapse all immediate children
   - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
+  - show list bullet if node is empty but edited... (???)
   - Code blocks and bullets:
     - ```
       code
@@ -69,6 +67,7 @@ var setup = function(){
     - delete node
     - indent/deindent
     - edit node
+  - auto-shift done blocks to the end of siblings... (option?)
   - FEATURE? block templates...
     collapsed:: true
 	- something like: `TPL: [_] <editable/> -- <editable/>`
@@ -97,6 +96,9 @@ var setup = function(){
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
   - empty item height is a bit off...
+  - DONE editor: backsapce/del at start/end of a block should join it with prev/next
+  - DONE editor: pressing enter in text edit mode should split text into two blocks
+  - DONE editor: shifting nodes up/down
   - DONE Q: can we edit code in a code block directly? (a-la Logseq)
   - DONE "percentage complete" in parent blocks with todo's nested
   - DONE `.editor .outline:empty` view and behavior...
@@ -261,6 +263,8 @@ Controls:
 	right      - focus first child node
 	tab        - indent node
 	s-tab      - deindent node
+	s-pgup     - shift node up
+	s-pgdown   - shift node down
 	s-left     - collapse node
 	s-right    - expand node
 	enter      - normal mode: edit node

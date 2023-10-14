@@ -644,6 +644,27 @@ var Outline = {
 		return cur },
 	deindent: function(node='focused', indent=false){
 		return this.indent(node, indent) },
+	shift: function(node='focused', direction){
+		if(node == 'up' || node == 'down'){
+			direction = node
+			node = 'focused' }
+		if(direction == null){
+			return }
+		node = this.get(node)
+		var focused = node.classList.contains('focused')
+		var siblings = this.get(node, 'siblings')
+		var i = siblings.indexOf(node)
+		if(direction == 'up' 
+				&& i > 0){
+			siblings[i-1].before(node)
+			focused 
+				&& this.focus()
+		} else if(direction == 'down' 
+				&& i < siblings.length-1){
+			siblings[i+1].after(node) 
+			focused 
+				&& this.focus() }
+		return this },
 	show: function(node='focused', offset){
 		var node = this.get(...arguments)
 		var outline = this.outline
@@ -750,14 +771,7 @@ var Outline = {
 		elem.text = run('post', text) 
 
 		return elem },
-	// XXX essentially here we need to remove service stuff like some 
-	// 		attributes (collapsed, id, ...)...
-	// XXX also need to quote leading '- ' in block text here...
-	// 		e.g.
-	// 			- block
-	// 			  some text
-	// 			  - text in the above block ('-' needs to be quoted)
-	// 			- next block
+	// output format...
 	__code2text__: function(code){
 		return code 
 			.replace(/(\n\s*)-/g, '$1\\-') },
@@ -999,6 +1013,21 @@ var Outline = {
 					this.toggleCollapse(false)
 					: this.focus('next') } },
 
+		PageUp: function(evt){
+			var edited = this.get('edited')
+			if(!edited 
+					&& (evt.shiftKey 
+						|| evt.ctrlKey)){
+				evt.preventDefault()
+				this.shift('up') } },
+		PageDown: function(evt){
+			var edited = this.get('edited')
+			if(!edited 
+					&& (evt.shiftKey 
+						|| evt.ctrlKey)){
+				evt.preventDefault()
+				this.shift('down') } },
+
 		// indent...
 		Tab: function(evt){
 			evt.preventDefault()
@@ -1012,37 +1041,78 @@ var Outline = {
 
 		// edit mode...
 		O: function(evt){
-			if(evt.target.nodeName != 'TEXTAREA'){
+			if(!this.get('edited')){
 				evt.preventDefault()
-				this.Block('before')
-					?.querySelector('textarea')
-					?.focus() } },
+				this.edit(
+					this.Block('before')) } },
 		o: function(evt){
-			if(evt.target.nodeName != 'TEXTAREA'){
+			if(!this.get('edited')){
 				evt.preventDefault()
-				this.Block('next')
-					?.querySelector('textarea')
-					?.focus() } },
+				this.edit(
+					this.Block('next')) } },
 		Enter: function(evt){
-			if(evt.ctrlKey
-					|| evt.shiftKey){
-				return }
-			evt.preventDefault()
-			evt.target.nodeName == 'TEXTAREA' ?
+
+			var edited = this.get('edited')
+			// edit -> split text...
+			if(edited){
+				if(evt.ctrlKey
+						|| evt.shiftKey){
+					return }
+				evt.preventDefault()
+				var a = edited.selectionStart
+				var b = edited.selectionEnd
+				var prev = edited.value.slice(0, a)
+				var next = edited.value.slice(b)
+				edited.value = prev
 				this.Block('next')
-					?.querySelector('textarea')
-					?.focus()
-				: this.get()
-					?.querySelector('textarea')
-					?.focus() },
+				edited = this.edit('next')
+				edited.value = next
+				edited.selectionStart = 0
+				edited.selectionEnd = 0
+				return }
+			// view -> edit...
+			evt.preventDefault()
+			this.edit() },
 		Escape: function(evt){
-			this.outline.querySelector('textarea:focus')
-				?.parentElement
-				?.focus() },
+			this.focus() },
+
 		Delete: function(evt){
-			if(this.get('edited')){
+			var edited = this.get('edited')
+			if(edited){
+				if(edited.selectionStart == edited.value.length){
+					var next = this.get('edited', 'next')
+					// can't reclaim nested children...
+					if(this.get(next, 'children').length > 0){
+						return }
+					// do not delete past the top element...
+					if(this.get(0).querySelector('.code') === next){
+						return }
+					evt.preventDefault()
+					var i = edited.value.length
+					edited.value += next.value
+					edited.selectionStart = i
+					edited.selectionEnd = i
+					this.remove(next) }
 				return }
 			this.remove() },
+		Backspace: function(evt){
+			var edited = this.get('edited')
+			if(edited 
+					&& edited.selectionStart == 0
+					// can't reclaim nested children...
+					&& this.get(edited, 'children').length == 0){
+				var prev = this.get('edited', 'prev')
+				// do not delete past the bottom element...
+				if(this.get(-1).querySelector('.code') === prev){
+					return }
+				evt.preventDefault()
+				var i = prev.value.length
+				prev.value += edited.value
+				this.edit(prev)
+				prev.selectionStart = i
+				prev.selectionEnd = i
+				this.remove(edited)
+				return } },
 
 		// select...
 		// XXX add:
