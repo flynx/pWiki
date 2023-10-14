@@ -14,6 +14,59 @@ HTMLTextAreaElement.prototype.autoUpdateSize = function(){
 		function(evt){
 			that.updateSize() }) 
 	return this }
+HTMLTextAreaElement.prototype.getTextGeometry = function(){
+	var offset = this.selectionStart
+	var text = this.value
+
+	// get the relevant styles...
+	var style = getComputedStyle(this)
+	var s = {}
+	for(var i=0; i < style.length; i++){
+		var k = style[i]
+		if(k.startsWith('font')
+				|| k.startsWith('line')
+				|| k.startsWith('white-space')){
+			s[k] = style[k] } }
+
+	var carret = document.createElement('span')
+	carret.innerText = '|'
+	carret.style.margin = '0px'
+	carret.style.padding = '0px'
+
+	var span = document.createElement('span')
+	span.innerText = text.slice(0, offset)
+	Object.assign(span.style, {
+		...s,
+
+		position: 'fixed',
+		display: 'block',
+		top: '-100%',
+		left: '-100%',
+		width: this.offsetWidth + 'px',
+		height: this.scrollHeight + 'px',
+
+		padding: style.padding,
+
+		outline: 'solid 1px red',
+
+		pointerEvents: 'none',
+	})
+	span.append(carret)
+
+	document.body.append(span)
+
+	var res = {
+		length: text.length,
+		lines: Math.floor(this.offsetHeight / carret.offsetHeight),
+		line: Math.floor(carret.offsetTop / carret.offsetHeight),
+		offset: offset,
+		offsetLeft: carret.offsetLeft,
+		offsetTop: carret.offsetTop,
+	}
+
+	span.remove()
+
+	return res }
 
 // calculate number of lines in text area (both wrapped and actual lines)
 Object.defineProperty(HTMLTextAreaElement.prototype, 'heightLines', {

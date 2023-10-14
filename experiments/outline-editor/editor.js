@@ -23,6 +23,20 @@ var atLine = function(elem, index){
 	return false }
 
 
+/*
+function clickPoint(x,y){
+	document
+		.elementFromPoint(x, y)
+		.dispatchEvent(
+			new MouseEvent( 'click', { 
+				view: window,
+				bubbles: true,
+				cancelable: true,
+				screenX: x, 
+				screenY: y, 
+			} )) }
+//*/
+
 
 
 //---------------------------------------------------------------------
@@ -147,6 +161,39 @@ var quoted = {
 		return text
 			.replace(this.pre_pattern, this.pre.bind(this)) 
 			.replace(this.quote_pattern, this.quote.bind(this)) },
+
+	// XXX is this a good strategy???
+	__state: undefined,
+	__keydown__: function(evt, editor, elem){
+		// code editing...
+		if(elem.nodeName == 'CODE' 
+				&& elem.getAttribute('contenteditable') == 'true'){
+			// XXX can keydown and keyup be triggered from different elements???
+			this.__state = elem.innerText
+			return false } },
+	// defined <plugin>.__editedview__(..) handler
+	__keyup__: function(evt, editor, elem){
+		var elem = evt.target
+		if(elem.nodeName == 'CODE' 
+				&& elem.getAttribute('contenteditable') == 'true'){
+			// trigger if state actually changed..
+			this.__state != elem.innerText
+				&& editor.runPlugins('__editedview__', evt, editor, elem) } },
+	__focusout__: function(){
+		this.__state = undefined },
+	__editedview__: function(evt, editor, elem){
+		// editable code...
+		var block = editor.get(elem)
+		var code = block.querySelector('.code')
+
+		var update = elem.innerText
+		var i = [...block
+				.querySelectorAll('.view code[contenteditable=true]')]
+			.indexOf(elem)
+		// update element content...
+		code.value = quoted.replace(code.value, i, update)
+
+		return this },
 }
 
 
@@ -164,8 +211,22 @@ var syntax = {
 	__setup__: function(editor){
 		return this.update() },
 	// XXX make a local update...
-	__changed__: function(evt, editor, node){
-		return this.update() },
+	__editedcode__: function(evt, editor, elem){
+		return this.update(elem) },
+	__editedview__: function(evt, editor, elem){
+		// XXX should we also clear the syntax???
+		delete elem.dataset.highlighted
+		return this },
+	// XXX this removes highlighting, can we make it update live???
+	__focusin__: function(evt, editor, elem){
+		if(elem.nodeName == 'CODE' 
+				&& elem.getAttribute('contenteditable') == 'true'){
+			elem.classList.remove('hljs') } },
+	__focusout__: function(evt, editor, elem){
+		if(elem.nodeName == 'CODE' 
+				&& elem.getAttribute('contenteditable') == 'true'){
+			this.update(elem) }
+		return this },	
 }
 
 
@@ -301,7 +362,7 @@ var tasks = {
 			// completion...
 			// XXX add support for being like a todo checkbox...
 			.replace(/(?<!\\)\[[%]\]/gm, '<span class="completion"></span>') },
-	__changed__: function(evt, editor, node){
+	__editedcode__: function(evt, editor, node){
 		return this.updateBranch(editor, node) },
 	__click__: function(evt, editor, elem){
 		// toggle checkbox...
@@ -341,6 +402,9 @@ var Outline = {
 	carot_jump_edge_then_block: false,
 
 
+	// The order of plugins can be significant in the following cases:
+	// 	- parsing
+	// 	- event dropping
 	plugins: [
 		attributes,
 		blocks,
@@ -355,11 +419,14 @@ var Outline = {
 		// XXX revise -- should this be external???
 		escaping,
 	],
+	// NOTE: if a handler returns false it will break plugin execution...
+	// 		XXX is this the right way to go???
 	runPlugins: function(method, ...args){
 		for(var plugin of this.plugins){
-			method in plugin
-				&& plugin[method](...args) } 
-		return this },
+			if(method in plugin){
+				if(plugin[method](...args) === false){
+					return false } } } 
+		return true },
 	threadPlugins: function(method, value, ...args){
 		for(var plugin of this.plugins){
 			method in plugin
@@ -629,7 +696,6 @@ var Outline = {
 		return this },
 
 	// block serialization...
-	// XXX split this up into a generic handler + plugins...
 	// XXX need a way to filter input text...
 	// 		use-case: hidden attributes...
 	// NOTE: this is auto-populated by .__code2html__(..)
@@ -693,11 +759,11 @@ var Outline = {
 	// 			  - text in the above block ('-' needs to be quoted)
 	// 			- next block
 	__code2text__: function(code){
-		// XXX
-	},
+		return code 
+			.replace(/(\n\s*)-/g, '$1\\-') },
 	__text2code__: function(text){
-		// XXX
-	},
+		return text 
+			.replace(/(\n\s*)\\-/g, '$1-') },
 
 	// serialization...
 	data: function(elem, deep=true){
@@ -711,8 +777,10 @@ var Outline = {
 		} },
 	json: function(node){
 		var that = this
-		node ??= this.outline
-		return [...node.lastChild.children]
+		var children = [...(node ?
+			node.lastChild.children
+			: this.outline.children)]
+		return children
 			.map(function(elem){
 				return that.data(elem) }) },
 	// XXX add option to customize indent size...
@@ -727,7 +795,7 @@ var Outline = {
 		for(var elem of node){
 			text.push( 
 				level +'- '
-					+ elem.text
+					+ this.__code2text__(elem.text)
 						.replace(/\n/g, '\n'+ level +'  ') 
 					+ (elem.collapsed ?
 						'\n'+level+'  ' + 'collapsed:: true'
@@ -741,6 +809,7 @@ var Outline = {
 			.join('\n') },
 
 	parse: function(text){
+		var that = this
 		text = text
 			.replace(/^\s*\n/, '')
 		text = ('\n' + text)
@@ -765,10 +834,10 @@ var Outline = {
 								collapsed = value == 'true'
 								return '' })
 					parent.push({ 
-						text: block
-							// normalize indent...
-							.split(new RegExp('\n'+sep+'  ', 'g'))
-							.join('\n'),
+						text: that.__text2code__(block
+								// normalize indent...
+								.split(new RegExp('\n'+sep+'  ', 'g'))
+								.join('\n')),
 						collapsed,
 						children: [],
 					})
@@ -850,6 +919,18 @@ var Outline = {
 			&& (code.innerHTML = this.text())
 		return this },
 
+
+	// Actions...
+	prev: function(){},
+	next: function(){},
+	above: function(){},
+	below: function(){},
+
+	up: function(){},
+	down: function(){},
+	left: function(){},
+	right: function(){},
+
 	// XXX move the code here into methods/actions...
 	// XXX add scrollIntoView(..) to nav...
 	// XXX use keyboard.js...
@@ -862,16 +943,10 @@ var Outline = {
 			var that = this
 			var edited = this.get('edited')
 			if(edited){
-				var c = edited.selectionStart
-				var jump = function(){
-					if(edited.selectionStart == 0){
-						// needed to remember the position...
-						edited.selectionStart = c
-						edited.selectionEnd = c
-						that.focus('edited', -1) } }
-				this.carot_jump_edge_then_block ?
-					jump()
-					: setTimeout(jump, 0)
+				var line = edited.getTextGeometry().line
+				if(line == 0){
+					evt.preventDefault() 
+					that.focus('edited', 'prev') }
 			} else {
 				evt.preventDefault() 
 				this.focus('focused', -1) } },
@@ -879,16 +954,10 @@ var Outline = {
 			var that = this
 			var edited = this.get('edited')
 			if(edited){
-				var c = edited.selectionStart
-				var jump = function(){
-					if(edited.selectionStart == edited.value.length){
-						// needed to remember the position...
-						edited.selectionStart = c
-						edited.selectionEnd = c
-						that.focus('edited', 1) } }
-				this.carot_jump_edge_then_block ?
-					jump()
-					: setTimeout(jump, 0)
+				var {line, lines} = edited.getTextGeometry()
+				if(line == lines -1){
+					evt.preventDefault() 
+					that.focus('edited', 'next') }
 			} else {
 				evt.preventDefault() 
 				this.focus('focused', 1) } },
@@ -989,9 +1058,6 @@ var Outline = {
 				: focused.setAttribute('selected', '') },
 	},
 
-	// XXX might be a good idea to defer specific actions to event-like 
-	// 		handlers...
-	// 		e.g. clicking left if block -> .blockleft(..) ... etc.
 	setup: function(dom){
 		var that = this
 		this.dom = dom
@@ -1020,8 +1086,7 @@ var Outline = {
 					return }
 
 				// expand/collapse
-				if(elem.classList.contains('view')
-						&& elem.parentElement.getAttribute('tabindex')){
+				if(elem.classList.contains('view')){
 					// click: left of elem (outside)
 					if(evt.offsetX < 0){
 						// XXX item menu?
@@ -1038,7 +1103,7 @@ var Outline = {
 				// edit of focus...
 				// NOTE: this is usefull if element text is hidden but the 
 				// 		frame is still visible...
-				if(elem.getAttribute('tabindex')){
+				if(elem.classList.contains('block')){
 					elem.querySelector('.code').focus() }
 
 				that.runPlugins('__click__', evt, that, elem) })
@@ -1046,12 +1111,10 @@ var Outline = {
 		outline.addEventListener('keydown', 
 			function(evt){
 				var elem = evt.target
-				// code editing...
-				if(elem.nodeName == 'CODE' 
-						&& elem.getAttribute('contenteditable') == 'true'){
+				if(that.runPlugins('__keydown__', evt, that, evt.target) !== true){
 					return }
 				// update element state...
-				if(elem.nodeName == 'TEXTAREA'){
+				if(elem.classList.contains('code')){
 					setTimeout(function(){
 						that.update(elem.parentElement) 
 						elem.updateSize() }, 0) }
@@ -1061,30 +1124,14 @@ var Outline = {
 		// update code block...
 		outline.addEventListener('keyup', 
 			function(evt){
-				var elem = evt.target
-				// editable code...
-				if(elem.nodeName == 'CODE' 
-						&& elem.getAttribute('contenteditable') == 'true'){
-					// XXX should we clear the syntax???
-					// XXX do this only if things changed...
-					delete elem.dataset.highlighted
+				that.runPlugins('__keyup__', evt, that, evt.target) })
 
-					var block = that.get(elem)
-					var code = block.querySelector('.code')
-
-					var update = elem.innerText
-					var i = [...block
-							.querySelectorAll('.view code[contenteditable=true]')]
-						.indexOf(elem)
-					// update element content...
-					code.value = quoted.replace(code.value, i, update)
-
-					return } })
 		// toggle view/code of nodes...
 		outline.addEventListener('focusin', 
 			function(evt){
 				var elem = evt.target
 
+				// ignore children container...
 				if(elem.classList.contains('children')){
 					return }
 
@@ -1103,15 +1150,18 @@ var Outline = {
 						behavior: 'smooth',
 					})
 				//*/
-			})
+
+				// XXX do we need this???
+				that.runPlugins('__focusin__', evt, that, elem) })
 		outline.addEventListener('focusout', 
 			function(evt){
-				var node = evt.target
-				if(node.nodeName == 'TEXTAREA' 
-						&& node?.nextElementSibling?.nodeName == 'SPAN'){
-					var block = node.parentElement
-					that.update(block, { text: node.value }) 
-					that.runPlugins('__changed__', evt, that, node) } })
+				var elem = evt.target
+				if(elem.classList.contains('code')){
+					var block = elem.parentElement
+					that.update(block, { text: elem.value }) 
+					that.runPlugins('__editedcode__', evt, that, elem) } 
+
+				that.runPlugins('__focusout__', evt, that, elem) })
 		// update .code...
 		var update_code_timeout
 		outline.addEventListener('change', 
@@ -1121,7 +1171,8 @@ var Outline = {
 				update_code_timeout = setTimeout(
 					function(){
 						update_code_timeout = undefined
-						that.sync() }, 
+						that.sync() 
+						that.runPlugins('__change__', evt, that) }, 
 					that.code_update_interval || 5000) })
 
 		// toolbar...

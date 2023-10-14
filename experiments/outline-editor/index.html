@@ -44,14 +44,7 @@ var setup = function(){
   - // Seems that I unintentionally implemented quite a chunk of the markdown spec ;)
   - 
 - ## Bugs:
-  - BUG: ASAP: editor: `-` at start of line is interpreted as block marker...
-    - need to either:
-      - quote the `-` in .text() -- _preferreed_
-      - split the lines starting with `-` into nested nodes (a-la .load())
-  - BUG? pressing down from a longer line will jump over a shorter line
-    - to reproduce\:
-      - here is the line to jump from, for example from here
-        an we'll not get here...
+  - BUG: last node seems to get trash tags added to it's end...
   -
 - ## ToDo:
   - ASAP: editor: backsapce/del at start/end of a block should join it with prev/next
@@ -92,7 +85,7 @@ var setup = function(){
       - #### Click in this line and see where the cursor goes
     - _not sure how..._
   - Q: persistent empty first/last node (a button to create a new node)?
-  - Q: should bullets be on the same level as nodes or offset??
+  - Q: should list bullets be on the same level as nodes or offset??
     collapsed:: true
     - A) justified to bullet:
          * list item
@@ -122,14 +115,16 @@ var setup = function(){
   - 
 - ## Refactoring:
   - Plugin architecture
-  - Item parser (`.__code2html__(..)`)
-    - ~split out~
-    - ~define~/doc api
-    - ~define a way to extend/stack parsers~
+    - DONE basic structure
+    - plugin handler sequencing (see: `.setup(..)`)
+    - plugin handler canceling
+  - DONE Item parser (`.__code2html__(..)`)
+    - DONE split out
+    - DONE define a way to extend/stack parsers
   - Format parser/generator
     - split out
     - define api
-    - experiment with clean markdown as format
+    - experiment with clean _markdown_ as format
   - CSS
     - separate out theming
     - separate out settings
@@ -139,6 +134,7 @@ var setup = function(){
     - Q: do we need `features.js` and/or `actions.js`
   - Q: do we need a concatenative API??
 	- `<block>.get() -> <block>`
+  - Docs
   -
 - ## TEST
   - ### Formatting:
@@ -235,7 +231,8 @@ var setup = function(){
       - This is a line of text
       - This is a set
         text lines
-      - Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text </pre>
+      - Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text 
+	- </pre>
 	<!-- outline -->
 	<div class="outline"></div>
 	<!-- toolbar (optional) -->
@@ -248,6 +245,7 @@ var setup = function(){
 		<button onclick="editor.toggleCollapse()?.focus()">&#709;&#708;</button>
 		<button onclick="editor.remove()">&times;</button>
 	</div-->
+	<span class="__textarea"></span>
 </div>
 
 <hr>
