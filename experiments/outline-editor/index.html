@@ -52,6 +52,7 @@ var setup = function(){
   - FEATURE: read-only mode
   - FEATURE: `collapse-children:: true` block option -- when loading collapse all immediate children
   - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
+  - a way to make a block monospace (???)
   - show list bullet if node is empty but edited... (???)
   - Code blocks and bullets:
     - ```
@@ -139,6 +140,22 @@ var setup = function(){
   - Docs
   -
 - ## TEST
+  - ### Controls
+    - ASAP: these need updating...
+    - | Key        | Action                       |
+      | up         | focus node above             |
+      | down       | focus node below             |
+      | left       | focus parent node            |
+      | right      | focus first child node       |
+      | tab        | indent node                  |
+      | s-tab      | deindent node                |
+      | s-pgup     | shift node up                |
+      | s-pgdown   | shift node down              |
+      | s-left     | collapse node                |
+      | s-right    | expand node                  |
+      | enter      | normal mode: edit node       |
+      |            | edit mode: create node below |
+      | esc        | exit edit mode               | 
   - ### Formatting:
     - Styles
       - # Heading 1
@@ -253,24 +270,6 @@ var setup = function(){
 <hr>
 
 <button onclick="editor.dom.classList.toggle('show-click-zones')">show/hide click zones</button>
-
-<pre>
-
-Controls:
-	up         - focus node above
-	down       - focus node below
-	left       - focus parent node
-	right      - focus first child node
-	tab        - indent node
-	s-tab      - deindent node
-	s-pgup     - shift node up
-	s-pgdown   - shift node down
-	s-left     - collapse node
-	s-right    - expand node
-	enter      - normal mode: edit node
-	           - edit mode: create node below
-	esc        - exit edit mode 
-</pre>
 
 
 </body>
