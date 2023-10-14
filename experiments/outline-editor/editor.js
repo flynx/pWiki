@@ -1098,7 +1098,7 @@ var Outline = {
 		Backspace: function(evt){
 			var edited = this.get('edited')
 			if(edited 
-					&& edited.selectionStart == 0
+					&& edited.selectionEnd == 0
 					// can't reclaim nested children...
 					&& this.get(edited, 'children').length == 0){
 				var prev = this.get('edited', 'prev')
