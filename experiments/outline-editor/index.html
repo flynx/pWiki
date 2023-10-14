@@ -41,6 +41,8 @@ var setup = function(){
 	- Tomboy
 	- Bonsai
   - 
+  - // Seems that I unintentionally implemented quite a chunk of the markdown spec ;)
+  - 
 - ## Bugs:
   - BUG: ASAP: editor: `-` at start of line is interpreted as block marker...
     - need to either:
@@ -102,21 +104,21 @@ var setup = function(){
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
   - empty item height is a bit off...
-  - ~Q: can we edit code in a code block directly? (a-la Logseq)~
-  - ~"percentage complete" in parent blocks with todo's nested~
-  - ~`.editor .outline:empty` view and behavior...~
-  - ~editor: semi-live update styles~
-  - ~do a better expand/collapse icons~
-  - ~loading from DOM -- fill textarea~
-  - ~focus management~
-  - ~mouse/touch controls~
-  - ~navigation~
-  - ~expand/collapse subtree~
-  - ~shift subtree up/down~
-  - ~create node~
-  - ~edit node~
-  - ~serialize/deserialize~
-  - ~add optional text styling to nodes~
+  - DONE Q: can we edit code in a code block directly? (a-la Logseq)
+  - DONE "percentage complete" in parent blocks with todo's nested
+  - DONE `.editor .outline:empty` view and behavior...
+  - DONE editor: semi-live update styles
+  - DONE do a better expand/collapse icons
+  - DONE loading from DOM -- fill textarea
+  - DONE focus management
+  - DONE mouse/touch controls
+  - DONE navigation
+  - DONE expand/collapse subtree
+  - DONE shift subtree up/down
+  - DONE create node
+  - DONE edit node
+  - DONE serialize/deserialize
+  - DONE add optional text styling to nodes
   - 
 - ## Refactoring:
   - Plugin architecture
@@ -185,9 +187,10 @@ var setup = function(){
 	  - // C-style comment
 	  - ; ASM-style comment
 	  - XXX Highlight
+      - DONE Done
     - Basic inline *bold*, _italic_ and ~striked~
     - Marking ==text==
-    - Code
+    - Code:
 	  - Inline quoting `html <b>code</b>`
       - code blocks
         ```javascript

@@ -408,6 +408,14 @@ editor .outline .block:focus {
 }
 
 
+/*---------------------------------------------------------- Done ---*/
+
+.editor .outline .block.DONE>.view {
+	text-decoration: line-through;
+	opacity: 0.5;
+}
+
+
 /*--------------------------------------------------- Highlightes ---*/
 
 .editor .outline .highlight {

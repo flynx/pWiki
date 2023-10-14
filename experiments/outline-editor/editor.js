@@ -26,8 +26,17 @@ var atLine = function(elem, index){
 
 
 //---------------------------------------------------------------------
+// Plugins...
 
+// general helpers and utils...
 var plugin = {
+	encode: function(text){
+		return text
+			.replace(/(?<!\\)&/g, '&amp;')
+			.replace(/(?<!\\)</g, '&lt;')
+			.replace(/(?<!\\)>/g, '&gt;')
+			.replace(/\\(?!`)/g, '\\\\') },
+
 	// XXX make this more generic...
 	style: function(editor, elem, style, code=undefined){
 		style = [style].flat()
@@ -41,7 +50,6 @@ var plugin = {
 			return code 
 				?? text } },
 }
-
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
@@ -89,6 +97,8 @@ var blocks = {
 			.replace(/^\s*(?<!\\)>\s+(.*)$/m, this.style(editor, elem, 'quote'))
 			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, this.style(editor, elem, 'comment'))
 			.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/m, this.style(editor, elem, 'NOTE'))
+			.replace(/^\s*(?<!\\)DONE\s+(.*)$/m, this.style(editor, elem, 'DONE'))
+			.replace(/^(.*)\s*(?<!\\)DONE\s*$/m, this.style(editor, elem, 'DONE'))
 			.replace(/^\s*(?<!\\)XXX\s+(.*)$/m, this.style(editor, elem, 'XXX'))
 			.replace(/^(.*)\s*(?<!\\)XXX$/m, this.style(editor, elem, 'XXX')) } ,
 }
@@ -99,13 +109,6 @@ var blocks = {
 // XXX add actions...
 var quoted = {
 	__proto__: plugin,
-
-	encode: function(text){
-		return text
-			.replace(/(?<!\\)&/g, '&amp;')
-			.replace(/(?<!\\)</g, '&lt;')
-			.replace(/(?<!\\)>/g, '&gt;')
-			.replace(/\\(?!`)/g, '\\\\') },
 
 	// can be used in:
 	// 		<string>.replace(quoted.pattern, quoted.handler)
