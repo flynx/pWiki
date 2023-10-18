@@ -139,19 +139,18 @@ var setup = function(){
 	- plugin handler sequencing (see: `<editor>.setup(..)`)
 	- DONE plugin handler canceling (see: `<editor>.runPlugins(..)`)
   - DONE Item parser (`.__code2html__(..)`)
+    collapsed:: true
     - DONE split out
     - DONE define a way to extend/stack parsers
-  - Format parser/generator
-    - split out
-    - define api
-    - experiment with clean _markdown_ as format
+  - DONE Format parser/generator
+    collapsed:: true
+    - DONE split out
+	- DONE define api (see: `<editor>.__code2text__(..) / <editor>.__text2code__(..)`)
   - CSS
-    - separate out theming
     - separate out settings
+    - separate out theming
   - Actions -- move user actions (code in `.keyboard`) into methods
   - Move to `keyboard.js`
-  - Plugin architecture
-    - Q: do we need `features.js` and/or `actions.js`
   - Q: do we need a concatenative API??
 	- `<block>.get() -> <block>`
   - Docs
