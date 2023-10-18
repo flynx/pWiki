@@ -80,6 +80,8 @@
 	margin-left: var(--item-indent);
 }
 .editor .outline .block>.text {
+	--v-margin: 0;
+
 	display: block;
 	width: 100%;
 	/* XXX this is a tiny bit off and using .code's height here is off too... */
@@ -88,7 +90,7 @@
 	padding-bottom: var(--item-padding);
 	padding-left: 0;
 	padding-right: 0;
-	margin: 0;
+	margin: var(--v-margin) 0;
 	box-sizing: border-box;
 
 	font-family: sans-serif;
@@ -113,6 +115,8 @@
 .editor .outline .block>.code:focus+.view:before,
 .editor .outline .block>.code:focus+.view:after {
 	visibility: visible;
+	margin-top: calc(-1 * var(--v-margin));
+	margin-bottom: calc(-1 * var(--v-margin));
 }
 /* click through the .view text to the .code */
 .editor .outline .block>.view {
@@ -201,6 +205,7 @@ editor .outline .block:focus {
 
 	background: transparent;
 }
+
 /* left indicator */
 .editor .outline .block>.view:before {
 	justify-content: right;
@@ -294,14 +299,11 @@ editor .outline .block:focus {
 
 .editor .outline .quote>.text {
 	--indent: 1rem;
-	--margin: 0.7rem;
+	--v-margin: 0.7rem;
 	--item-padding-ratio: 0.7;
 
 	/* XXX for some reason if this is not set here it will not see the new --item-padding-ratio */
 	--item-padding: calc(1rem * var(--item-padding-ratio));
-
-	margin-top: var(--margin);
-	margin-bottom: var(--margin);
 
 	padding: var(--item-padding) 1.5rem;
 	color: rgba(0,0,0,0.8);

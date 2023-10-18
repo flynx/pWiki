@@ -44,11 +44,13 @@ function clickPoint(x,y){
 // box corresponds the to desired coordinates. This accounts for nested 
 // elements.
 //
+// XXX might be a good idea to tweak this just a bit (1/2 letter) to the left...
 // XXX HACK -- is there a better way to do this???
 var getCharOffset = function(elem, x, y, c){
 	c = c ?? 0
 	var r = document.createRange()
 	for(var e of [...elem.childNodes]){
+		// text node...
 		if(e instanceof Text){
 			for(var i=0; i < e.length; i++){
 				r.setStart(e, i)
@@ -60,12 +62,13 @@ var getCharOffset = function(elem, x, y, c){
 						&& b.bottom >= y){
 					return c + i } }
 			c += i
-
+		// html node...
 		} else {
 			var res = getCharOffset(e, x, y, c)
 			if(!(res instanceof Array)){
 				return res } 
 			;[c, res] = res } }
+	// no result was found...
 	return arguments.length > 3 ?
 		[c, null]
 		: null }
