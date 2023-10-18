@@ -199,6 +199,84 @@ var quoted = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
+// XXX add actions...
+var tasks = {
+	__proto__: plugin,
+
+	updateStatus: function(editor, node){
+		node = editor.get(node)
+		if(node == null){
+			return this }
+		var state = node
+			.querySelector('.view')
+				.querySelector('.completion')
+		if(state){
+			var c = 
+				((node.querySelectorAll('input[type=checkbox]:checked').length
+						/ node.querySelectorAll('input[type=checkbox]').length)
+					* 100)
+				.toFixed(0)
+			!isNaN(c)
+				&& state.setAttribute('completion', c +'%') }
+		return this },
+	updateBranch: function(editor, node){
+		if(!node){
+			return this }
+		var outline = editor.outline
+		var p = node
+		while(p !== outline){
+			this.updateStatus(editor, p)
+			p = editor.get(p, 'parent') } 
+		return this },
+	updateAll: function(editor){
+		for(var e of [...editor.outline.querySelectorAll('.block>.view .completion')]){
+			this.updateStatus(editor, e) }
+		return this },
+
+	__setup__: function(editor){
+		return this.updateAll(editor) },
+	__parse__: function(text, editor, elem){
+		return text
+			// block checkboxes...
+			// NOTE: these are separate as we need to align block text 
+			// 		to leading chekbox...
+			.replace(/^\s*(?<!\\)\[[_ ]\]\s*/m, 
+				this.style(editor, elem, 'todo', '<input type="checkbox">'))
+			.replace(/^\s*(?<!\\)\[[Xx]\]\s*/m, 
+				this.style(editor, elem, 'todo', '<input type="checkbox" checked>'))
+			// inline checkboxes...
+			.replace(/\s*(?<!\\)\[[_ ]\]\s*/gm, 
+				this.style(editor, elem, 'check', '<input type="checkbox">'))
+			.replace(/\s*(?<!\\)\[[Xx]\]\s*/gm, 
+				this.style(editor, elem, 'check', '<input type="checkbox" checked>'))
+			// completion...
+			// XXX add support for being like a todo checkbox...
+			.replace(/(?<!\\)\[[%]\]/gm, '<span class="completion"></span>') },
+	__editedcode__: function(evt, editor, node){
+		return this.updateBranch(editor, node) },
+	__click__: function(evt, editor, elem){
+		// toggle checkbox...
+		if(elem.type == 'checkbox'){
+			var node = editor.get(elem)
+			var text = node.querySelector('.code')
+			// get the checkbox order...
+			var i = [...node.querySelectorAll('input[type=checkbox]')].indexOf(elem)
+			var to = elem.checked ?
+				'[X]'
+				: '[_]'
+			var toggle = function(m){
+				return i-- == 0 ?
+					to
+					: m }
+			text.value = text.value.replace(/\[[Xx_]\]/g, toggle) 
+			// update status...
+			this.updateBranch(editor, node) } 
+		return this },
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
 // XXX Hackish...
 var syntax = {
 	__proto__: plugin,
@@ -262,9 +340,9 @@ var styling = {
 			// elements...
 			.replace(/(\n|^)(?<!\\)---*\h*(\n|$)/m, '$1<hr>')
 			// basic styling...
-			// XXX revise...
 			.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
 			.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
+			// XXX this can clash with '[_] .. [_]' checkboxes...
 			.replace(/(?<!\\)_(?=[^\s_])(([^_]|\\_)*[^\s_])(?<!\\)_/gm, '<i>$1</i>') 
 			// code/quoting...
 			//.replace(/(?<!\\)`(?=[^\s])(([^`]|\\`)*[^\s])(?<!\\)`/gm, quote) 
@@ -306,85 +384,6 @@ var escaping = {
 }
 
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
-
-// XXX add actions...
-var tasks = {
-	__proto__: plugin,
-
-	updateStatus: function(editor, node){
-		node = editor.get(node)
-		if(node == null){
-			return this }
-		var state = node
-			.querySelector('.view')
-				.querySelector('.completion')
-		if(state){
-			var c = 
-				((node.querySelectorAll('input[type=checkbox]:checked').length
-						/ node.querySelectorAll('input[type=checkbox]').length)
-					* 100)
-				.toFixed(0)
-			!isNaN(c)
-				&& state.setAttribute('completion', c +'%') }
-		return this },
-	updateBranch: function(editor, node){
-		if(!node){
-			return this }
-		var outline = editor.outline
-		var p = node
-		while(p !== outline){
-			this.updateStatus(editor, p)
-			p = editor.get(p, 'parent') } 
-		return this },
-	updateAll: function(editor){
-		for(var e of [...editor.outline.querySelectorAll('.block>.view .completion')]){
-			this.updateStatus(editor, e) }
-		return this },
-
-
-	__setup__: function(editor){
-		return this.updateAll(editor) },
-	__parse__: function(text, editor, elem){
-		return text
-			// block checkboxes...
-			// NOTE: these are separate as we need to align block text 
-			// 		to leading chekbox...
-			.replace(/^\s*(?<!\\)\[[_ ]\]\s*/m, 
-				this.style(editor, elem, 'todo', '<input type="checkbox">'))
-			.replace(/^\s*(?<!\\)\[[Xx]\]\s*/m, 
-				this.style(editor, elem, 'todo', '<input type="checkbox" checked>'))
-			// inline checkboxes...
-			.replace(/\s*(?<!\\)\[[_ ]\]\s*/gm, 
-				this.style(editor, elem, 'check', '<input type="checkbox">'))
-			.replace(/\s*(?<!\\)\[[Xx]\]\s*/gm, 
-				this.style(editor, elem, 'check', '<input type="checkbox" checked>'))
-			// completion...
-			// XXX add support for being like a todo checkbox...
-			.replace(/(?<!\\)\[[%]\]/gm, '<span class="completion"></span>') },
-	__editedcode__: function(evt, editor, node){
-		return this.updateBranch(editor, node) },
-	__click__: function(evt, editor, elem){
-		// toggle checkbox...
-		if(elem.type == 'checkbox'){
-			var node = editor.get(elem)
-			var text = node.querySelector('.code')
-			// get the checkbox order...
-			var i = [...node.querySelectorAll('input[type=checkbox]')].indexOf(elem)
-			var to = elem.checked ?
-				'[X]'
-				: '[_]'
-			var toggle = function(m){
-				return i-- == 0 ?
-					to
-					: m }
-			text.value = text.value.replace(/\[[Xx_]\]/g, toggle) 
-			// update status...
-			this.updateBranch(editor, node) } 
-		return this },
-}
-
-
 
 //---------------------------------------------------------------------
 
@@ -402,6 +401,8 @@ var Outline = {
 	carot_jump_edge_then_block: false,
 
 
+	// Plugins...
+	//
 	// The order of plugins can be significant in the following cases:
 	// 	- parsing
 	// 	- event dropping
@@ -409,11 +410,14 @@ var Outline = {
 		attributes,
 		blocks,
 		quoted,
+
+		// NOTE: this needs to be before styling to prevent it from 
+		// 		treating '[_] ... [_]' as italic...
+		tasks,
 		styling,
 		tables,
 		symbols,
 		syntax,
-		tasks,
 
 		// keep this last...
 		// XXX revise -- should this be external???
