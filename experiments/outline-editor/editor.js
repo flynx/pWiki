@@ -344,11 +344,14 @@ var tasks = {
 
 	__setup__: function(editor){
 		return this.updateAllStatus(editor) },
-	__parse__: function(text, editor, elem){
+	__pre_parse__: function(text, editor, elem){
 		// handle done..
+		var handler = this.style(editor, elem, 'DONE')
 		for(var p of this.done_patterns){
-			test = text
-				.replace(p, this.style(editor, elem, 'DONE')) }
+			text = text
+				.replace(p, handler) }
+		return text },
+	__parse__: function(text, editor, elem){
 		return text
 			// block checkboxes...
 			// NOTE: these are separate as we need to align block text 
