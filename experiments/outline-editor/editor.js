@@ -218,7 +218,7 @@ var tasks = {
 			!isNaN(c)
 				&& state.setAttribute('completion', c +'%') }
 		return this },
-	updateBranch: function(editor, node){
+	updateBranchStatus: function(editor, node){
 		if(!node){
 			return this }
 		var outline = editor.outline
@@ -227,7 +227,7 @@ var tasks = {
 			this.updateStatus(editor, p)
 			p = editor.get(p, 'parent') } 
 		return this },
-	updateAll: function(editor){
+	updateAllStatus: function(editor){
 		for(var e of [...editor.outline.querySelectorAll('.block>.view .completion')]){
 			this.updateStatus(editor, e) }
 		return this },
@@ -273,7 +273,7 @@ var tasks = {
 			: checkboxes.at(
 				(checkboxes.indexOf(cur) + offset) % checkboxes.length)
 		return elem },
-	updateCheckbox: function(editor, elem){
+	updateCheckboxes: function(editor, elem){
 		elem = this.getCheckbox(editor, elem)
 		var node = editor.get(elem)
 		var text = node.querySelector('.code')
@@ -292,7 +292,8 @@ var tasks = {
 		checkbox = this.getCheckbox(editor, checkbox, offset)
 		if(checkbox){
 			checkbox.checked = !checkbox.checked
-			this.updateCheckbox(editor, checkbox) }
+			this.updateCheckboxes(editor, checkbox) 
+			this.updateBranchStatus(editor, checkbox) }
 		return checkbox },
 	selectCheckbox: function(editor, checkbox, offset){
 		checkbox = this.getCheckbox(editor, checkbox, offset)
@@ -316,7 +317,7 @@ var tasks = {
 		return this.nextCheckbox(editor, node, offset) },
 
 	__setup__: function(editor){
-		return this.updateAll(editor) },
+		return this.updateAllStatus(editor) },
 	__parse__: function(text, editor, elem){
 		return text
 			// block checkboxes...
@@ -338,14 +339,14 @@ var tasks = {
 		elem.classList.contains('block')
 			&& this.selectCheckbox(editor, elem) },
 	__editedcode__: function(evt, editor, elem){
-		this.updateBranch(editor, elem) 
+		this.updateBranchStatus(editor, elem) 
 		this.selectCheckbox(editor, elem) },
 	__click__: function(evt, editor, elem){
 		// toggle checkbox...
 		if(elem.type == 'checkbox'){
 			var node = editor.get(elem)
-			this.updateCheckbox(editor, elem)
-			this.updateBranch(editor, node) 
+			this.updateCheckboxes(editor, elem)
+			this.updateBranchStatus(editor, node) 
 			this.selectCheckbox(editor, elem) 
 			node.focus() } 
 		return this },
