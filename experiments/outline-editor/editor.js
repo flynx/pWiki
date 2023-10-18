@@ -1303,11 +1303,16 @@ var Outline = {
 			function(evt){
 				var elem = evt.target
 				// correct offset in editor...
-				if(elem.classList.contains('code') && document.activeElement !== elem){
+				if(elem.classList.contains('code') 
+						&& document.activeElement !== elem){
+					evt.preventDefault()
 					var view = that.get(elem).querySelector('.view')
 					var c = getCharOffset(view, evt.clientX, evt.clientY)
-					if(c != null){
-						evt.preventDefault()
+					if(c == null){
+						elem.focus()
+						elem.selectionStart = elem.value.length
+						elem.selectionEnd = elem.value.length 
+					} else {
 						var m = getMarkdownOffset(elem.value, view.innerText, c)
 						elem.focus()
 						elem.selectionStart = c + m
