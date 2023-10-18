@@ -46,10 +46,10 @@ var setup = function(){
 - ## Bugs:
   - BUG: editor: FF seems to update the style every other key press -- should be live...
   - BUG: last node seems to get trash tags added to it's end...
+  - BUG: quote block bullet is off in edit mode:
+    - > quoted text
   -
 - ## ToDo:
-  - DONE click to select/edit node must retain click position in text...
-    - _...need a bit of tuning -- where in the char a click is made and where the cursor is placed..._
   - ASAP: scroll into view is bad...
   - ASAP: mobile browsers behave quite chaotically ignoring parts of the styling...
   - FEATURE: read-only mode
@@ -87,14 +87,7 @@ var setup = function(){
 	  - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
-  - Q: can we get the caret line in a textarea???
-    - _...this will fix a lot of issues with moving between blocks in edit mode..._
   - Q: do we use \\t for indent? (option???)
-  - Q: can we place the cursor on item click where it was clicked before before the code expanded?
-    collapsed:: true
-    - for example
-      - #### Click in this line and see where the cursor goes
-    - _not sure how..._
   - Q: persistent empty first/last node (a button to create a new node)?
   - Q: should list bullets be on the same level as nodes or offset??
     collapsed:: true
@@ -108,6 +101,16 @@ var setup = function(){
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
   - empty item height is a bit off...
+  - DONE Q: can we get the caret line in a textarea???
+    collapsed:: true
+    - _...this will fix a lot of issues with moving between blocks in edit mode..._
+  - DONE Q: can we place the cursor on item click where it was clicked before before the code expanded?
+    collapsed:: true
+    - for example
+      - #### Click in this line and see where the cursor goes
+    - _not sure how..._
+  - DONE click to select/edit node must retain click position in text...
+    - _...need a bit of tuning -- where in the char a click is made and where the cursor is placed..._
   - DONE checkbox navigation via `alt-<arrow>`
 	collapsed:: true
     - _might be a good idea to include also TODO/DONE navigation -- not yet sure how to mark undone blocks (i.e. the ones marked with TODO in Logseg)..._
@@ -176,8 +179,10 @@ var setup = function(){
       | enter      | normal mode: edit node       |
       |            | edit mode: create node below |
       | esc        | exit edit mode               | 
-  - ### Formatting:
-    - Styles
+  - ### Formatting
+    - The formatting mostly adheres to the markdown spec with a few minor differences
+    -
+    - Styles:
       - # Heading 1
       - ## Heading 2
       - ### Heading 3
@@ -214,6 +219,7 @@ var setup = function(){
             - z
           - c
 	  - > quote
+        - ASAP edit mode bullet is off...
       - Notes
 		  - NOTE: a note text
           - NOTE:
