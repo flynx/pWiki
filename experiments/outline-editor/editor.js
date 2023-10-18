@@ -417,7 +417,7 @@ var Outline = {
 		styling,
 		tables,
 		symbols,
-		syntax,
+		//syntax,
 
 		// keep this last...
 		// XXX revise -- should this be external???
@@ -1233,7 +1233,10 @@ var Outline = {
 				if(elem.classList.contains('code')){
 					var block = elem.parentElement
 					that.update(block, { text: elem.value }) 
-					that.runPlugins('__editedcode__', evt, that, elem) } 
+					// give the browser a chance to update the DOM...
+					// XXX revise...
+					setTimeout(function(){
+						that.runPlugins('__editedcode__', evt, that, elem) }, 0) } 
 
 				that.runPlugins('__focusout__', evt, that, elem) })
 		// update .code...
