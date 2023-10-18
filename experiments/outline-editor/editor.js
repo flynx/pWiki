@@ -38,6 +38,13 @@ function clickPoint(x,y){
 //*/
 
 
+// Get the character offset at coordinates...
+//
+// This is done by moving a range down the element until its bounding 
+// box corresponds the to desired coordinates. This accounts for nested 
+// elements.
+//
+// XXX HACK -- is there a better way to do this???
 var getCharOffset = function(elem, x, y, c){
 	c = c ?? 0
 	var r = document.createRange()
@@ -62,14 +69,31 @@ var getCharOffset = function(elem, x, y, c){
 	return arguments.length > 3 ?
 		[c, null]
 		: null }
+
+
+// Get offset in markdown relative to the resulting text...
+//                     
+//					    v <----- position
+//		text:		'Hea|ding'
+//					    |
+//		                +-+ <--- offset in markdown
+//		                  |
+//		markdown:	'# Hea|ding'
+//
 var getMarkdownOffset = function(markdown, text, i){
 	i = i ?? text.length
 	var m = 0
 	// walk both strings skipping/counting non-matching stuff...
 	for(var n=0; n < i; n++, m++){
 		var c = text[n]
-		while(c != markdown[m]){
-			m++ } }
+		var p = m
+		// walk to next match...
+		while(c != markdown[m] && m < markdown.length){
+			m++ } 
+		// reached something unrepresentable directly in markdown (html 
+		// entity, symbol, ...)
+		if(m >= markdown.length){
+			m = p } }
 	return m - n }
 
 
@@ -1302,7 +1326,7 @@ var Outline = {
 		outline.addEventListener('mousedown', 
 			function(evt){
 				var elem = evt.target
-				// correct offset in editor...
+				// place the cursor where the user clicked in code/text...
 				if(elem.classList.contains('code') 
 						&& document.activeElement !== elem){
 					evt.preventDefault()
