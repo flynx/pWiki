@@ -44,9 +44,12 @@ var setup = function(){
   - // Seems that I unintentionally implemented quite a chunk of the markdown spec ;)
   - 
 - ## Bugs:
+  - BUG: editor: FF seems to update the style every other key press -- should be live...
   - BUG: last node seems to get trash tags added to it's end...
   -
 - ## ToDo:
+  - DONE click to select/edit node must retain click position in text...
+    - _...needs more testing..._
   - ASAP: scroll into view is bad...
   - ASAP: mobile browsers behave quite chaotically ignoring parts of the styling...
   - FEATURE: read-only mode
@@ -56,6 +59,7 @@ var setup = function(){
 	- generate ideomatic html (???)
   - FEATURE: `collapse-children:: true` block option -- when loading collapse all immediate children
   - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
+  - table inline editing a-la code editing -- click cell and edit directly...
   - a way to make a block monospace (???)
   - codeblock as a block
     _...if only whitespace before/after clear it and style whole block..._
@@ -131,8 +135,8 @@ var setup = function(){
 - ## Refactoring:
   - Plugin architecture
     - DONE basic structure
-    - plugin handler sequencing (see: `.setup(..)`)
-    - plugin handler canceling
+	- plugin handler sequencing (see: `<editor>.setup(..)`)
+	- DONE plugin handler canceling (see: `<editor>.runPlugins(..)`)
   - DONE Item parser (`.__code2html__(..)`)
     - DONE split out
     - DONE define a way to extend/stack parsers
@@ -151,7 +155,7 @@ var setup = function(){
 	- `<block>.get() -> <block>`
   - Docs
   -
-- ## TEST
+- ## Docs
   - ### Controls
     - ASAP: these need updating...
     - | Key        | Action                       |

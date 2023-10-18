@@ -38,6 +38,41 @@ function clickPoint(x,y){
 //*/
 
 
+var getCharOffset = function(elem, x, y, c){
+	c = c ?? 0
+	var r = document.createRange()
+	for(var e of [...elem.childNodes]){
+		if(e instanceof Text){
+			for(var i=0; i < e.length; i++){
+				r.setStart(e, i)
+				r.setEnd(e, i)
+				var b = r.getBoundingClientRect()
+				// found target...
+				if(b.x >= x 
+						&& b.y <= y 
+						&& b.bottom >= y){
+					return c + i } }
+			c += i
+
+		} else {
+			var res = getCharOffset(e, x, y, c)
+			if(!(res instanceof Array)){
+				return res } 
+			;[c, res] = res } }
+	return arguments.length > 3 ?
+		[c, null]
+		: null }
+var getMarkdownOffset = function(markdown, text, i){
+	i = i ?? text.length
+	var m = 0
+	// walk both strings skipping/counting non-matching stuff...
+	for(var n=0; n < i; n++, m++){
+		var c = text[n]
+		while(c != markdown[m]){
+			m++ } }
+	return m - n }
+
+
 
 //---------------------------------------------------------------------
 // Plugins...
@@ -205,6 +240,7 @@ var tasks = {
 		/^(.*)\s*(?<!\\)DONE\s*$/m,
 	],
 
+	// State...
 	updateStatus: function(editor, node){
 		node = editor.get(node)
 		if(node == null){
@@ -234,7 +270,7 @@ var tasks = {
 		for(var e of [...editor.outline.querySelectorAll('.block>.view .completion')]){
 			this.updateStatus(editor, e) }
 		return this },
-
+	// Checkboxes...
 	getCheckbox: function(editor, elem, offset=0){
 		elem = elem 
 			?? editor.get()
@@ -318,7 +354,7 @@ var tasks = {
 		return node },
 	prevCheckbox: function(editor, node='focused', offset=-1){
 		return this.nextCheckbox(editor, node, offset) },
-
+	// DONE...
 	toggleDone: function(editor, elem){
 		var node = editor.get(elem)
 		if(node == null){
@@ -1261,6 +1297,21 @@ var Outline = {
 		for(var elem of [...outline.querySelectorAll('textarea')]){
 			elem.autoUpdateSize() } 
 		// click...
+		// XXX revise...
+		// XXX tap support...
+		outline.addEventListener('mousedown', 
+			function(evt){
+				var elem = evt.target
+				// correct offset in editor...
+				if(elem.classList.contains('code') && document.activeElement !== elem){
+					var view = that.get(elem).querySelector('.view')
+					var c = getCharOffset(view, evt.clientX, evt.clientY)
+					if(c != null){
+						evt.preventDefault()
+						var m = getMarkdownOffset(elem.value, view.innerText, c)
+						elem.focus()
+						elem.selectionStart = c + m
+						elem.selectionEnd = c + m } } })
 		outline.addEventListener('click', 
 			function(evt){
 				var elem = evt.target
@@ -1294,7 +1345,7 @@ var Outline = {
 					} }
 
 				// edit of focus...
-				// NOTE: this is usefull if element text is hidden but the 
+				// NOTE: this is useful if element text is hidden but the 
 				// 		frame is still visible...
 				if(elem.classList.contains('block')){
 					elem.querySelector('.code').focus() }
