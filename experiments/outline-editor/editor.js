@@ -199,7 +199,6 @@ var quoted = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
-// XXX add actions...
 var tasks = {
 	__proto__: plugin,
 
@@ -233,6 +232,89 @@ var tasks = {
 			this.updateStatus(editor, e) }
 		return this },
 
+	getCheckbox: function(editor, elem, offset=0){
+		elem = elem 
+			?? editor.get()
+		if(elem == null 
+				|| (offset == 0
+					&& elem.type == 'checkbox')){
+			return elem }
+		var node = editor.get(elem)
+		var view = node.querySelector('.view')
+		var cur = view.querySelector('input[type=checkbox].selected') 
+			?? view.querySelector('input[type=checkbox]') 
+		if(offset == 0 && cur == null){
+			return}
+		var checkboxes = [...editor.outline.querySelectorAll('.view input[type=checkbox]')]
+		if(checkboxes.length == 0){
+			return }
+		// no checkbox in node -> get closest to cur in offset direction...
+		if(cur == null){
+			var nodes = [...editor.outline.querySelectorAll('.block')]
+			var checkbox_nodes = checkboxes
+				.map(function(e){ 
+					return editor.get(e) })
+			var i = nodes.indexOf(node)
+			var p, n
+			for(var c of checkbox_nodes){
+				p = n
+				var j = nodes.indexOf(c)
+				if(j >= i){
+					n = j
+					break } }
+			cur = offset < 0 ?
+				nodes[p] 
+				: nodes[n] }
+		var elem = cur == null ?
+			checkboxes.at(
+				offset > 0 ? 
+					offset -1 
+					: offset)
+			: checkboxes.at(
+				(checkboxes.indexOf(cur) + offset) % checkboxes.length)
+		return elem },
+	updateCheckbox: function(editor, elem){
+		elem = this.getCheckbox(editor, elem)
+		var node = editor.get(elem)
+		var text = node.querySelector('.code')
+		// get the checkbox order...
+		var i = [...node.querySelectorAll('input[type=checkbox]')].indexOf(elem)
+		var to = elem.checked ?
+			'[X]'
+			: '[_]'
+		var toggle = function(m){
+			return i-- == 0 ?
+				to
+				: m }
+		text.value = text.value.replace(/\[[Xx_]\]/g, toggle) 
+		return elem },
+	toggleCheckbox: function(editor, checkbox, offset){
+		checkbox = this.getCheckbox(editor, checkbox, offset)
+		if(checkbox){
+			checkbox.checked = !checkbox.checked
+			this.updateCheckbox(editor, checkbox) }
+		return checkbox },
+	selectCheckbox: function(editor, checkbox, offset){
+		checkbox = this.getCheckbox(editor, checkbox, offset)
+		if(checkbox == null){
+			return }
+		var checkboxes = editor.get(checkbox)
+			.querySelector('.view')
+				.querySelectorAll('input[type=checkbox]')
+		if(checkboxes.length == 0){
+			return }
+		for(var c of checkboxes){
+			c.classList.remove('selected') }
+		checkbox.classList.add('selected')
+		editor.show(checkbox)
+		return checkbox },
+	nextCheckbox: function(editor, node='focused', offset=1){
+		node = this.selectCheckbox(editor, node, offset)
+		editor.focus(node)
+		return node },
+	prevCheckbox: function(editor, node='focused', offset=-1){
+		return this.nextCheckbox(editor, node, offset) },
+
 	__setup__: function(editor){
 		return this.updateAll(editor) },
 	__parse__: function(text, editor, elem){
@@ -252,25 +334,20 @@ var tasks = {
 			// completion...
 			// XXX add support for being like a todo checkbox...
 			.replace(/(?<!\\)\[[%]\]/gm, '<span class="completion"></span>') },
-	__editedcode__: function(evt, editor, node){
-		return this.updateBranch(editor, node) },
+	__focusin__: function(evt, editor, elem){
+		elem.classList.contains('block')
+			&& this.selectCheckbox(editor, elem) },
+	__editedcode__: function(evt, editor, elem){
+		this.updateBranch(editor, elem) 
+		this.selectCheckbox(editor, elem) },
 	__click__: function(evt, editor, elem){
 		// toggle checkbox...
 		if(elem.type == 'checkbox'){
 			var node = editor.get(elem)
-			var text = node.querySelector('.code')
-			// get the checkbox order...
-			var i = [...node.querySelectorAll('input[type=checkbox]')].indexOf(elem)
-			var to = elem.checked ?
-				'[X]'
-				: '[_]'
-			var toggle = function(m){
-				return i-- == 0 ?
-					to
-					: m }
-			text.value = text.value.replace(/\[[Xx_]\]/g, toggle) 
-			// update status...
-			this.updateBranch(editor, node) } 
+			this.updateCheckbox(editor, elem)
+			this.updateBranch(editor, node) 
+			this.selectCheckbox(editor, elem) 
+			node.focus() } 
 		return this },
 }
 
@@ -992,6 +1069,10 @@ var Outline = {
 					edited.selectionStart = 
 						edited.selectionEnd = edited.value.length + 1 }
 				return }
+			if(evt.ctrlKey){
+				evt.preventDefault()
+				tasks.prevCheckbox(this)
+				return }
 			;((this.left_key_collapses 
 						|| evt.shiftKey)
 					&& this.get().getAttribute('collapsed') == null
@@ -1008,6 +1089,10 @@ var Outline = {
 					edited = this.focus('edited', 'next') 
 					edited.selectionStart = 
 						edited.selectionEnd = 0 }
+				return }
+			if(evt.ctrlKey){
+				evt.preventDefault()
+				tasks.nextCheckbox(this)
 				return }
 			if(this.right_key_expands){
 				this.toggleCollapse(false) 
@@ -1126,10 +1211,14 @@ var Outline = {
 			if(this.get('edited') != null){
 				return }
 			evt.preventDefault()
+			tasks.toggleCheckbox(this)
+			/* XXX selection...
 			var focused = this.get()
 			focused.getAttribute('selected') != null ?
 				focused.removeAttribute('selected')
-				: focused.setAttribute('selected', '') },
+				: focused.setAttribute('selected', '') 
+			//*/
+		},
 	},
 
 	setup: function(dom){

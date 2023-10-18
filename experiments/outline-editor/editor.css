@@ -462,6 +462,14 @@ editor .outline .block:focus {
 	/* NOTE: this appears to be needed for the em sizes above to work correctly */
 	font-size: 1em;
 }
+.editor .outline .block.check.focused>.view input[type=checkbox].selected,
+.editor .outline .block.todo.focused>.view input[type=checkbox].selected {
+	outline: solid 0.2em silver;
+}
+.editor .outline .block.check:focus>.view input[type=checkbox].selected,
+.editor .outline .block.todo:focus>.view input[type=checkbox].selected {
+	outline: solid 0.2em gray;
+}
 .editor .outline .block.todo>.view input[type=checkbox]:first-child {
 	margin-left: calc(
 		-1 * var(--checkbox-size)

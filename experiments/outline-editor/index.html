@@ -47,10 +47,6 @@ var setup = function(){
   - BUG: last node seems to get trash tags added to it's end...
   -
 - ## ToDo:
-  - ASAP: checkbox navigation via `alt-<arrow>`
-    - _might be a good idea to include also TODO/DONE navigation -- not yet sure how to mark undone blocks (i.e. the ones marked with TODO in Logseg)..._
-    - toggle with `space`
-    - navigation auto-selects first checkbox
   - ASAP: scroll into view is bad...
   - ASAP: mobile browsers behave quite chaotically ignoring parts of the styling...
   - ASAP: need to reach checkboxes via keyboard
@@ -110,6 +106,11 @@ var setup = function(){
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
   - empty item height is a bit off...
+  - DONE checkbox navigation via `alt-<arrow>`
+	collapsed:: true
+    - _might be a good idea to include also TODO/DONE navigation -- not yet sure how to mark undone blocks (i.e. the ones marked with TODO in Logseg)..._
+    - toggle with `space`
+    - navigation auto-selects first checkbox
   - DONE editor: backsapce/del at start/end of a block should join it with prev/next
   - DONE editor: pressing enter in text edit mode should split text into two blocks
   - DONE editor: shifting nodes up/down
@@ -166,6 +167,9 @@ var setup = function(){
       | s-pgdown   | shift node down              |
       | s-left     | collapse node                |
       | s-right    | expand node                  |
+      | c-left     | prev checkbox                | 
+      | c-right    | next checkbox                | 
+      | space      | toggle current checkbox      |
       | enter      | normal mode: edit node       |
       |            | edit mode: create node below |
       | esc        | exit edit mode               | 
