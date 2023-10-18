@@ -111,8 +111,6 @@ var blocks = {
 			.replace(/^\s*(?<!\\)>\s+(.*)$/m, this.style(editor, elem, 'quote'))
 			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, this.style(editor, elem, 'comment'))
 			.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/m, this.style(editor, elem, 'NOTE'))
-			.replace(/^\s*(?<!\\)DONE\s+(.*)$/m, this.style(editor, elem, 'DONE'))
-			.replace(/^(.*)\s*(?<!\\)DONE\s*$/m, this.style(editor, elem, 'DONE'))
 			.replace(/^\s*(?<!\\)XXX\s+(.*)$/m, this.style(editor, elem, 'XXX'))
 			.replace(/^(.*)\s*(?<!\\)XXX$/m, this.style(editor, elem, 'XXX')) } ,
 }
@@ -201,6 +199,11 @@ var quoted = {
 
 var tasks = {
 	__proto__: plugin,
+
+	done_patterns: [
+		/^\s*(?<!\\)DONE\s+(.*)$/m,
+		/^(.*)\s*(?<!\\)DONE\s*$/m,
+	],
 
 	updateStatus: function(editor, node){
 		node = editor.get(node)
@@ -316,9 +319,36 @@ var tasks = {
 	prevCheckbox: function(editor, node='focused', offset=-1){
 		return this.nextCheckbox(editor, node, offset) },
 
+	toggleDone: function(editor, elem){
+		var node = editor.get(elem)
+		if(node == null){
+			return }
+		var text = node.querySelector('.code')
+		var value = text.value
+		var s = text.selectionStart
+		var e = text.selectionEnd
+		var l = text.value.length
+		if(this.done_patterns
+				.reduce(function(res, p){ 
+					return res 
+						|| p.test(text.value) } , false)){
+			for(var p of this.done_patterns){
+				value = value.replace(p, '$1') }
+		} else {
+			value = 'DONE ' + value }
+		text.value = value
+		text.selectionStart = s + (value.length - l)
+		text.selectionEnd = e + (value.length - l)
+		editor.update(node)
+		return node },
+
 	__setup__: function(editor){
 		return this.updateAllStatus(editor) },
 	__parse__: function(text, editor, elem){
+		// handle done..
+		for(var p of this.done_patterns){
+			test = text
+				.replace(p, this.style(editor, elem, 'DONE')) }
 		return text
 			// block checkboxes...
 			// NOTE: these are separate as we need to align block text 
@@ -1204,22 +1234,18 @@ var Outline = {
 				this.remove(edited)
 				return } },
 
-		// select...
-		// XXX add:
-		// 		ctrl-A
-		// 		ctrl-D
+		d: function(evt){
+			// toggle done...
+			if(evt.ctrlKey){
+				evt.preventDefault()
+				tasks.toggleDone(this) } },
+
+		// toggle checkbox...
 		' ': function(evt){
 			if(this.get('edited') != null){
 				return }
 			evt.preventDefault()
-			tasks.toggleCheckbox(this)
-			/* XXX selection...
-			var focused = this.get()
-			focused.getAttribute('selected') != null ?
-				focused.removeAttribute('selected')
-				: focused.setAttribute('selected', '') 
-			//*/
-		},
+			tasks.toggleCheckbox(this) },
 	},
 
 	setup: function(dom){
