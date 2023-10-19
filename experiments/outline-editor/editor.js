@@ -87,7 +87,7 @@ var getMarkdownOffset = function(markdown, text, i){
 	i = i ?? text.length
 	var m = 0
 	// walk both strings skipping/counting non-matching stuff...
-	for(var n=0; n < i; n++, m++){
+	for(var n=0; n <= i; n++, m++){
 		var c = text[n]
 		var p = m
 		// walk to next match...
