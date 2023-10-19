@@ -318,28 +318,37 @@ editor .outline .block:focus {
 /*---------------------------------------------------------- List ---*/
 
 .editor .outline .list-item>.view:before,
-.editor .outline .list>.children>.block>.view:not(:empty):before {
+.editor .outline .list>.children>.block>.view:before {
 	content: "◼";
 	color: gray;
 }
 .editor .outline 
 		.list>.children
-		>.list>.children>.block>.view:not(:empty):before {
+		>.list>.children>.block>.view:before {
 	content: "●";
 }
 .editor .outline 
 		.list>.children
 		>.list>.children
-		>.list>.children>.block>.view:not(:empty):before {
+		>.list>.children>.block>.view:before {
 	content: "○";
 }
 .editor .outline 
 		.list>.children
 		>.list>.children
 		>.list>.children
-		>.list>.children>.block>.view:not(:empty):before {
+		>.list>.children>.block>.view:before {
 	content: "▪";
 }
+/* hide bullets on empty nodes unless they are edited... */
+.editor .outline .list>.children>.block>.code:not(:focus)+.view:empty:before {
+	content: "";
+}
+/* hide bullets on empty nodes... *//*
+.editor .outline .list>.children>.block>.view:empty:before {
+	content: "";
+}
+*/
 
 
 /*------------------------------------------------ Numbered lists ---*/

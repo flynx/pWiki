@@ -68,7 +68,6 @@ var setup = function(){
       code
       ```
     - _bullet should be either in the middle of the block or at the first line of code (preferred)..._
-  - show list bullet if node is empty but edited... (???)
   - editor as a custom element...
   - Nerd fonts (option???)
   - multiple node selection
@@ -79,6 +78,7 @@ var setup = function(){
     - indent/deindent
     - edit node
   - auto-shift done blocks to the end of siblings... (option?)
+    - ...or should this be `sort:: done` -- i.e. sort children by done status??
   - FEATURE? block templates...
     collapsed:: true
 	- something like: `TPL: [_] <editable/> -- <editable/>`
@@ -100,6 +100,9 @@ var setup = function(){
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
   - empty item height is a bit off...
+  - DONE show list bullet if node is empty but edited...
+    collapsed:: true
+    - _...not sure which is best, so both options are available, see: `editor.css`_
   - DONE Q: can we get the caret line in a textarea???
     collapsed:: true
     - _...this will fix a lot of issues with moving between blocks in edit mode..._
@@ -216,7 +219,6 @@ var setup = function(){
             - z
           - c
 	  - > quote
-        - ASAP edit mode bullet is off...
       - Notes
 		  - NOTE: a note text
           - NOTE:
@@ -225,7 +227,7 @@ var setup = function(){
 	  - // C-style comment
 	  - ; ASM-style comment
 	  - XXX Highlight
-      - DONE Done
+      - DONE Done (toggled via: `ctrl-d`)
     - Basic inline *bold*, _italic_ and ~striked~
     - Marking ==text==
     - Code:
@@ -247,6 +249,7 @@ var setup = function(){
             _(clicking the checkbox updates the item)_
 	      - [X] done item
 	      - [_] we can also add inline [x] checkboxes and states: [%]
+        - navigating checkboxes in view mode can be done via `ctrl-left` / `ctrl-right` and toggling is done via `space`
 	- links
       - [example](about:blank)
       - https://example.com
