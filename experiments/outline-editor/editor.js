@@ -6,6 +6,7 @@
 
 
 //---------------------------------------------------------------------
+// Helpers...
 
 // XXX do a caret api...
 
@@ -44,7 +45,15 @@ function clickPoint(x,y){
 // box corresponds the to desired coordinates. This accounts for nested 
 // elements.
 //
-// XXX might be a good idea to tweak this just a bit (1/2 letter) to the left...
+// XXX it would be a better idea to do a binary search instead of a liner 
+// 		pass... but at this point this is not critical (unless we get 
+// 		gigantic blocks)
+// XXX this misbehaves on boondies between text/node elements...
+// 		Example:
+// 			'# Heading with _Italics_'
+// 			  ^             ^
+// 			clicking in the marked areas will either land the cursor at 
+// 			the last char of one block or after the first in the second...
 // XXX HACK -- is there a better way to do this???
 var getCharOffset = function(elem, x, y, c){
 	c = c ?? 0
@@ -52,15 +61,20 @@ var getCharOffset = function(elem, x, y, c){
 	for(var e of [...elem.childNodes]){
 		// text node...
 		if(e instanceof Text){
-			for(var i=0; i < e.length; i++){
+			var prev, b
+			for(var i=0; i <= e.length; i++){
 				r.setStart(e, i)
 				r.setEnd(e, i)
-				var b = r.getBoundingClientRect()
+				prev = b
+				b = r.getBoundingClientRect()
 				// found target...
 				if(b.x >= x 
 						&& b.y <= y 
 						&& b.bottom >= y){
-					return c + i } }
+					// get the closest gap between chars to the click...
+					return Math.abs(b.x - x) <= Math.abs(prev.x - x) ?
+						c + i
+						: c + i - 1 } }
 			c += i
 		// html node...
 		} else {
@@ -1341,6 +1355,7 @@ var Outline = {
 						elem.selectionEnd = elem.value.length 
 					} else {
 						var m = getMarkdownOffset(elem.value, view.innerText, c)
+						console.log('---', c, m)
 						elem.focus()
 						elem.selectionStart = c + m
 						elem.selectionEnd = c + m } } })
