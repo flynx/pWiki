@@ -33,7 +33,7 @@ var setup = function(){
 <body onload="setup()">
 <div class="editor">
 	<!-- code -->
-	<pre class="code">
+	<textarea class="code">
 - # Outline editor prototype
   - An outline-based markdown editor experiment
   - ### Infuences::
@@ -45,13 +45,11 @@ var setup = function(){
   - 
 - ## Bugs:
   - BUG: editor: FF seems to update the style every other key press -- should be live...
-  - BUG: last node seems to get trash tags added to it's end...
   -
 - ## ToDo:
   - ASAP: scroll into view is bad...
   - ASAP: mobile browsers behave quite chaotically ignoring parts of the styling...
-  - ASAP: `getCharOffset(..)` needs more tuning...
-    - gaps between nested nodes and text are off -- see code for notes...
+  - ASAP: call `.sync()` on all changes...
   - FEATURE: read-only mode
   - export html
     - embed css
@@ -278,7 +276,7 @@ var setup = function(){
       - This is a set
         text lines
       - Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text Lots of text 
-	- </pre>
+	- </textarea>
 	<!-- outline -->
 	<div class="outline"></div>
 	<!-- toolbar (optional) -->

@@ -48,12 +48,6 @@ function clickPoint(x,y){
 // XXX it would be a better idea to do a binary search instead of a liner 
 // 		pass... but at this point this is not critical (unless we get 
 // 		gigantic blocks)
-// XXX this misbehaves on boondies between text/node elements...
-// 		Example:
-// 			'# Heading with _Italics_'
-// 			  ^             ^
-// 			clicking in the marked areas will either land the cursor at 
-// 			the last char of one block or after the first in the second...
 // XXX HACK -- is there a better way to do this???
 var getCharOffset = function(elem, x, y, c){
 	c = c ?? 0
@@ -1121,8 +1115,8 @@ var Outline = {
 
 	sync: function(){
 		var code = this.code
-		code 
-			&& (code.innerHTML = this.text())
+		if(code){
+			code.value = this.text() }
 		return this },
 
 
@@ -1355,7 +1349,6 @@ var Outline = {
 						elem.selectionEnd = elem.value.length 
 					} else {
 						var m = getMarkdownOffset(elem.value, view.innerText, c)
-						console.log('---', c, m)
 						elem.focus()
 						elem.selectionStart = c + m
 						elem.selectionEnd = c + m } } })
@@ -1492,10 +1485,10 @@ var Outline = {
 		var code = this.code
 		if(code){
 			var t = Date.now()
-			this.load(code.innerHTML
+			this.load(code.value
 				.replace(/&lt;/g, '<')
 				.replace(/&gt;/g, '>')) 
-			console.log(`Parse: ${Date.now() - t}ms`)}
+			console.log(`Parse: ${Date.now() - t}ms`) }
 
 		this.runPlugins('__setup__', this)
 		
