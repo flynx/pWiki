@@ -565,11 +565,11 @@ var symbols = {
 	__parse__: function(text, editor, elem){
 		var that = this
 		return text
+			//* XXX
 			.replace(this.symbols_pattern, 
 				function(m){
 					return that.symbols[m] })
-			// characters...
-			/*
+			/*/
 			.replace(/(?<!\\)>>/gm, '»') 
 			.replace(/(?<!\\)<</gm, '«') 
 			.replace(/(?<![\\<])->/gm, '→') 
