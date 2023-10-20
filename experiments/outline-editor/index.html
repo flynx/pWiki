@@ -50,6 +50,24 @@ var setup = function(){
   - ASAP: scroll into view is bad...
   - ASAP: mobile browsers behave quite chaotically ignoring parts of the styling...
   - ASAP: call `.sync()` on all changes...
+  - pgup/pgdown/home/end buttons
+  - autofocus (option)
+  - copy/paste nodes/trees
+  - undo 
+    collapsed:: true
+    - delete node
+    - indent/deindent
+    - edit node
+  - auto-shift done blocks to the end of siblings... (option?)
+    - ...or should this be `sort:: done` -- i.e. sort children by done status??
+  - codeblock as a block
+    _...if only whitespace before/after clear it and style whole block..._
+	_...might be a good idea to do this with codeblock at start/end of block..._
+    - Code blocks and bullets:
+      - ```
+        code
+        ```
+      - _bullet should be either in the middle of the block or at the first line of code (preferred)..._
   - FEATURE: read-only mode
   - export html
     - embed css
@@ -59,25 +77,9 @@ var setup = function(){
   - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
   - table inline editing a-la code editing -- click cell and edit directly...
   - a way to make a block monospace (???)
-  - codeblock as a block
-    _...if only whitespace before/after clear it and style whole block..._
-	_...might be a good idea to do this with codeblock at start/end of block..._
-  - Code blocks and bullets:
-    - ```
-      code
-      ```
-    - _bullet should be either in the middle of the block or at the first line of code (preferred)..._
   - editor as a custom element...
   - Nerd fonts (option???)
   - multiple node selection
-  - copy/paste nodes/trees
-  - undo 
-    collapsed:: true
-    - delete node
-    - indent/deindent
-    - edit node
-  - auto-shift done blocks to the end of siblings... (option?)
-    - ...or should this be `sort:: done` -- i.e. sort children by done status??
   - FEATURE? block templates...
     collapsed:: true
 	- something like: `TPL: [_] <editable/> -- <editable/>`
