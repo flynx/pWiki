@@ -556,20 +556,24 @@ var symbols = {
 			'/!\\': '⚠', 
 	},
 	get symbols_pattern(){
-		return new RegExp(`(?<!\\\\)(${ 
-			Object.keys(this.symbols)
-				.join('|') 
-					.replace(/([\(\)\\\/])/g, '\\$1')
-		})`, 'g') },
+		return (this.symbols != null 
+				&& Object.keys(this.symbols).length > 0) ?
+			new RegExp(`(?<!\\\\)(${ 
+				Object.keys(this.symbols)
+					.join('|') 
+						.replace(/([\(\)\\\/])/g, '\\$1') })`, 'g') 
+			: undefined },
 
 	__parse__: function(text, editor, elem){
 		var that = this
-		return text
-			//* XXX
-			.replace(this.symbols_pattern, 
+		var p = this.symbols_pattern
+		text = p ?
+			text.replace(p,
 				function(m){
 					return that.symbols[m] })
-			/*/
+			: text
+		return text
+			/* XXX
 			.replace(/(?<!\\)>>/gm, '»') 
 			.replace(/(?<!\\)<</gm, '«') 
 			.replace(/(?<![\\<])->/gm, '→') 
