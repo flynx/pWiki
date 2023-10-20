@@ -51,12 +51,14 @@ var setup = function(){
   - ASAP: mobile browsers behave quite chaotically ignoring parts of the styling...
   - ASAP: call `.sync()` on all changes...
   - pgup/pgdown/home/end buttons
-  - autofocus (option)
+  - identify a block (index, id, ...)
+  - focus
+    - `<editor>.autofocus`
+	- `focused:: true` attr (`.text(..)`/`.json(..)`/`.load(..)`)
+	- focusing editor -> focus focused block
   - undo 
     collapsed:: true
-    - delete node
-    - indent/deindent
-    - edit node
+	- edit stack (position, action, ...)
   - auto-shift done blocks to the end of siblings... (option?)
     - ...or should this be `sort:: done` -- i.e. sort children by done status??
   - codeblock as a block
@@ -87,6 +89,7 @@ var setup = function(){
 	  - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
+  - cli
   - Q: do we use \\t for indent? (option???)
   - Q: persistent empty first/last node (a button to create a new node)?
   - Q: should list bullets be on the same level as nodes or offset??
