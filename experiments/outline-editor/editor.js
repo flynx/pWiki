@@ -538,16 +538,48 @@ var styling = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
+// 
 // XXX use ligatures for these???
 var symbols = {
 	__proto__: plugin,
 
+	// XXX use a single regex with handler func to do these...
+	symbols: {
+			'>>': '»', 
+			'<<': '«', 
+			'->': '→', 
+			'<-': '←', 
+			'=>': '⇒', 
+			'<=': '⇐', 
+			'(i)': '🛈', 
+			'(c)': '©', 
+			'/!\\': '⚠', 
+	},
+	get symbols_pattern(){
+		return new RegExp(`(?<!\\\\)(${ 
+			Object.keys(this.symbols)
+				.join('|') 
+					.replace(/([\(\)\\\/])/g, '\\$1')
+		})`, 'g') },
+
 	__parse__: function(text, editor, elem){
+		var that = this
 		return text
+			.replace(this.symbols_pattern, 
+				function(m){
+					return that.symbols[m] })
 			// characters...
+			/*
+			.replace(/(?<!\\)>>/gm, '»') 
+			.replace(/(?<!\\)<</gm, '«') 
+			.replace(/(?<![\\<])->/gm, '→') 
+			.replace(/(?<![\\<])=>/gm, '⇒') 
+			.replace(/(?<!\\)<-(?!>)/gm, '←') 
+			.replace(/(?<!\\)<=(?!>)/gm, '⇐') 
 			.replace(/(?<!\\)\(i\)/gm, '🛈') 
 			.replace(/(?<!\\)\(c\)/gm, '©') 
 			.replace(/(?<!\\)\/!\\/gm, '⚠') 
+			//*/
 			.replace(/(?<!\\)---(?!-)/gm, '&mdash;') 
 			.replace(/(?<!\\)--(?!-)/gm, '&ndash;') },
 }
