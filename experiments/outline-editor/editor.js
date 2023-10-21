@@ -538,22 +538,22 @@ var styling = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
-// 
 // XXX use ligatures for these???
 var symbols = {
 	__proto__: plugin,
 
 	// XXX use a single regex with handler func to do these...
 	symbols: {
-			'>>': '»', 
-			'<<': '«', 
-			'->': '→', 
-			'<-': '←', 
-			'=>': '⇒', 
-			'<=': '⇐', 
-			'(i)': '🛈', 
-			'(c)': '©', 
-			'/!\\': '⚠', 
+		// XXX think these are better handled by ligatures...
+		//'>>': '»', 
+		//'<<': '«', 
+		//'->': '→', 
+		//'<-': '←', 
+		//'=>': '⇒', 
+		//'<=': '⇐', 
+		'(i)': '🛈', 
+		'(c)': '©', 
+		'/!\\': '⚠', 
 	},
 	get symbols_pattern(){
 		return (this.symbols != null 
@@ -573,17 +573,6 @@ var symbols = {
 					return that.symbols[m] })
 			: text
 		return text
-			/* XXX
-			.replace(/(?<!\\)>>/gm, '»') 
-			.replace(/(?<!\\)<</gm, '«') 
-			.replace(/(?<![\\<])->/gm, '→') 
-			.replace(/(?<![\\<])=>/gm, '⇒') 
-			.replace(/(?<!\\)<-(?!>)/gm, '←') 
-			.replace(/(?<!\\)<=(?!>)/gm, '⇐') 
-			.replace(/(?<!\\)\(i\)/gm, '🛈') 
-			.replace(/(?<!\\)\(c\)/gm, '©') 
-			.replace(/(?<!\\)\/!\\/gm, '⚠') 
-			//*/
 			.replace(/(?<!\\)---(?!-)/gm, '&mdash;') 
 			.replace(/(?<!\\)--(?!-)/gm, '&ndash;') },
 }
@@ -614,7 +603,7 @@ var Outline = {
 	//
 	left_key_collapses: true,
 	right_key_expands: true,
-	code_update_interval: 5000,
+	change_interval: 1000,
 	tab_size: 4,
 	carot_jump_edge_then_block: false,
 
@@ -840,6 +829,33 @@ var Outline = {
 			text.autoUpdateSize() }
 		return node },
 
+	// This will prevent spamming the .sync() by limiting calls to one 
+	// per .change_interval
+	//
+	// XXX should we call plugin's __change__ live or every second???
+	__change_timeout: undefined,
+	__change_requested: false,
+	__change__: function(){
+		var that = this
+		this.__change_requested = true
+		if(this.__change_timeout){
+			return this }
+
+		// do the action...
+		if(this.__change_requested){
+			this.sync() 
+			this.runPlugins('__change__', that) 
+			this.__change_requested = false }
+
+		this.__change_timeout = setTimeout(
+			function(){
+				that.__change_timeout = undefined
+				that.__change_requested
+					&& that.__change__() }, 
+			that.change_interval || 1000) 
+		return this },
+
+	// edit...
 	indent: function(node='focused', indent=true){
 		// .indent(<indent>)
 		if(node === true || node === false){
@@ -857,12 +873,14 @@ var Outline = {
 					.slice(siblings.indexOf(cur)+1)
 				parent.after(cur)
 				children.length > 0
-					&& cur.lastChild.append(...children) }
+					&& cur.lastChild.append(...children) 
+				this.__change__() }
 		// indent...
 		} else {
 			var parent = siblings[siblings.indexOf(cur) - 1]
 			if(parent){
-				parent.lastChild.append(cur) } } 
+				parent.lastChild.append(cur) 
+				this.__change__()} } 
 		return cur },
 	deindent: function(node='focused', indent=false){
 		return this.indent(node, indent) },
@@ -886,15 +904,21 @@ var Outline = {
 			siblings[i+1].after(node) 
 			focused 
 				&& this.focus() }
+		this.__change__()
 		return this },
 	show: function(node='focused', offset){
 		var node = this.get(...arguments)
 		var outline = this.outline
 		var parent = node
+		var changes = false
 		do{
 			parent = parent.parentElement
+			changes = changes 
+				|| parent.getAttribute('collapsed') == ''
 			parent.removeAttribute('collapsed')
 		} while(parent !== outline)
+		changes
+			&& this.__change__()
 		return node },
 	toggleCollapse: function(node='focused', state='next'){
 		var that = this
@@ -920,6 +944,7 @@ var Outline = {
 			node.removeAttribute('collapsed')
 			for(var elem of [...node.querySelectorAll('textarea')]){
 				elem.updateSize() } }
+		this.__change__()
 		return node },
 	remove: function(node='focused', offset){
 		var elem = this.get(...arguments)
@@ -932,10 +957,11 @@ var Outline = {
 				: this.get(elem, 'next') }
 		elem?.remove()
 		next?.focus()
+		this.__change__()
 		return this },
-
 	clear: function(){
 		this.outline.innerText = ''
+		this.__change__()
 		return this },
 
 	// block serialization...
@@ -1486,17 +1512,9 @@ var Outline = {
 
 				that.runPlugins('__focusout__', evt, that, elem) })
 		// update .code...
-		var update_code_timeout
 		outline.addEventListener('change', 
 			function(evt){
-				if(update_code_timeout){
-					return }
-				update_code_timeout = setTimeout(
-					function(){
-						update_code_timeout = undefined
-						that.sync() 
-						that.runPlugins('__change__', evt, that) }, 
-					that.code_update_interval || 5000) })
+				this.__change__() })
 
 		// toolbar...
 		var toolbar = this.toolbar
