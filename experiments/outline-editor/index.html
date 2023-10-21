@@ -49,7 +49,6 @@ var setup = function(){
 - ## ToDo:
   - ASAP: scroll into view is bad...
   - ASAP: mobile browsers behave quite chaotically ignoring parts of the styling...
-  - ASAP: call `.sync()` on all changes...
   - pgup/pgdown/home/end buttons
   - identify a block (index, id, ...)
   - focus
@@ -104,6 +103,7 @@ var setup = function(){
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
   - empty item height is a bit off...
+  - DONE call `.sync()` on all changes...
   - DONE show list bullet if node is empty but edited...
     collapsed:: true
     - _...not sure which is best, so both options are available, see: `editor.css`_
@@ -264,7 +264,6 @@ var setup = function(){
         | 11 | 22 | 33 |
     - Symbols -- _should these be ligatures?_
       - (i), (c), /!\, ...
-	  - <-, ->, <=, =>, <<, >> _(not sure about these)_
 	  - -- and ---
     - 
   - ---
