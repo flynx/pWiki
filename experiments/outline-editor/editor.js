@@ -1365,14 +1365,17 @@ var Outline = {
 					: this.focus('next') } },
 
 		Home: function(evt){
-			if(this.get('edited')){
+			if(this.get('edited') 
+					&& !evt.ctrlKey){
 				return }
+			evt.preventDefault()
 			this.focus(0) },
 		End: function(evt){
-			if(this.get('edited')){
+			if(this.get('edited')
+					&& !evt.ctrlKey){
 				return }
+			evt.preventDefault()
 			this.focus(-1) },
-
 		PageUp: function(evt){
 			var edited = this.get('edited')
 			if(!edited 
