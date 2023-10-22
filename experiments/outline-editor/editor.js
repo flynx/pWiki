@@ -804,31 +804,6 @@ var Outline = {
 		elem?.focus()
 		return elem },
 
-	update: function(node='focused', data){
-		var node = this.get(node)
-		data ??= this.data(node, false)
-		typeof(data.collapsed) == 'boolean'
-			&& (data.collapsed ?
-				node.setAttribute('collapsed', '')
-				: node.removeAttribute('collapsed'))
-		if(data.text != null){
-			var text = node.querySelector('textarea')
-			var html = node.querySelector('span')
-			if(this.__code2html__){
-				// NOTE: we are ignoring the .collapsed attr here 
-				var parsed = this.__code2html__(data.text)
-				html.innerHTML = parsed.text
-				// heading...
-				node.classList.remove(...this.__styles)
-				parsed.style
-					&& node.classList.add(...parsed.style)
-			} else {
-				html.innerHTML = data.text }
-			text.value = data.text
-			// XXX this does not see to work until we click in the textarea...
-			text.autoUpdateSize() }
-		return node },
-
 	// This will prevent spamming the .sync() by limiting calls to one 
 	// per .change_interval
 	//
@@ -854,6 +829,55 @@ var Outline = {
 					&& that.__change__() }, 
 			that.change_interval || 1000) 
 		return this },
+
+	__block_attrs__: {
+		id: 'attr',
+		collapsed: 'attr',
+		focused: 'cls',
+	},
+	update: function(node='focused', data){
+		var node = this.get(node)
+		data ??= this.data(node, false)
+		for(var [attr, value] of Object.entries(data)){
+			if(attr == 'children'){
+				continue }
+
+			if(attr == 'text'){
+				var text = node.querySelector('textarea')
+				var html = node.querySelector('span')
+				if(this.__code2html__){
+					// NOTE: we are ignoring the .collapsed attr here 
+					var parsed = this.__code2html__(data.text)
+					html.innerHTML = parsed.text
+					// heading...
+					node.classList.remove(...this.__styles)
+					parsed.style
+						&& node.classList.add(...parsed.style)
+				} else {
+					html.innerHTML = data.text }
+				text.value = data.text
+				// XXX this does not seem to work until we click in the textarea...
+				text.autoUpdateSize()
+				continue }
+
+			var type = this.__block_attrs__[attr]
+			if(type == 'cls'){
+				value ?
+					node.classList.add(attr)
+					: node.classList.remove(attr) 
+
+			} else if(type == 'attr' 
+					|| type == undefined){
+				typeof(value) == 'boolean'?
+						(value ?
+							node.setAttribute(attr, '')
+							: node.removeAttribute(attr))
+					: (attr in data 
+							&& value != null) ?
+						node.setAttribute(attr, value)
+					: node.removeAttribute(attr) } }
+		this.__change__()
+		return node },
 
 	// edit...
 	indent: function(node='focused', indent=true){
@@ -1030,9 +1054,23 @@ var Outline = {
 	// serialization...
 	data: function(elem, deep=true){
 		elem = this.get(elem)	
+		// XXX move these to config...
+		var attrs = this.__block_attrs__
+		var cls_attrs = ['focused']
 		return {
 			text: elem.querySelector('textarea').value,
-			collapsed: elem.getAttribute('collapsed') != null,
+			...(Object.entries(attrs)
+				.reduce(function(res, [attr, type]){
+					if(type == 'attr'){
+						var val = elem.getAttribute(attr)
+						if(val != null){
+							res[attr] = val == '' ?
+								true
+								: val } }
+					if(type == 'cls'){
+						elem.classList.contains(attr)
+							&& (res[attr] = true) }
+					return res }, {})),
 			...(deep ? 
 				{children: this.json(elem)}
 				: {}),
@@ -1059,9 +1097,16 @@ var Outline = {
 				level +'- '
 					+ this.__code2text__(elem.text)
 						.replace(/\n/g, '\n'+ level +'  ') 
-					+ (elem.collapsed ?
-						'\n'+level+'  ' + 'collapsed:: true'
-						: ''),
+					// attrs... 
+					+ (Object.keys(elem)
+						.reduce(function(res, attr){
+							return (attr == 'text' 
+									|| attr == 'children') ?
+								res
+								: res 
+									+ (elem[attr] ?
+										'\n'+level+'  ' + `${ attr }:: ${ elem[attr] }`
+										: '') }, '')),
 				(elem.children 
 						&& elem.children.length > 0) ?
 					this.text(elem.children || [], indent, level+indent) 
@@ -1089,18 +1134,30 @@ var Outline = {
 				// same level...
 				if(sep.length == prev_sep.length){
 					var [_, block] = lst.splice(0, 2)
-					var collapsed = false
+					var attrs = {
+						collapsed: false,
+						focused: false,
+					}
 					block = block
+						// XXX generalize attr processing...
+						.replace(/\n\s*id::\s*(.*)\s*$/, 
+							function(_, value){
+								attrs.id = value
+								return '' })
+						.replace(/\n\s*focused::\s*(.*)\s*$/, 
+							function(_, value){
+								attrs.focused = value == 'true'
+								return '' })
 						.replace(/\n\s*collapsed::\s*(.*)\s*$/, 
 							function(_, value){
-								collapsed = value == 'true'
+								attrs.collapsed = value == 'true'
 								return '' })
 					parent.push({ 
 						text: that.__text2code__(block
 								// normalize indent...
 								.split(new RegExp('\n'+sep+'  ', 'g'))
 								.join('\n')),
-						collapsed,
+						...attrs,
 						children: [],
 					})
 				// indent...
@@ -1514,7 +1571,7 @@ var Outline = {
 		// update .code...
 		outline.addEventListener('change', 
 			function(evt){
-				this.__change__() })
+				that.__change__() })
 
 		// toolbar...
 		var toolbar = this.toolbar

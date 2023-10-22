@@ -47,6 +47,9 @@ var setup = function(){
   - BUG: editor: FF seems to update the style every other key press -- should be live...
   -
 - ## ToDo:
+  - ASAP: attrs in editor are not parsed correctly (see: [attrs](#attributes))
+  - ASAP: multiple attrs are not handled correctly (see: [attrs](#attributes))
+  - ASAP: style attrs (see: [attrs](#attributes))
   - ASAP: scroll into view is bad...
   - ASAP: mobile browsers behave quite chaotically ignoring parts of the styling...
   - pgup/pgdown/home/end buttons
@@ -266,6 +269,21 @@ var setup = function(){
     - Symbols -- _should these be ligatures?_
       - (i), (c), /!\, ...
 	  - -- and ---
+    - Attributes:
+	  id:: attributes
+	  - collapsed
+	    collapsed:: true
+		- a
+		- b
+		- c
+      - id
+	    id:: node-with-id
+	  - combined
+        id:: combined-several-ids
+		collapsed:: true
+		- a
+		- b
+		- c
     - 
   - ---
   - ### Playground for testing
