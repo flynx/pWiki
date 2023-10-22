@@ -1364,6 +1364,15 @@ var Outline = {
 					this.toggleCollapse(false)
 					: this.focus('next') } },
 
+		Home: function(evt){
+			if(this.get('edited')){
+				return }
+			this.focus(0) },
+		End: function(evt){
+			if(this.get('edited')){
+				return }
+			this.focus(-1) },
+
 		PageUp: function(evt){
 			var edited = this.get('edited')
 			if(!edited 
@@ -1379,7 +1388,7 @@ var Outline = {
 				evt.preventDefault()
 				this.shift('down') } },
 
-		// indent...
+		// indent..
 		Tab: function(evt){
 			evt.preventDefault()
 			var edited = this.get('edited')
