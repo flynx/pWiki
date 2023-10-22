@@ -211,6 +211,15 @@ editor .outline .block:focus {
 	justify-content: right;
 	left: calc(-1 * var(--size));
 }
+/* left indicator bullet */
+/* XXX not sure about this yet... */
+.editor .outline .block>.view:before {
+	content: "●";
+	color: rgba(0,0,0,0.07);
+}
+.editor .outline .block>.view:empty:before {
+	content: "";
+}
 /* right indicator (collapse/expand) */
 .editor .outline .block>.view:after {
 	color: silver;
