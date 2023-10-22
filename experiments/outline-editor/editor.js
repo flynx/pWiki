@@ -138,23 +138,25 @@ var plugin = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
+// XXX style attributes... 
 var attributes = {
 	__proto__: plugin,
 
-	__pre_parse__: function(text, editor, elem){
+	__parse__: function(text, editor, elem){
+		var skip = new Set([
+			'text', 
+			'focused',
+			'collapsed',
+			'id',
+			'children', 
+			'style',
+		])
 		return text 
-			// hidden attributes...
-			// XXX make this generic...
-			// collapsed...
-			.replace(/(\n|^)\s*collapsed::\s*(.*)\s*(\n|$)/, 
-				function(_, value){
-					elem.collapsed = value.trim() == 'true'
-					return '' })
-			// id...
-			.replace(/(\n|^)\s*id::\s*(.*)\s*(\n|$)/, 
-				function(_, value){
-					elem.id = value.trim()
-					return '' }) },
+			+ Object.entries(elem)
+				.reduce(function(res, [key, value]){
+					return skip.has(key) ?
+						res
+						: res + `<br>${key}: ${value}` }, '') },
 }
 
 
@@ -614,7 +616,6 @@ var Outline = {
 	// 	- parsing
 	// 	- event dropping
 	plugins: [
-		attributes,
 		blocks,
 		quoted,
 
@@ -622,6 +623,8 @@ var Outline = {
 		// 		treating '[_] ... [_]' as italic...
 		tasks,
 		styling,
+		// XXX
+		//attributes,
 		tables,
 		symbols,
 		//syntax,
@@ -838,26 +841,28 @@ var Outline = {
 	update: function(node='focused', data){
 		var node = this.get(node)
 		data ??= this.data(node, false)
-		for(var [attr, value] of Object.entries(data)){
-			if(attr == 'children'){
-				continue }
 
-			if(attr == 'text'){
-				var text = node.querySelector('textarea')
-				var html = node.querySelector('span')
-				if(this.__code2html__){
-					// NOTE: we are ignoring the .collapsed attr here 
-					var parsed = this.__code2html__(data.text)
-					html.innerHTML = parsed.text
-					// heading...
-					node.classList.remove(...this.__styles)
-					parsed.style
-						&& node.classList.add(...parsed.style)
-				} else {
-					html.innerHTML = data.text }
-				text.value = data.text
-				// XXX this does not seem to work until we click in the textarea...
-				text.autoUpdateSize()
+		var parsed = {}
+		if('text' in data){
+			var text = node.querySelector('textarea')
+			var html = node.querySelector('span')
+			if(this.__code2html__){
+				// NOTE: we are ignoring the .collapsed attr here 
+				parsed = this.__code2html__(data.text, {...data})
+				html.innerHTML = parsed.text
+				// heading...
+				node.classList.remove(...this.__styles)
+				parsed.style
+					&& node.classList.add(...parsed.style)
+				delete parsed.style
+			} else {
+				html.innerHTML = data.text }
+			text.value = data.text
+			// XXX this does not seem to work until we click in the textarea...
+			text.autoUpdateSize() }
+
+		for(var [attr, value] of Object.entries({...data, ...parsed})){
+			if(attr == 'children' || attr == 'text'){
 				continue }
 
 			var type = this.__block_attrs__[attr]
@@ -872,8 +877,7 @@ var Outline = {
 						(value ?
 							node.setAttribute(attr, '')
 							: node.removeAttribute(attr))
-					: (attr in data 
-							&& value != null) ?
+					: value != null ?
 						node.setAttribute(attr, value)
 					: node.removeAttribute(attr) } }
 		this.__change__()
@@ -988,16 +992,13 @@ var Outline = {
 		this.__change__()
 		return this },
 
-	// block serialization...
+	// block render...
 	// XXX need a way to filter input text...
 	// 		use-case: hidden attributes...
 	// NOTE: this is auto-populated by .__code2html__(..)
 	__styles: undefined,
-	__code2html__: function(code){
+	__code2html__: function(code, elem={}){
 		var that = this
-		var elem = {
-			collapsed: false,
-		}
 
 		// only whitespace -> keep element blank...
 		if(code.trim() == ''){
@@ -1012,6 +1013,9 @@ var Outline = {
 				post: '__post_parse__',
 			}[stage]
 			return that.threadPlugins(meth, text, that, elem) }
+
+		elem = this.parseBlockAttrs(code, elem)
+		code = elem.text
 
 		// stage: pre...
 		var text = run('pre', 
@@ -1115,6 +1119,54 @@ var Outline = {
 			.flat()
 			.join('\n') },
 
+	//
+	//	Parse attrs...
+	//	.parseBlockAttrs(<text>[, <elem>])
+	//		-> <elem>
+	//
+	//	Parse attrs keeping non-system attrs in .text...
+	//	.parseBlockAttrs(<text>, true[, <elem>])
+	//		-> <elem>
+	//
+	//	Parse attrs keeping all attrs in .text...
+	//	.parseBlockAttrs(<text>, 'all'[, <elem>])
+	//		-> <elem>
+	//
+	parseBlockAttrs: function(text, keep=false, elem={}){
+		if(typeof(keep) == 'object'){
+			elem = keep
+			keep = typeof(elem) == 'boolean' ?
+				elem
+				: false }
+		var system = this.__block_attrs__
+		var clean = text
+			// XXX for some reason changing the first group into (?<= .. )
+			// 		still eats up the whitespace...
+			// 		...putting the same pattern in a normal group and 
+			// 		returning it works fine...
+			//.replace(/(?<=[\n\h]*)(?:(?:\n|^)\s*\w*\s*::\s*[^\n]*\s*)*$/, 
+			.replace(/([\n\t ]*)(?:(?:\n|^)[\t ]*\w*[\t ]*::[\t ]*[^\n]*[\t ]*)+$/, 
+				function(match, ws){
+					var attrs = match
+						.trim()
+						.split(/(?:[\t ]*::[\t ]*|[\t ]*\n[\t ]*)/g)
+					while(attrs.length > 0){
+						var [name, val] = attrs.splice(0, 2)
+						elem[name] = 
+							val == 'true' ?
+				   				true
+							: val == 'false' ?
+								false
+							: val 
+						// keep non-system attrs...
+						if(keep 
+								&& !(name in system)){
+							ws += `\n${name}::${val}` } } 
+					return ws })
+		elem.text = keep == 'all' ? 
+			text 
+			: clean
+		return elem },
 	parse: function(text){
 		var that = this
 		text = text
@@ -1134,29 +1186,14 @@ var Outline = {
 				// same level...
 				if(sep.length == prev_sep.length){
 					var [_, block] = lst.splice(0, 2)
-					var attrs = {
+					var attrs = that.parseBlockAttrs(block)
+					attrs.text = that.__text2code__(attrs.text
+						// normalize indent...
+						.split(new RegExp('\n'+sep+'  ', 'g'))
+						.join('\n'))
+					parent.push({ 
 						collapsed: false,
 						focused: false,
-					}
-					block = block
-						// XXX generalize attr processing...
-						.replace(/\n\s*id::\s*(.*)\s*$/, 
-							function(_, value){
-								attrs.id = value
-								return '' })
-						.replace(/\n\s*focused::\s*(.*)\s*$/, 
-							function(_, value){
-								attrs.focused = value == 'true'
-								return '' })
-						.replace(/\n\s*collapsed::\s*(.*)\s*$/, 
-							function(_, value){
-								attrs.collapsed = value == 'true'
-								return '' })
-					parent.push({ 
-						text: that.__text2code__(block
-								// normalize indent...
-								.split(new RegExp('\n'+sep+'  ', 'g'))
-								.join('\n')),
 						...attrs,
 						children: [],
 					})
@@ -1190,6 +1227,7 @@ var Outline = {
 		children.classList.add('children')
 		children.setAttribute('tabindex', '-1')
 		block.append(code, html, children)
+
 		this.update(block, data)
 
 		// place...
@@ -1519,7 +1557,7 @@ var Outline = {
 				// update element state...
 				if(elem.classList.contains('code')){
 					setTimeout(function(){
-						that.update(elem.parentElement) 
+						that.update(elem.parentElement)
 						elem.updateSize() }, 0) }
 				// handle keyboard...
 				evt.key in that.keyboard 
@@ -1561,7 +1599,9 @@ var Outline = {
 				var elem = evt.target
 				if(elem.classList.contains('code')){
 					var block = elem.parentElement
-					that.update(block, { text: elem.value }) 
+					// clean out attrs...
+					elem.value = that.parseBlockAttrs(elem.value).text
+					that.update(block) 
 					// give the browser a chance to update the DOM...
 					// XXX revise...
 					setTimeout(function(){
