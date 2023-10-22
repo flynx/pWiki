@@ -47,6 +47,9 @@ var setup = function(){
   - BUG: editor: FF seems to update the style every other key press -- should be live...
   -
 - ## ToDo:
+  - ASAP: unify attr parsing
+    - _now duplicated in `.parse(..)` and `.__code2html__(..)`_
+	- might be a good idea to add a special text parse stage and use in on both branches...
   - ASAP: attrs in editor are not parsed correctly (see: [attrs](#attributes))
   - ASAP: multiple attrs are not handled correctly (see: [attrs](#attributes))
   - ASAP: style attrs (see: [attrs](#attributes))
@@ -92,6 +95,7 @@ var setup = function(){
 	  - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
+  - might be a good idea to split the editor into a generic and dom versions...
   - cli
   - Q: do we use \\t for indent? (option???)
   - Q: persistent empty first/last node (a button to create a new node)?
