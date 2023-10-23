@@ -75,9 +75,12 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(){
 
 	document.body.append(span)
 
+	var padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
 	var res = {
 		length: text.length,
-		lines: Math.floor(this.offsetHeight / carret.offsetHeight),
+		lines: Math.floor(
+			(this.offsetHeight - padding) 
+				/ carret.offsetHeight),
 		line: Math.floor(carret.offsetTop / carret.offsetHeight),
 		offset: offset,
 		offsetLeft: carret.offsetLeft,

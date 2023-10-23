@@ -1051,6 +1051,7 @@ var Outline = {
 
 
 	// crop...
+	// XXX add crop/path indicator...
 	__crop_stack: undefined,
 	crop: function(node='focused'){
 		var stack = this.__crop_stack ??= []
@@ -1328,6 +1329,7 @@ var Outline = {
 				cur[place](block)
 			: undefined }
 		return block },
+	// XXX see inside...
 	load: function(data){
 		var that = this
 		data = typeof(data) == 'string' ?
@@ -1348,9 +1350,12 @@ var Outline = {
 			.clear()
 			.outline
 				.append(...level(data))
+		//* XXX do we actually need this???
 		// update sizes of all the textareas (transparent)...
-		for(var e of [...this.outline.querySelectorAll('textarea')]){
-			e.updateSize() }
+		setTimeout(function(){
+			for(var e of [...that.outline.querySelectorAll('textarea')]){
+				e.updateSize() } }, 0)
+		//*/
 		// restore focus...
 		this.focus()
 		return this },
@@ -1374,7 +1379,6 @@ var Outline = {
 	right: function(){},
 
 	// XXX move the code here into methods/actions...
-	// XXX add scrollIntoView(..) to nav...
 	// XXX use keyboard.js...
 	keyboard: {
 		// vertical navigation...
@@ -1397,7 +1401,7 @@ var Outline = {
 			var edited = this.get('edited')
 			if(edited){
 				var {line, lines} = edited.getTextGeometry()
-				if(line == lines -1){
+				if(line == lines - 1){
 					evt.preventDefault() 
 					that.focus('edited', 'next') }
 			} else {
