@@ -31,7 +31,7 @@ var setup = function(){
 </script>
 </head>
 <body onload="setup()">
-<div class="editor">
+<div class="editor" autofocus>
 	<!-- code -->
 	<textarea class="code">
 - # Outline editor prototype
@@ -44,17 +44,21 @@ var setup = function(){
   - // Seems that I unintentionally implemented quite a chunk of the markdown spec ;)
   - 
 - ## Bugs:
+  focused:: true
   - BUG: editor: FF seems to update the style every other key press -- should be live...
   - BUG: scrolling into view needs tuning...
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
   -
 - ## ToDo:
   - pgup/pgdown/~home/end~ buttons
-  - identify a block (index, id, ...)
-  - FEATURE: "crop" -- view block tree separately...
+  - identify a block
+    - DONE index (flat)
+	- DONE path (index)
+    - id
+	  - _the id attr is done, but we still need to get the node via id_
   - focus
-    - `<editor>.autofocus`
-	- `focused:: true` attr (`.text(..)`/`.json(..)`/`.load(..)`)
+    - DONE `<editor>.autofocus`
+	- DONE `focused:: true` attr (`.text(..)`/`.json(..)`/`.load(..)`)
 	- focusing editor -> focus focused block
   - undo 
     collapsed:: true
@@ -90,7 +94,11 @@ var setup = function(){
 	  - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
-  - might be a good idea to split the editor into a generic and dom versions...
+  - JSON API
+    - `.path(..)`
+  	- `.get(..)`
+  	- `.at(..)`
+	- ...
   - cli
   - Q: do we use \\t for indent? (option???)
   - Q: persistent empty first/last node (a button to create a new node)?
@@ -106,6 +114,7 @@ var setup = function(){
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
   - empty item height is a bit off...
+  - DONE FEATURE: "crop" -- view block tree separately...
   - DONE unify attr parsing
     collapsed:: true
     - _now duplicated in `.parse(..)` and `.__code2html__(..)`_

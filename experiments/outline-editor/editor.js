@@ -596,6 +596,33 @@ var escaping = {
 
 //---------------------------------------------------------------------
 
+var JSONOutline = {
+	json: undefined,
+
+	path: function(){},
+	get: function(){},
+	at: function(){},
+	focus: function(){},
+
+	indent: function(){},
+	deindent: function(){},
+	shift: function(){},
+	show: function(){},
+	toggleCollapse: function(){},
+	remove: function(){},
+	clear: function(){},
+
+	crom: function(){},
+	uncrop: function(){},
+
+	parseBlockAttrs: function(){},
+	parse: function(){},
+
+	data: function(){},
+	load: function(){},
+	text: function(){},
+}
+
 // XXX experiment with a concatinative model...
 // 		.get(..) -> Outline (view)
 var Outline = {
@@ -655,6 +682,15 @@ var Outline = {
 	get toolbar(){
 		return this.dom.querySelector('.toolbar') },
 
+
+	path: function(node='focused'){
+		var outline = this.outline
+		var path = []
+		var node = this.get(node)
+		while(node != outline){
+			path.unshift(this.get(node, 'siblings').indexOf(node))
+			node = this.get(node, 'parent') }
+		return path },
 
 	//
 	// 	.get([<offset>])
@@ -725,6 +761,11 @@ var Outline = {
 		;[node, edited] = 
 			typeof(node) == 'number' ?
 				[this.get('visible').at(node), 
+					edited]
+			: node instanceof Array ?
+				[node
+						.reduce(function(res, i){
+							return that.get(res, 'children')[i] }, outline),
 					edited]
 			: (node == 'outline' || node == 'root') ?
 				[outline, edited]
@@ -797,8 +838,10 @@ var Outline = {
 	at: function(index, nodes='visible'){
 		return this.get(nodes).at(index) },
 	focus: function(node='focused', offset){
-		var elem = this.get(...arguments)
-		elem?.focus()
+		var elem = this.get(...arguments) 
+			?? this.get(0)
+		elem
+			&& elem.focus()
 		return elem },
 	edit: function(node='focused', offset){
 		var elem = this.get(...arguments)
@@ -990,6 +1033,32 @@ var Outline = {
 	clear: function(){
 		this.outline.innerText = ''
 		this.__change__()
+		return this },
+
+
+	// crop...
+	__crop_stack: undefined,
+	crop: function(node='focused'){
+		var stack = this.__crop_stack ??= []
+		stack.push([this.json(), this.path()])
+		this.load(this.data())
+			.focus()
+		return this },
+	// XXX use JSON API...
+	uncrop: function(){
+		if(this.__crop_stack == null){
+			return this}
+		var [state, path] = this.__crop_stack.pop()
+		if(this.__crop_stack.length == 0){
+			this.__crop_stack = undefined }
+		// update state...
+		path
+			.slice(0, -1)
+			.reduce(function(res, i){
+				return res[i].children }, state)
+			.splice(path.at(-1), 1, ...this.json())
+		this.load(state)
+			.focus()
 		return this },
 
 	// block render...
@@ -1250,8 +1319,10 @@ var Outline = {
 	load: function(data){
 		var that = this
 		data = typeof(data) == 'string' ?
-			this.parse(data)
-			: data
+				this.parse(data)
+			: data instanceof Array ?
+				data
+			: [data]
 		// generate dom...
 		var level = function(lst){
 			return lst
@@ -1437,7 +1508,13 @@ var Outline = {
 			evt.preventDefault()
 			this.edit() },
 		Escape: function(evt){
-			this.focus() },
+			if(this.get('edited')){
+				this.focus() 
+			} else {
+				this.uncrop() } },
+		c: function(evt){
+			if(!this.get('edited')){
+				this.crop() } },
 
 		Delete: function(evt){
 			var edited = this.get('edited')
@@ -1654,6 +1731,10 @@ var Outline = {
 			console.log(`Parse: ${Date.now() - t}ms`) }
 
 		this.runPlugins('__setup__', this)
+
+		// autofocus...
+		if(this.dom.getAttribute('autofocus') != null){
+			this.focus() }
 		
 		return this },
 }
