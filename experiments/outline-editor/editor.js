@@ -1744,18 +1744,21 @@ var Outline = {
 				var elem = evt.target
 				if(that.runPlugins('__keydown__', evt, that, evt.target) !== true){
 					return }
-				// update element state...
-				if(elem.classList.contains('code')){
-					setTimeout(function(){
-						that.update(elem.parentElement)
-						elem.updateSize() }, 0) }
 				// handle keyboard...
 				evt.key in that.keyboard 
 					&& that.keyboard[evt.key].call(that, evt) })
 		// update code block...
 		outline.addEventListener('keyup', 
 			function(evt){
-				that.runPlugins('__keyup__', evt, that, evt.target) })
+				var elem = evt.target
+				// update element state...
+				if(elem.classList.contains('code')){
+					// NOTE: for some reason setting the timeout here to 0
+					// 		makes FF sometimes not see the updated text...
+					setTimeout(function(){
+						that.update(elem.parentElement)
+						elem.updateSize() }, 0) }
+				that.runPlugins('__keyup__', evt, that, elem) })
 
 		// toggle view/code of nodes...
 		outline.addEventListener('focusin', 
