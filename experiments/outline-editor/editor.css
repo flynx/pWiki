@@ -203,6 +203,7 @@ editor .outline .block:focus {
 
 	pointer-events: auto;
 
+	cursor: pointer;
 	background: transparent;
 }
 
