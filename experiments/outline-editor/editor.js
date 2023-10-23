@@ -1080,7 +1080,9 @@ var Outline = {
 		var that = this
 		var stack = this.__crop_stack ??= []
 		var path = this.path()
-		var header = this.path(path.slice(0,-1), 'text')
+		// XXX make this linkable...
+		var header = '/ '
+			+ this.path(path.slice(0,-1), 'text')
 				.map(function(text, i){
 					return `<span>${text.split(/\n/)[0]}</span>` })
 				.join(' / ')
@@ -1092,6 +1094,7 @@ var Outline = {
 		this.dom.classList.add('crop')
 		return this },
 	// XXX use JSON API...
+	// XXX add depth argument + 'all'
 	uncrop: function(){
 		if(this.__crop_stack == null){
 			return this}
