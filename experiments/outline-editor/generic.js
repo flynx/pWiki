@@ -76,6 +76,8 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(){
 	span.append(
 		text.slice(0, offset),
 		carret,
+		// NOTE: wee need the rest of the text for the carret to be typeset
+		// 		to the correct line...
 		text.slice(offset))
 
 	document.body.append(span)

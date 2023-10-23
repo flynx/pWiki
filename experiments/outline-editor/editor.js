@@ -1057,6 +1057,7 @@ var Outline = {
 		var stack = this.__crop_stack ??= []
 		stack.push([this.json(), this.path()])
 		this.load(this.data())
+		this.dom.classList.add('crop')
 		return this },
 	// XXX use JSON API...
 	uncrop: function(){
@@ -1064,7 +1065,8 @@ var Outline = {
 			return this}
 		var [state, path] = this.__crop_stack.pop()
 		if(this.__crop_stack.length == 0){
-			this.__crop_stack = undefined }
+			this.__crop_stack = undefined 
+			this.dom.classList.remove('crop') }
 		// update state...
 		path
 			.slice(0, -1)
