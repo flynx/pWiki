@@ -50,6 +50,7 @@
 .editor .children {
 }
 
+.editor .header,
 .editor .outline {
 	display: block;
 	position: relative;
@@ -67,6 +68,21 @@
 }
 .editor .outline:empty:hover:after {
 }
+
+/* XXX header */
+.editor .header {
+}
+.editor .header:empty {
+	display: none;
+}
+/* XXX needs more work... *//*
+.editor .header span {
+	display: inline;
+	max-width: 10rem;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+*/
 
 
 .editor .outline .block {

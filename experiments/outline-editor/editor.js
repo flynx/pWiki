@@ -675,6 +675,8 @@ var Outline = {
 		return value },
 
 
+	get header(){
+		return this.dom.querySelector('.header') },
 	get code(){
 		return this.dom.querySelector('.code') },
 	get outline(){
@@ -683,12 +685,20 @@ var Outline = {
 		return this.dom.querySelector('.toolbar') },
 
 
-	path: function(node='focused'){
+	path: function(node='focused', mode='index'){
+		if(['index', 'text', 'node'].includes(node)){
+			mode = node
+			node = 'focused' }
 		var outline = this.outline
 		var path = []
 		var node = this.get(node)
 		while(node != outline){
-			path.unshift(this.get(node, 'siblings').indexOf(node))
+			path.unshift(
+				mode == 'index' ?
+					this.get(node, 'siblings').indexOf(node)
+				: mode == 'text' ?
+					node.querySelector('.view').innerText
+				: node)
 			node = this.get(node, 'parent') }
 		return path },
 
@@ -1063,14 +1073,22 @@ var Outline = {
 		this.__change__()
 		return this },
 
-
 	// crop...
-	// XXX add crop/path indicator...
+	// XXX add crop-level/path indicator...
 	__crop_stack: undefined,
 	crop: function(node='focused'){
+		var that = this
 		var stack = this.__crop_stack ??= []
-		stack.push([this.json(), this.path()])
+		var path = this.path()
+		var header = this.path(path.slice(0,-1), 'text')
+				.map(function(text, i){
+					return `<span>${text.split(/\n/)[0]}</span>` })
+				.join(' / ')
+
+		stack.push([this.json(), path])
 		this.load(this.data())
+
+		this.header.innerHTML = header
 		this.dom.classList.add('crop')
 		return this },
 	// XXX use JSON API...
@@ -1080,6 +1098,7 @@ var Outline = {
 		var [state, path] = this.__crop_stack.pop()
 		if(this.__crop_stack.length == 0){
 			this.__crop_stack = undefined 
+			this.header.innerHTML = ''
 			this.dom.classList.remove('crop') }
 		// update state...
 		path
@@ -1087,7 +1106,9 @@ var Outline = {
 			.reduce(function(res, i){
 				return res[i].children }, state)
 			.splice(path.at(-1), 1, ...this.json())
+
 		this.load(state)
+
 		return this },
 
 	// block render...
