@@ -1462,19 +1462,29 @@ var Outline = {
 			evt.preventDefault()
 			this.focus(-1) },
 		PageUp: function(evt){
+			var that = this
 			var edited = this.get('edited')
-			if(!edited 
-					&& (evt.shiftKey 
-						|| evt.ctrlKey)){
+			if(edited){
+				return }
+			if(evt.shiftKey 
+					|| evt.ctrlKey){
 				evt.preventDefault()
-				this.shift('up') } },
+				this.shift('up') 
+			} else {
+				that.focus(
+					that.get('viewport')[0], 'prev') } },
 		PageDown: function(evt){
+			var that = this
 			var edited = this.get('edited')
-			if(!edited 
-					&& (evt.shiftKey 
-						|| evt.ctrlKey)){
+			if(edited){
+				return }
+			if(evt.shiftKey 
+					|| evt.ctrlKey){
 				evt.preventDefault()
-				this.shift('down') } },
+				this.shift('down') 
+			} else {
+				that.focus(
+					that.get('viewport').at(-1), 'next') } },
 
 		// indent..
 		Tab: function(evt){
