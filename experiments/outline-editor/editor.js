@@ -1471,8 +1471,11 @@ var Outline = {
 				evt.preventDefault()
 				this.shift('up') 
 			} else {
-				that.focus(
-					that.get('viewport')[0], 'prev') } },
+				var viewport = that.get('viewport')
+				viewport[0] === that.get(0) ?
+					that.focus(0)
+					: that.focus(
+						viewport[0], 'prev') } },
 		PageDown: function(evt){
 			var that = this
 			var edited = this.get('edited')
@@ -1483,8 +1486,11 @@ var Outline = {
 				evt.preventDefault()
 				this.shift('down') 
 			} else {
-				that.focus(
-					that.get('viewport').at(-1), 'next') } },
+				var viewport = that.get('viewport')
+				viewport.at(-1) === that.get(-1) ?
+					that.focus(-1)
+					: that.focus(
+						that.get('viewport').at(-1), 'next') } },
 
 		// indent..
 		Tab: function(evt){
