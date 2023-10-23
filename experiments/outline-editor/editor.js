@@ -855,13 +855,19 @@ var Outline = {
 		var elem = this.get(...arguments) 
 			?? this.get(0)
 		if(elem){
+			var cur = this.get()
+			var blocks = this.get('visible')
 			elem.focus({preventScroll: true})
 			;(elem.classList.contains('code') ?
 					elem
 					: elem.querySelector('.code'))
 				.scrollIntoView({
 					block: 'nearest', 
-					//behavior: 'smooth',
+					// smooth for long jumps and instant for short jumps...
+					behavior: (cur == null 
+							|| Math.abs(blocks.indexOf(cur) - blocks.indexOf(elem)) > 2) ?
+						'smooth'
+						: 'instant'
 				}) }
 		return elem },
 	edit: function(node='focused', offset){

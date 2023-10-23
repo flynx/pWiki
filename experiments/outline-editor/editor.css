@@ -74,6 +74,9 @@
 	outline: none;
 	border: none;
 }
+.editor.block-offsets .outline .block {
+	border-left: solid 1px silver;
+}
 .editor .outline .block .block {
 	margin-left: var(--item-indent);
 }
