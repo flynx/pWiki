@@ -51,15 +51,6 @@ var setup = function(){
   -
 - ## ToDo:
   - crop: show crop path (and depth)
-  - identify a block:
-    - DONE index (flat)
-	- DONE path (index)
-    - id
-	  - _the id attr is done, but we still need to get the node via id_
-  - focus:
-    - DONE `<editor>.autofocus`
-	- DONE `focused:: true` attr (`.text(..)`/`.json(..)`/`.load(..)`)
-	- focusing editor -> focus focused block
   - undo 
     collapsed:: true
 	- edit stack (position, action, ...)
@@ -88,9 +79,9 @@ var setup = function(){
   - Nerd fonts (option???)
   - multiple node selection
   - smooth scrolling
-    - _...this is more complicated that adding `behavior: "smooth"` to `.scrollIntoView(..)` as scrolling animation will get interrupted by next user input..._
-    - need to cancel animation of things are moving too fast...
-    - make this generic
+    - _...this is more complicated than adding `behavior: "smooth"` to `.scrollIntoView(..)` as scrolling animation will get interrupted by next user input..._
+    - need to cancel animation if things are moving too fast...
+    - make this generic (???)
   - FEATURE? block templates...
     collapsed:: true
     - something like: `TPL: [_] <editable/> -- <editable/>`
@@ -118,6 +109,18 @@ var setup = function(){
            block text
     - NOTE: this is only a problem if making list-items manually -- disable???
   - empty item height is a bit off...
+  - DONE over-travel pause -- when going fast over start/end stop...
+  - DONE focus:
+    collapsed:: true
+    - DONE `<editor>.autofocus`
+	- DONE `focused:: true` attr (`.text(..)`/`.json(..)`/`.load(..)`)
+	- DONE focusing editor -> focus focused block
+  - DONE identify a block:
+    collapsed:: true
+    - DONE index (flat)
+	- DONE path (index)
+    - DONE id
+	  - _the id attr is done, but we still need to get the node via id_
   - DONE pgup/pgdown/home/end buttons
   - DONE FEATURE: "crop" -- view block tree separately...
   - DONE unify attr parsing

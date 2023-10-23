@@ -1390,6 +1390,7 @@ var Outline = {
 
 	// XXX move the code here into methods/actions...
 	// XXX use keyboard.js...
+	__overtravel_timeout: undefined,
 	keyboard: {
 		// vertical navigation...
 		// XXX this is a bit hacky but it works -- the caret blinks at 
@@ -1397,6 +1398,18 @@ var Outline = {
 		// 		nice po prevent this...
 		ArrowUp: function(evt){
 			var that = this
+
+			// overtravel...
+			var overtravel = 
+				this.__overtravel_timeout != null 
+					&& this.get() === this.get(0)
+			this.__overtravel_timeout != null
+				&& clearTimeout(this.__overtravel_timeout)
+			this.__overtravel_timeout = setTimeout(function(){
+				that.__overtravel_timeout = undefined }, 100)
+			if(overtravel){
+				return }
+
 			var edited = this.get('edited')
 			if(edited){
 				var line = edited.getTextGeometry().line
@@ -1408,6 +1421,18 @@ var Outline = {
 				this.focus('focused', -1) } },
 		ArrowDown: function(evt){
 			var that = this
+
+			// overtravel...
+			var overtravel = 
+				this.__overtravel_timeout != null 
+					&& this.get() === this.get(-1)
+			this.__overtravel_timeout != null
+				&& clearTimeout(this.__overtravel_timeout)
+			this.__overtravel_timeout = setTimeout(function(){
+				that.__overtravel_timeout = undefined }, 100)
+			if(overtravel){
+				return }
+
 			var edited = this.get('edited')
 			if(edited){
 				var {line, lines} = edited.getTextGeometry()
@@ -1441,6 +1466,19 @@ var Outline = {
 				this.toggleCollapse(true)
 				: this.focus('parent') },
 		ArrowRight: function(evt){
+			var that = this
+
+			// overtravel...
+			var overtravel = 
+				this.__overtravel_timeout != null 
+					&& this.get() === this.get(-1)
+			this.__overtravel_timeout != null
+				&& clearTimeout(this.__overtravel_timeout)
+			this.__overtravel_timeout = setTimeout(function(){
+				that.__overtravel_timeout = undefined }, 100)
+			if(overtravel){
+				return }
+
 			var edited = this.get('edited')
 			if(edited){
 				// move caret to next element...
