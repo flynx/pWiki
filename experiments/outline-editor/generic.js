@@ -40,6 +40,7 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(){
 
 	// get the relevant styles...
 	var style = getComputedStyle(this)
+	var paddingV = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
 	var s = {}
 	for(var i=0; i < style.length; i++){
 		var k = style[i]
@@ -49,12 +50,11 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(){
 			s[k] = style[k] } }
 
 	var carret = document.createElement('span')
-	carret.innerText = '|'
+	carret.innerText = '|' 
 	carret.style.margin = '0px'
 	carret.style.padding = '0px'
 
 	var span = document.createElement('span')
-	span.innerText = text.slice(0, offset)
 	Object.assign(span.style, {
 		...s,
 
@@ -62,24 +62,28 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(){
 		display: 'block',
 		top: '-100%',
 		left: '-100%',
-		width: this.offsetWidth + 'px',
-		height: this.scrollHeight + 'px',
+		width: style.width,
+		height: style.height,
 
 		padding: style.padding,
+
+		boxSizing: style.boxSizing,
 
 		outline: 'solid 1px red',
 
 		pointerEvents: 'none',
 	})
-	span.append(carret)
+	span.append(
+		text.slice(0, offset),
+		carret,
+		text.slice(offset))
 
 	document.body.append(span)
 
-	var padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
 	var res = {
 		length: text.length,
 		lines: Math.floor(
-			(this.offsetHeight - padding) 
+			(this.offsetHeight - paddingV) 
 				/ carret.offsetHeight),
 		line: Math.floor(carret.offsetTop / carret.offsetHeight),
 		offset: offset,

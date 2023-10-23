@@ -67,7 +67,7 @@ var setup = function(){
     - ...or should this be `sort:: done` -- i.e. sort children by done status??
   - codeblock as a block
     _...if only whitespace before/after clear it and style whole block..._
-	_...might be a good idea to do this with codeblock at start/end of block..._
+    _...might be a good idea to do this with codeblock at start/end of block..._
     - Code blocks and bullets:
       - ```
         code
@@ -77,8 +77,8 @@ var setup = function(){
   - FEATURE: read-only mode
   - export html
     - embed css
-	- cleanup html
-	- generate ideomatic html (???)
+    - cleanup html
+    - generate ideomatic html (???)
   - style attrs (see: [attrs](#attributes))
   - FEATURE: `collapse-children:: true` block option -- when loading collapse all immediate children
   - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
@@ -93,9 +93,9 @@ var setup = function(){
     - make this generic
   - FEATURE? block templates...
     collapsed:: true
-	- something like: `TPL: [_] <editable/> -- <editable/>`
+    - something like: `TPL: [_] <editable/> -- <editable/>`
       - `TPL:` -- template marker
-	  - `<editable/>` -- field marker
+      - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
   - JSON API
@@ -123,7 +123,7 @@ var setup = function(){
   - DONE unify attr parsing
     collapsed:: true
     - _now duplicated in `.parse(..)` and `.__code2html__(..)`_
-	- might be a good idea to add a special text parse stage and use in on both branches...
+    - might be a good idea to add a special text parse stage and use in on both branches...
   - DONE attrs in editor are not parsed correctly (see: [attrs](#attributes))
   - DONE multiple attrs are not handled correctly (see: [attrs](#attributes))
   - DONE call `.sync()` on all changes...
@@ -140,7 +140,7 @@ var setup = function(){
     - _not sure how..._
   - DONE click to select/edit node must retain click position in text...
   - DONE checkbox navigation via `alt-<arrow>`
-	collapsed:: true
+    collapsed:: true
     - _might be a good idea to include also TODO/DONE navigation -- not yet sure how to mark undone blocks (i.e. the ones marked with TODO in Logseg)..._
     - toggle with `space`
     - navigation auto-selects first checkbox
@@ -166,8 +166,8 @@ var setup = function(){
 - ## Refactoring:
   - Plugin architecture
     - DONE basic structure
-	- plugin handler sequencing (see: `<editor>.setup(..)`)
-	- DONE plugin handler canceling (see: `<editor>.runPlugins(..)`)
+    - plugin handler sequencing (see: `<editor>.setup(..)`)
+    - DONE plugin handler canceling (see: `<editor>.runPlugins(..)`)
   - DONE Item parser (`.__code2html__(..)`)
     collapsed:: true
     - DONE split out
@@ -175,7 +175,7 @@ var setup = function(){
   - DONE Format parser/generator
     collapsed:: true
     - DONE split out
-	- DONE define api (see: `<editor>.__code2text__(..) / <editor>.__text2code__(..)`)
+    - DONE define api (see: `<editor>.__code2text__(..) / <editor>.__text2code__(..)`)
   - CSS
     - separate out settings
     - separate out theming
@@ -245,21 +245,20 @@ var setup = function(){
             - y
             - z
           - c
-	  - > quote
-	    id::quote-example
+      - > quote
       - Notes
-		  - NOTE: a note text
+          - NOTE: a note text
           - NOTE:
             - a root note can also be empty
             - click on the outer border to edit root
-	  - // C-style comment
-	  - ; ASM-style comment
-	  - XXX Highlight
+      - // C-style comment
+      - ; ASM-style comment
+      - XXX Highlight
       - DONE Done (toggled via: `ctrl-d`)
     - Basic inline *bold*, _italic_ and ~striked~
     - Marking ==text==
     - Code:
-	  - Inline quoting `html <b>code</b>`
+      - Inline quoting `html <b>code</b>`
       - code blocks
         ```javascript
         var text = 'Hello, world!'
