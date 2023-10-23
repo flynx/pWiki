@@ -693,7 +693,11 @@ var Outline = {
 		return path },
 
 	//
-	// 	.get([<offset>])
+	// 	.get(<index>)[, <offset>]
+	// 	.get(<path>[, <offset>])
+	// 	.get(<id>[, <offset>)
+	// 		-> <node>
+	//
 	// 	.get('focused'[, <offset>])
 	// 		-> <node>
 	//
@@ -735,6 +739,10 @@ var Outline = {
 				-1
 			: offset
 		var outline = this.outline
+
+		// id...
+		if(typeof(node) == 'string' && node[0] == '#'){
+			node = outline.querySelector(node) }
 
 		// root nodes...
 		if(node == 'top'){
