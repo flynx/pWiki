@@ -87,6 +87,10 @@ var setup = function(){
   - editor as a custom element...
   - Nerd fonts (option???)
   - multiple node selection
+  - smooth scrolling
+    - _...this is more complicated that adding `behavior: "smooth"` to `.scrollIntoView(..)` as scrolling animation will get interrupted by next user input..._
+    - need to cancel animation of things are moving too fast...
+    - make this generic
   - FEATURE? block templates...
     collapsed:: true
 	- something like: `TPL: [_] <editable/> -- <editable/>`
