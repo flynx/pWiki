@@ -4,6 +4,26 @@
 *
 **********************************************************************/
 
+Element.prototype.visibleInViewport = function(partial=false){
+  var { top, left, bottom, right } = this.getBoundingClientRect()
+  var { innerHeight, innerWidth } = window
+  return partial
+    ? ((top > 0 
+				&& top < innerHeight) 
+			|| (bottom > 0 
+				&& bottom < innerHeight))
+		&& ((left > 0 
+				&& left < innerWidth) 
+			|| (right > 0 
+				&& right < innerWidth))
+    : (top >= 0 
+		&& left >= 0 
+		&& bottom <= innerHeight 
+		&& right <= innerWidth) }
+
+
+//---------------------------------------------------------------------
+
 HTMLTextAreaElement.prototype.updateSize = function(){
 	this.style.height = ''
 	this.style.height = this.scrollHeight + 'px' 

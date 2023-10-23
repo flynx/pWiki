@@ -720,6 +720,7 @@ var Outline = {
 	// 	.get('visible')
 	// 	.get('editable')
 	// 	.get('selected')
+	// 	.get('viewport')
 	// 	.get('top')
 	// 		-> <nodes>
 	//
@@ -739,7 +740,7 @@ var Outline = {
 		if(node == 'top'){
 			return [...outline.children] }
 		// groups defaulting to .outline as base...
-		if(['all', 'visible', 'editable', 'selected'].includes(node)){
+		if(['all', 'visible', 'editable', 'selected', 'viewport'].includes(node)){
 			return this.get(outline, node) }
 		// groups defaulting to .focused as base...
 		if(['parent', 'next', 'prev', 'children', 'siblings'].includes(node)){
@@ -806,6 +807,11 @@ var Outline = {
 				[...node.querySelectorAll('.block')] 
 					.filter(function(e){
 						return e.offsetParent != null })
+			: offset == 'viewport' ?
+				[...node.querySelectorAll('.block')] 
+					.filter(function(e){
+						return e.offsetParent != null 
+							&& e.querySelector('.code').visibleInViewport() })
 			: offset == 'editable' ?
 				[...node.querySelectorAll('.block>.code')] 
 			: offset == 'selected' ?
@@ -840,13 +846,20 @@ var Outline = {
 	focus: function(node='focused', offset){
 		var elem = this.get(...arguments) 
 			?? this.get(0)
-		elem
-			&& elem.focus()
+		if(elem){
+			elem.focus({preventScroll: true})
+			;(elem.classList.contains('code') ?
+					elem
+					: elem.querySelector('.code'))
+				.scrollIntoView({
+					block: 'nearest', 
+					//behavior: 'smooth',
+				}) }
 		return elem },
 	edit: function(node='focused', offset){
 		var elem = this.get(...arguments)
-		if(elem.nodeName != 'TEXTAREA'){
-			elem = elem.querySelector('textarea') }
+		if(!elem.classList.contains('code')){
+			elem = elem.querySelector('.code') }
 		elem?.focus()
 		return elem },
 
@@ -1027,7 +1040,8 @@ var Outline = {
 				this.get(elem, 'prev') 
 				: this.get(elem, 'next') }
 		elem?.remove()
-		next?.focus()
+		next 
+			&& this.focus(next)
 		this.__change__()
 		return this },
 	clear: function(){
@@ -1042,7 +1056,6 @@ var Outline = {
 		var stack = this.__crop_stack ??= []
 		stack.push([this.json(), this.path()])
 		this.load(this.data())
-			.focus()
 		return this },
 	// XXX use JSON API...
 	uncrop: function(){
@@ -1058,7 +1071,6 @@ var Outline = {
 				return res[i].children }, state)
 			.splice(path.at(-1), 1, ...this.json())
 		this.load(state)
-			.focus()
 		return this },
 
 	// block render...
@@ -1339,6 +1351,8 @@ var Outline = {
 		// update sizes of all the textareas (transparent)...
 		for(var e of [...this.outline.querySelectorAll('textarea')]){
 			e.updateSize() }
+		// restore focus...
+		this.focus()
 		return this },
 
 	sync: function(){
@@ -1485,7 +1499,6 @@ var Outline = {
 				this.edit(
 					this.Block('next')) } },
 		Enter: function(evt){
-
 			var edited = this.get('edited')
 			// edit -> split text...
 			if(edited){
@@ -1636,6 +1649,20 @@ var Outline = {
 				if(elem.classList.contains('block')){
 					elem.querySelector('.code').focus() }
 
+				// focus viewport...
+				// XXX this does not work because by this point there is 
+				// 		no focused element...
+				if(elem === outline){
+					var cur = that.get()
+					var viewport = that.get('viewport')
+					if(!viewport.includes(cur)){
+						var visible = that.get('visible')
+						var i = visible.indexOf(cur)
+						var v = visible.indexOf(viewport[0])
+						i < v ?
+							that.focus(viewport[0])
+							: that.focus(viewport.at(-1)) } }
+
 				that.runPlugins('__click__', evt, that, elem) })
 		// keyboard handling...
 		outline.addEventListener('keydown', 
@@ -1666,26 +1693,20 @@ var Outline = {
 					return }
 
 				// handle focus...
-				for(var e of [...that.dom.querySelectorAll('.focused')]){
-					e.classList.remove('focused') }
-				that.get('focused')?.classList?.add('focused')
+				if(elem !== that.outline){
+					for(var e of [...that.dom.querySelectorAll('.focused')]){
+						e.classList.remove('focused') }
+					that.get('focused')?.classList?.add('focused') }
 				// textarea...
 				if(elem.classList.contains('code')){
 					elem.updateSize() } 
-
-				/*/ scroll...
-				that.get(node).querySelector('view')
-					?.scrollIntoView({ 
-						block: 'nearest', 
-						behavior: 'smooth',
-					})
-				//*/
 
 				// XXX do we need this???
 				that.runPlugins('__focusin__', evt, that, elem) })
 		outline.addEventListener('focusout', 
 			function(evt){
 				var elem = evt.target
+				// update code...
 				if(elem.classList.contains('code')){
 					var block = elem.parentElement
 					// clean out attrs...
@@ -1713,7 +1734,7 @@ var Outline = {
 				focus_textarea = document.activeElement.nodeName == 'TEXTAREA' }
 			var refocusNode = function(){
 				focus_textarea ?
-					editor.get().querySelector('textarea').focus() 
+					editor.get().querySelector('.code').focus() 
 					: editor.focus()
 				focus_textarea = undefined } 
 			// cache the focused node type before focus changes...

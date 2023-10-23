@@ -7,7 +7,7 @@
 :root {
 	--font-size: 5mm;
 
-	--outline-padding: 5rem;
+	--outline-padding: 7rem;
 
 	--item-indent: 2rem;
 	--item-padding-ratio: 0.2;
@@ -53,8 +53,6 @@
 .editor .outline {
 	display: block;
 	position: relative;
-
-	width: calc(100% - var(--button-size) - var(--outline-padding) * 2);
 
 	padding: 1em var(--outline-padding);
 	padding-bottom: 1.2em
