@@ -597,12 +597,80 @@ var escaping = {
 //---------------------------------------------------------------------
 
 var JSONOutline = {
+	// Format:
+	// 	<json> ::= [
+	// 			{
+	// 				text: <text>,
+	// 				children: <json>,
+	// 				...
+	// 			},
+	// 			...
+	// 		]
 	json: undefined,
 
+	// format:
+	// 	{
+	// 		<id>: <node>,
+	// 		...
+	// 	}
+	__id_index: undefined,
+
+	// format:
+	// 	Map([
+	// 		[<node>, <path>],
+	// 		...
+	// 	])
+	__nodes: undefined,
+
+	__path: undefined,
+	current: undefined,
+
+	__iter: function*(node, path, mode){
+		if(typeof(path) == 'string'){
+			mode = path
+			path = null }
+		path ??= []
+		yield [path, node]
+		if(mode == 'visible' 
+				&& node.collapsed){
+			return }
+		var i = 0
+		for(var e of node.children ?? []){
+			yield* this.__iter(e, [...path, i++], mode) } },
+	// XXX revise...
+	nodes: function*(node, mode){
+		var i = 0
+		// all nodes..
+		if(node == null || node == 'all' || node == 'visible'){
+			for(var e of this.json){
+				yield* this.__iter(e, [i++], node) } 
+		// single node...
+		} else {
+			var args = [...arguments]
+			// XXX revise...
+			if(['all', 'visible'].includes(args.at(-1))){
+				mode = args.pop() }
+			yield* this.__iter(
+				this.get(...args), 
+				mode) } },
+	[Symbol.iterator]: function*(mode='all'){
+		for(var node of this.json){
+			for(var [_, n] of this.__iter(node, mode)){
+				yield n } } },
+	iter: function*(node, mode){
+		for(var [_, n] of this.nodes(...arguments)){
+			yield n } },
+
+	// XXX
 	path: function(){},
-	get: function(){},
-	at: function(){},
-	focus: function(){},
+	get: function(node, offset){
+	},
+	focus: function(node, offset){
+		return this.get(
+			this.__path = this.path(...arguments)) },
+
+	index: function(){},
+	at: function(index){},
 
 	indent: function(){},
 	deindent: function(){},
@@ -612,7 +680,7 @@ var JSONOutline = {
 	remove: function(){},
 	clear: function(){},
 
-	crom: function(){},
+	crop: function(){},
 	uncrop: function(){},
 
 	parseBlockAttrs: function(){},
@@ -622,6 +690,7 @@ var JSONOutline = {
 	load: function(){},
 	text: function(){},
 }
+
 
 // XXX experiment with a concatinative model...
 // 		.get(..) -> Outline (view)
@@ -686,7 +755,7 @@ var Outline = {
 
 
 	path: function(node='focused', mode='index'){
-		if(['index', 'text', 'node'].includes(node)){
+		if(['index', 'text', 'node', 'data'].includes(node)){
 			mode = node
 			node = 'focused' }
 		var outline = this.outline
@@ -698,6 +767,8 @@ var Outline = {
 					this.get(node, 'siblings').indexOf(node)
 				: mode == 'text' ?
 					node.querySelector('.view').innerText
+				: mode == 'data' ?
+					this.data(node)
 				: node)
 			node = this.get(node, 'parent') }
 		return path },
@@ -1074,43 +1145,54 @@ var Outline = {
 		return this },
 
 	// crop...
+	// XXX shoud we control crops as "crop in" / "crop out" instead of crom/uncrop???
 	// XXX add crop-level/path indicator...
 	__crop_stack: undefined,
 	crop: function(node='focused'){
 		var that = this
-		var stack = this.__crop_stack ??= []
-		var path = this.path()
-		// XXX make this linkable...
-		var header = '/ '
-			+ this.path(path.slice(0,-1), 'text')
-				.map(function(text, i){
-					return `<span>${text.split(/\n/)[0]}</span>` })
-				.join(' / ')
 
-		stack.push([this.json(), path])
+		// XXX make this relative to this.__crop_root
+		var stack = 
+			this.__crop_stack = [
+				...this.__crop_stack ?? [],
+				[
+					this.json(), 
+					this.path(),
+					this.path('text').slice(0, -1),
+				],
+			]
+
+
 		this.load(this.data())
 
-		this.header.innerHTML = header
+		// XXX make this linkable...
+		this.header.innerHTML = '/ '
+			+ stack
+				.map(function([s,p,t]){ 
+					return t})
+				.flat()
+				.join(' / ')
 		this.dom.classList.add('crop')
 		return this },
 	// XXX use JSON API...
 	// XXX add depth argument + 'all'
-	uncrop: function(){
+	uncrop: function(mode=1){
 		if(this.__crop_stack == null){
 			return this}
-		var [state, path] = this.__crop_stack.pop()
-		if(this.__crop_stack.length == 0){
-			this.__crop_stack = undefined 
-			this.header.innerHTML = ''
-			this.dom.classList.remove('crop') }
-		// update state...
-		path
-			.slice(0, -1)
-			.reduce(function(res, i){
-				return res[i].children }, state)
-			.splice(path.at(-1), 1, ...this.json())
 
-		this.load(state)
+		// XXX replace relevant node in this.__crop_root with state...
+		// XXX should this be done on the way down or on the way up???
+		/* XXX
+		var state = this.json()
+		while(this.__crop_stack.length > 0){
+		}
+		//*/
+
+		this.load(this.__crop_stack[0][0])
+		this.header.innerHTML = ''
+
+		this.__crop_stack = undefined
+		this.dom.classList.remove('crop')
 
 		return this },
 
@@ -1622,7 +1704,9 @@ var Outline = {
 			if(this.get('edited')){
 				this.focus() 
 			} else {
-				this.uncrop() } },
+				evt.shiftKey ?
+					this.uncrop('all')
+					: this.uncrop() } },
 		c: function(evt){
 			if(!this.get('edited')){
 				this.crop() } },
