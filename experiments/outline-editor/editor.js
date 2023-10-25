@@ -1043,6 +1043,7 @@ var Outline = {
 		var cur = this.get(node) 
 		if(!cur){ 
 			return }
+		var prev = this.path(cur)
 		var siblings = this.get(node, 'siblings')
 		// deindent...
 		if(indent == 'out'){
@@ -1056,17 +1057,19 @@ var Outline = {
 				this.setUndo(
 					this.path(cur), 
 					'indent', 
-					['in'])
+					['in'],
+					prev)
 				this.__change__() }
 		// indent...
 		} else {
 			var parent = siblings[siblings.indexOf(cur) - 1]
 			if(parent){
 				parent.lastChild.append(cur) 
-			this.setUndo(
-				this.path(cur), 
-				'indent', 
-				['out'])
+				this.setUndo(
+					this.path(cur), 
+					'indent', 
+					['out'],
+					prev)
 				this.__change__()} } 
 		return cur },
 	shift: function(node='focused', direction){
@@ -1084,13 +1087,11 @@ var Outline = {
 		if(direction == 'up' 
 				&& i > 0){
 			siblings[i-1].before(node)
-			focused 
-				&& this.focus()
 		} else if(direction == 'down' 
 				&& i < siblings.length-1){
-			siblings[i+1].after(node) 
-			focused 
-				&& this.focus() }
+			siblings[i+1].after(node) }
+		focused 
+			&& this.focus()
 		this.setUndo(
 			this.path(node), 
 			'shift', 
@@ -1211,8 +1212,8 @@ var Outline = {
 	// 		are reassigning the stacks manually.
 	__undo_stack: undefined,
 	__redo_stack: undefined,
-	setUndo: function(path, action, args){
-		;(this.__undo_stack ??= []).push([path, action, args])
+	setUndo: function(path, action, args, next){
+		;(this.__undo_stack ??= []).push([path, action, args, next])
 		this.__redo_stack = undefined
 		return this },
 	clearUndo: function(){
@@ -1223,11 +1224,14 @@ var Outline = {
 		if(from == null 
 				|| from.length == 0){
 			return [from, to] }
-		var [path, action, args] = from.pop()
+		var [path, action, args, next] = from.pop()
 		var l = from.length
 		path != null
 			&& this.focus(path)
 		this[action](...args)
+		next != null ?
+			this.focus(next)
+			: this.focus()
 		if(l < from.length){
 			to ??= []
 			to.push(
