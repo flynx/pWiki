@@ -47,30 +47,13 @@
 	display: none;
 }
 
-.editor .children {
-}
-
-.editor .header,
-.editor .outline {
-	display: block;
-	position: relative;
-
-	padding: 1em var(--outline-padding);
-	padding-bottom: 1.2em
-}
-
-/* virtual empty block... */
-.editor .outline:empty:after {
-	content: "Empty";
-	display: block;
-	font-style: italic;
-	color: rgba(0,0,0,0.2);
-}
-.editor .outline:empty:hover:after {
-}
 
 /* header */
 .editor .header {
+	margin: 1em var(--outline-padding);
+	padding-bottom: 1.2em;
+
+	border-bottom: solid 1px rgba(0,0,0,0.15);
 }
 .editor .header:empty {
 	display: none;
@@ -88,6 +71,25 @@
 .editor .header .path-item:first-child {
 	padding-left: 3em;
 	margin-left: -2em;
+}
+
+
+.editor .outline {
+	display: block;
+	position: relative;
+
+	padding: 1em var(--outline-padding);
+	padding-bottom: 1.2em;
+}
+
+/* virtual empty block... */
+.editor .outline:empty:after {
+	content: "Empty";
+	display: block;
+	font-style: italic;
+	color: rgba(0,0,0,0.2);
+}
+.editor .outline:empty:hover:after {
 }
 
 

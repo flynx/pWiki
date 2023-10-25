@@ -1329,7 +1329,7 @@ var Outline = {
 			// 		...putting the same pattern in a normal group and 
 			// 		returning it works fine...
 			//.replace(/(?<=[\n\h]*)(?:(?:\n|^)\s*\w*\s*::\s*[^\n]*\s*)*$/, 
-			.replace(/([\n\t ]*)(?:(?:\n|^)[\t ]*\w*[\t ]*::[\t ]*[^\n]*[\t ]*)+$/, 
+			.replace(/([\n\t ]*)(?:(?:\n|^)[\t ]*\w+[\t ]*::[\t ]*[^\n]+[\t ]*)+$/, 
 				function(match, ws){
 					var attrs = match
 						.trim()
