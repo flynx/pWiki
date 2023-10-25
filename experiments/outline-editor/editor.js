@@ -1145,73 +1145,6 @@ var Outline = {
 		return this },
 
 	// crop...
-	/*/ XXX structural crop...
-	// XXX this should not change what is written to code...
-	// 		...make crops in a separate instance???
-	// 		......CSS?
-	__crop_stack: undefined,
-	crop: function(node='focused'){
-		var that = this
-
-		var stack = this.__crop_stack = 
-			this.__crop_stack ?? []
-		var state = stack[0] = stack[0] ?? this.json()
-		var path = stack[1] = stack[1] ?
-			[...stack[1], ...this.path().slice(1)]
-			: this.path(...arguments)
-		stack[2] = [
-			...(stack[2] ?? []), 
-			...this.path('text').slice(0, -1),
-		]
-		// clear focused -- prevent focus from shifting on uncrop...
-		var e = state
-		for(var i of path.slice(0, -1)){
-			e = e[i].children }
-		delete e[path.at(-1)].focused
-
-
-		this.load(this.data(...arguments))
-
-		// XXX make this linkable...
-		this.header.innerHTML = '/ ' + stack[2].join(' / ')
-		//this.dom.classList.add('crop')
-		return this },
-	uncrop: function(mode=undefined){
-		if(this.__crop_stack == null){
-			return this }
-		// XXX is this a good way do go???
-		if(mode == 'all'){
-			while(this.__crop_stack != null){
-				this.uncrop() }
-			return this }
-
-		// merge changes into the state above...
-		var stack = this.__crop_stack
-		var [state, path, text] = stack
-		var s = state
-		for(var i of path.slice(0, -1)){
-			s = s[i].children }
-		s.splice(path.at(-1), 1, ...this.json())
-
-		if(path.length > 1){
-			path.pop()
-			text.pop()
-			s = state
-			for(var i of path.slice(0, -1)){
-				s = s[i].children }
-			s = s[path.at(-1)]
-			this.load(s)
-			this.header.innerHTML = 
-				'/ ' + stack[2].join(' / ')
-
-		} else {
-			this.load(state) 
-			//this.dom.classList.remove('crop')
-			this.__crop_stack = undefined
-			this.header.innerHTML = '' }
-
-		return this },
-	/*/// XXX CSS-based crop...
 	crop: function(node='focused'){
 		this.dom.classList.add('crop')
 		for(var block of [...this.outline.querySelectorAll('[cropped]')]){
@@ -1242,7 +1175,6 @@ var Outline = {
 		} else {
 			this.crop(top) }
 		return this },
-	//*/
 
 	// block render...
 	// XXX need a way to filter input text...
