@@ -617,7 +617,7 @@ var JSONOutline = {
 
 	// format:
 	// 	Map([
-	// 		[<node>, <path>],
+	// 		[<node>, <parent>],
 	// 		...
 	// 	])
 	__nodes: undefined,
@@ -1151,48 +1151,63 @@ var Outline = {
 	crop: function(node='focused'){
 		var that = this
 
-		// XXX make this relative to this.__crop_root
-		var stack = 
-			this.__crop_stack = [
-				...this.__crop_stack ?? [],
-				[
-					this.json(), 
-					this.path(),
-					this.path('text').slice(0, -1),
-				],
-			]
+		var stack = this.__crop_stack = 
+			this.__crop_stack ?? []
+		var state = stack[0] = stack[0] ?? this.json()
+		var path = stack[1] = stack[1] ?
+			[...stack[1], ...this.path().slice(1)]
+			: this.path(...arguments)
+		stack[2] = [
+			...(stack[2] ?? []), 
+			...this.path('text').slice(0, -1),
+		]
+		// clear focused -- prevent focus from shifting on uncrop...
+		var e = state
+		for(var i of path.slice(0, -1)){
+			e = e[i].children }
+		delete e[path.at(-1)].focused
 
 
-		this.load(this.data())
+		this.load(this.data(...arguments))
 
 		// XXX make this linkable...
-		this.header.innerHTML = '/ '
-			+ stack
-				.map(function([s,p,t]){ 
-					return t})
-				.flat()
-				.join(' / ')
+		this.header.innerHTML = '/ ' + stack[2].join(' / ')
 		this.dom.classList.add('crop')
 		return this },
 	// XXX use JSON API...
-	// XXX add depth argument + 'all'
-	uncrop: function(mode=1){
+	uncrop: function(mode=undefined){
 		if(this.__crop_stack == null){
-			return this}
+			return this }
+		// XXX is this a good way do go???
+		if(mode == 'all'){
+			while(this.__crop_stack != null){
+				this.uncrop() }
+			return this }
 
-		// XXX replace relevant node in this.__crop_root with state...
-		// XXX should this be done on the way down or on the way up???
-		/* XXX
-		var state = this.json()
-		while(this.__crop_stack.length > 0){
-		}
-		//*/
+		// merge changes into the state above...
+		var stack = this.__crop_stack
+		var [state, path, text] = stack
+		var s = state
+		for(var i of path.slice(0, -1)){
+			s = s[i].children }
+		s.splice(path.at(-1), 1, ...this.json())
 
-		this.load(this.__crop_stack[0][0])
-		this.header.innerHTML = ''
+		if(path.length > 1){
+			path.pop()
+			text.pop()
+			s = state
+			for(var i of path.slice(0, -1)){
+				s = s[i].children }
+			s = s[path.at(-1)]
+			this.load(s)
+			this.header.innerHTML = 
+				'/ ' + stack[2].join(' / ')
 
-		this.__crop_stack = undefined
-		this.dom.classList.remove('crop')
+		} else {
+			this.load(state) 
+			this.dom.classList.remove('crop')
+			this.__crop_stack = undefined
+			this.header.innerHTML = '' }
 
 		return this },
 
