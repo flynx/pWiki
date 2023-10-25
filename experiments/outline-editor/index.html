@@ -51,6 +51,8 @@ var setup = function(){
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
   -
 - ## ToDo:
+  - undo: checkboxes and DONE??
+    _...this should be triggered by text change -- move current implementation to .__editedcode__()??..._
   - copy/paste nodes/trees
   - FEATURE: read-only mode
   - auto-shift done blocks to the end of siblings... (option?)
@@ -209,9 +211,13 @@ var setup = function(){
       | c-right    | next checkbox                | 
       | space      | toggle current checkbox      |
       | c-d        | toggle current element DONE  |
-      | enter      | normal mode: edit node       |
-      |            | edit mode: create node below |
-      | esc        | exit edit mode               | 
+	  | c-z        | normal: undo                 |
+	  | c-s-z      | normal: redo                 |
+	  | c          | normal: crop current node    |
+      | enter      | normal: edit node            |
+      |            | edit: create node below      |
+      | esc        | crop: exit crop              |
+	  |            | edit: exit edit mode         | 
   - ### Formatting
     - The formatting mostly adheres to the markdown spec with a few minor differences
     -
