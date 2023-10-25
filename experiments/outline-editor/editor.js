@@ -895,18 +895,18 @@ var Outline = {
 			: offset == 'visible' ?
 				[...node.querySelectorAll('.block')] 
 					.filter(function(e){
-						return e.offsetParent != null })
+						return e.querySelector('.view').offsetParent != null })
 			: offset == 'viewport' ?
 				[...node.querySelectorAll('.block')] 
 					.filter(function(e){
-						return e.offsetParent != null 
+						return e.querySelector('.view').offsetParent != null 
 							&& e.querySelector('.code').visibleInViewport() })
 			: offset == 'editable' ?
 				[...node.querySelectorAll('.block>.code')] 
 			: offset == 'selected' ?
 				[...node.querySelectorAll('.block[selected]')] 
 					.filter(function(e){
-						return e.offsetParent != null }) 
+						return e.querySelector('.view').offsetParent != null }) 
 			: offset == 'children' ?
 				children(node)
 			: offset == 'siblings' ?
@@ -1145,8 +1145,10 @@ var Outline = {
 		return this },
 
 	// crop...
-	// XXX shoud we control crops as "crop in" / "crop out" instead of crom/uncrop???
-	// XXX add crop-level/path indicator...
+	/*/ XXX structural crop...
+	// XXX this should not change what is written to code...
+	// 		...make crops in a separate instance???
+	// 		......CSS?
 	__crop_stack: undefined,
 	crop: function(node='focused'){
 		var that = this
@@ -1172,9 +1174,8 @@ var Outline = {
 
 		// XXX make this linkable...
 		this.header.innerHTML = '/ ' + stack[2].join(' / ')
-		this.dom.classList.add('crop')
+		//this.dom.classList.add('crop')
 		return this },
-	// XXX use JSON API...
 	uncrop: function(mode=undefined){
 		if(this.__crop_stack == null){
 			return this }
@@ -1205,11 +1206,43 @@ var Outline = {
 
 		} else {
 			this.load(state) 
-			this.dom.classList.remove('crop')
+			//this.dom.classList.remove('crop')
 			this.__crop_stack = undefined
 			this.header.innerHTML = '' }
 
 		return this },
+	/*/// XXX CSS-based crop...
+	crop: function(node='focused'){
+		this.dom.classList.add('crop')
+		for(var block of [...this.outline.querySelectorAll('[cropped]')]){
+			block.removeAttribute('cropped') }
+		this.get(...arguments).setAttribute('cropped', '')
+		this.header.innerHTML = 
+			`<span class="path-item" onclick="editor.uncrop('all')">/</span> ` 
+				+ this.path(...arguments, 'text')
+					.slice(0, -1)
+					.map(function(s, i, {length}){
+						return `<span class="path-item" onclick="editor.uncrop(${ length-i })">${s}</span> ` })
+					.join(' / ')
+		return this },
+	uncrop: function(mode=1){
+		var outline = this.outline
+		var top = this.get(0)
+		for(var block of [...this.outline.querySelectorAll('[cropped]')]){
+			block.removeAttribute('cropped') }
+		// crop parent if available...
+		while(mode != 'all' 
+				&& mode > 0 
+				&& top !== outline){
+			top = this.get(top, 'parent')
+			mode-- }
+		if(mode == 'all' || top === outline){
+			this.dom.classList.remove('crop')
+			this.header.innerHTML = '' 
+		} else {
+			this.crop(top) }
+		return this },
+	//*/
 
 	// block render...
 	// XXX need a way to filter input text...

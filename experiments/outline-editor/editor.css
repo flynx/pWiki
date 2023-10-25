@@ -69,20 +69,26 @@
 .editor .outline:empty:hover:after {
 }
 
-/* XXX header */
+/* header */
 .editor .header {
 }
 .editor .header:empty {
 	display: none;
 }
-/* XXX needs more work... *//*
-.editor .header span {
-	display: inline;
+.editor .header .path-item {
+	color: gray;
+	cursor: pointer;
+	/* XXX needs more work... */
 	max-width: 10rem;
 	text-overflow: ellipsis;
-	overflow: hidden;
 }
-*/
+.editor .header .path-item:hover {
+	text-decoration: underline;
+}
+.editor .header .path-item:first-child {
+	padding-left: 3em;
+	margin-left: -2em;
+}
 
 
 .editor .outline .block {
@@ -252,6 +258,23 @@ editor .outline .block:focus {
 /* XXX are we selecting subtrees or blocks??? */
 .editor .outline [selected] {
 	background: silver;
+}
+
+
+/* crop... */ 
+.editor.crop .outline .block:not([cropped]) {
+	padding: 0;
+	border: none;
+	background: none;
+}
+.editor.crop .outline .block:not([cropped])>.text {
+	display: none;
+}
+.editor.crop .outline .block[cropped] {
+	margin-left: 0;
+}
+.editor.crop .outline .block[cropped] .text {
+	display: block;
 }
 
 
