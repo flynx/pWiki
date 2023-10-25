@@ -673,7 +673,6 @@ var JSONOutline = {
 	at: function(index){},
 
 	indent: function(){},
-	deindent: function(){},
 	shift: function(){},
 	show: function(){},
 	toggleCollapse: function(){},
@@ -690,6 +689,7 @@ var JSONOutline = {
 	load: function(){},
 	text: function(){},
 }
+
 
 
 // XXX experiment with a concatinative model...
@@ -1035,9 +1035,9 @@ var Outline = {
 		return node },
 
 	// edit...
-	indent: function(node='focused', indent=true){
+	indent: function(node='focused', indent='in'){
 		// .indent(<indent>)
-		if(node === true || node === false){
+		if(node === 'in' || node === 'out'){
 			indent = node
 			node = 'focused' }
 		var cur = this.get(node) 
@@ -1045,7 +1045,7 @@ var Outline = {
 			return }
 		var siblings = this.get(node, 'siblings')
 		// deindent...
-		if(!indent){
+		if(indent == 'out'){
 			var parent = this.get(node, 'parent')
 			if(parent != this.outline){
 				var children = siblings
@@ -1053,21 +1053,29 @@ var Outline = {
 				parent.after(cur)
 				children.length > 0
 					&& cur.lastChild.append(...children) 
+				this.setUndo(
+					this.path(cur), 
+					'indent', 
+					['in'])
 				this.__change__() }
 		// indent...
 		} else {
 			var parent = siblings[siblings.indexOf(cur) - 1]
 			if(parent){
 				parent.lastChild.append(cur) 
+			this.setUndo(
+				this.path(cur), 
+				'indent', 
+				['out'])
 				this.__change__()} } 
 		return cur },
-	deindent: function(node='focused', indent=false){
-		return this.indent(node, indent) },
 	shift: function(node='focused', direction){
 		if(node == 'up' || node == 'down'){
 			direction = node
 			node = 'focused' }
-		if(direction == null){
+		if(direction == null 
+				|| (direction !== 'up' 
+					&& direction != 'down')){
 			return }
 		node = this.get(node)
 		var focused = node.classList.contains('focused')
@@ -1083,22 +1091,46 @@ var Outline = {
 			siblings[i+1].after(node) 
 			focused 
 				&& this.focus() }
+		this.setUndo(
+			this.path(node), 
+			'shift', 
+			[direction == 'up' ? 
+				'down' 
+				: 'up'])
 		this.__change__()
 		return this },
-	show: function(node='focused', offset){
-		var node = this.get(...arguments)
-		var outline = this.outline
-		var parent = node
-		var changes = false
-		do{
-			parent = parent.parentElement
-			changes = changes 
-				|| parent.getAttribute('collapsed') == ''
-			parent.removeAttribute('collapsed')
-		} while(parent !== outline)
-		changes
-			&& this.__change__()
-		return node },
+	// XXX make undo a bit more refined...
+	remove: function(node='focused'){
+		var elem = this.get(...arguments)
+		// XXX HACK...
+		var data = this.json()
+		var next 
+		if(elem.classList.contains('focused')){
+			// XXX need to be able to get the next elem on same level...
+			this.toggleCollapse(elem, true)
+			next = elem === this.get(-1) ?
+				this.get(elem, 'prev') 
+				: this.get(elem, 'next') }
+		elem?.remove()
+		next 
+			&& this.focus(next)
+		// XXX HACK...
+		this.setUndo(
+			undefined, 
+			'load', 
+			[data])
+		this.__change__()
+		return this },
+	clear: function(){
+		this.setUndo(
+			undefined, 
+			'load', 
+			[this.json()])
+		this.outline.innerText = ''
+		this.__change__()
+		return this },
+
+	// expand/collapse...
 	toggleCollapse: function(node='focused', state='next'){
 		var that = this
 		if(node == 'all'){
@@ -1125,24 +1157,20 @@ var Outline = {
 				elem.updateSize() } }
 		this.__change__()
 		return node },
-	remove: function(node='focused', offset){
-		var elem = this.get(...arguments)
-		var next 
-		if(elem.classList.contains('focused')){
-			// XXX need to be able to get the next elem on same level...
-			this.toggleCollapse(elem, true)
-			next = elem === this.get(-1) ?
-				this.get(elem, 'prev') 
-				: this.get(elem, 'next') }
-		elem?.remove()
-		next 
-			&& this.focus(next)
-		this.__change__()
-		return this },
-	clear: function(){
-		this.outline.innerText = ''
-		this.__change__()
-		return this },
+	show: function(node='focused', offset){
+		var node = this.get(...arguments)
+		var outline = this.outline
+		var parent = node
+		var changes = false
+		do{
+			parent = parent.parentElement
+			changes = changes 
+				|| parent.getAttribute('collapsed') == ''
+			parent.removeAttribute('collapsed')
+		} while(parent !== outline)
+		changes
+			&& this.__change__()
+		return node },
 
 	// crop...
 	crop: function(node='focused'){
@@ -1150,6 +1178,7 @@ var Outline = {
 		for(var block of [...this.outline.querySelectorAll('[cropped]')]){
 			block.removeAttribute('cropped') }
 		this.get(...arguments).setAttribute('cropped', '')
+		// build header path...
 		this.header.innerHTML = 
 			`<span class="path-item" onclick="editor.uncrop('all')">/</span> ` 
 				+ this.path(...arguments, 'text')
@@ -1158,27 +1187,63 @@ var Outline = {
 						return `<span class="path-item" onclick="editor.uncrop(${ length-i })">${s}</span> ` })
 					.join(' / ')
 		return this },
-	uncrop: function(mode=1){
+	uncrop: function(count=1){
 		var outline = this.outline
 		var top = this.get(0)
 		for(var block of [...this.outline.querySelectorAll('[cropped]')]){
 			block.removeAttribute('cropped') }
 		// crop parent if available...
-		while(mode != 'all' 
-				&& mode > 0 
+		while(count != 'all' 
+				&& count > 0 
 				&& top !== outline){
 			top = this.get(top, 'parent')
-			mode-- }
-		if(mode == 'all' || top === outline){
+			count-- }
+		if(count == 'all' || top === outline){
 			this.dom.classList.remove('crop')
 			this.header.innerHTML = '' 
 		} else {
 			this.crop(top) }
 		return this },
 
+	// undo...
+	// NOTE: calling .setUndo(..) will drop the redo stack, but this does 
+	// 		not happen when calling a method via .undo(..)/.redo(..) as we
+	// 		are reassigning the stacks manually.
+	__undo_stack: undefined,
+	__redo_stack: undefined,
+	setUndo: function(path, action, args){
+		;(this.__undo_stack ??= []).push([path, action, args])
+		this.__redo_stack = undefined
+		return this },
+	clearUndo: function(){
+		this.__undo_stack = undefined
+		this.__redo_stack = undefined
+		return this },
+	__undo: function(from, to){
+		if(from == null 
+				|| from.length == 0){
+			return [from, to] }
+		var [path, action, args] = from.pop()
+		var l = from.length
+		path != null
+			&& this.focus(path)
+		this[action](...args)
+		if(l < from.length){
+			to ??= []
+			to.push(
+				...from.splice(l, from.length)) }
+		if(from.length == 0){
+			from = undefined }
+		return [from, to] },
+	undo: function(){
+		;[this.__undo_stack, this.__redo_stack] = 
+			this.__undo(this.__undo_stack, this.__redo_stack)
+		return this },
+	redo: function(){
+		;[this.__redo_stack] = this.__undo(this.__redo_stack)
+		return this },
+
 	// block render...
-	// XXX need a way to filter input text...
-	// 		use-case: hidden attributes...
 	// NOTE: this is auto-populated by .__code2html__(..)
 	__styles: undefined,
 	__code2html__: function(code, elem={}){
@@ -1454,7 +1519,7 @@ var Outline = {
 			.clear()
 			.outline
 				.append(...level(data))
-		//* XXX do we actually need this???
+		/* XXX do we actually need this???
 		// update sizes of all the textareas (transparent)...
 		setTimeout(function(){
 			for(var e of [...that.outline.querySelectorAll('textarea')]){
@@ -1609,8 +1674,7 @@ var Outline = {
 			this.focus(-1) },
 		PageUp: function(evt){
 			var that = this
-			var edited = this.get('edited')
-			if(edited){
+			if(this.get('edited')){
 				return }
 			if(evt.shiftKey 
 					|| evt.ctrlKey){
@@ -1624,8 +1688,7 @@ var Outline = {
 						viewport[0], 'prev') } },
 		PageDown: function(evt){
 			var that = this
-			var edited = this.get('edited')
-			if(edited){
+			if(this.get('edited')){
 				return }
 			if(evt.shiftKey 
 					|| evt.ctrlKey){
@@ -1643,7 +1706,9 @@ var Outline = {
 			evt.preventDefault()
 			var edited = this.get('edited')
 			var node = this.show(
-				this.indent(!evt.shiftKey))
+				this.indent(evt.shiftKey ? 
+					'out' 
+					: 'in'))
 			// keep focus in node...
 			;(edited ?
 				edited
@@ -1686,12 +1751,29 @@ var Outline = {
 			if(this.get('edited')){
 				this.focus() 
 			} else {
-				evt.shiftKey ?
-					this.uncrop('all')
-					: this.uncrop() } },
+				this.uncrop() } },
+		s_Escape: function(evt){
+			if(this.get('edited')){
+				this.focus() 
+			} else {
+				this.uncrop('all') } },
 		c: function(evt){
 			if(!this.get('edited')){
 				this.crop() } },
+			c_z: function(evt){
+				if(!this.get('edited')){
+					evt.preventDefault()
+					this.undo() } },
+			c_s_z: function(evt){
+				if(!this.get('edited')){
+					evt.preventDefault()
+					this.redo() } },
+			U: function(evt){
+				if(!this.get('edited')){
+					this.redo() } },
+			u: function(evt){
+				if(!this.get('edited')){
+					this.undo() } },
 
 		Delete: function(evt){
 			var edited = this.get('edited')
@@ -1731,11 +1813,10 @@ var Outline = {
 				this.remove(edited)
 				return } },
 
-		d: function(evt){
+		c_d: function(evt){
 			// toggle done...
-			if(evt.ctrlKey){
-				evt.preventDefault()
-				tasks.toggleDone(this) } },
+			evt.preventDefault()
+			tasks.toggleDone(this) },
 
 		// toggle checkbox...
 		' ': function(evt){
@@ -1835,8 +1916,26 @@ var Outline = {
 				if(that.runPlugins('__keydown__', evt, that, evt.target) !== true){
 					return }
 				// handle keyboard...
-				evt.key in that.keyboard 
-					&& that.keyboard[evt.key].call(that, evt) })
+				var keys = []
+				evt.ctrlKey
+					&& keys.push('c_' + evt.key)
+				evt.ctrlKey && evt.altKey 
+					&& keys.push('c_a_' + evt.key)
+				evt.ctrlKey && evt.shiftKey
+					&& keys.push('c_s_' + evt.key)
+				evt.altKey && evt.ctrlKey && evt.shiftKey
+					&& keys.push('c_a_s_' + evt.key)
+				evt.altKey
+					&& keys.push('a_' + evt.key)
+				evt.altKey && evt.shiftKey
+					&& keys.push('a_s_' + evt.key)
+				evt.shiftKey
+					&& keys.push('s_' + evt.key)
+				keys.push(evt.key)
+				for(var k of keys){
+					if(k in that.keyboard){
+						that.keyboard[k].call(that, evt)
+						break } } })
 		// update code block...
 		outline.addEventListener('keyup', 
 			function(evt){
@@ -1866,6 +1965,7 @@ var Outline = {
 					that.get('focused')?.classList?.add('focused') }
 				// textarea...
 				if(elem.classList.contains('code')){
+					elem.dataset.original = elem.value
 					elem.updateSize() } 
 
 				// XXX do we need this???
@@ -1875,10 +1975,20 @@ var Outline = {
 				var elem = evt.target
 				// update code...
 				if(elem.classList.contains('code')){
-					var block = elem.parentElement
+					var block = that.get(elem)
 					// clean out attrs...
 					elem.value = that.parseBlockAttrs(elem.value).text
 					that.update(block) 
+					// undo...
+					if(elem.value != elem.dataset.original){
+						that.setUndo(
+							that.path(elem),
+							'update',
+							[that.path(elem), {
+								...that.data(elem), 
+								text: elem.dataset.original,
+							}])
+						delete elem.dataset.original }
 					// give the browser a chance to update the DOM...
 					// XXX revise...
 					setTimeout(function(){
@@ -1917,6 +2027,7 @@ var Outline = {
 				.replace(/&lt;/g, '<')
 				.replace(/&gt;/g, '>')) 
 			console.log(`Parse: ${Date.now() - t}ms`) }
+		this.clearUndo()
 
 		this.runPlugins('__setup__', this)
 

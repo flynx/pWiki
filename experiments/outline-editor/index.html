@@ -51,9 +51,8 @@ var setup = function(){
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
   -
 - ## ToDo:
-  - undo 
-    collapsed:: true
-	- edit stack (position, action, ...)
+  - copy/paste nodes/trees
+  - FEATURE: read-only mode
   - auto-shift done blocks to the end of siblings... (option?)
     - ...or should this be `sort:: done` -- i.e. sort children by done status??
   - codeblock as a block
@@ -64,8 +63,6 @@ var setup = function(){
         code
         ```
       - _bullet should be either in the middle of the block or at the first line of code (preferred)..._
-  - copy/paste nodes/trees
-  - FEATURE: read-only mode
   - export html
     - embed css
     - cleanup html
@@ -90,10 +87,6 @@ var setup = function(){
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
   - JSON API
-    - `.path(..)`
-    - `.get(..)`
-    - `.at(..)`
-    - ...
   - cli
   - Q: do we use \\t for indent? (option???)
   - Q: persistent empty first/last node (a button to create a new node)?
@@ -111,6 +104,7 @@ var setup = function(){
   - empty item height is a bit off...
   - search?
     - _...not sure if search should be internal or external yet..._
+  - DONE undo 
   - DONE crop: make path clickable
   - DONE Q: crop: should we control crop via "crop-in"/"crop-out" instead of crop/uncrop??
     - _crop-in/crop-out seems more natural..._
