@@ -101,7 +101,8 @@
 .editor.block-offsets .outline .block {
 	border-left: solid 1px silver;
 }
-.editor .outline .block .block {
+.editor .outline .block .block,
+.editor.crop .outline .block[cropped] .block[cropped] {
 	margin-left: var(--item-indent);
 }
 .editor .outline .block>.text {
@@ -264,6 +265,8 @@ editor .outline .block:focus {
 
 
 /* crop... */ 
+/* NOTE: also see rules for: .editor .outline .block .block 
+*	...can we avoid this?? (XXX) */
 .editor.crop .outline .block:not([cropped]) {
 	padding: 0;
 	border: none;

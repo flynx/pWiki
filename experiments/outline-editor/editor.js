@@ -1399,6 +1399,8 @@ var Outline = {
 		var block = document.createElement('div')
 		block.classList.add('block')
 		block.setAttribute('tabindex', '0')
+		// XXX hack??
+		block.setAttribute('cropped', '')
 		// code...
 		var code = document.createElement('textarea')
 			.autoUpdateSize()
@@ -1422,10 +1424,10 @@ var Outline = {
 				: place
 			;(place == 'next' 
 					&& (cur.querySelector('.block')
-						|| cur.nextElementSibling)) ?
+						|| cur !== this.get(-1))) ?
 				this.get(place).before(block)
 			: (place == 'next' 
-					&& !cur.nextElementSibling) ?
+					&& cur === this.get(-1)) ?
 				cur.after(block)
 			: (place == 'before' || place == 'after') ?
 				cur[place](block)
