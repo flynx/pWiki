@@ -1518,12 +1518,25 @@ var Outline = {
 			place = place == 'prev' ?
 				'before'
 				: place
+			//	...			...
+			//	cur			cur
+			//	  new		new		<- before the next after cur
+			//	  ---		---
+			//	...			...
 			;(place == 'next' 
-					&& (cur.querySelector('.block')
-						|| cur !== this.get(-1))) ?
+					// has children (uncollapsed)...
+					&& (cur.querySelector('.block')?.offsetParent
+						// not last sibling...
+						|| cur !== this.get('siblings').at(-1))) ?
 				this.get(place).before(block)
+			//	...
+			//	  ---
+			//	  cur
+			//	  new	<- next after cur
+			//	...
 			: (place == 'next' 
-					&& cur === this.get(-1)) ?
+					// last sibling...
+					&& cur === this.get('siblings').at(-1)) ?
 				cur.after(block)
 			: (place == 'before' || place == 'after') ?
 				cur[place](block)
