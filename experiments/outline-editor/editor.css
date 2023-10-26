@@ -411,13 +411,14 @@ editor .outline .block:focus {
 
 /*------------------------------------------------ Numbered lists ---*/
 
+.editor .outline .numbered-list>.children {
+	counter-reset: numbered-list;
+}
 .editor .outline .numbered-list>.children>.block>.view:not(:empty):before {
 	counter-increment: numbered-list; 
 	content: counter(numbered-list) ".";
 	color: gray;
 }
-
-/* numbered lists... */
 .editor .outline 
 		.numbered-list>.children
 		>.numbered-list>.children>.block>.view:not(:empty):before {
