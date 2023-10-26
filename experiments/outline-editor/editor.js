@@ -184,7 +184,8 @@ var blocks = {
 			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, this.style(editor, elem, 'comment'))
 			.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/m, this.style(editor, elem, 'NOTE'))
 			.replace(/^\s*(?<!\\)XXX\s+(.*)$/m, this.style(editor, elem, 'XXX'))
-			.replace(/^(.*)\s*(?<!\\)XXX$/m, this.style(editor, elem, 'XXX')) } ,
+			.replace(/^(.*)\s*(?<!\\)XXX$/m, this.style(editor, elem, 'XXX'))
+			.replace(/^\s*---\s*$/m, this.style(editor, elem, 'hr', '<hr>')) } ,
 }
 
 

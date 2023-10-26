@@ -444,6 +444,16 @@ editor .outline .block:focus {
 }
 
 
+/*------------------------------------------------------ hr block ---*/
+
+.editor .outline .list>.children>.block.hr>.view:before {
+	content: "";
+}
+.editor .outline .numbered-list>.children>.block.hr>.view:before {
+	content: "";
+}
+
+
 /*--------------------------------------------------------- Notes ---*/
 
 .editor .outline .NOTE {
