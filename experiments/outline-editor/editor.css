@@ -102,6 +102,7 @@
 	border-left: solid 1px silver;
 }
 .editor .outline .block .block,
+.editor.crop .outline .block[cropped] .block,
 .editor.crop .outline .block[cropped] .block[cropped] {
 	margin-left: var(--item-indent);
 }
@@ -275,6 +276,7 @@ editor .outline .block:focus {
 .editor.crop .outline .block:not([cropped])>.text {
 	display: none;
 }
+.editor.crop .outline .block,
 .editor.crop .outline .block[cropped] {
 	margin-left: 0;
 }
@@ -283,6 +285,7 @@ editor .outline .block:focus {
 }
 
 
+/* toolbar... */
 .editor .toolbar {
 	display: inline-block;
 	position: absolute; 
