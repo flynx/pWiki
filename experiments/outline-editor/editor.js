@@ -351,7 +351,8 @@ var tasks = {
 		return elem },
 	updateCheckboxes: function(editor, elem){
 		elem = this.getCheckbox(editor, elem)
-		var node = editor.get(elem)
+		var node = editor.get(elem, false)
+		var data = editor.data(node)
 		var text = node.querySelector('.code')
 		// get the checkbox order...
 		var i = [...node.querySelectorAll('input[type=checkbox]')].indexOf(elem)
@@ -363,6 +364,12 @@ var tasks = {
 				to
 				: m }
 		text.value = text.value.replace(/\[[Xx_]\]/g, toggle) 
+		// NOTE: status is updated via a timeout set in .__parse__(..)...
+		editor.setUndo(
+			editor.path(node),
+			'update',
+			[editor.path(node), 
+				data])
 		return elem },
 	toggleCheckbox: function(editor, checkbox, offset){
 		checkbox = this.getCheckbox(editor, checkbox, offset)
@@ -396,6 +403,7 @@ var tasks = {
 		var node = editor.get(elem)
 		if(node == null){
 			return }
+		var data = editor.data(elem, false)
 		var text = node.querySelector('.code')
 		var value = text.value
 		var s = text.selectionStart
@@ -413,6 +421,11 @@ var tasks = {
 		text.selectionStart = s + (value.length - l)
 		text.selectionEnd = e + (value.length - l)
 		editor.update(node)
+		editor.setUndo(
+			editor.path(node),
+			'update',
+			[editor.path(node), 
+				data])
 		return node },
 
 	__setup__: function(editor){
@@ -424,8 +437,9 @@ var tasks = {
 			text = text
 				.replace(p, handler) }
 		return text },
+	__update_checkboxes_timeout: undefined,
 	__parse__: function(text, editor, elem){
-		return text
+		var res = text
 			// block checkboxes...
 			// NOTE: these are separate as we need to align block text 
 			// 		to leading chekbox...
@@ -440,7 +454,15 @@ var tasks = {
 				this.style(editor, elem, 'check', '<input type="checkbox" checked>'))
 			// completion...
 			// XXX add support for being like a todo checkbox...
-			.replace(/(?<!\\)\[[%]\]/gm, '<span class="completion"></span>') },
+			.replace(/(?<!\\)\[[%]\]/gm, '<span class="completion"></span>') 
+		// need to update status...
+		// XXX not sure if this is a good way to do this...
+		if(res != text && this.__update_checkboxes_timeout == null){
+			var that = this
+			this.__update_checkboxes_timeout = setTimeout(function(){
+				that.__update_checkboxes_timeout = undefined
+				that.updateAllStatus(editor) }, 200) }
+		return res },
 	__focusin__: function(evt, editor, elem){
 		elem.classList.contains('block')
 			&& this.selectCheckbox(editor, elem) },
@@ -964,8 +986,14 @@ var Outline = {
 	// XXX should we call plugin's __change__ live or every second???
 	__change_timeout: undefined,
 	__change_requested: false,
-	__change__: function(){
+	__change__: function(options={}){
 		var that = this
+
+		// handle undo...
+		options.undo
+			&& this.setUndo(...options.undo)
+
+		// long changes...
 		this.__change_requested = true
 		if(this.__change_timeout){
 			return this }
@@ -973,7 +1001,7 @@ var Outline = {
 		// do the action...
 		if(this.__change_requested){
 			this.sync() 
-			this.runPlugins('__change__', that) 
+			this.runPlugins('__change__', this) 
 			this.__change_requested = false }
 
 		this.__change_timeout = setTimeout(
@@ -989,6 +1017,8 @@ var Outline = {
 		collapsed: 'attr',
 		focused: 'cls',
 	},
+	// NOTE: this does not internally handle undo as it would be too 
+	// 		granular...
 	update: function(node='focused', data){
 		var node = this.get(node)
 		data ??= this.data(node, false)
@@ -1054,23 +1084,21 @@ var Outline = {
 				parent.after(cur)
 				children.length > 0
 					&& cur.lastChild.append(...children) 
-				this.setUndo(
+				this.__change__({undo: [
 					this.path(cur), 
 					'indent', 
 					['in'],
-					prev)
-				this.__change__() }
+					prev ]}) }
 		// indent...
 		} else {
 			var parent = siblings[siblings.indexOf(cur) - 1]
 			if(parent){
 				parent.lastChild.append(cur) 
-				this.setUndo(
+				this.__change__({undo: [
 					this.path(cur), 
 					'indent', 
 					['out'],
-					prev)
-				this.__change__()} } 
+					prev ]})} } 
 		return cur },
 	shift: function(node='focused', direction){
 		if(node == 'up' || node == 'down'){
@@ -1092,13 +1120,12 @@ var Outline = {
 			siblings[i+1].after(node) }
 		focused 
 			&& this.focus()
-		this.setUndo(
+		this.__change__({undo: [
 			this.path(node), 
 			'shift', 
 			[direction == 'up' ? 
 				'down' 
-				: 'up'])
-		this.__change__()
+				: 'up'] ]})
 		return this },
 	// XXX make undo a bit more refined...
 	remove: function(node='focused'){
@@ -1115,20 +1142,19 @@ var Outline = {
 		elem?.remove()
 		next 
 			&& this.focus(next)
-		// XXX HACK...
-		this.setUndo(
+		this.__change__({undo: [
 			undefined, 
 			'load', 
-			[data])
-		this.__change__()
+			// XXX HACK...
+			[data] ]})
 		return this },
 	clear: function(){
-		this.setUndo(
+		var data = this.json()
+		this.outline.innerText = ''
+		this.__change__({undo: [
 			undefined, 
 			'load', 
-			[this.json()])
-		this.outline.innerText = ''
-		this.__change__()
+			[data] ]})
 		return this },
 
 	// expand/collapse...
@@ -1315,7 +1341,7 @@ var Outline = {
 		var attrs = this.__block_attrs__
 		var cls_attrs = ['focused']
 		return {
-			text: elem.querySelector('textarea').value,
+			text: elem.querySelector('.code').value,
 			...(Object.entries(attrs)
 				.reduce(function(res, [attr, type]){
 					if(type == 'attr'){
