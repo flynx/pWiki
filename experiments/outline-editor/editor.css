@@ -259,8 +259,9 @@ editor .outline .block:focus {
 	content: "●";
 }
 
+/* select... */
 /* XXX are we selecting subtrees or blocks??? */
-.editor .outline [selected] {
+.editor .outline [selected]>.text {
 	background: silver;
 }
 

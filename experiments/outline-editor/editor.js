@@ -1645,7 +1645,6 @@ var Outline = {
 			} else {
 				evt.preventDefault() 
 				this.focus('focused', 1) } },
-
 		// horizontal navigation / collapse...
 		ArrowLeft: function(evt){
 			var edited = this.get('edited')
@@ -1861,6 +1860,28 @@ var Outline = {
 			// toggle done...
 			evt.preventDefault()
 			tasks.toggleDone(this) },
+
+		// selection...
+		// XXX need more work...
+		// 		- should we select the .block or .text???
+		// 		- we should remember the first state and apply it (a-la FAR) 
+		// 			and not simply toggle on/off per node...
+		s_ArrowUp: function(evt){
+			if(this.get('edited')){
+				return }
+			var elem = this.get()
+			elem.hasAttribute('selected') ?
+				elem.removeAttribute('selected')
+				: elem.setAttribute('selected', '')
+			this.keyboard.ArrowUp.call(this, evt) },
+		s_ArrowDown: function(evt){
+			if(this.get('edited')){
+				return }
+			var elem = this.get()
+			elem.hasAttribute('selected') ?
+				elem.removeAttribute('selected')
+				: elem.setAttribute('selected', '')
+			this.keyboard.ArrowDown.call(this, evt) },
 
 		// toggle checkbox...
 		' ': function(evt){
