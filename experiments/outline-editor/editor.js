@@ -1856,7 +1856,7 @@ var Outline = {
 				this.remove(edited)
 				return } },
 
-		c_d: function(evt){
+		a_x: function(evt){
 			// toggle done...
 			evt.preventDefault()
 			tasks.toggleDone(this) },
@@ -1866,6 +1866,15 @@ var Outline = {
 		// 		- should we select the .block or .text???
 		// 		- we should remember the first state and apply it (a-la FAR) 
 		// 			and not simply toggle on/off per node...
+		Shift: function(evt){
+			if(this.get('edited')){
+				return }
+			// XXX set selection mode
+			// 		...need to reset this when shift key is released...
+			// 		one way to do this is to save a press id and reset 
+			// 		it each call -- if the id has changed since lass s-up 
+			// 		is pressed then reset mode...
+		},
 		s_ArrowUp: function(evt){
 			if(this.get('edited')){
 				return }
@@ -1882,6 +1891,18 @@ var Outline = {
 				elem.removeAttribute('selected')
 				: elem.setAttribute('selected', '')
 			this.keyboard.ArrowDown.call(this, evt) },
+		c_d: function(evt){
+			if(this.get('edited')){
+				return }
+			evt.preventDefault()
+			for(var e of this.get('selected')){
+				e.removeAttribute('selected') } },
+		c_a: function(evt){
+			if(this.get('edited')){
+				return }
+			evt.preventDefault()
+			for(var e of this.get('all')){
+				e.setAttribute('selected', '') } },
 
 		// toggle checkbox...
 		' ': function(evt){
