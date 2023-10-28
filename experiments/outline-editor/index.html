@@ -354,13 +354,38 @@ var setup = function(){
 		<button onclick="editor.toggleCollapse()?.focus()">&#709;&#708;</button>
 		<button onclick="editor.remove()">&times;</button>
 	</div-->
-	<span class="__textarea"></span>
 </div>
 
 <hr>
 
 <button onclick="editor.dom.classList.toggle('show-click-zones')">show/hide click zones</button>
 <button onclick="editor.dom.classList.toggle('block-offsets')">show/hide block offsets</button>
+
+<hr>
+
+<h1>Outline editor as web component</h1>
+
+<outline-editor value="
+- ## code as part of an attribute
+	- as long as &quot;quotes&quot; are sanitized in the html, this is the safest">
+</outline-editor>
+
+<hr>
+
+<outline-editor>
+<textarea>- ## code enclosed in `<textarea>` element
+	- code is treated as-is
+	- the only exception is the closing textarea tag</textarea>
+</outline-editor>
+
+<hr>
+
+<outline-editor>
+- ## raw outline editor element
+	- the children are not protected
+	- any html <elements> are going to be parsed by the browser
+</outline-editor>
+
 
 
 </body>

@@ -769,12 +769,17 @@ var Outline = {
 
 	get header(){
 		return this.dom.querySelector('.header') },
-	get code(){
-		return this.dom.querySelector('.code') },
 	get outline(){
 		return this.dom.querySelector('.outline') },
 	get toolbar(){
 		return this.dom.querySelector('.toolbar') },
+
+	get code(){
+		return this.dom.querySelector('.code')?.value },
+	set code(value){
+		var c = this.dom.querySelector('.code')
+		if(c){
+			c.value = value } },
 
 
 	path: function(node='focused', mode='index'){
@@ -1026,14 +1031,15 @@ var Outline = {
 
 		var parsed = {}
 		if('text' in data){
-			var text = node.querySelector('textarea')
-			var html = node.querySelector('span')
+			var text = node.querySelector('.code')
+			var html = node.querySelector('.view')
 			if(this.__code2html__){
 				// NOTE: we are ignoring the .collapsed attr here 
 				parsed = this.__code2html__(data.text, {...data})
 				html.innerHTML = parsed.text
 				// heading...
-				node.classList.remove(...this.__styles)
+				this.__styles != null
+					&& node.classList.remove(...this.__styles)
 				parsed.style
 					&& node.classList.add(...parsed.style)
 				delete parsed.style
@@ -1201,6 +1207,7 @@ var Outline = {
 		return node },
 
 	// crop...
+	// XXX the header links are not component-compatible...
 	crop: function(node='focused'){
 		this.dom.classList.add('crop')
 		for(var block of [...this.outline.querySelectorAll('[cropped]')]){
@@ -1212,7 +1219,9 @@ var Outline = {
 				+ this.path(...arguments, 'text')
 					.slice(0, -1)
 					.map(function(s, i, {length}){
-						return `<span class="path-item" onclick="editor.uncrop(${ length-i })">${s}</span> ` })
+						return `<span class="path-item" onclick="editor.uncrop(${ length-i })">${
+							plugin.encode(s)
+						}</span> ` })
 					.join(' / ')
 		return this },
 	uncrop: function(count=1){
@@ -1563,20 +1572,20 @@ var Outline = {
 			.clear()
 			.outline
 				.append(...level(data))
-		/* XXX do we actually need this???
 		// update sizes of all the textareas (transparent)...
+		// NOTE: this is needed to make initial clicking into multi-line 
+		// 		blocks place the cursor into the clicked location.
+		// 		...this is done by expanding the textarea to the element 
+		// 		size and enabling it to intercept clicks correctly...
 		setTimeout(function(){
 			for(var e of [...that.outline.querySelectorAll('textarea')]){
 				e.updateSize() } }, 0)
-		//*/
 		// restore focus...
 		this.focus()
 		return this },
 
 	sync: function(){
-		var code = this.code
-		if(code){
-			code.value = this.text() }
+		this.code = this.text()
 		return this },
 
 
@@ -2109,7 +2118,7 @@ var Outline = {
 		var code = this.code
 		if(code){
 			var t = Date.now()
-			this.load(code.value
+			this.load(code
 				.replace(/&lt;/g, '<')
 				.replace(/&gt;/g, '>')) 
 			console.log(`Parse: ${Date.now() - t}ms`) }
@@ -2123,6 +2132,100 @@ var Outline = {
 		
 		return this },
 }
+
+
+
+//---------------------------------------------------------------------
+// Custom element...
+
+window.customElements.define('outline-editor',
+window.OutlineEditor = 
+	Object.assign(
+		function(){
+			var obj = Reflect.construct(HTMLElement, [...arguments], OutlineEditor)
+
+			obj.editor = {
+				__proto__: Outline,
+
+				get code(){
+					return obj.hasAttribute('value') ?
+							obj.getAttribute('value')
+						: (obj.children.length == 1 
+								&& obj.children[0].nodeName == 'TEXTAREA') ?
+							obj.children[0].value
+						: obj.innerHTML },
+				set code(value){
+					// XXX this can break in conjunction with .attributeChangedCallback(..)
+					if(obj.hasAttribute('value')){
+						obj.setAttribute('value', value)
+					} else if(obj.children.length == 1 
+							&& obj.children[0].nodeName == 'TEXTAREA'){
+						obj.children[0].value = value
+					} else {
+						obj.innerHTML = value } },
+			}
+
+			return obj }, 
+		{
+			// constructor stuff...
+			observedAttributes: [
+				'value',
+			],
+
+			// instance stuff...
+			prototype: {
+				__proto__: HTMLElement.prototype,
+
+				get value(){
+					return this.getAttribute('value') },
+				set value(value){
+					this.setAttribute('value', value) },
+
+				connectedCallback: function(){
+					var that = this
+					var shadow = this.attachShadow({mode: 'open'})
+
+					var style = document.createElement('link');
+					style.setAttribute('rel', 'stylesheet');
+					style.setAttribute('href', 'editor.css');
+
+					// XXX it is not rational to have this...
+					var editor = document.createElement('div')
+					editor.classList.add('editor')
+
+					var header = document.createElement('div')
+					header.classList.add('header')
+
+					var outline = document.createElement('div')
+					outline.classList.add('outline')
+					outline.setAttribute('tabindex', '0')
+
+					//var toolbar = document.createElement('div')
+					//toolbar.classList.add('toolbar')
+
+					// load the data...
+					setTimeout(function(){
+						that.editor.setup(editor) }, 0)
+
+					editor.append(
+						style,
+						header,
+						outline)
+					shadow.append(editor) },
+				disconnectedCallback: function(){
+				},
+				adoptedCallback: function(){
+				},
+				attributeChangedCallback: function(name, oldvalue, newvalue){
+					if(name == 'value'){
+						console.log('---', newvalue)
+						//oldvalue != newvalue
+						//	&& this.editor.load(newvalue) 
+						return }
+				},
+			},
+		}))
+
 
 
 
