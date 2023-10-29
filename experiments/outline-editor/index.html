@@ -66,9 +66,11 @@ var setup = function(){
     - this node has a second empty line
       
     - there are several ways to deal with this:#
-      - logseq: remove trailing whitespace completely on refocus
+      - remove trailing whitespace completely on refocus (a-la logseq)
       - show whitespace in both modes 
       - keep current behavior
+    -
+      _BTW: leading whitespace is shown..._
   - Q: should we select text without first focusing??
     - _...logseq does not do this either_
   - editor as a custom element / web component
@@ -78,6 +80,7 @@ var setup = function(){
       - adding an explicit textarea element is an odd requirement (reject?)
       - seems that the least bad way to go is to use the `value` attribute
     - DONE API: directly mixin Outline?
+    - `.value` / `.code` should be both updated internally and also load new content when updated externally -- not yet sure how...
     - events 
     - test nesting...
     - 
