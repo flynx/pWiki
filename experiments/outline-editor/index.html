@@ -52,7 +52,12 @@ var setup = function(){
     - this node has a second empty line
       
     - this is a sibling to the above node
-    - _see code_
+  - BUG: undo: does not handle element splitting correctly...
+    - place cursor somewhere here, hit `Enter`, and then undo.
+	- _this will correctly restore the old node but will not remove the new one_
+      - need to: 
+        - add undo to `.Block(..)`
+        - group `new` and `cange` into one undo action...
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
     - FF:
       - zooming on edited field
@@ -61,8 +66,6 @@ var setup = function(){
       - side margins are a bit too large (account for toolbat to the right)
   -
 - ## ToDo:
-  - might be a good idea to focus the prev (empty) node if pressing `Enter` at 0 position
-    - <- place cursor here and press enter
   - editor as a custom element / web component
     - DONE data interface:
 	  collapsed:: true
@@ -127,6 +130,9 @@ var setup = function(){
   - empty item height is a bit off...
   - search?
     - _...not sure if search should be internal or external yet..._
+  - DONE might be a good idea to focus the prev (empty) node if pressing `Enter` at 0 position
+    collapsed:: true
+    - <- place cursor here and press enter
   - DONE make `---` block not show list bullets...
   - DONE: undo: checkboxes and DONE??
     collapsed:: true

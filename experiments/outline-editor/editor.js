@@ -1781,22 +1781,23 @@ var Outline = {
 					this.Block('next')) } },
 		Enter: function(evt){
 			var edited = this.get('edited')
-			// edit -> split text...
 			if(edited){
 				if(evt.ctrlKey
 						|| evt.shiftKey){
 					return }
+				// split text...
 				evt.preventDefault()
 				var a = edited.selectionStart
 				var b = edited.selectionEnd
 				var prev = edited.value.slice(0, a)
 				var next = edited.value.slice(b)
 				edited.value = prev
-				this.Block('next')
-				edited = this.edit('next')
-				edited.value = next
-				edited.selectionStart = 0
-				edited.selectionEnd = 0
+				this.Block({text: next}, 'next')
+				// focus next if not at position 0, otherwise keep focus...
+				if(a != 0){
+					edited = this.edit('next')
+					edited.selectionStart = 0
+					edited.selectionEnd = 0 }
 				return }
 			// view -> edit...
 			evt.preventDefault()
