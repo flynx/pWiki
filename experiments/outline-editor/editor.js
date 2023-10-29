@@ -1254,6 +1254,13 @@ var Outline = {
 		;(this.__undo_stack ??= []).push([path, action, args, next])
 		this.__redo_stack = undefined
 		return this },
+	mergeUndo: function(n, stack){
+		stack ??= this.__undo_stack
+		if(stack == null || stack.length == 0){
+			return this }
+		stack.push(
+			stack.splice(-n, n))
+		return this },
 	clearUndo: function(){
 		this.__undo_stack = undefined
 		this.__redo_stack = undefined
@@ -1262,14 +1269,19 @@ var Outline = {
 		if(from == null 
 				|| from.length == 0){
 			return [from, to] }
-		var [path, action, args, next] = from.pop()
-		var l = from.length
-		path != null
-			&& this.focus(path)
-		this[action](...args)
-		next != null ?
-			this.focus(next)
-			: this.focus()
+		var actions = from.pop()
+		actions = typeof(actions[1]) == 'string' ?
+			[actions]
+			: actions
+		while(actions.length > 0){
+			var [path, action, args, next] = actions.pop()
+			var l = from.length
+			path != null
+				&& this.focus(path)
+			this[action](...args)
+			next != null ?
+				this.focus(next)
+				: this.focus() }
 		if(l < from.length){
 			to ??= []
 			to.push(
@@ -1551,7 +1563,9 @@ var Outline = {
 				cur.after(block)
 			: (place == 'before' || place == 'after') ?
 				cur[place](block)
-			: undefined }
+			: undefined 
+
+			this.setUndo(this.path(cur), 'remove', [this.path(block)]) }
 		return block },
 	// XXX see inside...
 	load: function(data){
@@ -1789,15 +1803,20 @@ var Outline = {
 				evt.preventDefault()
 				var a = edited.selectionStart
 				var b = edited.selectionEnd
-				var prev = edited.value.slice(0, a)
-				var next = edited.value.slice(b)
-				edited.value = prev
-				this.Block({text: next}, 'next')
-				// focus next if not at position 0, otherwise keep focus...
-				if(a != 0){
+				// position 0: focus empty node above...
+				if(a == 0){
+					this.Block('prev')
+					this.edit('prev')
+				// focus new node...
+				} else {
+					var prev = edited.value.slice(0, a)
+					var next = edited.value.slice(b)
+					edited.value = prev
+					this.Block({text: next}, 'next')
 					edited = this.edit('next')
 					edited.selectionStart = 0
-					edited.selectionEnd = 0 }
+					edited.selectionEnd = 0 
+					this.mergeUndo(2) }
 				return }
 			// view -> edit...
 			evt.preventDefault()
