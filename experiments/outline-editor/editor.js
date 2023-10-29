@@ -1259,7 +1259,12 @@ var Outline = {
 		if(stack == null || stack.length == 0){
 			return this }
 		stack.push(
-			stack.splice(-n, n))
+			stack.splice(-n, n)
+				.map(function(e){
+					return typeof(e[1]) == 'string' ?
+						[e]
+						: e })
+				.flat())
 		return this },
 	clearUndo: function(){
 		this.__undo_stack = undefined
