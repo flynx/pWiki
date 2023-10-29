@@ -768,16 +768,18 @@ var Outline = {
 
 
 	get header(){
-		return this.dom.querySelector('.header') },
+		return this.dom?.querySelector('.header') },
 	get outline(){
-		return this.dom.querySelector('.outline') },
+		return this.dom?.querySelector('.outline') },
 	get toolbar(){
-		return this.dom.querySelector('.toolbar') },
+		return this.dom?.querySelector('.toolbar') },
 
 	get code(){
-		return this.dom.querySelector('.code')?.value },
+		return this.dom?.querySelector('.code')?.value },
 	set code(value){
-		var c = this.dom.querySelector('.code')
+		if(value == null){
+			return }
+		var c = this.dom?.querySelector('.code')
 		if(c){
 			c.value = value } },
 
@@ -2138,93 +2140,113 @@ var Outline = {
 //---------------------------------------------------------------------
 // Custom element...
 
+
 window.customElements.define('outline-editor',
 window.OutlineEditor = 
-	Object.assign(
-		function(){
-			var obj = Reflect.construct(HTMLElement, [...arguments], OutlineEditor)
+Object.assign(
+	function(){
+		var obj = Reflect.construct(HTMLElement, [...arguments], OutlineEditor)
 
-			obj.editor = {
-				__proto__: Outline,
+		var shadow = obj.attachShadow({mode: 'open'})
 
-				get code(){
-					return obj.hasAttribute('value') ?
-							obj.getAttribute('value')
-						: (obj.children.length == 1 
-								&& obj.children[0].nodeName == 'TEXTAREA') ?
-							obj.children[0].value
-						: obj.innerHTML },
-				set code(value){
-					// XXX this can break in conjunction with .attributeChangedCallback(..)
-					if(obj.hasAttribute('value')){
-						obj.setAttribute('value', value)
-					} else if(obj.children.length == 1 
-							&& obj.children[0].nodeName == 'TEXTAREA'){
-						obj.children[0].value = value
-					} else {
-						obj.innerHTML = value } },
-			}
+		var style = document.createElement('link');
+		style.setAttribute('rel', 'stylesheet');
+		style.setAttribute('href', 'editor.css');
 
-			return obj }, 
-		{
-			// constructor stuff...
-			observedAttributes: [
-				'value',
-			],
+		// XXX it is not rational to have this...
+		var editor = obj.dom = document.createElement('div')
+		editor.classList.add('editor')
 
-			// instance stuff...
-			prototype: {
+		var header = document.createElement('div')
+		header.classList.add('header')
+
+		var outline = document.createElement('div')
+		outline.classList.add('outline')
+		outline.setAttribute('tabindex', '0')
+
+		//var toolbar = document.createElement('div')
+		//toolbar.classList.add('toolbar')
+
+		editor.append(
+			style,
+			header,
+			outline)
+		shadow.append(editor) 
+
+		obj.setup(editor)
+
+		return obj }, 
+	// constructor stuff...
+	{
+		observedAttributes: [
+			'value',
+		],
+
+		prototype: Object.assign(
+			{
 				__proto__: HTMLElement.prototype,
 
+				// XXX HACK these are copies from Outline, use 
+				// 		object.mixin(...) instead...
+				get header(){
+					return this.dom?.querySelector('.header') },
+				set header(val){},
+				get outline(){
+					return this.dom?.querySelector('.outline') },
+				set outline(val){},
+				get toolbar(){
+					return this.dom?.querySelector('.toolbar') },
+				set toolbar(val){},
+
+				// XXX these are generic...
+				encode: function(text){
+					var span = document.createElement('span')
+					span.innerText = text
+					return span.innerHTML },
+				decode: function(text){
+					var span = document.createElement('span')
+					span.innerHTML = text
+					return span.innerText },
+
+				get code(){
+					return this.hasAttribute('value') ?
+						this.getAttribute('value')
+						: this.decode(this.innerHTML) },
+				set code(value){
+					if(value == null){
+						return }
+					// XXX this can break in conjunction with .attributeChangedCallback(..)
+					if(this.hasAttribute('value')){
+						this.setAttribute('value', value)
+					} else {
+						this.innerHTML = this.encode(value) } },
+
+				// XXX do we need this???
+				// 		...rename .code -> .value ???
 				get value(){
-					return this.getAttribute('value') },
+					return this.code },
 				set value(value){
-					this.setAttribute('value', value) },
+					this.code = value },
 
 				connectedCallback: function(){
 					var that = this
-					var shadow = this.attachShadow({mode: 'open'})
-
-					var style = document.createElement('link');
-					style.setAttribute('rel', 'stylesheet');
-					style.setAttribute('href', 'editor.css');
-
-					// XXX it is not rational to have this...
-					var editor = document.createElement('div')
-					editor.classList.add('editor')
-
-					var header = document.createElement('div')
-					header.classList.add('header')
-
-					var outline = document.createElement('div')
-					outline.classList.add('outline')
-					outline.setAttribute('tabindex', '0')
-
-					//var toolbar = document.createElement('div')
-					//toolbar.classList.add('toolbar')
-
 					// load the data...
 					setTimeout(function(){
-						that.editor.setup(editor) }, 0)
+						that.load(that.code) }, 0) },
 
-					editor.append(
-						style,
-						header,
-						outline)
-					shadow.append(editor) },
-				disconnectedCallback: function(){
-				},
-				adoptedCallback: function(){
-				},
-				attributeChangedCallback: function(name, oldvalue, newvalue){
+				attributeChangedCallback(name, before, after){
 					if(name == 'value'){
-						console.log('---', newvalue)
-						//oldvalue != newvalue
-						//	&& this.editor.load(newvalue) 
+						if(before != after){
+							// XXX
+							console.log('---', before, '->', after)
+						}
 						return }
 				},
+
 			},
-		}))
+			// XXX this will fail due to all the getters/setters -- use object.mixin(..)...
+			Outline),
+	}))
 
 
 

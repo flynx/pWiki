@@ -56,6 +56,16 @@ var setup = function(){
       - side margins are a bit too large (account for toolbat to the right)
   -
 - ## ToDo:
+  - editor as a custom element / web component
+    - DONE data interface:
+	  collapsed:: true
+      - the "natural" way to pass data is to use the same mechanism as `<textarea>` the problem is that we can't extend `HTMLTextAreaElement` as it can not have shadow dom (reject?)
+      - adding an explicit textarea element is an odd requirement (reject?)
+      - seems that the least bad way to go is to use the `value` attribute
+    - DONE API: directly mixin Outline?
+    - events 
+    - test nesting...
+    - 
   - selection / multiple node selection (via shift+motion)
   - copy/paste nodes/trees
   - numbered lists: add counters to a depth of 6-7...
@@ -80,7 +90,6 @@ var setup = function(){
   - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
   - table inline editing a-la code editing -- click cell and edit directly...
   - a way to make a block monospace (???)
-  - editor as a custom element...
   - Nerd fonts (option???)
   - smooth scrolling
     - _...this is more complicated than adding `behavior: "smooth"` to `.scrollIntoView(..)` as scrolling animation will get interrupted by next user input..._
@@ -361,6 +370,9 @@ var setup = function(){
 <button onclick="editor.dom.classList.toggle('show-click-zones')">show/hide click zones</button>
 <button onclick="editor.dom.classList.toggle('block-offsets')">show/hide block offsets</button>
 
+
+
+
 <hr>
 
 <h1>Outline editor as web component</h1>
@@ -385,6 +397,7 @@ var setup = function(){
 	- the children are not protected
 	- any html <elements> are going to be parsed by the browser
 </outline-editor>
+
 
 
 
