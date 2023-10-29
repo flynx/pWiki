@@ -68,6 +68,7 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(){
 		padding: style.padding,
 
 		boxSizing: style.boxSizing,
+		//whiteSpace: 'pre-wrap',
 
 		outline: 'solid 1px red',
 
