@@ -1461,9 +1461,9 @@ var Outline = {
 	parse: function(text){
 		var that = this
 		text = text
-			.replace(/^\s*\n/, '')
+			.replace(/^[ \t]*\n/, '')
 		text = ('\n' + text)
-			.split(/\n(\s*)(?:- |-\s*$)/gm)
+			.split(/\n([ \t]*)(?:- |-\s*$)/gm)
 			.slice(1)
 		var tab = ' '.repeat(this.tab_size || 8)
 		var level = function(lst, prev_sep=undefined, parent=[]){

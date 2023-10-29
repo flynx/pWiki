@@ -48,6 +48,11 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
+  - BUG: trailing whitespace is ignored in view...
+    - this node has a second empty line
+      
+    - this is a sibling to the above node
+    - _see code_
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
     - FF:
       - zooming on edited field
@@ -387,16 +392,14 @@ var setup = function(){
 <outline-editor>
 <textarea>- ## code enclosed in `<textarea>` element
 	- code is treated as-is
-	- the only exception is the closing textarea tag</textarea>
-</outline-editor>
+	- the only exception is the closing textarea tag</textarea></outline-editor>
 
 <hr>
 
 <outline-editor>
-- ## raw outline editor element
+- ## raw outline editor `&lt;element&gt;`
 	- the children are not protected
-	- any html <elements> are going to be parsed by the browser
-</outline-editor>
+	- any html <elements> are going to be parsed by the browser</outline-editor>
 
 
 
