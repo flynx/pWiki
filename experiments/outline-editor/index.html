@@ -42,7 +42,7 @@ var setup = function(){
     - Logseq
 	- Conboy (Nokia N900's Tomboy clone)
 	- Bonsai (on PalmOS)
-	- Google Keep
+	- Google Keep (editor)
   - 
   - // Seems that I unintentionally implemented quite a chunk of the markdown spec ;)
   - 
@@ -65,9 +65,10 @@ var setup = function(){
       - keep current behavior
     -
       _BTW: leading whitespace is shown..._
+  - add options to save to `.sessionStorage` / `.localStorage`
   - Q: should we select text without first focusing??
     - _...logseq does not do this either_
-  - editor as a custom element / web component
+  - custom element / web component
     - DONE data interface:
 	  collapsed:: true
       - the "natural" way to pass data is to use the same mechanism as `<textarea>` the problem is that we can't extend `HTMLTextAreaElement` as it can not have shadow dom (reject?)
@@ -303,7 +304,9 @@ var setup = function(){
       - // C-style comment
       - ; ASM-style comment
       - XXX Highlight
-      - DONE Done (toggled via: `ctrl-d`)
+	  - Status (toggle all via: `alt-s`)
+        - DONE Done (toggled via: `alt-x`)
+        - REJECT Reject (toggled via: `alt-r`)
     - Basic inline *bold*, _italic_ and ~striked~
     - Marking ==text==
     - Code:
