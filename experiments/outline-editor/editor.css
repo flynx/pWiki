@@ -489,11 +489,15 @@ editor .outline .block:focus {
 }
 
 
-/*---------------------------------------------------------- Done ---*/
+/*-------------------------------------------------------- Status ---*/
 
 .editor .outline .block.DONE>.view {
 	text-decoration: line-through;
 	opacity: 0.5;
+}
+
+.editor .outline .block.REJECT>.view {
+	text-decoration: line-through;
 }
 
 

@@ -273,10 +273,26 @@ var quoted = {
 var tasks = {
 	__proto__: plugin,
 
-	done_patterns: [
-		/^\s*(?<!\\)DONE\s+(.*)$/m,
-		/^(.*)\s*(?<!\\)DONE\s*$/m,
+	status: [
+		'DONE',
+		'REJECT',
 	],
+	// format:
+	// 	[
+	// 		<status>: <pattern>,
+	// 		...
+	// 	]
+	__status_patterns: undefined,
+	__status_pattern_tpl: `^(?:\\s*(?<!\\\\)$STATUS:?\\s+(.*)$|(.*)\\s+(?<!\\\\)$STATUS\\s*)$`,
+	get status_patterns(){
+		var that = this
+		return (this.__status_patterns 
+			??= this.status
+				.reduce(function(res, status){
+					res[status] = new RegExp(
+						that.__status_pattern_tpl
+							.replace(/\$STATUS/g, status), 'm') 
+					return res }, {})) },
 
 	// State...
 	updateStatus: function(editor, node){
@@ -399,8 +415,8 @@ var tasks = {
 		return node },
 	prevCheckbox: function(editor, node='focused', offset=-1){
 		return this.nextCheckbox(editor, node, offset) },
-	// DONE...
-	toggleDone: function(editor, elem){
+	// Status...
+	toggleStatus: function(editor, elem, status='next', patterns=this.status_patterns){
 		var node = editor.get(elem)
 		if(node == null){
 			return }
@@ -410,14 +426,29 @@ var tasks = {
 		var s = text.selectionStart
 		var e = text.selectionEnd
 		var l = text.value.length
-		if(this.done_patterns
-				.reduce(function(res, p){ 
-					return res 
-						|| p.test(text.value) } , false)){
-			for(var p of this.done_patterns){
-				value = value.replace(p, '$1') }
-		} else {
-			value = 'DONE ' + value }
+
+		var p = Object.entries(patterns)
+		for(var i=0; i<p.length; i++){
+			var [name, pattern] = p[i]
+			if(pattern.test(value)){
+				value = value.replace(pattern, '$1')
+				if(status != 'off'){
+					break } } }
+		if(status != 'off'){
+			// toggle specific status...
+			if(status != 'next'){
+				if(i == p.length 
+						|| name != status){
+					value = status +' '+ value }
+			// next...
+			} else if(i != p.length-1){
+				// set next...
+				if(i+1 in p){
+					value = p[i+1][0] +' '+ value 
+				// set first...
+				} else {
+					value = p[0][0] +' '+ value } } }
+
 		text.value = value
 		text.selectionStart = s + (value.length - l)
 		text.selectionEnd = e + (value.length - l)
@@ -428,15 +459,23 @@ var tasks = {
 			[editor.path(node), 
 				data])
 		return node },
+	toggleDone: function(editor, elem){
+		return this.toggleStatus(editor, elem, 'DONE') },
+	toggleReject: function(editor, elem){
+		return this.toggleStatus(editor, elem, 'REJECT') },
 
 	__setup__: function(editor){
 		return this.updateAllStatus(editor) },
 	__pre_parse__: function(text, editor, elem){
 		// handle done..
-		var handler = this.style(editor, elem, 'DONE')
-		for(var p of this.done_patterns){
+		var done = this.style(editor, elem, 'DONE')
+		var reject = this.style(editor, elem, 'REJECT')
+		for(var [n, p] of Object.entries(this.status_patterns)){
 			text = text
-				.replace(p, handler) }
+				.replace(p, 
+					n == 'DONE' ?
+						done
+						: reject) }
 		return text },
 	__update_checkboxes_timeout: undefined,
 	__parse__: function(text, editor, elem){
@@ -1892,10 +1931,18 @@ var Outline = {
 				this.remove(edited)
 				return } },
 
+		a_s: function(evt){
+			// toggle done...
+			evt.preventDefault()
+			tasks.toggleStatus(this) },
 		a_x: function(evt){
 			// toggle done...
 			evt.preventDefault()
 			tasks.toggleDone(this) },
+		a_r: function(evt){
+			// toggle done...
+			evt.preventDefault()
+			tasks.toggleReject(this) },
 
 		// selection...
 		// XXX need more work...
