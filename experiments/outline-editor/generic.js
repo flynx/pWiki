@@ -60,15 +60,20 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(){
 
 		position: 'fixed',
 		display: 'block',
+		/* DEBUG...
+		top: '0px',
+		left: '0px',
+		/*/
 		top: '-100%',
 		left: '-100%',
+		//*/
 		width: style.width,
 		height: style.height,
 
 		padding: style.padding,
 
 		boxSizing: style.boxSizing,
-		//whiteSpace: 'pre-wrap',
+		whiteSpace: style.whiteSpace,
 
 		outline: 'solid 1px red',
 

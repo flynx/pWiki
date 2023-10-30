@@ -69,7 +69,7 @@ var getCharOffset = function(elem, x, y, c){
 					return Math.abs(b.x - x) <= Math.abs(prev.x - x) ?
 						c + i
 						: c + i - 1 } }
-			c += i
+			c += i - 1
 		// html node...
 		} else {
 			var res = getCharOffset(e, x, y, c)
@@ -1974,6 +1974,7 @@ var Outline = {
 						elem.selectionStart = elem.value.length
 						elem.selectionEnd = elem.value.length 
 					} else {
+						console.log('---', c)
 						var m = getMarkdownOffset(elem.value, view.innerText, c)
 						elem.focus()
 						elem.selectionStart = c + m
