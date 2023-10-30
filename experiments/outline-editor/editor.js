@@ -2224,20 +2224,10 @@ Object.assign(
 					return this.dom?.querySelector('.toolbar') },
 				set toolbar(val){},
 
-				// XXX these are generic...
-				encode: function(text){
-					var span = document.createElement('span')
-					span.innerText = text
-					return span.innerHTML },
-				decode: function(text){
-					var span = document.createElement('span')
-					span.innerHTML = text
-					return span.innerText },
-
 				get code(){
 					return this.hasAttribute('value') ?
 						this.getAttribute('value')
-						: this.decode(this.innerHTML) },
+						: HTMLElement.decode(this.innerHTML) },
 				set code(value){
 					if(value == null){
 						return }
@@ -2245,7 +2235,7 @@ Object.assign(
 					if(this.hasAttribute('value')){
 						this.setAttribute('value', value)
 					} else {
-						this.innerHTML = this.encode(value) } },
+						this.innerHTML = HTMLElement.encode(value) } },
 
 				// XXX do we need this???
 				// 		...rename .code -> .value ???

@@ -24,6 +24,20 @@ Element.prototype.visibleInViewport = function(partial=false){
 
 //---------------------------------------------------------------------
 
+// XXX should these be here???
+HTMLElement.encode = function(str){
+	var span = document.createElement('span')
+	span.innerText = str
+	return span.innerHTML }
+HTMLElement.decode = function(str){
+	var span = document.createElement('span')
+	span.innerHTML = str
+	return span.innerText }
+
+
+
+//---------------------------------------------------------------------
+
 HTMLTextAreaElement.prototype.updateSize = function(){
 	this.style.height = ''
 	this.style.height = this.scrollHeight + 'px' 
