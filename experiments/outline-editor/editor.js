@@ -46,8 +46,8 @@ function clickPoint(x,y){
 // elements.
 //
 // XXX it would be a better idea to do a binary search instead of a liner 
-// 		pass... but at this point this is not critical (unless we get 
-// 		gigantic blocks)
+// 		pass...
+// 		...though b-search will get us to the target, we stll need to count...
 // XXX HACK -- is there a better way to do this???
 var getCharOffset = function(elem, x, y, c){
 	c = c ?? 0
