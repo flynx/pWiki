@@ -48,6 +48,8 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
+  - BUG: html decode/encode broken...
+    - `HTMLElement.decode(HTMLElement.encode('a\nb\nc')) -> 'abc'` and not `'a\nb\nc'`!!!
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
     - FF:
       - zooming on edited field
@@ -418,7 +420,9 @@ var setup = function(){
 	- the children are not protected
 	- any html <elements> are going to be parsed by the browser</outline-editor>
 
+<hr>
 
+<outline-editor session-storage="outline-editor-test"></outline-editor>
 
 
 </body>

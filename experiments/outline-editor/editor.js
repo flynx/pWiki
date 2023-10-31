@@ -2246,6 +2246,7 @@ Object.assign(
 			outline)
 		shadow.append(editor) 
 
+		console.log('SETUP')
 		obj.setup(editor)
 
 		return obj }, 
@@ -2253,6 +2254,9 @@ Object.assign(
 	{
 		observedAttributes: [
 			'value',
+
+			'session-storage',
+			'local-storage',
 		],
 
 		prototype: Object.assign(
@@ -2275,6 +2279,7 @@ Object.assign(
 					return this.hasAttribute('value') ?
 						this.getAttribute('value')
 						: HTMLElement.decode(this.innerHTML) },
+				// XXX
 				set code(value){
 					if(value == null){
 						return }
@@ -2282,7 +2287,12 @@ Object.assign(
 					if(this.hasAttribute('value')){
 						this.setAttribute('value', value)
 					} else {
-						this.innerHTML = HTMLElement.encode(value) } },
+						this.innerHTML = HTMLElement.encode(value) } 
+					// XXX is this the right way to do this???
+					this.__sessionStorage
+						&& (sessionStorage[this.__sessionStorage] = value)
+					this.__localStorage
+						&& (localStorage[this.__localStorage] = value) },
 
 				// XXX do we need this???
 				// 		...rename .code -> .value ???
@@ -2297,13 +2307,19 @@ Object.assign(
 					setTimeout(function(){
 						that.load(that.code) }, 0) },
 
+				// XXX do we need to before == after ???
 				attributeChangedCallback(name, before, after){
+					if(name == 'local-storage'){
+						this.__localStorage = after
+						this.code = localStorage[after] ?? '' }
+
+					if(name == 'session-storage'){
+						this.__sessionStorage = after
+						this.code = sessionStorage[after] ?? '' }
+
 					if(name == 'value'){
-						if(before != after){
-							// XXX
-							console.log('---', before, '->', after)
-						}
-						return }
+						console.log('---', before, '->', after) }
+
 				},
 
 			},

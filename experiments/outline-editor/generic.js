@@ -27,12 +27,27 @@ Element.prototype.visibleInViewport = function(partial=false){
 // XXX should these be here???
 HTMLElement.encode = function(str){
 	var span = document.createElement('span')
+	// XXX
+	return str
+		.replace(/&/g, '&amp;') 
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;') }
+	/*/
 	span.innerText = str
 	return span.innerHTML }
+	//*/
+// XXX this does not convert <br> back to \n...
 HTMLElement.decode = function(str){
 	var span = document.createElement('span')
+	// XXX
+	return str
+		.replace(/%lt;/g, '<')
+		.replace(/&gt;/g, '>') 
+		.replace(/&amp;/g, '&') }
+	/*/
 	span.innerHTML = str
 	return span.innerText }
+	//*/
 
 
 
