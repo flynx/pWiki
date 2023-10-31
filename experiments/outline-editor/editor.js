@@ -2311,6 +2311,9 @@ Object.assign(
 				attributeChangedCallback(name, before, after){
 					if(name == 'local-storage'){
 						this.__localStorage = after
+						// XXX setting code here because we will load at .setup(..)
+						// 		...the problem is that if we change the attr 
+						// 		we need to call .load(..)
 						this.code = localStorage[after] ?? '' }
 
 					if(name == 'session-storage'){
