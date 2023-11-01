@@ -766,6 +766,9 @@ var Outline = {
 	change_interval: 1000,
 	tab_size: 4,
 	carot_jump_edge_then_block: false,
+	// XXX not sure what should the default be...
+	// XXX this should not affect editing...
+	trim_block_text: false,
 
 
 	// Plugins...
@@ -1077,7 +1080,12 @@ var Outline = {
 			if(this.__code2html__){
 				// NOTE: we are ignoring the .collapsed attr here 
 				parsed = this.__code2html__(data.text, {...data})
-				html.innerHTML = parsed.text
+				html.innerHTML = 
+					parsed.text.length == 0 ?
+						parsed.text
+						// NOTE: adding a space here is done to prevent the browser 
+						// 		from hiding the last newline...
+						: parsed.text + ' '
 				// heading...
 				this.__styles != null
 					&& node.classList.remove(...this.__styles)
@@ -1085,7 +1093,12 @@ var Outline = {
 					&& node.classList.add(...parsed.style)
 				delete parsed.style
 			} else {
-				html.innerHTML = data.text }
+				html.innerHTML = 
+					data.text.length == 0 ?
+						data.text
+						// NOTE: adding a space here is done to prevent the browser 
+						// 		from hiding the last newline...
+						: data.text + ' ' }
 			text.value = data.text
 			// XXX this does not seem to work until we click in the textarea...
 			text.autoUpdateSize() }
@@ -2021,7 +2034,6 @@ var Outline = {
 						elem.selectionStart = elem.value.length
 						elem.selectionEnd = elem.value.length 
 					} else {
-						console.log('---', c)
 						var m = getMarkdownOffset(elem.value, view.innerText, c)
 						elem.focus()
 						elem.selectionStart = c + m
@@ -2240,6 +2252,10 @@ Object.assign(
 		//var toolbar = document.createElement('div')
 		//toolbar.classList.add('toolbar')
 
+		// XXX can't yet get rid of the editor element here... 
+		// 		- handling autofocus of host vs. shadow???
+		// 		- CSS not working correctly yet...
+		// 		...is this feasible???
 		editor.append(
 			style,
 			header,
@@ -2275,11 +2291,23 @@ Object.assign(
 					return this.dom?.querySelector('.toolbar') },
 				set toolbar(val){},
 
+				// NOTE: this is here to break recursion of trying to set 
+				// 		html's value both in .code that is called both when
+				// 		setting .value and from .attributeChangedCallback(..)
+				get __code(){
+					return this.code },
+				set __code(value){
+					if(value == null){
+						return }
+					// XXX is this the right way to do this???
+					this.__sessionStorage
+						&& (sessionStorage[this.__sessionStorage] = value)
+					this.__localStorage
+						&& (localStorage[this.__localStorage] = value) },
 				get code(){
 					return this.hasAttribute('value') ?
 						this.getAttribute('value')
 						: HTMLElement.decode(this.innerHTML) },
-				// XXX
 				set code(value){
 					if(value == null){
 						return }
@@ -2288,11 +2316,7 @@ Object.assign(
 						this.setAttribute('value', value)
 					} else {
 						this.innerHTML = HTMLElement.encode(value) } 
-					// XXX is this the right way to do this???
-					this.__sessionStorage
-						&& (sessionStorage[this.__sessionStorage] = value)
-					this.__localStorage
-						&& (localStorage[this.__localStorage] = value) },
+					this.__code = value },
 
 				// XXX do we need this???
 				// 		...rename .code -> .value ???
@@ -2309,20 +2333,21 @@ Object.assign(
 
 				// XXX do we need to before == after ???
 				attributeChangedCallback(name, before, after){
+					var value
 					if(name == 'local-storage'){
 						this.__localStorage = after
 						// XXX setting code here because we will load at .setup(..)
 						// 		...the problem is that if we change the attr 
 						// 		we need to call .load(..)
-						this.code = localStorage[after] ?? '' }
+						value = this.code = localStorage[after] ?? '' }
 
-					if(name == 'session-storage'){
+					if(value && name == 'session-storage'){
 						this.__sessionStorage = after
-						this.code = sessionStorage[after] ?? '' }
+						value = this.code = sessionStorage[after] ?? '' }
 
-					if(name == 'value'){
-						console.log('---', before, '->', after) }
-
+					if(!value && name == 'value'){
+						// see notes for .__code
+						value = this.__code = after }
 				},
 
 			},

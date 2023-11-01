@@ -30,6 +30,7 @@
 	text-size-adjust: 180%;
 }
 
+:host,
 .editor {
 	--item-padding: calc(1em * var(--item-padding-ratio));
 }
@@ -38,6 +39,7 @@
 
 /*********************************************************************/
 
+:host,
 .editor {
 	display: block;
 	position: relative;
@@ -155,7 +157,7 @@
 				overflow: hidden;
 				resize: none;
 				/* show/hide node's view/code... */
-				/*.editor .outline .block>.code:focus+.view,*/
+				/*&:focus+.view,*/
 				&:not(:focus) {
 					opacity: 0;
 				}
@@ -326,6 +328,7 @@
 
 /*------------------------------------------------------ Headings ---*/
 
+:host .outline,
 .editor .outline {
 	.heading-1,
 	.heading-2,
@@ -368,6 +371,7 @@
 
 /*--------------------------------------------------------- Quote ---*/
 
+:host .outline .quote>.text,
 .editor .outline .quote>.text {
 	--indent: 1rem;
 	--v-margin: 0.7rem;
@@ -388,6 +392,7 @@
 
 /*---------------------------------------------------------- List ---*/
 
+:host .outline,
 .editor .outline {
 	.list-item>.view:before,
 	.list>.children {
@@ -425,6 +430,7 @@
 
 /*------------------------------------------------ Numbered lists ---*/
 
+:host .outline .numbered-list>.children,
 .editor .outline .numbered-list>.children {
 	counter-reset: numbered-list;
 
@@ -456,6 +462,7 @@
 
 /*------------------------------------------------------ hr block ---*/
 
+:host .outline,
 .editor .outline {
 	.list>.children>.block.hr>.view:before {
 		content: "";
@@ -468,6 +475,7 @@
 
 /*--------------------------------------------------------- Notes ---*/
 
+:host .outline .NOTE,
 .editor .outline .NOTE {
 	--margin: 1rem;
 	--padding-h: 2rem;
@@ -502,6 +510,7 @@
 
 /*-------------------------------------------------------- Status ---*/
 
+:host .outline .block,
 .editor .outline .block {
 	&.DONE>.view {
 		text-decoration: line-through;
@@ -515,6 +524,7 @@
 
 /*--------------------------------------------------- Highlightes ---*/
 
+:host .outline,
 .editor .outline {
 	.highlight {
 		font-weight: bold;
@@ -528,9 +538,11 @@
 
 /*------------------------------------------------------ Comments ---*/
 
+:host.hide-comments .outline .comment,
 .editor.hide-comments .outline .comment {
 	display: none;
 }
+:host .outline .comment>.view,
 .editor .outline .comment>.view {
 	color: silver;
 }
@@ -538,6 +550,7 @@
 
 /*---------------------------------------------------- Checkboxes ---*/
 
+:host .outline .block,
 .editor .outline .block {
 	&.todo>.view {
 		width: calc(
@@ -591,6 +604,7 @@
 
 /*---------------------------------------------------------- Code ---*/
 
+:host .outline .block>.view,
 .editor .outline .block>.view {
 	/* XXX for some reason if we omit & where not needed, colors will not apply... */
 	& pre,
@@ -613,6 +627,7 @@
 
 /*-------------------------------------------------------- Tables ---*/
 
+:host .outline .block>.view>table,
 .editor .outline .block>.view>table {
 	width: 100%;
 	border-collapse: collapse;
@@ -636,6 +651,7 @@
 
 /********************************************************* Testing ***/
 
+:host.show-click-zones .outline .block,
 .editor.show-click-zones .outline .block {
 	&>.view {
 		&:before,

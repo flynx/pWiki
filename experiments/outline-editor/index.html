@@ -48,8 +48,7 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
-  - BUG: html decode/encode broken...
-    - `HTMLElement.decode(HTMLElement.encode('a\nb\nc')) -> 'abc'` and not `'a\nb\nc'`!!!
+  - BUG: `.trim_block_text` should not affect editing...
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
     - FF:
       - zooming on edited field
@@ -59,31 +58,42 @@ var setup = function(){
   -
 - ## ToDo:
   - trailing whitespace is ignored in `.view`... (BUG?)
-    - this node has a second empty line
-      
-    - there are several ways to deal with this:#
-      - remove trailing whitespace completely on refocus (a-la logseq)
+    - demos:
+      -
+        leading whitespace...
+      - trailing whitespace...
+        
+      - empty block is not correctly shown\:
+        - 
+          
+          
+    - _it seams that HTML ignores the last newline if it is not followed by anything_
+    - there are four ways to deal with this:#
+      - trim whitespace on refocus
       - show whitespace in both modes 
-      - keep current behavior
-    -
-      _BTW: leading whitespace is shown..._
-  - add options to save to `.sessionStorage` / `.localStorage`
-  - Q: should we select text without first focusing??
-    - _...logseq does not do this either_
+      - REJECT remove trailing whitespace completely on refocus (a-la logseq)
+      - REJECT keep current behavior
+    - I do not believe in keeping whitespace in edit and hiding it in view (POLS)
   - custom element / web component
+    - Q: can we get rid of the editor block??:
+      - CSS breaks if we do...
+      - need to figure out a way to handle autofocus for host/editor uniformly 
     - DONE data interface:
 	  collapsed:: true
       - the "natural" way to pass data is to use the same mechanism as `<textarea>` the problem is that we can't extend `HTMLTextAreaElement` as it can not have shadow dom (reject?)
       - adding an explicit textarea element is an odd requirement (reject?)
       - seems that the least bad way to go is to use the `value` attribute
     - DONE API: directly mixin Outline?
-    - `.value` / `.code` should be both updated internally and also load new content when updated externally -- not yet sure how...
+    - DONE `.value` / `.code` should be both updated internally and also load new content when updated externally -- not yet sure how...
     - events 
     - test nesting...
     - 
   - selection
     - multiple node selection (via shift+motion)
     - touch/mouse (???)
+  - Q: should we select text (mouse/touch) without first focusing??
+    - _...logseq does not do this either_
+    - now this is possible by dragging from a click zone...
   - copy/paste nodes/trees
   - numbered lists: add counters to a depth of 6-7...
     - _or find a way to make them repeat..._
@@ -137,6 +147,7 @@ var setup = function(){
   - empty item height is a bit off...
   - search?
     - _...not sure if search should be internal or external yet..._
+  - DONE add options to save to `.sessionStorage` / `.localStorage`
   - DONE might be a good idea to focus the prev (empty) node if pressing `Enter` at 0 position
     collapsed:: true
     - <- place cursor here and press enter
@@ -223,6 +234,7 @@ var setup = function(){
     - DONE split out
     - DONE define api (see: `<editor>.__code2text__(..) / <editor>.__text2code__(..)`)
   - CSS
+    - DONE nested rules (experiment)
     - separate out settings
     - separate out theming
   - Actions -- move user actions (code in `.keyboard`) into methods
@@ -422,7 +434,11 @@ var setup = function(){
 
 <hr>
 
-<outline-editor session-storage="outline-editor-test"></outline-editor>
+<outline-editor 
+	session-storage="outline-editor-test" 
+	value="- ## Session storage
+	- default value, edit to change
+	- this should survive reloads"></outline-editor>
 
 
 </body>

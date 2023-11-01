@@ -41,7 +41,7 @@ HTMLElement.decode = function(str){
 	var span = document.createElement('span')
 	// XXX
 	return str
-		.replace(/%lt;/g, '<')
+		.replace(/&lt;/g, '<')
 		.replace(/&gt;/g, '>') 
 		.replace(/&amp;/g, '&') }
 	/*/
