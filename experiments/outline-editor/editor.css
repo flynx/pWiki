@@ -41,269 +41,283 @@
 .editor {
 	display: block;
 	position: relative;
-}
 
-.editor .code {
-	display: none;
-}
+	.code {
+		display: none;
+	}
 
+	/* header */
+	.header {
+		margin: 1em var(--outline-padding);
+		padding-bottom: 1.2em;
 
-/* header */
-.editor .header {
-	margin: 1em var(--outline-padding);
-	padding-bottom: 1.2em;
+		border-bottom: solid 1px rgba(0,0,0,0.15);
 
-	border-bottom: solid 1px rgba(0,0,0,0.15);
-}
-.editor .header:empty {
-	display: none;
-}
-.editor .header .path-item {
-	color: gray;
-	cursor: pointer;
-	/* XXX needs more work... */
-	max-width: 10rem;
-	text-overflow: ellipsis;
-}
-.editor .header .path-item:hover {
-	text-decoration: underline;
-}
-.editor .header .path-item:first-child {
-	padding-left: 3em;
-	margin-left: -2em;
-}
+		&:empty {
+			display: none;
+		}
+		.path-item {
+			color: gray;
+			cursor: pointer;
+			/* XXX needs more work... */
+			max-width: 10rem;
+			text-overflow: ellipsis;
 
+			&:hover {
+				text-decoration: underline;
+			}
+			&:first-child {
+				padding-left: 3em;
+				margin-left: -2em;
+			}
+		}
+	}
 
-.editor .outline {
-	display: block;
-	position: relative;
+	.outline {
+		display: block;
+		position: relative;
 
-	padding: 1em var(--outline-padding);
-	padding-bottom: 1.2em;
-}
+		padding: 1em var(--outline-padding);
+		padding-bottom: 1.2em;
 
-/* virtual empty block... */
-.editor .outline:empty:after {
-	content: "Empty";
-	display: block;
-	font-style: italic;
-	color: rgba(0,0,0,0.2);
-}
-.editor .outline:empty:hover:after {
-}
+		/* virtual empty block... */
+		&:empty:after {
+			content: "Empty";
+			display: block;
+			font-style: italic;
+			color: rgba(0,0,0,0.2);
+		}
+		&:empty:hover:after {
+		}
 
 
-.editor .outline .block {
-	position: relative;
-	outline: none;
-	border: none;
-}
-.editor.block-offsets .outline .block {
-	border-left: solid 1px silver;
-}
-.editor .outline .block .block,
-.editor.crop .outline .block[cropped] .block,
-.editor.crop .outline .block[cropped] .block[cropped] {
-	margin-left: var(--item-indent);
-}
-.editor .outline .block>.text {
-	--v-margin: 0;
+		.block .block {
+			margin-left: var(--item-indent);
+		}
+		.block {
+			position: relative;
+			outline: none;
+			border: none;
 
-	display: block;
-	width: 100%;
-	/* XXX this is a tiny bit off and using .code's height here is off too... */
-	min-height: calc(1em + var(--item-padding) * 2);
-	padding-top: var(--item-padding);
-	padding-bottom: var(--item-padding);
-	padding-left: 0;
-	padding-right: 0;
-	margin: var(--v-margin) 0;
-	box-sizing: border-box;
+			/* focus... */
+			&:focus {
+				/*outline: solid 0.2em silver;*/
+				outline: none;
+			}
+			&:focus>.text {
+				background: rgba(0,0,0,0.07);
+			}
+			&.focused:not(:focus)>.text {
+				background: rgba(0,0,0,0.01);
+				border-bottom: solid 2px rgba(0,0,0,0.03);
+			}
 
-	font-family: sans-serif;
-	font-size: var(--font-size);
-	white-space: pre-wrap;
+			/* collapsed block... */
+			&[collapsed] {
+				border-bottom: solid 1px silver;
+				&>.children {
+					display: none;
+				}
+			}
 
-	outline: none;
-	border: none;
-}
-/* show/hide node's view/code... */
-/*.editor .outline .block>.code:focus+.view,*/
-.editor .outline .block>.code:not(:focus) {
-	position: absolute;
-	opacity: 0;
-}
-/* hide .view content but show before/after -- keep bulets and touch zones... */
-.editor .outline .block>.code:focus+.view {
-	position: absolute;
-	top: 0;
-	visibility: hidden;
-}
-.editor .outline .block>.code:focus+.view:before,
-.editor .outline .block>.code:focus+.view:after {
-	visibility: visible;
-	margin-top: calc(-1 * var(--v-margin));
-	margin-bottom: calc(-1 * var(--v-margin));
-}
-/* click through the .view text to the .code */
-.editor .outline .block>.view {
-	position: relative;
-	pointer-events: none;
-}
-/* block hover... */
-.editor .outline:empty:hover:after,
-.editor .outline .block:hover>.view {
-	background: linear-gradient(
-		90deg, 
-			rgba(0,0,0,0.01) 0%, 
-			rgba(0,0,0,0.01) 80%, 
-			rgba(0,0,0,0.03) 100%);
-}
-.editor .outline .block>.view:blank {
-	content: " ";
-}
-.editor .outline .block>.code {
-	height: calc(2 * var(--item-padding) + 1em);
-	overflow: hidden;
-	resize: none;
-}
-/* clickable things in view */
-.editor .outline .block>.view a,
-.editor .outline .block>.view pre,
-.editor .outline .block>.view input {
-	pointer-events: auto;
-}
+			/* select... */
+			/* XXX are we selecting subtrees or blocks??? */
+			&[selected]>.text {
+				background: silver;
+			}
 
+			&>.text {
+				--v-margin: 0;
 
-/* focus... */
-editor .outline .block:focus {
-	/*outline: solid 0.2em silver;*/
-	outline: none;
-}
-.editor .outline .block:focus>.text {
-	background: rgba(0,0,0,0.07);
-}
-.editor .outline .block.focused:not(:focus)>.text {
-	background: rgba(0,0,0,0.01);
-	border-bottom: solid 2px rgba(0,0,0,0.03);
-}
+				display: block;
+				width: 100%;
+				/* XXX this is a tiny bit off and using .code's height here is off too... */
+				min-height: calc(1em + var(--item-padding) * 2);
+				padding-top: var(--item-padding);
+				padding-bottom: var(--item-padding);
+				padding-left: 0;
+				padding-right: 0;
+				margin: var(--v-margin) 0;
+				box-sizing: border-box;
 
-/* collapsed block... */
-.editor .outline .block[collapsed] {
-	border-bottom: solid 1px silver;
-}
-/* hide children... */
-.editor .outline .block[collapsed]>.children {
-	display: none;
-}
+				font-family: sans-serif;
+				font-size: var(--font-size);
+				white-space: pre-wrap;
 
+				outline: none;
+				border: none;
+			}
 
-/* click/tap zones for expand button... */
-.editor .outline .block>.view:before,
-.editor .outline .block>.view:after {
-	--size: 3rem;
+			&>.code {
+				position: absolute;
+				top: 0;
+				height: calc(2 * var(--item-padding) + 1em);
+				overflow: hidden;
+				resize: none;
+				/* show/hide node's view/code... */
+				/*.editor .outline .block>.code:focus+.view,*/
+				&:not(:focus) {
+					opacity: 0;
+				}
+				/* hide .view content but show before/after -- keep bulets and touch zones... */
+				&:focus+.view {
+					visibility: hidden;
 
-	content: "";
-	position: absolute;
-	display: flex;
-	top: 0;
-	right: calc(-1 * var(--size));
-	width: var(--size);
-	height: 100%;
+					&:before,
+					&:after {
+						visibility: visible;
+						margin-top: calc(-1 * var(--v-margin));
+						margin-bottom: calc(-1 * var(--v-margin));
+					}
+				}
+			}
 
-	align-items: top;
-	justify-content: center;
+			/* click through the .view text to the .code */
+			&>.view {
+				position: relative;
+				pointer-events: none;
 
-	box-sizing: border-box;
-	border-left: solid 0.5em transparent;
-	border-right: solid 0.5em transparent;
+				/* clickable things in view */
+				& a,
+				& pre,
+				& input {
+					pointer-events: auto;
+				}
 
-	/* make the text align to the center of the first line... */
-	font-size: 1rem;
-	/* XXX the 1.1 coeficient here is a hack... */
-	line-height: calc(
-		var(--font-size)
-			* 1.1
-		+ var(--font-size) 
-			* var(--item-padding-ratio) 
-			* 2);
+				/* click/tap zones for expand button... */
+				&:before,
+				&:after {
+					--size: 3rem;
 
-	pointer-events: auto;
+					content: "";
+					position: absolute;
+					display: flex;
+					top: 0;
+					right: calc(-1 * var(--size));
+					width: var(--size);
+					height: 100%;
 
-	cursor: pointer;
-	background: transparent;
-}
+					align-items: top;
+					justify-content: center;
 
-/* left indicator */
-.editor .outline .block>.view:before {
-	justify-content: right;
-	left: calc(-1 * var(--size));
-}
-/* left indicator bullet */
-/* XXX not sure about this yet... */
-.editor .outline .block>.view:before {
-	content: "●";
-	color: rgba(0,0,0,0.07);
-}
-.editor .outline .block>.view:empty:before {
-	content: "";
-}
-/* right indicator (collapse/expand) */
-.editor .outline .block>.view:after {
-	color: silver;
-}
-.editor .outline .block:has(.block)>.view:after {
-	content: "○";
-}
-.editor .outline .block[collapsed]>.view:after {
-	content: "●";
-}
+					box-sizing: border-box;
+					border-left: solid 0.5em transparent;
+					border-right: solid 0.5em transparent;
 
-/* select... */
-/* XXX are we selecting subtrees or blocks??? */
-.editor .outline [selected]>.text {
-	background: silver;
-}
+					/* make the text align to the center of the first line... */
+					font-size: 1rem;
+					/* XXX the 1.1 coeficient here is a hack... */
+					line-height: calc(
+						var(--font-size)
+							* 1.1
+						+ var(--font-size) 
+							* var(--item-padding-ratio) 
+							* 2);
+
+					pointer-events: auto;
+
+					cursor: pointer;
+					background: transparent;
+				}
+				/* left indicator */
+				&:before {
+					justify-content: right;
+					left: calc(-1 * var(--size));
+				}
+			}
 
 
-/* crop... */ 
-/* NOTE: also see rules for: .editor .outline .block .block 
-*	...can we avoid this?? (XXX) */
-.editor.crop .outline .block:not([cropped]) {
-	padding: 0;
-	border: none;
-	background: none;
-}
-.editor.crop .outline .block:not([cropped])>.text {
-	display: none;
-}
-.editor.crop .outline .block,
-.editor.crop .outline .block[cropped] {
-	margin-left: 0;
-}
-.editor.crop .outline .block[cropped] .text {
-	display: block;
+			/* indicators... */
+			/* left indicator bullet */
+			/* XXX not sure about this yet... */
+			&>.view:before {
+				content: "●";
+				color: rgba(0,0,0,0.07);
+			}
+			&>.view:empty:before {
+				content: "";
+			}
+			/* right indicator (collapse/expand) */
+			&>.view:after {
+				color: silver;
+			}
+			&:has(.block)>.view:after {
+				content: "○";
+			}
+			&[collapsed]>.view:after {
+				content: "●";
+			}
+		}
+
+		/* block hover... */
+		&:empty:hover:after,
+		.block:not(.focused):hover>.view {
+			background: linear-gradient(
+				90deg, 
+					rgba(0,0,0,0.01) 0%, 
+					rgba(0,0,0,0.01) 80%, 
+					rgba(0,0,0,0.03) 100%);
+		}
+	}
+
+	/* 
+	* NOTE: the organization after this point does not feel right/clean, 
+	* 		not sure how to do this better... 
+	*/
+
+	/* crop... */ 
+	&.crop .outline .block {
+		&[cropped] .block,
+		&[cropped] .block[cropped] {
+			margin-left: var(--item-indent);
+		}
+
+		&:not([cropped]) {
+			padding: 0;
+			border: none;
+			background: none;
+		}
+		&:not([cropped])>.text {
+			display: none;
+		}
+		&,
+		&[cropped] {
+			margin-left: 0;
+		}
+		&[cropped] .text {
+			display: block;
+		}
+	}
+
+	/* toolbar... */
+	.toolbar {
+		display: inline-block;
+		position: absolute; 
+		top: 1em;
+		right: 1em;
+
+		button {
+			--margin: 0.1em;
+
+			display: block;
+
+			width: calc(var(--button-size) + var(--margin) * 2);
+			height: var(--button-size);
+			margin: var(--margin);
+
+			font-size: var(--button-size);
+		}
+	}
+
+	&.block-offsets .outline .block {
+		border-left: solid 1px silver;
+	}
 }
 
 
-/* toolbar... */
-.editor .toolbar {
-	display: inline-block;
-	position: absolute; 
-	top: 1em;
-	right: 1em;
-}
-.editor .toolbar button {
-	--margin: 0.1em;
 
-	display: block;
 
-	width: calc(var(--button-size) + var(--margin) * 2);
-	height: var(--button-size);
-	margin: var(--margin);
 
-	font-size: var(--button-size);
-}
 
 
 
@@ -312,45 +326,43 @@ editor .outline .block:focus {
 
 /*------------------------------------------------------ Headings ---*/
 
-.editor .outline .heading-1,
-.editor .outline .heading-2,
-.editor .outline .heading-3,
-.editor .outline .heading-4,
-.editor .outline .heading-5,
-.editor .outline .heading-6 {
-	margin-top: 1rem;
-}
-.editor .outline .heading-1>.text,
-.editor .outline .heading-2>.text,
-.editor .outline .heading-3>.text,
-.editor .outline .heading-4>.text,
-.editor .outline .heading-5>.text,
-.editor .outline .heading-6>.text {
-	font-weight: bold;
-}
-.editor .outline .heading-1>.text,
-.editor .outline .heading-2>.text,
-.editor .outline .heading-3>.text {
-	border-bottom: solid 1px rgba(0,0,0,0.1);
-}
+.editor .outline {
+	.heading-1,
+	.heading-2,
+	.heading-3,
+	.heading-4,
+	.heading-5,
+	.heading-6 {
+		margin-top: 1rem;
 
-.editor .outline .heading-1>.text {
-	--font-size: 2.5em;
-}
-.editor .outline .heading-2>.text {
-	--font-size: 1.9em;
-}
-.editor .outline .heading-3>.text {
-	--font-size: 1.5em;
-}
-.editor .outline .heading-4>.text {
-	--font-size: 1.3em;
-}
-.editor .outline .heading-5>.text {
-	--font-size: 1.1em;
-}
-.editor .outline .heading-6>.text {
-	--font-size: 1em;
+		&>.text {
+			font-weight: bold;
+		}
+	}
+	.heading-1>.text,
+	.heading-2>.text,
+	.heading-3>.text {
+		border-bottom: solid 1px rgba(0,0,0,0.1);
+	}
+
+	.heading-1>.text {
+		--font-size: 2.5em;
+	}
+	.heading-2>.text {
+		--font-size: 1.9em;
+	}
+	.heading-3>.text {
+		--font-size: 1.5em;
+	}
+	.heading-4>.text {
+		--font-size: 1.3em;
+	}
+	.heading-5>.text {
+		--font-size: 1.1em;
+	}
+	.heading-6>.text {
+		--font-size: 1em;
+	}
 }
 
 
@@ -376,83 +388,81 @@ editor .outline .block:focus {
 
 /*---------------------------------------------------------- List ---*/
 
-.editor .outline .list-item>.view:before,
-.editor .outline .list>.children>.block>.view:before {
-	content: "◼";
-	color: gray;
+.editor .outline {
+	.list-item>.view:before,
+	.list>.children {
+		&>.block>.view:before {
+			content: "◼";
+			color: gray;
+		}
+		&>.list>.children {
+			&>.block>.view:before {
+				content: "●";
+			}
+			&>.list>.children {
+				&>.block>.view:before {
+					content: "○";
+				}
+				&>.list>.children {
+					&>.block>.view:before {
+						content: "▪";
+					}
+				}
+			}
+		}
+		/* hide bullets on empty nodes unless they are edited... */
+		&>.block>.code:not(:focus)+.view:empty:before {
+			content: "" !important;
+		}
+		/* hide bullets on empty nodes... *//*
+		&>.block>.view:empty:before {
+			content: "";
+		}
+		*/
+	}
 }
-.editor .outline 
-		.list>.children
-		>.list>.children>.block>.view:before {
-	content: "●";
-}
-.editor .outline 
-		.list>.children
-		>.list>.children
-		>.list>.children>.block>.view:before {
-	content: "○";
-}
-.editor .outline 
-		.list>.children
-		>.list>.children
-		>.list>.children
-		>.list>.children>.block>.view:before {
-	content: "▪";
-}
-/* hide bullets on empty nodes unless they are edited... */
-.editor .outline .list>.children>.block>.code:not(:focus)+.view:empty:before {
-	content: "";
-}
-/* hide bullets on empty nodes... *//*
-.editor .outline .list>.children>.block>.view:empty:before {
-	content: "";
-}
-*/
 
 
 /*------------------------------------------------ Numbered lists ---*/
 
 .editor .outline .numbered-list>.children {
 	counter-reset: numbered-list;
-}
-.editor .outline .numbered-list>.children>.block>.view:not(:empty):before {
-	counter-increment: numbered-list; 
-	content: counter(numbered-list) ".";
-	color: gray;
-}
-.editor .outline 
-		.numbered-list>.children
-		>.numbered-list>.children>.block>.view:not(:empty):before {
-	counter-increment: numbered-list; 
-	content: counter(numbered-list, lower-alpha) ".";
-	color: gray;
-}
-.editor .outline 
-		.numbered-list>.children
-		>.numbered-list>.children
-		>.numbered-list>.children>.block>.view:not(:empty):before {
-	counter-increment: numbered-list; 
-	content: counter(numbered-list, lower-roman) ".";
-	color: gray;
-}
-.editor .outline 
-		.numbered-list>.children
-		>.numbered-list>.children
-		>.numbered-list>.children
-		>.numbered-list>.children>.block>.view:not(:empty):before {
-	counter-increment: numbered-list; 
-	content: counters(numbered-list, ".") ".";
-	color: gray;
+
+	&>.block>.view:not(:empty):before {
+		counter-increment: numbered-list; 
+		content: counter(numbered-list) ".";
+		color: gray;
+	}
+	&>.numbered-list>.children {
+		&>.block>.view:not(:empty):before {
+			counter-increment: numbered-list; 
+			content: counter(numbered-list, lower-alpha) ".";
+		}
+		&>.numbered-list>.children {
+			&>.block>.view:not(:empty):before {
+				counter-increment: numbered-list; 
+				content: counter(numbered-list, lower-roman) ".";
+			}
+			&>.numbered-list>.children {
+				&>.block>.view:not(:empty):before {
+					counter-increment: numbered-list; 
+					content: counters(numbered-list, ".") ".";
+				}
+			}
+		}
+	}
 }
 
 
 /*------------------------------------------------------ hr block ---*/
 
-.editor .outline .list>.children>.block.hr>.view:before {
-	content: "";
-}
-.editor .outline .numbered-list>.children>.block.hr>.view:before {
-	content: "";
+.editor .outline {
+	.list>.children>.block.hr>.view:before {
+		content: "";
+	}
+	.numbered-list>.children>.block.hr>.view:before {
+		content: "";
+	}
 }
 
 
@@ -467,48 +477,52 @@ editor .outline .block:focus {
 	padding: var(--padding-v) var(--padding-h);
 	border: solid 2px silver;
 	background: rgba(0,0,0,0.05);
-}
-/* XXX this prevents it from being accesible via click/tap... */
-.editor .outline .NOTE>.view:empty {
-	display: none;
-}
-.editor .outline .NOTE:focus>.view:empty {
-	display: block;
-}
-.editor .outline .NOTE>.view:empty ~ .children {
-	margin-left: -1rem;
-}
-.editor .outline .NOTE>.view:before {
-	content: "" !important;
-}
-/* correct the right click zone... */
-/* XXX need to account for nesting... (???) */
-.editor .outline .block.NOTE>.view:after,
-.editor .outline .block.NOTE .block>.view:after {
-	margin-right: calc(-1 * var(--padding-h));
+
+	/* XXX this prevents it from being accesible via click/tap... */
+	&>.view:empty {
+		display: none;
+	}
+	&:focus>.view:empty {
+		display: block;
+	}
+	&>.view:empty ~ .children {
+		margin-left: -1rem;
+	}
+	&>.view:before {
+		content: "" !important;
+	}
+	/* correct the right click zone... */
+	/* XXX need to account for nesting... (???) */
+	&.block>.view:after,
+	&.block .block>.view:after {
+		margin-right: calc(-1 * var(--padding-h));
+	}
 }
 
 
 /*-------------------------------------------------------- Status ---*/
 
-.editor .outline .block.DONE>.view {
-	text-decoration: line-through;
-	opacity: 0.5;
-}
-
-.editor .outline .block.REJECT>.view {
-	text-decoration: line-through;
+.editor .outline .block {
+	&.DONE>.view {
+		text-decoration: line-through;
+		opacity: 0.5;
+	}
+	&.REJECT>.view {
+		text-decoration: line-through;
+	}
 }
 
 
 /*--------------------------------------------------- Highlightes ---*/
 
-.editor .outline .highlight {
-	font-weight: bold;
-	background: yellow;
-}
-.editor .outline .XXX>.view {
-	background: yellow;
+.editor .outline {
+	.highlight {
+		font-weight: bold;
+		background: yellow;
+	}
+	.XXX>.view {
+		background: yellow;
+	}
 }
 
 
@@ -524,71 +538,76 @@ editor .outline .block:focus {
 
 /*---------------------------------------------------- Checkboxes ---*/
 
-.editor .outline .block.todo>.view {
-	width: calc(
-		100% 
-		- var(--checkbox-size)
-		- var(--checkbox-margin));
-	margin-left: calc(
-		var(--checkbox-size)
-		+ var(--checkbox-margin));
-}
-.editor .outline .block.check>.view input[type=checkbox],
-.editor .outline .block.todo>.view input[type=checkbox] {
-	height: var(--checkbox-size);
-	width: var(--checkbox-size);
+.editor .outline .block {
+	&.todo>.view {
+		width: calc(
+			100% 
+			- var(--checkbox-size)
+			- var(--checkbox-margin));
+		margin-left: calc(
+			var(--checkbox-size)
+			+ var(--checkbox-margin));
+	}
+	&.check>.view input[type=checkbox],
+	&.todo>.view input[type=checkbox] {
+		height: var(--checkbox-size);
+		width: var(--checkbox-size);
 
-	margin-top: calc(var(--checkbox-size) / -2);
-	margin-left: var(--checkbox-margin);
-	margin-right: var(--checkbox-margin);
+		margin-top: calc(var(--checkbox-size) / -2);
+		margin-left: var(--checkbox-margin);
+		margin-right: var(--checkbox-margin);
 
-	transform: translateY(calc(2 * var(--item-padding)));
+		transform: translateY(calc(2 * var(--item-padding)));
 
-	/* NOTE: this appears to be needed for the em sizes above to work correctly */
-	font-size: 1em;
-}
-.editor .outline .block.check.focused>.view input[type=checkbox].selected,
-.editor .outline .block.todo.focused>.view input[type=checkbox].selected {
-	outline: solid 0.2em silver;
-}
-.editor .outline .block.check:focus>.view input[type=checkbox].selected,
-.editor .outline .block.todo:focus>.view input[type=checkbox].selected {
-	outline: solid 0.2em gray;
-}
-.editor .outline .block.todo>.view input[type=checkbox]:first-child {
-	margin-left: calc(
-		-1 * var(--checkbox-size)
-		- var(--checkbox-margin));
-}
-/* correct the left click zone... */
-.editor .outline .block.todo>.view:before {
-	margin-left: calc(
-		-1 * var(--checkbox-size)
-		- var(--checkbox-margin));
-}
-/* status... */
-.editor .outline .block>.view .completion[completion]:before {
-	content: "(" attr(completion) ")";
-	color: gray;
+		/* NOTE: this appears to be needed for the em sizes above to work correctly */
+		font-size: 1em;
+	}
+	&.check.focused>.view input[type=checkbox].selected,
+	&.todo.focused>.view input[type=checkbox].selected {
+		outline: solid 0.2em silver;
+	}
+	&.check:focus>.view input[type=checkbox].selected,
+	&.todo:focus>.view input[type=checkbox].selected {
+		outline: solid 0.2em gray;
+	}
+	&.todo>.view input[type=checkbox]:first-child {
+		margin-left: calc(
+			-1 * var(--checkbox-size)
+			- var(--checkbox-margin));
+	}
+	/* correct the left click zone... */
+	&.todo>.view:before {
+		margin-left: calc(
+			-1 * var(--checkbox-size)
+			- var(--checkbox-margin));
+	}
+	/* status... */
+	&>.view .completion[completion]:before {
+		content: "(" attr(completion) ")";
+		color: gray;
+	}
 }
 
 
 /*---------------------------------------------------------- Code ---*/
 
-.editor .outline .block>.view pre,
-.editor .outline .block>.view>code,
-.editor .outline .block>.view :not(pre)>code {
-	padding: 0.1em 0.3em;
-	font-family: monospace;
-	background: rgba(0,0,0,0.07);
-	border-radius: 0.2em;
-	outline: none;
-}
-.editor .outline .block>.view pre>code {
-	display: block;
-	padding: 0.6em 0.6em;
-	padding-bottom: 0.8em;
-	outline: none;
+.editor .outline .block>.view {
+	/* XXX for some reason if we omit & where not needed, colors will not apply... */
+	& pre,
+	&>code,
+	& :not(pre)>code {
+		padding: 0.1em 0.3em;
+		font-family: monospace;
+		background: rgba(0,0,0,0.07);
+		border-radius: 0.2em;
+		outline: none;
+	}
+	& pre>code {
+		display: block;
+		padding: 0.6em 0.6em;
+		padding-bottom: 0.8em;
+		outline: none;
+	}
 }
 
 
@@ -597,34 +616,44 @@ editor .outline .block:focus {
 .editor .outline .block>.view>table {
 	width: 100%;
 	border-collapse: collapse;
-}
-.editor .outline .block>.view>table tr:nth-child(odd) {
-	background: rgba(0,0,0,0.03);
-}
-.editor .outline .block>.view>table tr:first-child {
-	font-weight: bold;
-	border-bottom: solid 0.1rem silver;
-	background: transparent;
-}
-.editor .outline .block>.view>table td {
-	height: calc(1em + var(--item-padding) * 2);
-	padding: 0 1em;
-	/*text-align: center;*/
+
+	/* XXX for some reason if we omit & where not needed, colors will not apply... */
+	& tr:nth-child(odd) {
+		background: rgba(0,0,0,0.03);
+	}
+	& tr:first-child {
+		font-weight: bold;
+		border-bottom: solid 0.1rem silver;
+		background: transparent;
+	}
+	& td {
+		height: calc(1em + var(--item-padding) * 2);
+		padding: 0 1em;
+		/*text-align: center;*/
+	}
 }
 
 
 /********************************************************* Testing ***/
 
-.editor.show-click-zones .outline .block>.view:before,
-.editor.show-click-zones .outline .block>.view:after {
-	background: rgba(0,0,0,0.03);
-	border: solid 1px silver;
+.editor.show-click-zones .outline .block {
+	&>.view {
+		&:before,
+		&:before,
+		&:after {
+			background: rgba(0,0,0,0.03);
+			border: solid 1px silver;
+		}
+	}
+	&:hover>.view {
+		&:before,
+		&:after {
+			background: rgba(0,0,0,0.1);
+		}
+	}
 }
-.editor.show-click-zones .outline .block:hover>.view:before,
-.editor.show-click-zones .outline .block:hover>.view:after {
-	background: rgba(0,0,0,0.1);
-}
 
 
 
-/*********************************************************************/
+/**********************************************************************
+* vim:set ts=4 sw=4 : */
