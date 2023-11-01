@@ -48,7 +48,6 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
-  - BUG: `.trim_block_text` should not affect editing...
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
     - FF:
       - zooming on edited field
@@ -57,23 +56,6 @@ var setup = function(){
       - side margins are a bit too large (account for toolbat to the right)
   -
 - ## ToDo:
-  - trailing whitespace is ignored in `.view`... (BUG?)
-    - demos:
-      -
-        leading whitespace...
-      - trailing whitespace...
-        
-      - empty block is not correctly shown\:
-        - 
-          
-          
-    - _it seams that HTML ignores the last newline if it is not followed by anything_
-    - there are four ways to deal with this:#
-      - trim whitespace on refocus
-      - show whitespace in both modes 
-      - REJECT remove trailing whitespace completely on refocus (a-la logseq)
-      - REJECT keep current behavior
-    - I do not believe in keeping whitespace in edit and hiding it in view (POLS)
   - custom element / web component
     - Q: can we get rid of the editor block??:
       - CSS breaks if we do...
@@ -147,6 +129,24 @@ var setup = function(){
   - empty item height is a bit off...
   - search?
     - _...not sure if search should be internal or external yet..._
+  - DONE trailing whitespace is ignored in `.view`...
+    collapsed:: true
+    - demos:
+      -
+        leading whitespace...
+      - trailing whitespace...
+        
+      - empty block\:
+        - 
+          
+          
+    - _it seams that HTML ignores the last newline if it is not followed by anything_
+    - there are four ways to deal with this:#
+      - trim whitespace on refocus (option)
+      - show whitespace in both modes (option)
+      - REJECT remove trailing whitespace completely on refocus (a-la logseq)
+      - REJECT keep current behavior
+    - I do not believe in keeping whitespace in edit and hiding it in view (POLS)
   - DONE add options to save to `.sessionStorage` / `.localStorage`
   - DONE might be a good idea to focus the prev (empty) node if pressing `Enter` at 0 position
     collapsed:: true

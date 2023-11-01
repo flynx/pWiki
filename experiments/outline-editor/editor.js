@@ -767,7 +767,6 @@ var Outline = {
 	tab_size: 4,
 	carot_jump_edge_then_block: false,
 	// XXX not sure what should the default be...
-	// XXX this should not affect editing...
 	trim_block_text: false,
 
 
@@ -1081,7 +1080,7 @@ var Outline = {
 				// NOTE: we are ignoring the .collapsed attr here 
 				parsed = this.__code2html__(data.text, {...data})
 				html.innerHTML = 
-					parsed.text.length == 0 ?
+					parsed.text == '' ?
 						parsed.text
 						// NOTE: adding a space here is done to prevent the browser 
 						// 		from hiding the last newline...
@@ -1094,7 +1093,7 @@ var Outline = {
 				delete parsed.style
 			} else {
 				html.innerHTML = 
-					data.text.length == 0 ?
+					data.text == '' ?
 						data.text
 						// NOTE: adding a space here is done to prevent the browser 
 						// 		from hiding the last newline...
@@ -1362,7 +1361,7 @@ var Outline = {
 
 		// only whitespace -> keep element blank...
 		if(code.trim() == ''){
-			elem.text = ''
+			elem.text = code
 			return elem }
 
 		// helpers...
@@ -1412,8 +1411,11 @@ var Outline = {
 		return code 
 			.replace(/(\n\s*)-/g, '$1\\-') },
 	__text2code__: function(text){
-		return text 
-			.replace(/(\n\s*)\\-/g, '$1-') },
+		text = text 
+			.replace(/(\n\s*)\\-/g, '$1-') 
+		return this.trim_block_text ?
+			text.trim()
+			: text },
 
 	// serialization...
 	data: function(elem, deep=true){
@@ -2159,7 +2161,10 @@ var Outline = {
 				if(elem.classList.contains('code')){
 					var block = that.get(elem)
 					// clean out attrs...
-					elem.value = that.parseBlockAttrs(elem.value).text
+					elem.value = 
+						that.trim_block_text ?
+							that.parseBlockAttrs(elem.value).text.trim()
+							: that.parseBlockAttrs(elem.value).text
 					that.update(block) 
 					// undo...
 					if(elem.value != elem.dataset.original){
