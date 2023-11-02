@@ -156,13 +156,17 @@
 				height: calc(2 * var(--item-padding) + 1em);
 				overflow: hidden;
 				resize: none;
+				opacity: 0;
+
 				/* show/hide node's view/code... */
-				/*&:focus+.view,*/
-				&:not(:focus) {
-					opacity: 0;
+				&:focus {
+					position: relative;
+					opacity: 1;
 				}
 				/* hide .view content but show before/after -- keep bulets and touch zones... */
 				&:focus+.view {
+					position: absolute;
+					top: 0;
 					visibility: hidden;
 
 					&:before,
@@ -175,6 +179,7 @@
 			}
 
 			/* click through the .view text to the .code */
+			/* NOTE: .view visibility is handled in .code above... */
 			&>.view {
 				position: relative;
 				pointer-events: none;

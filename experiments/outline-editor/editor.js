@@ -8,22 +8,6 @@
 //---------------------------------------------------------------------
 // Helpers...
 
-// XXX do a caret api...
-
-// XXX only for text areas...
-var atLine = function(elem, index){
-	// XXX add support for range...
-	var text = elem.value
-	var lines = text.split(/\n/g).length
-	var line = elem.caretLine 
-
-	// XXX STUB index handling...
-	if((index == -1 && line == lines) 
-			|| (index == 0 && line == 1)){
-		return true }
-	return false }
-
-
 /*
 function clickPoint(x,y){
 	document
