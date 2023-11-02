@@ -1255,7 +1255,7 @@ var Outline = {
 				+ this.path(...arguments, 'text')
 					.slice(0, -1)
 					.map(function(s, i, {length}){
-						return `<span class="path-item" onclick="editor.uncrop(${ length-i })">${
+						return `<span class="path-item" uncrop="${ length-i }">${
 							plugin.encode(s)
 						}</span> ` })
 					.join(' / ')
@@ -2176,6 +2176,14 @@ var Outline = {
 		outline.addEventListener('change', 
 			function(evt){
 				that.__change__() })
+
+		// header...
+		var header = this.header
+		header.addEventListener('click', 
+			function(evt){
+				var elem = evt.target
+				if(elem.classList.contains('path-item')){
+					that.uncrop(elem.getAttribute('uncrop') ?? 'all') } })
 
 		// toolbar...
 		var toolbar = this.toolbar

@@ -284,17 +284,17 @@
 			border: none;
 			background: none;
 
-			&>.text {
+			.text {
 				display: none;
 			}
 		}
 		&,
 		&[cropped] {
 			margin-left: 0;
-
-			& .text {
-				display: block;
-			}
+		}
+		/* XXX nesting this in &[cropped] for some reaon breaks things... */
+		&[cropped] .text {
+			display: block;
 		}
 	}
 
