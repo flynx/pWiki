@@ -48,6 +48,8 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
+  - BUG: if changing style expands the block vertically it will not update size...
+    - # when edited, the text here will get re-wrapped but will not get resized
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
     - FF:
       - zooming on edited field
@@ -57,6 +59,7 @@ var setup = function(){
   -
 - ## ToDo:
   - custom element / web component
+    - BUG/race: the non-value versions of custom elem seem to sometimes get loaded as empty...
     - Q: can we get rid of the editor block??:
       - CSS breaks if we do...
       - need to figure out a way to handle autofocus for host/editor uniformly 
@@ -82,6 +85,8 @@ var setup = function(){
   - FEATURE: read-only mode
   - auto-shift done blocks to the end of siblings... (option?)
     - ...or should this be `sort:: done` -- i.e. sort children by done status??
+  - `backspace`/`delete` in block contract the field with a delay...
+    - _...looks like we are updating size on keyup..._
   - codeblock as a block
     _...if only whitespace before/after clear it and style whole block..._
     _...might be a good idea to do this with codeblock at start/end of block..._
@@ -420,6 +425,7 @@ var setup = function(){
 
 <hr>
 
+<!-- XXX this is broken... -->
 <outline-editor>
 <textarea>- ## code enclosed in `<textarea>` element
 	- code is treated as-is

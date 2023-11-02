@@ -1098,9 +1098,8 @@ var Outline = {
 						// NOTE: adding a space here is done to prevent the browser 
 						// 		from hiding the last newline...
 						: data.text + ' ' }
-			text.value = data.text
-			// XXX this does not seem to work until we click in the textarea...
-			text.autoUpdateSize() }
+			text.value = data.text 
+			text.updateSize() }
 
 		for(var [attr, value] of Object.entries({...data, ...parsed})){
 			if(attr == 'children' || attr == 'text'){
@@ -1590,7 +1589,10 @@ var Outline = {
 		var children = document.createElement('div')
 		children.classList.add('children')
 		children.setAttribute('tabindex', '-1')
-		block.append(code, html, children)
+		block.append(
+			code, 
+			html, 
+			children)
 
 		this.update(block, data)
 
@@ -1857,6 +1859,11 @@ var Outline = {
 			if(edited){
 				if(evt.ctrlKey
 						|| evt.shiftKey){
+					var that = this
+					// NOTE: setTimeout(..) because we need the input of 
+					// 		the key...
+					setTimeout(function(){
+						that.update(edited) }, 0)
 					return }
 				// split text...
 				evt.preventDefault()
@@ -2129,8 +2136,7 @@ var Outline = {
 					// NOTE: for some reason setting the timeout here to 0
 					// 		makes FF sometimes not see the updated text...
 					setTimeout(function(){
-						that.update(elem.parentElement)
-						elem.updateSize() }, 0) }
+						that.update(elem.parentElement) }, 0) }
 				that.runPlugins('__keyup__', evt, that, elem) })
 
 		// toggle view/code of nodes...
@@ -2336,23 +2342,26 @@ Object.assign(
 					setTimeout(function(){
 						that.load(that.code) }, 0) },
 
-				// XXX do we need to before == after ???
+				// XXX do we need to before == after check???
 				attributeChangedCallback(name, before, after){
-					var value
 					if(name == 'local-storage'){
 						this.__localStorage = after
-						// XXX setting code here because we will load at .setup(..)
-						// 		...the problem is that if we change the attr 
-						// 		we need to call .load(..)
-						value = this.code = localStorage[after] ?? '' }
+						// NOTE: we setting .code here because we will 
+						// 		.load(..) at .setup(..)
+						sessionStorage[after]
+							&& (this.code = sessionStorage[after]) }
 
-					if(value && name == 'session-storage'){
+					if(name == 'session-storage'){
 						this.__sessionStorage = after
-						value = this.code = sessionStorage[after] ?? '' }
+						sessionStorage[after]
+							&& (this.code = sessionStorage[after]) }
 
-					if(!value && name == 'value'){
+					// NOTE: if other sources are active but unset this 
+					// 		should provide the default, otherwise it will 
+					// 		get overwritten by the value in .code by .load(..)
+					if(name == 'value'){
 						// see notes for .__code
-						value = this.__code = after }
+						this.__code = after }
 				},
 
 			},
