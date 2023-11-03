@@ -225,6 +225,10 @@ var quoted = {
 				&& elem.getAttribute('contenteditable') == 'true'){
 			// XXX can keydown and keyup be triggered from different elements???
 			this.__state = elem.innerText
+			// XXX move this to keyboard.js...
+			if(evt.key == 'Escape'){
+				editor.focus(elem) }
+			// XXX not sure if the is needed with keyboard.js...
 			return false } },
 	// defined <plugin>.__editedview__(..) handler
 	__keyup__: function(evt, editor, elem){

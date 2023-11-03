@@ -625,9 +625,33 @@
 	}
 	& pre>code {
 		display: block;
+		width: fit-content;
 		padding: 0.6em 0.6em;
 		padding-bottom: 0.8em;
 		outline: none;
+	}
+
+	/* scrollbar... */
+	& pre {
+		overflow-x: visible;
+		overflow-y: auto;
+
+		scrollbar-width: thin;
+	}
+	& pre::-webkit-scrollbar {
+		--size: 0.5rem;
+
+		width: var(--size);
+		height: var(--size);
+
+		/* XXX due to a bug in chrome this does change the scrollbar curosr... */
+		cursor: pointer;
+	}
+	& pre::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	& pre::-webkit-scrollbar-thumb {
+		background: silver;
 	}
 }
 

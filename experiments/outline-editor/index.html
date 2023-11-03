@@ -133,6 +133,10 @@ var setup = function(){
   - empty item height is a bit off...
   - search?
     - _...not sure if search should be internal or external yet..._
+  - DONE add horizontal scroll to code blocks...
+    - ```html
+      <outline-editor session-storage="outline-text" value="initial text"></outline-editor>
+      ```
   - DONE trailing whitespace is ignored in `.view`...
     collapsed:: true
     - demos:
@@ -248,6 +252,21 @@ var setup = function(){
   - Docs
   -
 - ## Docs
+  - ### Use
+    - Minimal
+      ```html
+      <outline-editor></outline-editor>
+      ```
+    - Session-stored
+      ```html
+      <outline-editor 
+          session-storage="outline-text" 
+          value="initial text"></outline-editor>
+      ```
+    - #### Attributes:
+      - `value`
+      - `session-storage`
+      - `local-storage`
   - ### Controls
     - ASAP: these need updating...
     - | Key        | Action                       |
