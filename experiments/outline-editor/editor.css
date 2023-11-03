@@ -617,22 +617,29 @@
 	& pre,
 	&>code,
 	& :not(pre)>code {
-		padding: 0.1em 0.3em;
 		font-family: monospace;
 		background: rgba(0,0,0,0.07);
 		border-radius: 0.2em;
 		outline: none;
 	}
+	& :not(pre)>code {
+		padding: 0.1em 0.3em;
+	}
 	& pre>code {
+		--padding: 0.6em;
+
 		display: block;
+		min-width: calc(100% - var(--padding) * 2);
 		width: fit-content;
-		padding: 0.6em 0.6em;
-		padding-bottom: 0.8em;
+		padding: var(--padding) var(--padding);
+		padding-bottom: calc(var(--padding) + 0.2em);
 		outline: none;
 	}
 
 	/* scrollbar... */
 	& pre {
+		margin: 0.8em 0em;
+
 		overflow-x: visible;
 		overflow-y: auto;
 

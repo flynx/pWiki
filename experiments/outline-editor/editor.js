@@ -185,7 +185,7 @@ var quoted = {
 	quote: function(_, code){
 		return `<code>${ this.encode(code) }</code>` },
 
-	pre_pattern: /(?<!\\)```(.*\s*\n)((\n|.)*?)\h*(?<!\\)```/g,
+	pre_pattern: /(?<!\\)```(.*\s*\n)((\n|.)*?)\h*(?<!\\)```(?:[ \t]*$|[ \t]*\n)/g,
 	pre: function(_, language, code){
 		language = language.trim()
 		language = language ?

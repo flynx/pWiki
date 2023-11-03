@@ -59,9 +59,6 @@ var setup = function(){
   - custom element / web component
     - BUG: selecting by _click-n-drag_ or _double/triple click_ for some reason does not work...
     - BUG/race: the non-value versions of custom elem seem to sometimes get loaded as empty...
-    - Q: can we get rid of the editor block??:
-      - CSS breaks if we do...
-      - need to figure out a way to handle autofocus for host/editor uniformly 
     - DONE data interface:
 	  collapsed:: true
       - the "natural" way to pass data is to use the same mechanism as `<textarea>` the problem is that we can't extend `HTMLTextAreaElement` as it can not have shadow dom (reject?)
@@ -71,9 +68,13 @@ var setup = function(){
     - DONE `.value` / `.code` should be both updated internally and also load new content when updated externally -- not yet sure how...
     - events 
     - test nesting...
+    - Q: can we get rid of the editor block??:
+      - CSS breaks if we do...
+      - need to figure out a way to handle autofocus for host/editor uniformly 
     - 
   - selection
-    - multiple node selection (via shift+motion)
+    - DONE multiple node selection (via shift+motion)
+      - fixed state -- while `shift` pressed select or deselect only depending on first action (a-la FAR)
     - touch/mouse (???)
   - Q: should we select text (mouse/touch) without first focusing??
     - _...logseq does not do this either_
@@ -134,6 +135,7 @@ var setup = function(){
   - search?
     - _...not sure if search should be internal or external yet..._
   - DONE add horizontal scroll to code blocks...
+    collapsed:: true
     - ```html
       <outline-editor session-storage="outline-text" value="initial text"></outline-editor>
       ```
