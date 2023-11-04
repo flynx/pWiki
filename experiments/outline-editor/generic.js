@@ -63,13 +63,10 @@ HTMLTextAreaElement.prototype.autoUpdateSize = function(){
 		function(evt){
 			that.updateSize() }) 
 	return this }
-HTMLTextAreaElement.prototype.getTextGeometry = function(func){
-	var offset = this.selectionStart
-	var text = this.value
 
-	// get the relevant styles...
-	var style = getComputedStyle(this)
-	var paddingV = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+
+var cloneAsOffscreenSpan = function(elem){
+	var style = getComputedStyle(elem)
 	var s = {}
 	for(var i=0; i < style.length; i++){
 		var k = style[i]
@@ -77,12 +74,6 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(func){
 				|| k.startsWith('line')
 				|| k.startsWith('white-space')){
 			s[k] = style[k] } }
-
-	var carret = document.createElement('span')
-	carret.innerText = '|' 
-	carret.style.margin = '0px'
-	carret.style.padding = '0px'
-
 	var span = document.createElement('span')
 	Object.assign(span.style, {
 		...s,
@@ -108,13 +99,28 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(func){
 
 		pointerEvents: 'none',
 	})
+	return span }
+
+HTMLTextAreaElement.prototype.getTextGeometry = function(func){
+	var offset = this.selectionStart
+	var text = this.value
+
+	// get the relevant styles...
+	var style = getComputedStyle(this)
+	var paddingV = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+
+	var carret = document.createElement('span')
+	carret.innerText = '|' 
+	carret.style.margin = '0px'
+	carret.style.padding = '0px'
+
+	var span = cloneAsOffscreenSpan(this)
 	span.append(
 		text.slice(0, offset),
 		carret,
 		// NOTE: wee need the rest of the text for the carret to be typeset
 		// 		to the correct line...
 		text.slice(offset))
-
 	document.body.append(span)
 
 	var res = {
@@ -134,6 +140,75 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(func){
 	span.remove()
 
 	return res }
+
+HTMLTextAreaElement.prototype.getTextOffsetAt = function(x, y){
+	var that = this
+	var text = this.value
+
+	// cleanup cached span...
+	this.__getTextOffsetAt_timeout
+		&& clearTimeout(this.__getTextOffsetAt_timeout)
+	this.__getTextOffsetAt_timeout = setTimeout(function(){
+		delete that.__getTextOffsetAt_timeout
+		that.__getTextOffsetAt_clone.remove()
+		delete that.__getTextOffsetAt_clone }, 50)
+
+	// create/get clone span...
+	if(this.__getTextOffsetAt_clone == null){
+		var span = 
+			this.__getTextOffsetAt_clone = 
+				cloneAsOffscreenSpan(this)
+		span.append(text)
+		document.body.append(span)
+	} else {
+		var span = this.__getTextOffsetAt_clone }
+
+	var r = document.createRange()
+	var t = span.firstChild
+
+	var clone = span.getBoundingClientRect()
+	var target = this.getBoundingClientRect()
+
+	var ox = x - target.x
+	var oy = y - target.y
+
+	var rect, prev
+	var cursor_line
+	var col
+	for(var i=0; i <= t.length; i++){
+		r.setStart(t, i)
+		r.setEnd(t, i)
+		prev = rect
+		rect = r.getBoundingClientRect()
+
+		// line change...
+		if(prev && prev.y != rect.y){
+			// went off the cursor line
+			if(cursor_line 
+					// cursor above block
+					|| oy <= prev.y - clone.y){
+				// end of prev line...
+				return col 
+					?? i - 1 } 
+			// reset col
+			col = undefined }
+
+		// cursor line...
+		cursor_line = 
+			oy >= rect.y - clone.y
+				&& oy <= rect.bottom - clone.y
+
+		// cursor col -- set once per line...
+		if(col == null 
+				&& ox <= rect.x - clone.x){
+			col = (!prev 
+					|| Math.abs(rect.x - clone.x - x) <= Math.abs(prev.x - clone.x - x)) ?
+				i
+				: i - 1 
+			if(cursor_line){
+				return col } } }
+	return col 
+		?? i }
 
 // calculate number of lines in text area (both wrapped and actual lines)
 Object.defineProperty(HTMLTextAreaElement.prototype, 'heightLines', {

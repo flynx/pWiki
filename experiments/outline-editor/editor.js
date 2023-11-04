@@ -50,7 +50,8 @@ var getCharOffset = function(elem, x, y, c){
 						&& b.y <= y 
 						&& b.bottom >= y){
 					// get the closest gap between chars to the click...
-					return Math.abs(b.x - x) <= Math.abs(prev.x - x) ?
+					return (!prev 
+							|| Math.abs(b.x - x) <= Math.abs(prev.x - x)) ?
 						c + i
 						: c + i - 1 } }
 			c += i - 1
@@ -2053,11 +2054,8 @@ var Outline = {
 		outline.addEventListener('mousemove', 
 			function(evt){
 				// handle selection in element with text offset by markup...
-				// XXX should there be a timeout???
 				if(selecting != null){
-					// XXX need to get offset under cursor...
-					var c = getTextAreaOffset(selecting, evt.clientX, evt.clientY)
-					return
+					var c = selecting.getTextOffsetAt(evt.clientX, evt.clientY)
 					if(c > start){
 						selecting.selectionStart = start
 						selecting.selectionEnd = c
