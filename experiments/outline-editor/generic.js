@@ -180,7 +180,6 @@ HTMLTextAreaElement.prototype.getTextOffsetAt = function(x, y){
 		r.setEnd(t, i)
 		prev = rect
 		rect = r.getBoundingClientRect()
-
 		// line change...
 		if(prev && prev.y != rect.y){
 			// went off the cursor line
@@ -192,21 +191,21 @@ HTMLTextAreaElement.prototype.getTextOffsetAt = function(x, y){
 					?? i - 1 } 
 			// reset col
 			col = undefined }
-
 		// cursor line...
 		cursor_line = 
 			oy >= rect.y - clone.y
 				&& oy <= rect.bottom - clone.y
-
 		// cursor col -- set once per line...
 		if(col == null 
 				&& ox <= rect.x - clone.x){
-			col = (!prev 
-					|| Math.abs(rect.x - clone.x - x) <= Math.abs(prev.x - clone.x - x)) ?
+			// XXX not sure about this test...
+			col = (ox > 0 
+					|| i == 0) ?
 				i
 				: i - 1 
 			if(cursor_line){
 				return col } } }
+	// below or right of the block -> return last col or last char...
 	return col 
 		?? i }
 

@@ -56,13 +56,9 @@ var setup = function(){
       - side margins are a bit too large (account for toolbat to the right)
   -
 - ## ToDo:
-  - DONE selecting expanded code by _click-n-drag_
-    - # this is a test
-      string with
-      some extra words
-    - BUG: while selecting if the cursor moves to the left far enough (outside parent?) the first char in current line gets toggled...
   - custom element / web component
-    - BUG: select via click-n-drag and double/triple clicks does not work...
+    - BUG: select via double/triple clicks does not work...
+	  - _looks like something is refocusing the element..._
     - BUG/race: the non-value versions of custom elem seem to sometimes get loaded as empty...
     - DONE data interface:
 	  collapsed:: true
@@ -126,6 +122,11 @@ var setup = function(){
       - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
+  - DONE selecting expanded code by _click-n-drag_
+    collapsed:: true
+    - # this is a test
+      string with
+      some extra words
   - DONE `backspace`/`delete` in block contract the field with a delay...
     collapsed:: true
     - _...looks like we are updating size on keyup..._
