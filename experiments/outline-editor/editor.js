@@ -66,6 +66,12 @@ var getCharOffset = function(elem, x, y, c){
 		: null }
 
 
+var getTextAreaOffset = function(elem, x, y){
+	return elem.getTextGeometry(function(res, elem){
+		// XXX this will not work as it needs correct placement of elem under the cursor...
+		return getCharOffset(elem, x, y) }) }
+
+
 // Get offset in markdown relative to the resulting text...
 //                     
 //					    v <----- position
@@ -2017,24 +2023,50 @@ var Outline = {
 		// click...
 		// XXX revise...
 		// XXX tap support...
+		// XXX support selection from first click... (see: mousemove handler)
+		var selecting, start
 		outline.addEventListener('mousedown', 
 			function(evt){
 				var elem = evt.target
 				// place the cursor where the user clicked in code/text...
 				if(elem.classList.contains('code') 
 						&& document.activeElement !== elem){
-					evt.preventDefault()
 					var view = that.get(elem).querySelector('.view')
+					var initial = elem.selectionStart
 					var c = getCharOffset(view, evt.clientX, evt.clientY)
-					if(c == null){
+					var m = getMarkdownOffset(elem.value, view.innerText, c)
+					// selecting an element with text offset by markup...
+					if(m != 0){
+						evt.preventDefault()
+						selecting = elem }
+					start = c == null ?
+						elem.value.length
+						: c + m
+					// NOTE: this is done on next frame to allow the 
+					// 		browser to place the caret before we correct 
+					// 		its position... (if .preventDefault() was not called)
+					setTimeout(function(){
 						elem.focus()
-						elem.selectionStart = elem.value.length
-						elem.selectionEnd = elem.value.length 
+						elem.selectionStart = 
+							elem.selectionEnd = 
+								start }, 0) } })
+		outline.addEventListener('mousemove', 
+			function(evt){
+				// handle selection in element with text offset by markup...
+				// XXX should there be a timeout???
+				if(selecting != null){
+					// XXX need to get offset under cursor...
+					var c = getTextAreaOffset(selecting, evt.clientX, evt.clientY)
+					return
+					if(c > start){
+						selecting.selectionStart = start
+						selecting.selectionEnd = c
 					} else {
-						var m = getMarkdownOffset(elem.value, view.innerText, c)
-						elem.focus()
-						elem.selectionStart = c + m
-						elem.selectionEnd = c + m } } })
+						selecting.selectionStart = c
+						selecting.selectionEnd = start } } })
+		outline.addEventListener('mouseup', 
+			function(evt){
+				selecting = undefined })
 		outline.addEventListener('click', 
 			function(evt){
 				var elem = evt.target

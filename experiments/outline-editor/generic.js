@@ -63,7 +63,7 @@ HTMLTextAreaElement.prototype.autoUpdateSize = function(){
 		function(evt){
 			that.updateSize() }) 
 	return this }
-HTMLTextAreaElement.prototype.getTextGeometry = function(){
+HTMLTextAreaElement.prototype.getTextGeometry = function(func){
 	var offset = this.selectionStart
 	var text = this.value
 
@@ -127,6 +127,9 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(){
 		offsetLeft: carret.offsetLeft,
 		offsetTop: carret.offsetTop,
 	}
+
+	if(typeof(func) == 'function'){
+		res = func(res, span) }
 
 	span.remove()
 

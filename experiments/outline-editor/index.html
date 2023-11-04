@@ -75,6 +75,7 @@ var setup = function(){
   - selection
     - DONE multiple node selection (via shift+motion)
       - fixed state -- while `shift` pressed select or deselect only depending on first action (a-la FAR)
+    - DONE double/triple click working...
     - touch/mouse (???)
   - Q: should we select text (mouse/touch) without first focusing??
     - _...logseq does not do this either_
@@ -83,10 +84,8 @@ var setup = function(){
   - numbered lists: add counters to a depth of 6-7...
     - _or find a way to make them repeat..._
   - FEATURE: read-only mode
-  - auto-shift done blocks to the end of siblings... (option?)
+  - FEATURE: auto-shift done blocks to the end of siblings... (option?)
     - ...or should this be `sort:: done` -- i.e. sort children by done status??
-  - `backspace`/`delete` in block contract the field with a delay...
-    - _...looks like we are updating size on keyup..._
   - codeblock as a block
     _...if only whitespace before/after clear it and style whole block..._
     _...might be a good idea to do this with codeblock at start/end of block..._
@@ -100,15 +99,21 @@ var setup = function(){
     - cleanup html
     - generate ideomatic html (???)
   - style attrs (see: [attrs](#attributes))
-  - FEATURE: `collapse-children:: true` block option -- when loading collapse all immediate children
   - FF: figure out a way to draw expand/collapse bullets without the use of CSS' `:has(..)`
   - table inline editing a-la code editing -- click cell and edit directly...
-  - a way to make a block monospace (???)
-  - Nerd fonts (option???)
   - smooth scrolling
     - _...this is more complicated than adding `behavior: "smooth"` to `.scrollIntoView(..)` as scrolling animation will get interrupted by next user input..._
     - need to cancel animation if things are moving too fast...
     - make this generic (???)
+  - JSON API
+  - cli
+  - Q: do we use \\t for indent? (option???)
+  - Q: persistent empty first/last node (a button to create a new node)?
+  - Q: search?
+    - _seems that search should be external to the editor_
+  - empty item height is a bit off...
+  - Nerd fonts (option???)
+  - FEATURE: `collapse-children:: true` block option -- when loading collapse all immediate children
   - FEATURE? block templates...
     collapsed:: true
     - something like: `TPL: [_] <editable/> -- <editable/>`
@@ -116,24 +121,24 @@ var setup = function(){
       - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
-  - JSON API
-  - cli
-  - Q: do we use \\t for indent? (option???)
-  - Q: persistent empty first/last node (a button to create a new node)?
-  - Q: should list bullets be on the same level as nodes or offset??
+  - DONE `backspace`/`delete` in block contract the field with a delay...
+    collapsed:: true
+    - _...looks like we are updating size on keyup..._
+  - DONE Q: should list bullets be on the same level as nodes or offset??
     collapsed:: true
     - A) justified to bullet:
-         * list item
-         * list item
-         block text
+      ```
+      * list item
+      * list item
+      block text
+      ```
+      _This is impossible to create in the current implementation_
     - B) justified to text _(current)_:
-         * list item
-         * list item
-           block text
-    - NOTE: this is only a problem if making list-items manually -- disable???
-  - empty item height is a bit off...
-  - search?
-    - _...not sure if search should be internal or external yet..._
+      ```
+      * list item
+      * list item
+        block text
+      ```
   - DONE add horizontal scroll to code blocks...
     collapsed:: true
     - ```html
@@ -168,6 +173,7 @@ var setup = function(){
   - DONE undo 
   - DONE crop: make path clickable
   - DONE Q: crop: should we control crop via "crop-in"/"crop-out" instead of crop/uncrop??
+    collapsed:: true
     - _crop-in/crop-out seems more natural..._
   - DONE crop: show crop path (and depth)
   - DONE over-travel pause -- when going fast over start/end stop...
