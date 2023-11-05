@@ -198,7 +198,6 @@ HTMLTextAreaElement.prototype.getTextOffsetAt = function(x, y){
 		// cursor col -- set once per line...
 		if(col == null 
 				&& ox <= rect.x - clone.x){
-			// XXX not sure about this test...
 			col = (ox > 0 
 					|| i == 0) ?
 				i

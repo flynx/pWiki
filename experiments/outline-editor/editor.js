@@ -29,50 +29,53 @@ function clickPoint(x,y){
 // box corresponds the to desired coordinates. This accounts for nested 
 // elements.
 //
-// XXX with multi-line text when clicking outside the text to the left/right
-// 		need to select the appropriate line...
 // XXX it would be a better idea to do a binary search instead of a liner 
 // 		pass...
 // 		...though b-search will get us to the target, we stll need to count...
-// XXX HACK -- is there a better way to do this???
-var getCharOffset = function(elem, x, y, c){
-	c = c ?? 0
+var getCharOffset = function(elem, x, y, options={}){
 	var r = document.createRange()
 	for(var e of [...elem.childNodes]){
+		var c = options.c ?? 0
 		// text node...
 		if(e instanceof Text){
-			var prev, b
+			var prev, rect, cursor_line, col
 			for(var i=0; i <= e.length; i++){
 				r.setStart(e, i)
 				r.setEnd(e, i)
-				prev = b
-				b = r.getBoundingClientRect()
-				// found target...
-				if(b.x >= x 
-						&& b.y <= y 
-						&& b.bottom >= y){
-					// get the closest gap between chars to the click...
-					return (!prev 
-							|| Math.abs(b.x - x) <= Math.abs(prev.x - x)) ?
+				prev = rect 
+					?? options.prev
+				rect = r.getBoundingClientRect()
+				// line change...
+				// NOTE: this is almost identical to .getTextOffsetAt(..) see
+				// 		that for more docs...
+				if(prev 
+						&& prev.y != rect.y){
+					if(cursor_line){
+						return col 
+							?? c + i - 2 } 
+					col = undefined }
+				cursor_line = 
+					rect.y <= y 
+						&& rect.bottom >= y
+				if(col == null
+						&& rect.x >= x){
+					col = (c + i == 0 
+							|| Math.abs(rect.x - x) <= Math.abs(prev.x - x)) ?
 						c + i
-						: c + i - 1 } }
-			c += i - 1
+						: c + i - 1
+					if(cursor_line){
+						return col } } }
+			options.c += c - 1
 		// html node...
 		} else {
-			var res = getCharOffset(e, x, y, c)
-			if(!(res instanceof Array)){
-				return res } 
-			;[c, res] = res } }
+			options.prev = prev
+			options = getCharOffset(e, x, y, options)
+			if(typeof(options) != 'object'){
+				return options } } }
 	// no result was found...
 	return arguments.length > 3 ?
-		[c, null]
+		options
 		: null }
-
-
-var getTextAreaOffset = function(elem, x, y){
-	return elem.getTextGeometry(function(res, elem){
-		// XXX this will not work as it needs correct placement of elem under the cursor...
-		return getCharOffset(elem, x, y) }) }
 
 
 // Get offset in markdown relative to the resulting text...
