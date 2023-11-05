@@ -48,6 +48,23 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
+  - BUG: caret positioning broken
+    - Example:
+      - text text text
+        <div>
+        block element
+        </div>
+        this line, and above placement of completely broken
+        - _this seems to ba an issue with: `.getMarkdownOffset(..)`_
+      - DONE clicking right of this line will select last line of block
+        ```
+        text text text
+        ```
+        this line, placement is offset by 2
+      - DONE M
+        M can't place cursor before first char
+        M
+      - DONE inline `elements` now work
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
     - FF:
       - zooming on edited field

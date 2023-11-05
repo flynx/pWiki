@@ -32,49 +32,72 @@ function clickPoint(x,y){
 // XXX it would be a better idea to do a binary search instead of a liner 
 // 		pass...
 // 		...though b-search will get us to the target, we stll need to count...
-var getCharOffset = function(elem, x, y, options={}){
+var getCharOffset = function(elem, x, y, data={}){
 	var r = document.createRange()
+	var elem_rect = data.elem_rect = 
+		data.elem_rect 
+			?? elem.getBoundingClientRect()
 	for(var e of [...elem.childNodes]){
-		var c = options.c ?? 0
 		// text node...
 		if(e instanceof Text){
-			var prev, rect, cursor_line, col
+			var c = data.c = 
+				data.c 
+					?? 0
+			var prev, rect, cursor_line, line_start, offset
 			for(var i=0; i <= e.length; i++){
 				r.setStart(e, i)
 				r.setEnd(e, i)
 				prev = rect 
-					?? options.prev
+					?? data.prev
 				rect = r.getBoundingClientRect()
 				// line change...
 				// NOTE: this is almost identical to .getTextOffsetAt(..) see
 				// 		that for more docs...
-				if(prev 
-						&& prev.y != rect.y){
+				line_start = prev 
+					&& prev.y != rect.y
+				if(line_start){
 					if(cursor_line){
-						return col 
+						return offset 
 							?? c + i - 2 } 
-					col = undefined }
+					offset = undefined }
 				cursor_line = 
 					rect.y <= y 
 						&& rect.bottom >= y
-				if(col == null
+				if(offset == null
 						&& rect.x >= x){
-					col = (c + i == 0 
-							|| Math.abs(rect.x - x) <= Math.abs(prev.x - x)) ?
+					// get closest edge of element under cursor...
+					var dp = Math.abs(
+						(line_start ? 
+							elem_rect 
+							: prev).x 
+						- x) 
+					var dx = Math.abs(rect.x - x)
+					offset = dx <= dp ?
 						c + i
 						: c + i - 1
 					if(cursor_line){
-						return col } } }
-			options.c += c - 1
+						return offset } } }
+			data.c += i
 		// html node...
 		} else {
-			options.prev = prev
-			options = getCharOffset(e, x, y, options)
-			if(typeof(options) != 'object'){
-				return options } } }
+			prev = data.prev = 
+				prev 
+				?? data.prev
+			// special case: line break between cursor line and next element...
+			if(prev 
+					// cursor line...
+					&& prev.y <= y 
+					&& prev.bottom >= y
+					// line break...
+					&& prev.y < e.getBoundingClientRect().y){
+				return data.c - 2 }
+			// handle the node...
+			data = getCharOffset(e, x, y, data)
+			if(typeof(data) != 'object'){
+				return data } } }
 	// no result was found...
 	return arguments.length > 3 ?
-		options
+		data
 		: null }
 
 
