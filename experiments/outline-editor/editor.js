@@ -119,6 +119,7 @@ var getCharOffset = function(elem, x, y, data){
 //		                  |
 //		markdown:	'# Hea|ding'
 //
+// XXX we are not checking both lengths of markdown AND text...
 var getMarkdownOffset = function(markdown, text, i){
 	i = i ?? text.length
 	var m = 0
