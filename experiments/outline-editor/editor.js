@@ -29,10 +29,9 @@ function clickPoint(x,y){
 // box corresponds the to desired coordinates. This accounts for nested 
 // elements.
 //
-// XXX it would be a better idea to do a binary search instead of a liner 
-// 		pass...
-// 		...though b-search will get us to the target, we stll need to count...
-var getCharOffset = function(elem, x, y, data={}){
+// XXX do a binary search?? 
+var getCharOffset = function(elem, x, y, data){
+	data = data ?? {}
 	var r = document.createRange()
 	var elem_rect = data.elem_rect = 
 		data.elem_rect 
@@ -44,7 +43,7 @@ var getCharOffset = function(elem, x, y, data={}){
 				data.c 
 					?? 0
 			var prev, rect, cursor_line, line_start, offset
-			for(var i=0; i <= e.length; i++){
+			for(var i=0; i < e.length; i++){
 				r.setStart(e, i)
 				r.setEnd(e, i)
 				prev = rect 
@@ -78,6 +77,7 @@ var getCharOffset = function(elem, x, y, data={}){
 					if(cursor_line){
 						return offset } } }
 			data.c += i
+			data.last = e.data[i-1]
 		// html node...
 		} else {
 			prev = data.prev = 
@@ -89,13 +89,22 @@ var getCharOffset = function(elem, x, y, data={}){
 					&& prev.y <= y 
 					&& prev.bottom >= y
 					// line break...
-					&& prev.y < e.getBoundingClientRect().y){
-				return data.c - 2 }
+					&& prev.y < e.getBoundingClientRect().y
+					// no whitespace at end, no compensation needed... (XXX test)
+					&& ' \t\n'.includes(data.last)){
+				return data.c - 1 }
+			// block element -- compensate for a lacking '\n'... 
+			if(['block', 'table', 'flex', 'grid']
+					.includes(
+						getComputedStyle(e).display)){
+				data.c += 1 }
 			// handle the node...
 			data = getCharOffset(e, x, y, data)
 			if(typeof(data) != 'object'){
 				return data } } }
 	// no result was found...
+	console.log('---', data)
+	return data.c ?? data
 	return arguments.length > 3 ?
 		data
 		: null }
@@ -114,8 +123,8 @@ var getMarkdownOffset = function(markdown, text, i){
 	i = i ?? text.length
 	var m = 0
 	// walk both strings skipping/counting non-matching stuff...
-	for(var n=0; n <= i; n++, m++){
-		var c = text[n]
+	for(var t=0; t <= i; t++, m++){
+		var c = text[t]
 		var p = m
 		// walk to next match...
 		while(c != markdown[m] && m < markdown.length){
@@ -124,7 +133,7 @@ var getMarkdownOffset = function(markdown, text, i){
 		// entity, symbol, ...)
 		if(m >= markdown.length){
 			m = p } }
-	return m - n }
+	return m - t }
 
 
 
@@ -2064,6 +2073,7 @@ var Outline = {
 					var initial = elem.selectionStart
 					var c = getCharOffset(view, evt.clientX, evt.clientY)
 					var m = getMarkdownOffset(elem.value, view.innerText, c)
+					console.log('---', c, m)
 					// selecting an element with text offset by markup...
 					if(m != 0){
 						evt.preventDefault()

@@ -55,16 +55,38 @@ var setup = function(){
         block element
         </div>
         this line, and above placement of completely broken
-        - _this seems to ba an issue with: `.getMarkdownOffset(..)`_
+        - _this seems to be an issue with: `.getMarkdownOffset(..)`_
+          - ```
+            m = `text text text
+            <div>
+            block element
+            </div>
+            this line, and above placement of completely broken`
+            t = 'text text text\n\n\nblock element\n\n\nthis line, and above placement of completely broken '
+            getMarkdownOffset(m, t, 26) 
+            ```
+            this returns `69` while it should return `5`
+            _...replacing `\n\n\n` with `\n\n` seems to fix the issue_
+            (BUG also the above line is not italic -- can't reproduce)
       - DONE clicking right of this line will select last line of block
         ```
         text text text
         ```
         this line, placement is offset by 2
+      - DONE text text text
+        _text text text_
+        text text text
       - DONE M
         M can't place cursor before first char
         M
-      - DONE inline `elements` now work
+  - BUG: parser: code blocks do not ignore single back-quotes...
+    - ```
+      x = `moo`
+      ```
+    - _this also leads to double quoting of html..._
+      ```
+      x = `<i>moo</i>`
+      ```
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
     - FF:
       - zooming on edited field
