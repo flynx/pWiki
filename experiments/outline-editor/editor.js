@@ -133,6 +133,7 @@ var getCharOffset = function(elem, x, y, data){
 //		markdown:	'# Hea|ding'
 //
 // XXX we are not checking both lengths of markdown AND text...
+/*/ XXX
 var getMarkdownOffset = function(markdown, text, i){
 	i = i ?? text.length
 	var m = 0
@@ -148,6 +149,31 @@ var getMarkdownOffset = function(markdown, text, i){
 		if(m >= markdown.length){
 			m = p } }
 	return m - t }
+/*/
+// XXX when one string is guaranteed to be a strict subset of the other
+// 		this is trivial, but in the general case we can have differences 
+// 		both ways, for example the "virtual" newlines added by block 
+// 		elements mess up the text...
+// 		...so this in the current form is fundamentally broken as skipping 
+// 		chars in text can lead to false positives and lots of potential 
+// 		(not implemented) backtracking...
+// 		...needs thought...
+var getMarkdownOffset = function(markdown, text, i){
+	i = i ?? text.length
+	var map = []
+    for(var t=0, m=0; t <= text.length; t++, m++){
+        var o = 0
+        while(text[t] != markdown[m+o] 
+				&& m+o < markdown.length){
+            o++ }
+        if(m+o >= markdown.length){
+            m--
+        } else {
+            m += o } 
+		map[t] = m - t
+	}
+    return map[i] }
+//*/
 
 
 
