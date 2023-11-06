@@ -68,17 +68,23 @@ var setup = function(){
             this returns `69` while it should return `5`
             _...replacing `\n\n\n` with `\n\n` seems to fix the issue (also works with spaces)_
             (BUG also the above line is not italic -- can't reproduce)
-      - DONE clicking right of this line will select last line of block
-        ```
-        text text text
-        ```
-        this line, placement is offset by 2
-      - DONE text text text
-        _text text text_
-        text text text
       - DONE M
         M can't place cursor before first char
         M
+      - DONE text text text
+        ```
+        text text text
+        ```
+        text text text
+      - DONE text text text
+        _text text text_
+        text text text
+      - DONE _text text text_
+        text text text
+      - DONE ```
+        text text text
+        ```
+        text text text
   - BUG: parser: code blocks do not ignore single back-quotes...
     - ```
       x = `moo`

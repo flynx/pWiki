@@ -29,6 +29,7 @@ function clickPoint(x,y){
 // box corresponds the to desired coordinates. This accounts for nested 
 // elements.
 //
+// XXX can we avoid tracking "virtual" newlines between text/block elements???
 // XXX do a binary search?? 
 var getCharOffset = function(elem, x, y, data){
 	data = data ?? {}
@@ -37,12 +38,18 @@ var getCharOffset = function(elem, x, y, data){
 		data.elem_rect 
 			?? elem.getBoundingClientRect()
 	for(var e of [...elem.childNodes]){
+		var prev
+		var c = data.c = 
+			data.c 
+				?? 0
 		// text node...
 		if(e instanceof Text){
-			var c = data.c = 
-				data.c 
-					?? 0
-			var prev, rect, cursor_line, line_start, offset
+			// count "virtual" newlines between text and block elements... 
+			if(data.prev_elem == 'block'){
+				data.c += 1 }
+			data.prev_elem = 'text'
+
+			var rect, cursor_line, line_start, offset
 			for(var i=0; i < e.length; i++){
 				r.setStart(e, i)
 				r.setEnd(e, i)
@@ -66,7 +73,7 @@ var getCharOffset = function(elem, x, y, data){
 						&& rect.x >= x){
 					// get closest edge of element under cursor...
 					var dp = Math.abs(
-						(line_start ? 
+						((!prev || line_start) ? 
 							elem_rect 
 							: prev).x 
 						- x) 
@@ -93,21 +100,27 @@ var getCharOffset = function(elem, x, y, data){
 					// no whitespace at end, no compensation needed... (XXX test)
 					&& ' \t\n'.includes(data.last)){
 				return data.c - 1 }
-			// block element -- compensate for a lacking '\n'... 
-			if(['block', 'table', 'flex', 'grid']
+
+			// count "virtual" newlines between text and block elements... 
+			var block = ['block', 'table', 'flex', 'grid']
 					.includes(
-						getComputedStyle(e).display)){
+						getComputedStyle(e).display)
+			if(block 
+					&& data.prev_elem
+					&& data.prev_elem != 'block'){
 				data.c += 1 }
+			data.prev_elem = block ? 
+				'block' 
+				: 'elem'
+
 			// handle the node...
 			data = getCharOffset(e, x, y, data)
 			if(typeof(data) != 'object'){
 				return data } } }
-	// no result was found...
-	console.log('---', data)
-	return data.c ?? data
 	return arguments.length > 3 ?
 		data
-		: null }
+		// root call...
+		: data.c }
 
 
 // Get offset in markdown relative to the resulting text...
