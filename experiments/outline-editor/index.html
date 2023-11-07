@@ -102,6 +102,30 @@ var setup = function(){
   -
 - ## ToDo:
   - Q: can we place a cursor in a table correctly???
+  - Q: should tables be text-based markdown or higher-level?
+    - block-based -- adjacent blocks in table format (a-la markdown) are treated as rows of one table...
+      - here is an example
+      - | col 1 | col 2 | col 3 |
+      - | A | B | B |
+      - | 1 | 2 | 3 |
+      -
+      - not yet sure how are we going to allign columns (CSS preffered)
+    - block-children -- similar to how lists are done now
+      - a demo
+      - table:
+        - | A | B | B |
+        - | 1 | 2 | 3 |
+        - | X | y | Z |
+      -
+      - the header may be used as::
+        - header row
+        - caption text
+        - both?
+      - see CSS grids + 'display: contents' (might help hide non-grid elemnts...
+    - 
+    - might be fun to make the general syntax (with "=" removed) to be compatible with markdown... 
+    - might also be fun to auto-generat (template) new blocks within a table...
+    - this would greatly simplify table navigation and creation
   - custom element / web component
     - BUG: select via double/triple clicks does not work...
 	  - _looks like something is refocusing the element..._
@@ -492,7 +516,7 @@ var setup = function(){
 <button onclick="editor.dom.classList.toggle('block-offsets')">show/hide block offsets</button>
 
 
-
+<!--
 
 <hr>
 
@@ -505,7 +529,6 @@ var setup = function(){
 
 <hr>
 
-<!-- XXX this is broken... -->
 <outline-editor>
 <textarea>- ## code enclosed in `<textarea>` element
 	- code is treated as-is
@@ -526,6 +549,7 @@ var setup = function(){
 	- default value, edit to change
 	- this should survive reloads"></outline-editor>
 
+-->
 
 </body>
 </html>
