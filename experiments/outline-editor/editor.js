@@ -133,7 +133,7 @@ var getCharOffset = function(elem, x, y, data){
 //		markdown:	'# Hea|ding'
 //
 // XXX we are not checking both lengths of markdown AND text...
-/*/ XXX
+// XXX
 var getMarkdownOffset = function(markdown, text, i){
 	i = i ?? text.length
 	var m = 0
@@ -158,6 +158,7 @@ var getMarkdownOffset = function(markdown, text, i){
 // 		chars in text can lead to false positives and lots of potential 
 // 		(not implemented) backtracking...
 // 		...needs thought...
+// 		Q: can we cheat with this? =)
 var getMarkdownOffset = function(markdown, text, i){
 	i = i ?? text.length
 	var map = []
