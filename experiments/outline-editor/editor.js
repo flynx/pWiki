@@ -2476,7 +2476,12 @@ var Outline = {
 
 		// autofocus...
 		if(this.dom.getAttribute('autofocus') != null){
+			/*
+			setTimeout(function(){
+				that.focus() }, 0) }
+			/*/
 			this.focus() }
+			//*/
 		
 		return this },
 }
