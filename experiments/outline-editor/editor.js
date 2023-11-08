@@ -173,6 +173,7 @@ var getMarkdownOffset = function(markdown, text, i){
 // 		(not implemented) backtracking...
 // 		...needs thought...
 // 		Q: can we cheat with this? =)
+// XXX BUG: clicking right of last line places the caret before the last char...
 var getMarkdownOffset = function(markdown, text, i){
 	i = i ?? text.length
 	var map = []
@@ -255,12 +256,12 @@ var blocks = {
 		return text 
 			// markdown...
 			// style: headings...
-			.replace(/^(?<!\\)######\s+(.*)$/m, this.style(editor, elem, 'heading-6'))
-			.replace(/^(?<!\\)#####\s+(.*)$/m, this.style(editor, elem, 'heading-5'))
-			.replace(/^(?<!\\)####\s+(.*)$/m, this.style(editor, elem, 'heading-4'))
-			.replace(/^(?<!\\)###\s+(.*)$/m, this.style(editor, elem, 'heading-3'))
-			.replace(/^(?<!\\)##\s+(.*)$/m, this.style(editor, elem, 'heading-2'))
-			.replace(/^(?<!\\)#\s+(.*)$/m, this.style(editor, elem, 'heading-1'))
+			.replace(/^(?<!\\)######\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-6']))
+			.replace(/^(?<!\\)#####\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-5']))
+			.replace(/^(?<!\\)####\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-4']))
+			.replace(/^(?<!\\)###\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-3']))
+			.replace(/^(?<!\\)##\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-2']))
+			.replace(/^(?<!\\)#\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-1']))
 			// style: list...
 			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
 			.replace(/^\s*(.*)(?<!\\):\s*$/m, this.style(editor, elem, 'list'))
@@ -608,6 +609,47 @@ var tasks = {
 			this.selectCheckbox(editor, elem) 
 			node.focus() } 
 		return this },
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
+// XXX needs lots more work...
+var toc = {
+	__proto__: plugin,
+
+	update: function(editor, elem){
+		var outline = editor.outline
+		var tocs = [...outline.querySelectorAll('.toc .view')]
+		if(tocs.length == 0){
+			return }
+		var level = function(node){
+			var depth = 0
+			var parent = node
+			while(parent !== outline 
+					&& parent != null){
+				if(parent.classList.contains('block')){
+					depth++ }
+				parent = parent.parentElement }
+			return depth }
+		var headings = [...editor.outline.querySelectorAll('.heading .view')]
+			.map(function(e){
+				return `<li>${ e.innerText.split(/\n/)[0] }</li>`
+			})
+		var lst = document.createElement('ul')
+		lst.innerHTML = headings.join('\n')
+		for(var toc of tocs){
+			toc.append(lst) } },
+
+	__setup__: function(editor){
+		return this.update(editor) },
+	__editedcode__: function(evt, editor, elem){
+		return this.update(editor, elem) },
+
+	__parse__: function(text, editor, elem){
+		return text
+			.replace(/^\s*TOC\s*$/, 
+				this.style(editor, elem, 'toc', '')) },
 }
 
 
@@ -1144,6 +1186,7 @@ var Outline = {
 		// NOTE: this needs to be before styling to prevent it from 
 		// 		treating '[_] ... [_]' as italic...
 		tasks,
+		//toc,
 		styling,
 		// XXX
 		//attributes,
@@ -2088,7 +2131,8 @@ var Outline = {
 				var a = edited.selectionStart
 				var b = edited.selectionEnd
 				// position 0: focus empty node above...
-				if(a == 0){
+				if(a == 0 
+						&& edited.value.trim() != ''){
 					this.Block('prev')
 					this.edit('prev')
 				// focus new node...
@@ -2480,6 +2524,7 @@ var Outline = {
 			setTimeout(function(){
 				that.focus() }, 0) }
 			/*/
+			// XXX this for some reason takes lots of time at this point...
 			this.focus() }
 			//*/
 		
