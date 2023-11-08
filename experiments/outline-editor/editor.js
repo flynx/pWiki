@@ -1075,7 +1075,7 @@ var JSONOutline = {
 			.join('')
 		return (
 `<div class="block ${ cls.join(' ') }" tabindex="0" ${ attrs.join(' ') }>\
-<textarea class="code text" value="${ data.text }"></textarea>\
+<textarea class="code text" value="${ data.text }">${ data.text }</textarea>\
 <span class="view text">${ parsed.text }</span>\
 <div class="children">${ children }</div>\
 </div>`) },
@@ -1821,13 +1821,15 @@ var Outline = {
 
 			this.setUndo(this.path(cur), 'remove', [this.path(block)]) }
 		return block },
-	// XXX see inside...
+	/*/ XXX 
 	load: function(data){
 		var that = this
 		data = typeof(data) == 'string' ?
 				this.parse(data)
 			: data instanceof Array ?
 				data
+			: data == null ?
+				this.json()
 			: [data]
 		// generate dom...
 		var level = function(lst){
@@ -1851,9 +1853,31 @@ var Outline = {
 			var f = that._updateTextareaSize
 			for(var e of [...that.outline.querySelectorAll('textarea')]){
 				f(e) } }, 0)
-		// restore focus...
-		this.focus()
 		return this },
+	/*/ // XXX JSON version...
+	load: function(data){
+		var that = this
+		data = typeof(data) == 'string' ?
+				this.parse(data)
+			: data instanceof Array ?
+				data
+			: data == null ?
+				this.json()
+			: [data]
+
+		this.outline.innerHTML = this.html(data)
+
+		// update sizes of all the textareas (transparent)...
+		// NOTE: this is needed to make initial clicking into multi-line 
+		// 		blocks place the cursor into the clicked location.
+		// 		...this is done by expanding the textarea to the element 
+		// 		size and enabling it to intercept clicks correctly...
+		setTimeout(function(){
+			var f = that._updateTextareaSize
+			for(var e of [...that.outline.querySelectorAll('textarea')]){
+				f(e) } }, 0)
+		return this },
+	//*/
 
 	sync: function(){
 		this.code = this.text()
