@@ -688,6 +688,64 @@
 }
 
 
+/* XXX EXPERIMENTAL... 
+*	- need to handle nested blocks somehow...
+*/
+.editor .outline .block.table-2 {
+
+	&>.view {
+		font-size: small;
+		color: rgba(0,0,0,0.4);
+	}
+
+	&.focused {
+		background: rgba(0,0,0,0.05);
+	}
+	&:focus {
+		background: rgba(0,0,0,0.07);
+	}
+
+	&>.children {
+		display: table !important;
+		width: 100%;
+
+		&>.block {
+			display: table-row;
+
+			&:first-child>.view td {
+				font-weight: bold;
+				border-bottom: solid 0.1rem silver;
+			}
+
+			&:nth-child(even) {
+				background: rgba(0,0,0,0.03);
+			}
+			&:not(:first-child) {
+				&>.view td {
+					font-weight: normal !important;
+				}
+			}
+
+			&.focused {
+				background: rgba(0,0,0,0.03);
+			}
+			&:focus {
+				background: rgba(0,0,0,0.07);
+			}
+		}
+	}
+
+	.block>.children,
+	.view,
+	table,
+	tbody,
+	tr {
+		display: contents !important;
+	}
+}
+
+
+
 /********************************************************* Testing ***/
 
 :host.show-click-zones .outline .block,
@@ -707,6 +765,7 @@
 		}
 	}
 }
+
 
 
 

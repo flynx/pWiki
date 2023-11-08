@@ -70,6 +70,10 @@ var setup = function(){
             (BUG also the above line is not italic -- can't reproduce)
       - clicking right of the last line places cursor wrong
         - _this is a problem with the new version of `getMarkdownOffset(..)`_
+      - DONE text	text	text
+      - DONE text text text
+        text text text
+        text text text
       - DONE M
         M can't place cursor before first char
         M
@@ -87,6 +91,9 @@ var setup = function(){
         text text text
         ```
         text text text
+      - DONE |text|text|text|
+        |text|text|text|
+        |text|text|text|
   - BUG: parser: code blocks do not ignore single back-quotes...
     - ```
       x = `moo`
@@ -103,8 +110,14 @@ var setup = function(){
       - side margins are a bit too large (account for toolbat to the right)
   -
 - ## ToDo:
+  - Q: should we use `HTMLTextAreaElement.autoUpdateSize(..)` or handle it globally in setup???
+    - _...I'm leaning towards the later..._
   - Q: can we place a cursor in a table correctly???
   - Q: should tables be text-based markdown or higher-level?
+    - for reference a normal table
+      - | col 1 | col 2 | col 3 |
+        | moo | foo | boo |
+        | 1 | 2 | 3 |
     - block-based -- adjacent blocks in table format (a-la markdown) are treated as rows of one table...
       - here is an example
       - | col 1 | col 2 | col 3 |
@@ -114,17 +127,18 @@ var setup = function(){
       - not yet sure how are we going to allign columns (CSS preffered)
     - block-children -- similar to how lists are done now
       - a demo
-      - table:
-        - | A | B | B |
+      - --table--
+        - | A | B | C |
         - | 1 | 2 | 3 |
-        - | X | y | Z |
+        - | moo | foo | boo |
       -
       - the header may be used as::
         - header row
         - caption text
         - both?
-      - see CSS grids + 'display: contents' (might help hide non-grid elemnts...
-    - 
+      - Q: how do we handle indenting a table row?
+      - Q: how do we handle unmarked text?
+      - 
     - might be fun to make the general syntax (with "=" removed) to be compatible with markdown... 
     - might also be fun to auto-generat (template) new blocks within a table...
     - this would greatly simplify table navigation and creation
@@ -374,13 +388,13 @@ var setup = function(){
       | a-s        | toggle status                |
       | a-x        | toggle status DONE           |
       | a-r        | toggle status REJECT         |
-	  | c-z        | normal: undo                 |
-	  | c-s-z      | normal: redo                 |
-	  | c          | normal: crop current node    |
+      | c-z        | normal: undo                 |
+      | c-s-z      | normal: redo                 |
+      | c          | normal: crop current node    |
       | enter      | normal: edit node            |
       |            | edit: create node below      |
       | esc        | crop: exit crop              |
-	  |            | edit: exit edit mode         | 
+      |            | edit: exit edit mode         | 
   - ### Formatting
     - The formatting mostly adheres to the markdown spec with a few minor differences
     -

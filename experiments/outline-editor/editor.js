@@ -102,9 +102,16 @@ var getCharOffset = function(elem, x, y, data){
 				return data.c - 1 }
 
 			// count "virtual" newlines between text and block elements... 
-			var block = ['block', 'table', 'flex', 'grid']
-					.includes(
-						getComputedStyle(e).display)
+			var type = getComputedStyle(e).display
+			var block = [
+				'block', 
+				// XXX these do not add up yet...
+				//'table', 
+				//'table-row', 
+				//'table-cell', 
+				'flex', 
+				'grid',
+			].includes(type)
 			if(block 
 					&& data.prev_elem
 					&& data.prev_elem != 'block'){
@@ -115,6 +122,13 @@ var getCharOffset = function(elem, x, y, data){
 
 			// handle the node...
 			data = getCharOffset(e, x, y, data)
+
+			// compensate for table stuff...
+			if(type == 'table-row'){
+				data.c -= 1 }
+			if(type == 'table-cell'){
+				data.c += 1 }
+
 			if(typeof(data) != 'object'){
 				return data } } }
 	return arguments.length > 3 ?
@@ -200,8 +214,11 @@ var plugin = {
 		return function(_, text){
 			elem.style ??= []
 			elem.style.push(...style)
-			return code 
-				?? text } },
+			return typeof(code) == 'function' ?
+					code(...arguments)
+				: code != null ?
+					code
+				: text } },
 }
 
 
@@ -632,15 +649,23 @@ var syntax = {
 var tables = {
 	__proto__: plugin,
 
+	// XXX EXPERIMENTAL
+	__pre_parse__: function(text, editor, elem){
+		return text
+			.replace(/^(--table--)$/m, this.style(editor, elem, 'table-2')) },
+
 	__parse__: function(text, editor, elem){
 		return text
 			.replace(/^\s*(?<!\\)\|\s*((.|\n)*)\s*\|\s*$/, 
-				function(_, body){
-					return `<table><tr><td>${
-						body
-							.replace(/\s*\|\s*\n\s*\|\s*/gm, '</td></tr>\n<tr><td>')
-							.replace(/\s*\|\s*/gm, '</td><td>')
-					}</td></td></table>` }) },
+				this.style(editor, elem, 
+					'table',
+					function(_, body){
+						return `<table><tr><td>${
+							body
+								.trim()
+								.replace(/\s*\|\s*\n\s*\|\s*/gm, '</td></tr>\n<tr><td>')
+								.replace(/\s*\|\s*/gm, '</td><td>')
+						}</td></td></table>` })) },
 }
 
 
@@ -732,17 +757,6 @@ var escaping = {
 //---------------------------------------------------------------------
 
 var JSONOutline = {
-	// Format:
-	// 	<json> ::= [
-	// 			{
-	// 				text: <text>,
-	// 				children: <json>,
-	// 				...
-	// 			},
-	// 			...
-	// 		]
-	json: undefined,
-
 	// format:
 	// 	{
 	// 		<id>: <node>,
@@ -777,7 +791,7 @@ var JSONOutline = {
 		var i = 0
 		// all nodes..
 		if(node == null || node == 'all' || node == 'visible'){
-			for(var e of this.json){
+			for(var e of this.json()){
 				yield* this.__iter(e, [i++], node) } 
 		// single node...
 		} else {
@@ -789,7 +803,7 @@ var JSONOutline = {
 				this.get(...args), 
 				mode) } },
 	[Symbol.iterator]: function*(mode='all'){
-		for(var node of this.json){
+		for(var node of this.json()){
 			for(var [_, n] of this.__iter(node, mode)){
 				yield n } } },
 	iter: function*(node, mode){
@@ -817,12 +831,285 @@ var JSONOutline = {
 	crop: function(){},
 	uncrop: function(){},
 
-	parseBlockAttrs: function(){},
-	parse: function(){},
+	// NOTE: this is auto-populated by plugin.style(..)...
+	__styles: undefined,
+
+	// block render...
+	__code2html__: function(code, elem={}){
+		var that = this
+
+		// only whitespace -> keep element blank...
+		if(code.trim() == ''){
+			elem.text = code
+			return elem }
+
+		// helpers...
+		var run = function(stage, text){
+			var meth = {
+				pre: '__pre_parse__',
+				main: '__parse__',
+				post: '__post_parse__',
+			}[stage]
+			return that.threadPlugins(meth, text, that, elem) }
+
+		elem = this.parseBlockAttrs(code, elem)
+		code = elem.text
+
+		// stage: pre...
+		var text = run('pre', 
+			// pre-sanitize...
+			code.replace(/\x00/g, ''))
+		// split text into parsable and non-parsable sections...
+		var sections = text
+			// split fomat:
+			// 	[ text <match> <type> <body>, ... ]
+			.split(/(<(pre|code)(?:|\s[^>]*)>((?:\n|.)*)<\/\2>)/g)
+		// sort out the sections...
+		var parsable = [] 
+		var quoted = []
+		while(sections.length > 0){
+			var [section, match] = sections.splice(0, 4)
+			parsable.push(section)
+			quoted.push(match) }
+		// stage: main...
+		text = run('main', 
+				// parse only the parsable sections...
+				parsable.join('\x00'))
+			.split(/\x00/g)
+			// merge the quoted sections back in...
+			.map(function(section){
+				return [section, quoted.shift() ?? '']	})
+			.flat()
+			.join('') 
+		// stage: post...
+		elem.text = run('post', text) 
+
+		return elem },
+
+	// output format...
+	__code2text__: function(code){
+		return code 
+			.replace(/(\n\s*)-/g, '$1\\-') },
+	__text2code__: function(text){
+		text = text 
+			.replace(/(\n\s*)\\-/g, '$1-') 
+		return this.trim_block_text ?
+			text.trim()
+			: text },
+
+	__block_attrs__: {
+		id: 'attr',
+		collapsed: 'attr',
+		focused: 'cls',
+	},
+	//
+	//	Parse attrs...
+	//	.parseBlockAttrs(<text>[, <elem>])
+	//		-> <elem>
+	//
+	//	Parse attrs keeping non-system attrs in .text...
+	//	.parseBlockAttrs(<text>, true[, <elem>])
+	//		-> <elem>
+	//
+	//	Parse attrs keeping all attrs in .text...
+	//	.parseBlockAttrs(<text>, 'all'[, <elem>])
+	//		-> <elem>
+	//
+	parseBlockAttrs: function(text, keep=false, elem={}){
+		if(typeof(keep) == 'object'){
+			elem = keep
+			keep = typeof(elem) == 'boolean' ?
+				elem
+				: false }
+		var system = this.__block_attrs__
+		var clean = text
+			// XXX for some reason changing the first group into (?<= .. )
+			// 		still eats up the whitespace...
+			// 		...putting the same pattern in a normal group and 
+			// 		returning it works fine...
+			//.replace(/(?<=[\n\h]*)(?:(?:\n|^)\s*\w*\s*::\s*[^\n]*\s*)*$/, 
+			.replace(/([\n\t ]*)(?:(?:\n|^)[\t ]*\w+[\t ]*::[\t ]*[^\n]+[\t ]*)+$/, 
+				function(match, ws){
+					var attrs = match
+						.trim()
+						.split(/(?:[\t ]*::[\t ]*|[\t ]*\n[\t ]*)/g)
+					while(attrs.length > 0){
+						var [name, val] = attrs.splice(0, 2)
+						elem[name] = 
+							val == 'true' ?
+				   				true
+							: val == 'false' ?
+								false
+							: val 
+						// keep non-system attrs...
+						if(keep 
+								&& !(name in system)){
+							ws += `\n${name}::${val}` } } 
+					return ws })
+		elem.text = keep == 'all' ? 
+			text 
+			: clean
+		return elem },
+	parse: function(text){
+		var that = this
+		text = text
+			.replace(/^[ \t]*\n/, '')
+		text = ('\n' + text)
+			.split(/\n([ \t]*)(?:- |-\s*$)/gm)
+			.slice(1)
+		var tab = ' '.repeat(this.tab_size || 8)
+		var level = function(lst, prev_sep=undefined, parent=[]){
+			while(lst.length > 0){
+				sep = lst[0].replace(/\t/gm, tab)
+				// deindent...
+				if(prev_sep != null 
+						&& sep.length < prev_sep.length){
+					break }
+				prev_sep ??= sep
+				// same level...
+				if(sep.length == prev_sep.length){
+					var [_, block] = lst.splice(0, 2)
+					var attrs = that.parseBlockAttrs(block)
+					attrs.text = that.__text2code__(attrs.text
+						// normalize indent...
+						.split(new RegExp('\n'+sep+'  ', 'g'))
+						.join('\n'))
+					parent.push({ 
+						collapsed: false,
+						focused: false,
+						...attrs,
+						children: [],
+					})
+				// indent...
+				} else {
+					parent.at(-1).children = level(lst, sep) } }
+			return parent }
+		return level(text) },
 
 	data: function(){},
 	load: function(){},
-	text: function(){},
+
+	// Format:
+	// 	<json> ::= [
+	// 			{
+	// 				text: <text>,
+	// 				children: <json>,
+	// 				...
+	// 			},
+	// 			...
+	// 		]
+	// XXX
+	json: function(){},
+
+	// XXX add option to customize indent size...
+	text: function(node, indent, level){
+		// .text(<indent>, <level>)
+		if(typeof(node) == 'string'){
+			;[node, indent='  ', level=''] = [undefined, ...arguments] }
+		node ??= this.json(node)
+		indent ??= '  '
+		level ??= ''
+		var text = []
+		for(var elem of node){
+			text.push( 
+				level +'- '
+					+ this.__code2text__(elem.text)
+						.replace(/\n/g, '\n'+ level +'  ') 
+					// attrs... 
+					+ (Object.keys(elem)
+						.reduce(function(res, attr){
+							return (attr == 'text' 
+									|| attr == 'children') ?
+								res
+								: res 
+									+ (elem[attr] ?
+										'\n'+level+'  ' + `${ attr }:: ${ elem[attr] }`
+										: '') }, '')),
+				(elem.children 
+						&& elem.children.length > 0) ?
+					this.text(elem.children || [], indent, level+indent) 
+					: [] ) }
+		return text
+			.flat()
+			.join('\n') },
+
+	// XXX add read-only option...
+	htmlBlock: function(data, options={}){
+		var that = this
+
+		var parsed = this.__code2html__(data.text, {...data}) 
+
+		var cls = parsed.style ?? []
+		delete parsed.style
+
+		var attrs = []
+
+		for(var [attr, value] of Object.entries({...data, ...parsed})){
+			if(attr == 'children' || attr == 'text'){
+				continue }
+			var i
+			var type = this.__block_attrs__[attr]
+			if(type == 'cls'){
+				value ?
+						cls.push(attr)
+					: (i = cls.indexOf(attr)) >= 0 ?
+						cls.splice(i, 1)
+					: undefined
+			} else if(type == 'attr' 
+					|| type == undefined){
+				typeof(value) == 'boolean'?
+						(value ?
+							attrs.push(attr)
+							: (i = attrs.indexOf(attr)) >= 0 ?
+								attrs.splice(i, 1)
+							: undefined)
+					: value != null ?
+						attrs.push(`${attr}="${value}"`)
+					: (i = attrs.indexOf(attr)) >= 0 ?
+						attrs.splice(i, 1)
+					: undefined } }
+
+		var children = data.children
+			.map(function(data){
+				return that.htmlBlock(data) })
+			.join('')
+		return (
+`<div class="block ${ cls.join(' ') }" tabindex="0" ${ attrs.join(' ') }>\
+<textarea class="code text" value="${ data.text }"></textarea>\
+<span class="view text">${ parsed.text }</span>\
+<div class="children">${ children }</div>\
+</div>`) },
+	html: function(data, options=false){
+		var that = this
+		if(typeof(data) == 'boolean'){
+			options = data
+			data = undefined }
+		data = data == null ?
+				this.json()
+			: typeof(data) == 'string' ?
+				this.parse(data)
+			: data instanceof Array ?
+				data
+			: [data]
+		options = 
+			typeof(options) == 'boolean' ?
+				{full: options}
+				: (options 
+					?? {})
+
+		var nodes = data
+			.map(function(data){
+				return that.htmlBlock(data) })
+			.join('') 
+
+		return !options.full ?
+			nodes
+			: (
+`<div class="editor" autofocus>\
+<div class="header"></div>\
+<textarea class="code"></textarea>\
+<div class="outline" tabindex="0">${ nodes }</div>\
+</div>`) },
 }
 
 
@@ -830,6 +1117,8 @@ var JSONOutline = {
 // XXX experiment with a concatinative model...
 // 		.get(..) -> Outline (view)
 var Outline = {
+	__proto__: JSONOutline,
+
 	dom: undefined,
 
 	// config...
@@ -1039,18 +1328,22 @@ var Outline = {
 			: offset == 'visible' ?
 				[...node.querySelectorAll('.block')] 
 					.filter(function(e){
-						return e.querySelector('.view').offsetParent != null })
+						//return e.querySelector('.view').offsetParent != null })
+						return e.offsetParent != null })
 			: offset == 'viewport' ?
 				[...node.querySelectorAll('.block')] 
 					.filter(function(e){
-						return e.querySelector('.view').offsetParent != null 
-							&& e.querySelector('.code').visibleInViewport() })
+						//return e.querySelector('.view').offsetParent != null 
+						//	&& e.querySelector('.code').visibleInViewport() })
+						return e.offsetParent != null 
+							&& e.visibleInViewport() })
 			: offset == 'editable' ?
 				[...node.querySelectorAll('.block>.code')] 
 			: offset == 'selected' ?
 				[...node.querySelectorAll('.block[selected]')] 
 					.filter(function(e){
-						return e.querySelector('.view').offsetParent != null }) 
+						//return e.querySelector('.view').offsetParent != null }) 
+						return e.offsetParent != null }) 
 			: offset == 'children' ?
 				children(node)
 			: offset == 'siblings' ?
@@ -1141,13 +1434,15 @@ var Outline = {
 	},
 	// NOTE: this does not internally handle undo as it would be too 
 	// 		granular...
+	_updateTextareaSize: function(elem){
+		elem.style.height = getComputedStyle(elem.nextSibling).height },
 	update: function(node='focused', data){
 		var node = this.get(node)
 		data ??= this.data(node, false)
 
 		var parsed = {}
 		if('text' in data){
-			var text = node.querySelector('.code')
+			var code = node.querySelector('.code')
 			var html = node.querySelector('.view')
 			if(this.__code2html__){
 				// NOTE: we are ignoring the .collapsed attr here 
@@ -1171,8 +1466,10 @@ var Outline = {
 						// NOTE: adding a space here is done to prevent the browser 
 						// 		from hiding the last newline...
 						: data.text + ' ' }
-			text.value = data.text 
-			text.updateSize() }
+			code.value = data.text 
+			code.updateSize() 
+			// NOTE: this will have no effect if the element is not attached...
+			this._updateTextareaSize(code) }
 
 		for(var [attr, value] of Object.entries({...data, ...parsed})){
 			if(attr == 'children' || attr == 'text'){
@@ -1425,70 +1722,6 @@ var Outline = {
 		;[this.__redo_stack] = this.__undo(this.__redo_stack)
 		return this },
 
-	// block render...
-	// NOTE: this is auto-populated by .__code2html__(..)
-	__styles: undefined,
-	__code2html__: function(code, elem={}){
-		var that = this
-
-		// only whitespace -> keep element blank...
-		if(code.trim() == ''){
-			elem.text = code
-			return elem }
-
-		// helpers...
-		var run = function(stage, text){
-			var meth = {
-				pre: '__pre_parse__',
-				main: '__parse__',
-				post: '__post_parse__',
-			}[stage]
-			return that.threadPlugins(meth, text, that, elem) }
-
-		elem = this.parseBlockAttrs(code, elem)
-		code = elem.text
-
-		// stage: pre...
-		var text = run('pre', 
-			// pre-sanitize...
-			code.replace(/\x00/g, ''))
-		// split text into parsable and non-parsable sections...
-		var sections = text
-			// split fomat:
-			// 	[ text <match> <type> <body>, ... ]
-			.split(/(<(pre|code)(?:|\s[^>]*)>((?:\n|.)*)<\/\2>)/g)
-		// sort out the sections...
-		var parsable = [] 
-		var quoted = []
-		while(sections.length > 0){
-			var [section, match] = sections.splice(0, 4)
-			parsable.push(section)
-			quoted.push(match) }
-		// stage: main...
-		text = run('main', 
-				// parse only the parsable sections...
-				parsable.join('\x00'))
-			.split(/\x00/g)
-			// merge the quoted sections back in...
-			.map(function(section){
-				return [section, quoted.shift() ?? '']	})
-			.flat()
-			.join('') 
-		// stage: post...
-		elem.text = run('post', text) 
-
-		return elem },
-	// output format...
-	__code2text__: function(code){
-		return code 
-			.replace(/(\n\s*)-/g, '$1\\-') },
-	__text2code__: function(text){
-		text = text 
-			.replace(/(\n\s*)\\-/g, '$1-') 
-		return this.trim_block_text ?
-			text.trim()
-			: text },
-
 	// serialization...
 	data: function(elem, deep=true){
 		elem = this.get(elem)	
@@ -1521,121 +1754,6 @@ var Outline = {
 		return children
 			.map(function(elem){
 				return that.data(elem) }) },
-	// XXX add option to customize indent size...
-	text: function(node, indent, level){
-		// .text(<indent>, <level>)
-		if(typeof(node) == 'string'){
-			;[node, indent='  ', level=''] = [undefined, ...arguments] }
-		node ??= this.json(node)
-		indent ??= '  '
-		level ??= ''
-		var text = []
-		for(var elem of node){
-			text.push( 
-				level +'- '
-					+ this.__code2text__(elem.text)
-						.replace(/\n/g, '\n'+ level +'  ') 
-					// attrs... 
-					+ (Object.keys(elem)
-						.reduce(function(res, attr){
-							return (attr == 'text' 
-									|| attr == 'children') ?
-								res
-								: res 
-									+ (elem[attr] ?
-										'\n'+level+'  ' + `${ attr }:: ${ elem[attr] }`
-										: '') }, '')),
-				(elem.children 
-						&& elem.children.length > 0) ?
-					this.text(elem.children || [], indent, level+indent) 
-					: [] ) }
-		return text
-			.flat()
-			.join('\n') },
-
-	//
-	//	Parse attrs...
-	//	.parseBlockAttrs(<text>[, <elem>])
-	//		-> <elem>
-	//
-	//	Parse attrs keeping non-system attrs in .text...
-	//	.parseBlockAttrs(<text>, true[, <elem>])
-	//		-> <elem>
-	//
-	//	Parse attrs keeping all attrs in .text...
-	//	.parseBlockAttrs(<text>, 'all'[, <elem>])
-	//		-> <elem>
-	//
-	parseBlockAttrs: function(text, keep=false, elem={}){
-		if(typeof(keep) == 'object'){
-			elem = keep
-			keep = typeof(elem) == 'boolean' ?
-				elem
-				: false }
-		var system = this.__block_attrs__
-		var clean = text
-			// XXX for some reason changing the first group into (?<= .. )
-			// 		still eats up the whitespace...
-			// 		...putting the same pattern in a normal group and 
-			// 		returning it works fine...
-			//.replace(/(?<=[\n\h]*)(?:(?:\n|^)\s*\w*\s*::\s*[^\n]*\s*)*$/, 
-			.replace(/([\n\t ]*)(?:(?:\n|^)[\t ]*\w+[\t ]*::[\t ]*[^\n]+[\t ]*)+$/, 
-				function(match, ws){
-					var attrs = match
-						.trim()
-						.split(/(?:[\t ]*::[\t ]*|[\t ]*\n[\t ]*)/g)
-					while(attrs.length > 0){
-						var [name, val] = attrs.splice(0, 2)
-						elem[name] = 
-							val == 'true' ?
-				   				true
-							: val == 'false' ?
-								false
-							: val 
-						// keep non-system attrs...
-						if(keep 
-								&& !(name in system)){
-							ws += `\n${name}::${val}` } } 
-					return ws })
-		elem.text = keep == 'all' ? 
-			text 
-			: clean
-		return elem },
-	parse: function(text){
-		var that = this
-		text = text
-			.replace(/^[ \t]*\n/, '')
-		text = ('\n' + text)
-			.split(/\n([ \t]*)(?:- |-\s*$)/gm)
-			.slice(1)
-		var tab = ' '.repeat(this.tab_size || 8)
-		var level = function(lst, prev_sep=undefined, parent=[]){
-			while(lst.length > 0){
-				sep = lst[0].replace(/\t/gm, tab)
-				// deindent...
-				if(prev_sep != null 
-						&& sep.length < prev_sep.length){
-					break }
-				prev_sep ??= sep
-				// same level...
-				if(sep.length == prev_sep.length){
-					var [_, block] = lst.splice(0, 2)
-					var attrs = that.parseBlockAttrs(block)
-					attrs.text = that.__text2code__(attrs.text
-						// normalize indent...
-						.split(new RegExp('\n'+sep+'  ', 'g'))
-						.join('\n'))
-					parent.push({ 
-						collapsed: false,
-						focused: false,
-						...attrs,
-						children: [],
-					})
-				// indent...
-				} else {
-					parent.at(-1).children = level(lst, sep) } }
-			return parent }
-		return level(text) },
 
 	// XXX should this handle children???
 	// XXX revise name...
@@ -1699,6 +1817,8 @@ var Outline = {
 				cur[place](block)
 			: undefined 
 
+			this._updateTextareaSize(code)
+
 			this.setUndo(this.path(cur), 'remove', [this.path(block)]) }
 		return block },
 	// XXX see inside...
@@ -1728,8 +1848,9 @@ var Outline = {
 		// 		...this is done by expanding the textarea to the element 
 		// 		size and enabling it to intercept clicks correctly...
 		setTimeout(function(){
+			var f = that._updateTextareaSize
 			for(var e of [...that.outline.querySelectorAll('textarea')]){
-				e.updateSize() } }, 0)
+				f(e) } }, 0)
 		// restore focus...
 		this.focus()
 		return this },
