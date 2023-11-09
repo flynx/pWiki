@@ -48,13 +48,6 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
-  - BUG: deleting an element in edit mode breaks code (err)
-    - click the next line and press `backspace`
-    - 
-  - BUG: navigation in edit mode broken...
-    -
-    - // can't go past this down...
-    - 
   - BUG: caret positioning broken
     - *TODO*::
       - text text text
@@ -118,7 +111,9 @@ var setup = function(){
       - side margins are a bit too large (account for toolbat to the right)
   -
 - ## ToDo:
-  - TOC?
+  - might be a good idea to make the heading level depend on its depth...
+  - Q: do we want to place the caret when moving between nodes???
+    - _would be nice to remember the caret horizontal offset for vertical movement_
   - Q: should we use `HTMLTextAreaElement.autoUpdateSize(..)` or handle it globally in setup???
     - _...I'm leaning towards the later..._
   - Q: can we place a cursor in a table correctly???
@@ -182,6 +177,7 @@ var setup = function(){
   - numbered lists: add counters to a depth of 6-7...
     - _or find a way to make them repeat..._
   - FEATURE: read-only mode
+  - FEATURE: TOC (???)
   - FEATURE: auto-shift done blocks to the end of siblings... (option?)
     - ...or should this be `sort:: done` -- i.e. sort children by done status??
   - codeblock as a block

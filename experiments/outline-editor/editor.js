@@ -618,6 +618,12 @@ var tasks = {
 var toc = {
 	__proto__: plugin,
 
+	// XXX not sure on what to build the hierarchy...
+	// 		this could be:
+	// 			- heading level
+	// 			- topology
+	// 			- both
+	// 			- ...
 	update: function(editor, elem){
 		var outline = editor.outline
 		var tocs = [...outline.querySelectorAll('.toc .view')]
@@ -632,7 +638,7 @@ var toc = {
 					depth++ }
 				parent = parent.parentElement }
 			return depth }
-		var headings = [...editor.outline.querySelectorAll('.heading .view')]
+		var headings = [...editor.outline.querySelectorAll('.block.heading>.view')]
 			.map(function(e){
 				return `<li>${ e.innerText.split(/\n/)[0] }</li>`
 			})
@@ -1186,7 +1192,7 @@ var Outline = {
 		// NOTE: this needs to be before styling to prevent it from 
 		// 		treating '[_] ... [_]' as italic...
 		tasks,
-		//toc,
+		toc,
 		styling,
 		// XXX
 		//attributes,
@@ -1316,7 +1322,7 @@ var Outline = {
 					outline
 				: node.parentElement === outline ?
 					outline
-				: node.parentElement.parentElement }
+				: node?.parentElement?.parentElement }
 		var children = function(node){
 			return node === outline ?
 				[...node.children]
@@ -1965,7 +1971,7 @@ var Outline = {
 				var line = edited.getTextGeometry().line
 				if(line == 0){
 					evt.preventDefault() 
-					that.focus('edited', 'prev') }
+					that.edit('prev') }
 			} else {
 				evt.preventDefault() 
 				this.focus('focused', -1) } },
@@ -1986,9 +1992,9 @@ var Outline = {
 			var edited = this.get('edited')
 			if(edited){
 				var {line, lines} = edited.getTextGeometry()
-				if(line == lines - 1){
+				if(lines == 0 || line == lines - 1){
 					evt.preventDefault() 
-					that.focus('edited', 'next') }
+					that.edit('next') }
 			} else {
 				evt.preventDefault() 
 				this.focus('focused', 1) } },
