@@ -48,6 +48,12 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
+  - BUG: can't move down out of a code block
+    - edit this line, then move down
+    - ```
+      code
+      ```
+    - this node can't be reached.
   - BUG: caret positioning broken
     - *TODO*::
       - text text text
