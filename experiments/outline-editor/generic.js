@@ -109,29 +109,33 @@ HTMLTextAreaElement.prototype.getTextGeometry = function(func){
 	var style = getComputedStyle(this)
 	var paddingV = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
 
-	var carret = document.createElement('span')
-	carret.innerText = '|' 
-	carret.style.margin = '0px'
-	carret.style.padding = '0px'
+	var caret = document.createElement('span')
+	caret.innerText = '|' 
+	caret.style.margin = '0px'
+	caret.style.padding = '0px'
 
 	var span = cloneAsOffscreenSpan(this)
 	span.append(
 		text.slice(0, offset),
-		carret,
-		// NOTE: wee need the rest of the text for the carret to be typeset
+		caret,
+		// NOTE: wee need the rest of the text for the caret to be typeset
 		// 		to the correct line...
 		text.slice(offset))
 	document.body.append(span)
 
 	var res = {
 		length: text.length,
+
 		lines: Math.floor(
 			(this.offsetHeight - paddingV) 
-				/ carret.offsetHeight),
-		line: Math.floor(carret.offsetTop / carret.offsetHeight),
+				/ caret.offsetHeight),
+		line: Math.floor(caret.offsetTop / caret.offsetHeight),
+
+		caretHeight: caret.offsetHeight,
+
 		offset: offset,
-		offsetLeft: carret.offsetLeft,
-		offsetTop: carret.offsetTop,
+		offsetLeft: caret.offsetLeft,
+		offsetTop: caret.offsetTop,
 	}
 
 	if(typeof(func) == 'function'){

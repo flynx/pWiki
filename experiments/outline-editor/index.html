@@ -118,8 +118,7 @@ var setup = function(){
     - _also this would be a nice opportunity to start the move to a newer electron version_
   - might be a good idea to make the heading level depend on its depth...
   - might be a good idea to think how to avoid the constant selections on focus...
-  - Q: do we want to place the caret when moving between nodes???
-    - _would be nice to remember the caret horizontal offset for vertical movement_
+  - Q: when moving up/down between nodes do we want to place the caret relative to markdown (current) or to view? (see: CARET_V_MOVE)
   - Q: should we use `HTMLTextAreaElement.autoUpdateSize(..)` or handle it globally in setup???
     - _...I'm leaning towards the later..._
   - Q: can we place a cursor in a table correctly???
@@ -221,6 +220,7 @@ var setup = function(){
       - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
+  - DONE place the caret when moving between nodes
   - DONE selecting expanded code by _click-n-drag_
     collapsed:: true
     - # this is a test

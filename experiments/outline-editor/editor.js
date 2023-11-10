@@ -1947,7 +1947,23 @@ var Outline = {
 	// XXX move the code here into methods/actions...
 	// XXX use keyboard.js...
 	__overtravel_timeout: undefined,
+	// XXX this needs to be dropped on any edit keyboard input, not sure 
+	// 		how to do this cleanly (including focus clicks)...
+	__caret_x: undefined,
 	keyboard: {
+		// XXX might be a good feature to add to keyboard.js...
+		// 		...might even be fun to extend this and add key classes, 
+		// 		like: 
+		// 			LetterKey
+		// 			ModifierKey 
+		// 			FunctionKey
+		// 			...
+		Any: function(evt, key){
+			if(this.get('edited') 
+					&& key != 'ArrowUp' 
+					&& key != 'ArrowDown'){
+				this.__caret_x = undefined } },
+
 		// vertical navigation...
 		// XXX this is a bit hacky but it works -- the caret blinks at 
 		// 		start/end of block before switching to next, would be 
@@ -1968,10 +1984,29 @@ var Outline = {
 
 			var edited = this.get('edited')
 			if(edited){
-				var line = edited.getTextGeometry().line
-				if(line == 0){
+				var g = edited.getTextGeometry()
+				if(g.line == 0){
 					evt.preventDefault() 
-					that.edit('prev') }
+					//var left = edited.getBoundingClientRect().x + g.offsetLeft
+					var left = this.__caret_x = 
+						this.__caret_x 
+							?? edited.getBoundingClientRect().x + g.offsetLeft
+					edited = that.edit('prev') 
+					// keep caret horizontally constrained...
+					var bottom = edited.getBoundingClientRect().bottom
+					/*/ XXX CARET_V_MOVE this is not correct yet...
+					var view = this.get(edited).querySelector('.view')
+					var c = getCharOffset(view, left, bottom - 1)
+					var m = getMarkdownOffset(edited.value, view.innerText, c)
+					console.log('---', c, m)
+					edited.selectionStart = 
+						edited.selectionEnd = 
+							c - m }
+					/*/
+					edited.selectionStart = 
+						edited.selectionEnd = 
+							edited.getTextOffsetAt(left, bottom - 1) }
+					//*/
 			} else {
 				evt.preventDefault() 
 				this.focus('focused', -1) } },
@@ -1991,10 +2026,29 @@ var Outline = {
 
 			var edited = this.get('edited')
 			if(edited){
-				var {line, lines} = edited.getTextGeometry()
-				if(lines == 0 || line == lines - 1){
+				var g = edited.getTextGeometry()
+				if(g.lines == 0 || g.line == g.lines - 1){
 					evt.preventDefault() 
-					that.edit('next') }
+					//var left = edited.getBoundingClientRect().x + g.offsetLeft
+					var left = this.__caret_x = 
+						this.__caret_x 
+							?? edited.getBoundingClientRect().x + g.offsetLeft
+					edited = that.edit('next') 
+					// keep caret horizontally constrained...
+					var top = edited.getBoundingClientRect().y
+					/* XXX CARET_V_MOVE this needs fixing...
+					var view = this.get(edited).querySelector('.view')
+					var c = getCharOffset(view, left, top - 1)
+					var m = getMarkdownOffset(edited.value, view.innerText, c)
+					console.log('---', c, m)
+					edited.selectionStart = 
+						edited.selectionEnd = 
+							c - m }
+					/*/
+					edited.selectionStart = 
+						edited.selectionEnd = 
+							edited.getTextOffsetAt(left, top + 1) }
+					//*/
 			} else {
 				evt.preventDefault() 
 				this.focus('focused', 1) } },
@@ -2305,11 +2359,11 @@ var Outline = {
 				// place the cursor where the user clicked in code/text...
 				if(elem.classList.contains('code') 
 						&& document.activeElement !== elem){
+					that.__caret_x = undefined
 					var view = that.get(elem).querySelector('.view')
 					var initial = elem.selectionStart
 					var c = getCharOffset(view, evt.clientX, evt.clientY)
 					var m = getMarkdownOffset(elem.value, view.innerText, c)
-					console.log('---', c, m)
 					// selecting an element with text offset by markup...
 					if(m != 0){
 						evt.preventDefault()
@@ -2416,8 +2470,10 @@ var Outline = {
 					&& keys.push('s_' + evt.key)
 				keys.push(evt.key)
 				for(var k of keys){
+					if('Any' in that.keyboard){
+						that.keyboard.Any.call(that, evt, k) }
 					if(k in that.keyboard){
-						that.keyboard[k].call(that, evt)
+						that.keyboard[k].call(that, evt, k)
 						break } } })
 		// update code block...
 		outline.addEventListener('keyup', 
