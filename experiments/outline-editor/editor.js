@@ -1954,12 +1954,14 @@ var Outline = {
 		// XXX might be a good feature to add to keyboard.js...
 		// 		...might even be fun to extend this and add key classes, 
 		// 		like: 
-		// 			LetterKey
-		// 			ModifierKey 
-		// 			FunctionKey
+		// 			Modifier
+		// 			Function
+		// 			Letter
+		// 			Number
 		// 			...
 		Any: function(evt, key){
-			if(this.get('edited') 
+			if(this.__caret_x
+					&& this.get('edited') 
 					&& key != 'ArrowUp' 
 					&& key != 'ArrowDown'){
 				this.__caret_x = undefined } },
@@ -2452,7 +2454,13 @@ var Outline = {
 				var elem = evt.target
 				if(that.runPlugins('__keydown__', evt, that, evt.target) !== true){
 					return }
+
 				// handle keyboard...
+				// 'Any' key...
+				if('Any' in that.keyboard){
+					if(that.keyboard.Any.call(that, evt, evt.key) === false){
+						return } }
+				// keys/mods...
 				var keys = []
 				evt.ctrlKey
 					&& keys.push('c_' + evt.key)
@@ -2470,8 +2478,6 @@ var Outline = {
 					&& keys.push('s_' + evt.key)
 				keys.push(evt.key)
 				for(var k of keys){
-					if('Any' in that.keyboard){
-						that.keyboard.Any.call(that, evt, k) }
 					if(k in that.keyboard){
 						that.keyboard[k].call(that, evt, k)
 						break } } })
