@@ -54,7 +54,7 @@ var setup = function(){
       code
       ```
     - this node can't be reached.
-    - _this appears to be due to how we are resizing the text to view -- should this happen in edit mode???_
+    - _this appears to be due to how we are resizing the text..._ 
   - BUG: caret positioning broken
     - *TODO*::
       - text text text
@@ -121,15 +121,15 @@ var setup = function(){
         - left side does not need to be as wide
   -
 - ## ToDo:
-  - ASAP time to think about a standalone client -- at least to edit own notes as a test...
+  - Time to think about a standalone client -- at least to edit own notes as a test...
     - _also this would be a nice opportunity to start the move to a newer electron version_
-  - might be a good idea to make the heading level depend on its depth...
-  - might be a good idea to think how to avoid the constant selections on focus...
-  - Q: when moving up/down between nodes do we want to place the caret relative to markdown (current) or to view? (see: CARET_V_MOVE)
-  - Q: should we use `HTMLTextAreaElement.autoUpdateSize(..)` or handle it globally in setup???
+  - Q: Make the heading level depend on its depth??
+  - Might be a good idea to think how to avoid the constant selections on focus...
+  - Q: When moving up/down between nodes do we want to place the caret relative to markdown (current) or to view? (see: CARET_V_MOVE)
+  - Q: Should we use `HTMLTextAreaElement.autoUpdateSize(..)` or handle it globally in setup???
     - _...I'm leaning towards the later..._
-  - Q: can we place a cursor in a table correctly???
-  - Q: should tables be text-based markdown or higher-level?
+  - Q: Can we place a cursor in a table correctly???
+  - Q: Should tables be text-based markdown or higher-level?
     - for reference a normal table
       - | col 1 | col 2 | col 3 |
         | moo | foo | boo |
@@ -140,7 +140,9 @@ var setup = function(){
       - | A | B | B |
       - | 1 | 2 | 3 |
       -
-      - not yet sure how are we going to allign columns (CSS preffered)
+      - need to align columns -- not sure how (CSS preffered)
+      - _in terms of syntax I like this the most..._
+        - _...but it can lead to implementing own table align algorithm (not sure I want to go this way!)..._
     - block-children -- similar to how lists are done now
       - a demo
       - --table--
@@ -154,10 +156,17 @@ var setup = function(){
         - both?
       - Q: how do we handle indenting a table row?
       - Q: how do we handle unmarked text?
+      - edit mode needs work...
+      - this feels a bit over-restricted...
       - 
-    - might be fun to make the general syntax (with "=" removed) to be compatible with markdown... 
-    - might also be fun to auto-generat (template) new blocks within a table...
+    - might be fun to make the general syntax (after removing "-") to be compatible with markdown... 
+    - might also be fun to auto-generate (template) new blocks within a table...
     - this would greatly simplify table navigation and creation
+    - might be a good idea to fill the new elem with a row template...
+      - creating a new line after this (line 2 as an example) 
+      - | A | B | C |
+      - |  |  |  |
+      -
   - custom element / web component
     - BUG: select via double/triple clicks does not work...
 	  - _looks like something is refocusing the element..._
