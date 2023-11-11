@@ -703,6 +703,9 @@
 	&:focus {
 		background: rgba(0,0,0,0.07);
 	}
+	&>.code:focus {
+		position: absolute;
+	}
 
 	&>.children {
 		display: table !important;
@@ -730,6 +733,9 @@
 			}
 			&:focus {
 				background: rgba(0,0,0,0.07);
+			}
+			&>.code:focus {
+				column-span: all;
 			}
 		}
 	}

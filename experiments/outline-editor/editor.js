@@ -1944,12 +1944,10 @@ var Outline = {
 	left: function(){},
 	right: function(){},
 
+	__overtravel_timeout: undefined,
+	__caret_x: undefined,
 	// XXX move the code here into methods/actions...
 	// XXX use keyboard.js...
-	__overtravel_timeout: undefined,
-	// XXX this needs to be dropped on any edit keyboard input, not sure 
-	// 		how to do this cleanly (including focus clicks)...
-	__caret_x: undefined,
 	keyboard: {
 		// XXX might be a good feature to add to keyboard.js...
 		// 		...might even be fun to extend this and add key classes, 
@@ -1959,6 +1957,7 @@ var Outline = {
 		// 			Letter
 		// 			Number
 		// 			...
+		// 			Unhandled
 		Any: function(evt, key){
 			if(this.__caret_x
 					&& this.get('edited') 
