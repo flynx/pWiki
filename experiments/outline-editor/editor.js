@@ -264,8 +264,8 @@ var blocks = {
 			.replace(/^(?<!\\)#\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-1']))
 			// style: list...
 			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
-			.replace(/^\s*(.*)(?<!\\):\s*$/m, this.style(editor, elem, 'list'))
-			.replace(/^\s*(.*)(?<!\\)#\s*$/m, this.style(editor, elem, 'numbered-list'))
+			.replace(/^\s*(.*)(?<!\\):\s*$/, this.style(editor, elem, 'list'))
+			.replace(/^\s*(.*)(?<!\\)#\s*$/, this.style(editor, elem, 'numbered-list'))
 			// style: misc...
 			.replace(/^\s*(?<!\\)>\s+(.*)$/m, this.style(editor, elem, 'quote'))
 			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, this.style(editor, elem, 'comment'))
@@ -289,6 +289,9 @@ var quoted = {
 		return `<code>${ this.encode(code) }</code>` },
 
 	pre_pattern: /(?<!\\)```(.*\s*\n)((\n|.)*?)\h*(?<!\\)```(?:[ \t]*$|[ \t]*\n)/g,
+	preEncode: function(text){
+		return this.encode(text)
+			.replace(/`/, '\\`') },
 	pre: function(_, language, code){
 		language = language.trim()
 		language = language ?
@@ -296,7 +299,7 @@ var quoted = {
 			: language
 		return `<pre>`
 				+`<code contenteditable="true" class="${language}">${ 
-					this.encode(code)
+					this.preEncode(code)
 				}</code>`
 			+`</pre>` },
 
@@ -727,7 +730,7 @@ var styling = {
 			// markers...
 			.replace(/(\s*)(?<!\\)(FEATURE[:?]|Q:|Question:|Note:)(\s*)/gm, 
 				'$1<b class="$2">$2</b>$3')
-			.replace(/(\s*)(?<!\\)(ASAP|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/gm, 
+			.replace(/(\s*)(?<!\\)(ASAP|TEST|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/gm, 
 				'$1<span class="highlight $2">$2</span>$3')
 			// elements...
 			.replace(/(\n|^)(?<!\\)---*\h*(\n|$)/m, '$1<hr>')
