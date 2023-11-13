@@ -52,20 +52,23 @@ var setup = function(){
     - this _seems `to` work_
     - `while` _this `does` not_
     - _seems to be connected with quoting..._
-  - BUG blank line at end of block is initially not shown
-    - this block contains two lines (empty below)
-      
-    - 
-      this block also contains two lines (empty above)
-    - 
-      this block contains three lines (empty above and below)
-      
-  - BUG blank line at start of block is shown but removed on edit
-    - 
-      this block also contains two lines (empty above)
-    - 
-      this block contains three lines (empty above and below)
-      
+  - BUG leading/trailing blank lines mishandled:
+    - blank line at end of block is initially not shown
+      - this block contains two lines (empty below)
+        
+      - 
+        this block also contains two lines (empty above)
+      - 
+        this block contains three lines (empty above and below)
+        
+    - blank line at start of block is shown but removed on edit
+      - 
+        this block also contains two lines (empty above)
+      - 
+        this block contains three lines (empty above and below)
+        
+    - _this seams to be a problem only on the initial render -- edit/exit fixes the issue..._
+    - _Q: are we using different code paths for initial render and element render???_
   - BUG: can't move down out of a code block
     - edit this line, then move down
     - ```
