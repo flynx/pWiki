@@ -1486,10 +1486,35 @@ var Outline = {
 		collapsed: 'attr',
 		focused: 'cls',
 	},
+
+	_updateCodeSize: function(code, view){
+		code.style.height = 
+			getComputedStyle(
+					view 
+						?? code.nextSibling)
+				.height 
+		return this },
+	_updateViewSize: function(view, code){
+		view.style.height = 
+			getComputedStyle(
+					code 
+						?? view.previousSibling)
+				.height 
+		return this },
+	// XXX not a good solution...
+	_syncTextSize: function(code, view){
+		code = code.classList.contains('block') ?
+			code.querySelector('.code')
+			: code
+		view = view 
+			?? code.nextSibling
+		code.updateSize()
+		return view.offsetHeight > code.offsetHeight ?
+			this._updateCodeSize(code, view)
+			: this._updateViewSize(view, code) },
+
 	// NOTE: this does not internally handle undo as it would be too 
 	// 		granular...
-	_updateTextareaSize: function(elem){
-		elem.style.height = getComputedStyle(elem.nextSibling).height },
 	update: function(node='focused', data){
 		var node = this.get(node)
 		data ??= this.data(node, false)
@@ -1523,7 +1548,8 @@ var Outline = {
 			code.value = data.text 
 			code.updateSize() 
 			// NOTE: this will have no effect if the element is not attached...
-			this._updateTextareaSize(code) }
+			this._updateCodeSize(code) }
+			//this._syncTextSize(code, html) }
 
 		for(var [attr, value] of Object.entries({...data, ...parsed})){
 			if(attr == 'children' || attr == 'text'){
@@ -1871,7 +1897,8 @@ var Outline = {
 				cur[place](block)
 			: undefined 
 
-			this._updateTextareaSize(code)
+			this._updateCodeSize(code)
+			//this._syncTextSize(code, view)
 
 			this.setUndo(this.path(cur), 'remove', [this.path(block)]) }
 		return block },
@@ -1904,7 +1931,8 @@ var Outline = {
 		// 		...this is done by expanding the textarea to the element 
 		// 		size and enabling it to intercept clicks correctly...
 		setTimeout(function(){
-			var f = that._updateTextareaSize
+			var f = that._updateCodeSize
+			//var f = that._syncTextSize.bind(that)
 			for(var e of [...that.outline.querySelectorAll('textarea')]){
 				f(e) } }, 0)
 		return this },
@@ -1926,8 +1954,11 @@ var Outline = {
 		// 		blocks place the cursor into the clicked location.
 		// 		...this is done by expanding the textarea to the element 
 		// 		size and enabling it to intercept clicks correctly...
+		// XXX this is a hack -- need to style the thing in such away 
+		// 		so as to not require this step...
 		setTimeout(function(){
-			var f = that._updateTextareaSize
+			var f = that._updateCodeSize.bind(that)
+			//var f = that._syncTextSize.bind(that)
 			for(var e of [...that.outline.querySelectorAll('textarea')]){
 				f(e) } }, 0)
 		return this },
