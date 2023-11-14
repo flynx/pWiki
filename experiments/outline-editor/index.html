@@ -52,14 +52,25 @@ var setup = function(){
     - blank line at end of block is initially not shown
       - this block contains two lines (empty below)
         
+        - `editor.Block(editor.data(editor.get())).querySelector('.view').innerHTML` -- '\n' present
+        - _...is this a resize issue???_
       - 
         this block also contains two lines (empty above)
       - 
         this block contains three lines (empty above and below)
         
-    - blank line at start of block is shown but removed on edit
+    - DONE blank line at start of block is shown but removed on edit
+      collapsed:: true
       - 
         this block also contains two lines (empty above)
+        - `editor.data(editor.get()).text` -- no `\n` at start...
+        - `editor.get().querySelector('.code').value` -- no `\n` at start...
+        - ```
+          d = document.createElement('div')
+          d.innerHTML = editor.htmlBlock({text: '\nabc\n'}) // -> '\n' exists...
+          d.querySelector('.code').value // -> no '\n' at start...
+          ```
+          ...seems that the `\n` is lost on html parse...
       - 
         this block contains three lines (empty above and below)
         

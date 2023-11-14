@@ -1120,13 +1120,15 @@ var JSONOutline = {
 						attrs.splice(i, 1)
 					: undefined } }
 
-		var children = data.children
+		var children = (data.children ?? [])
 			.map(function(data){
 				return that.htmlBlock(data) })
 			.join('')
+		// NOTE: the '\n' at the start of the textarea body below helps 
+		// 		preserve whitespace when parsing HTML...
 		return (
 `<div class="block ${ cls.join(' ') }" tabindex="0" ${ attrs.join(' ') }>\
-<textarea class="code text" value="${ data.text }">${ data.text }</textarea>\
+<textarea class="code text" value="${ data.text }">\n${ data.text }</textarea>\
 <span class="view text">${ parsed.text }</span>\
 <div class="children">${ children }</div>\
 </div>`) },
