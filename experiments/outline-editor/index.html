@@ -48,10 +48,6 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
-  - BUG: styling error...
-    - this _seems `to` work_
-    - `while` _this `does` not_
-    - _seems to be connected with quoting..._
   - BUG leading/trailing blank lines mishandled:
     - blank line at end of block is initially not shown
       - this block contains two lines (empty below)
@@ -69,6 +65,10 @@ var setup = function(){
         
     - _this seams to be a problem only on the initial render -- edit/exit fixes the issue..._
     - _Q: are we using different code paths for initial render and element render???_
+  - BUG: styling error...
+    - this _seems `to` work_
+    - `while` _this `does` not_
+    - _seems to be connected with quoting..._
   - BUG: can't move down out of a code block
     - edit this line, then move down
     - ```
@@ -144,6 +144,8 @@ var setup = function(){
       ```
   -
 - ## ToDo:
+  - `.json(..)`, `.data(..)`, ... should be signature compatible with `.get(..)` (???)
+    - _current state causes constant confusion..._
   - Time to think about a standalone client -- at least to edit own notes as a test...
     - _also this would be a nice opportunity to start the move to a newer electron version_
   - Q: Make the heading level depend on its depth??
