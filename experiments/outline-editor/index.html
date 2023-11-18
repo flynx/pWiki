@@ -57,9 +57,13 @@ var setup = function(){
         - ```
           code block
           ```
-    - try `display:flex` on `.block` and position one elem over the other...
-      - _...not sure how to deal with `.children` yet_
-    - another way to go is to place `.text` stuff in a div and style that...
+    - *the problem\:*
+      - we need to keep both the `.view` and `.code` elements' height in sync
+        - Q: should the sizes be equal? which is the master size?
+    - ways to fix:
+      - try `display:flex` on `.block` and position one elem over the other...
+        - _...not sure how to deal with `.children` yet_
+      - another way to go is to place `.text` stuff in a div and style that...
     - blank line at end of block is initially not shown
       - this block contains two lines (empty below)
         
