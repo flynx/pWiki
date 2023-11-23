@@ -44,9 +44,11 @@
 	display: block;
 	position: relative;
 
+	/* XXX do we need this???
 	.code {
 		display: none;
 	}
+	*/
 
 	/* header */
 	.header {
@@ -152,7 +154,8 @@
 			&>.code {
 				position: absolute;
 				top: 0;
-				height: calc(2 * var(--item-padding) + 1em);
+				height: 100%;
+				/*height: calc(2 * var(--item-padding) + 1em);*/
 				overflow: hidden;
 				resize: none;
 				opacity: 0;

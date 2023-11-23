@@ -1487,13 +1487,17 @@ var Outline = {
 		focused: 'cls',
 	},
 
+	// XXX UPDATE_CODE_SIZE this is a no-op at this point -- do we need this...
 	_updateCodeSize: function(code, view){
+		// XXX UPDATE_CODE_SIZE
+		return this
 		code.style.height = 
 			getComputedStyle(
 					view 
 						?? code.nextSibling)
 				.height 
 		return this },
+	/* XXX not used...
 	_updateViewSize: function(view, code){
 		view.style.height = 
 			getComputedStyle(
@@ -1512,6 +1516,7 @@ var Outline = {
 		return view.offsetHeight > code.offsetHeight ?
 			this._updateCodeSize(code, view)
 			: this._updateViewSize(view, code) },
+	//*/
 
 	// NOTE: this does not internally handle undo as it would be too 
 	// 		granular...

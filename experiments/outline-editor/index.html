@@ -54,20 +54,20 @@ var setup = function(){
         - 
           blank lines above and below -- the trailing blank is not initially shown
           
+          - _not sure about this yet..._
         - ```
           code block -- resized on block edit (`keydown` in edit mode)
           ```
-    - the problem\:
-      - we need to keep both the `.view` and `.code` elements' height in sync
-        - Q: should the sizes be equal? which is the master size?
+          - _this seems to be because of a stray `\n` after re-render + `white-space: ...` in the `.view` element..._
     - ways to fix:
-      - active (current):
-        - _need to rework the logic..._
+      - semi-active (current):
+        - active mode currently disabled (see: `UPDATE_CODE_SIZE`)
+        - TEST
       - passive (preferred):
-        - try `display:flex` on `.block` and position one elem over the other...
-          - _...not sure how to deal with `.children` yet_
-        - another way to go is to wrap `.text` stuff in a div and style that...
-        - not sure if this is possible -- things like tables/graphs/... will break things (still investigating)
+        - REJECT try `display:flex` on `.block` and position one elem over the other...
+        - REJECT another way to go is to wrap `.text` stuff in a div and style that...
+      - active:
+        - ...
     - blank line at end of block is initially not shown
       - this block contains two lines (empty below)
         
@@ -103,7 +103,8 @@ var setup = function(){
         
     - _this seams to be a problem only on the initial render -- edit/exit fixes the issue..._
     - _Q: are we using different code paths for initial render and element render???_
-  - BUG: can't move down out of a code block (_directly connected to the above_)
+  - DONE BUG: can't move down out of a code block (_directly connected to the above_)
+    collapsed:: true
     - edit this line, then move down
     - ```
       code

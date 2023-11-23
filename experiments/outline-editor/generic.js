@@ -54,7 +54,9 @@ HTMLElement.decode = function(str){
 //---------------------------------------------------------------------
 
 HTMLTextAreaElement.prototype.updateSize = function(){
-	this.style.height = ''
+    // NOTE: this is set to 0px to negate the effects of external/inherited
+    //      height settings...
+	this.style.height = '0px'
 	this.style.height = this.scrollHeight + 'px' 
 	return this }
 HTMLTextAreaElement.prototype.autoUpdateSize = function(){
