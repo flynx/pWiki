@@ -1487,7 +1487,7 @@ var Outline = {
 		focused: 'cls',
 	},
 
-	// XXX UPDATE_CODE_SIZE this is a no-op at this point -- do we need this...
+	// XXX UPDATE_CODE_SIZE this is a no-op at this point -- do we need this???
 	_updateCodeSize: function(code, view){
 		// XXX UPDATE_CODE_SIZE
 		return this
