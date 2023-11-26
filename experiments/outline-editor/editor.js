@@ -288,7 +288,7 @@ var quoted = {
 	quote: function(_, code){
 		return `<code>${ this.encode(code) }</code>` },
 
-	pre_pattern: /(?<!\\)```(.*\s*\n)((\n|.)*?)\h*(?<!\\)```(?:[ \t]*$|[ \t]*\n)/g,
+	pre_pattern: /(?<!\\)```(.*\s*\n)((\n|.)*?)\h*(?<!\\)```[ \t]*(?:$|\n)/g,
 	preEncode: function(text){
 		return this.encode(text)
 			.replace(/`/, '\\`') },
@@ -933,7 +933,19 @@ var JSONOutline = {
 			.flat()
 			.join('') 
 		// stage: post...
-		elem.text = run('post', text) 
+		elem.text = run('post', text)
+
+
+		elem.text = 
+			// XXX POST_PRE_WHITESPACE adding a </pre> exception here feels hacky...
+			// 		...a space after pre will force a new line but not 
+			// 		adding it will hide a single empty line after...
+			(elem.text == '' 
+					|| elem.text.endsWith('</pre>')) ?
+				elem.text 
+				// NOTE: adding a space here is done to prevent the browser 
+				// 		from hiding the last newline...
+				: elem.text + ' '
 
 		return elem },
 
@@ -1487,17 +1499,15 @@ var Outline = {
 		focused: 'cls',
 	},
 
+	/* XXX not used -- do we need this??
 	// XXX UPDATE_CODE_SIZE this is a no-op at this point -- do we need this???
 	_updateCodeSize: function(code, view){
-		// XXX UPDATE_CODE_SIZE
-		return this
 		code.style.height = 
 			getComputedStyle(
 					view 
 						?? code.nextSibling)
 				.height 
 		return this },
-	/* XXX not used...
 	_updateViewSize: function(view, code){
 		view.style.height = 
 			getComputedStyle(
@@ -1531,13 +1541,7 @@ var Outline = {
 			if(this.__code2html__){
 				// NOTE: we are ignoring the .collapsed attr here 
 				parsed = this.__code2html__(data.text, {...data})
-				html.innerHTML = 
-					//(parsed.text == '' || parsed.text.endsWith('</pre>')) ?
-					parsed.text == '' ?
-						parsed.text
-						// NOTE: adding a space here is done to prevent the browser 
-						// 		from hiding the last newline...
-						: parsed.text + ' '
+				html.innerHTML = parsed.text
 				// heading...
 				this.__styles != null
 					&& node.classList.remove(...this.__styles)
@@ -1545,17 +1549,11 @@ var Outline = {
 					&& node.classList.add(...parsed.style)
 				delete parsed.style
 			} else {
-				html.innerHTML = 
-					//(data.text == '' || data.text.endsWith('</pre>')) ?
-					data.text == '' ?
-						data.text
-						// NOTE: adding a space here is done to prevent the browser 
-						// 		from hiding the last newline...
-						: data.text + ' ' }
+				html.innerHTML = data.text }
 			code.value = data.text 
-			code.updateSize() 
+			code.updateSize() }
 			// NOTE: this will have no effect if the element is not attached...
-			this._updateCodeSize(code) }
+			//this._updateCodeSize(code) }
 			//this._syncTextSize(code, html) }
 
 		for(var [attr, value] of Object.entries({...data, ...parsed})){
@@ -1904,7 +1902,7 @@ var Outline = {
 				cur[place](block)
 			: undefined 
 
-			this._updateCodeSize(code)
+			//this._updateCodeSize(code)
 			//this._syncTextSize(code, view)
 
 			this.setUndo(this.path(cur), 'remove', [this.path(block)]) }
@@ -1956,18 +1954,18 @@ var Outline = {
 
 		this.outline.innerHTML = this.html(data)
 
-		// update sizes of all the textareas (transparent)...
-		// NOTE: this is needed to make initial clicking into multi-line 
-		// 		blocks place the cursor into the clicked location.
-		// 		...this is done by expanding the textarea to the element 
-		// 		size and enabling it to intercept clicks correctly...
-		// XXX this is a hack -- need to style the thing in such away 
-		// 		so as to not require this step...
-		setTimeout(function(){
-			var f = that._updateCodeSize.bind(that)
-			//var f = that._syncTextSize.bind(that)
-			for(var e of [...that.outline.querySelectorAll('textarea')]){
-				f(e) } }, 0)
+		//// update sizes of all the textareas (transparent)...
+		//// NOTE: this is needed to make initial clicking into multi-line 
+		//// 		blocks place the cursor into the clicked location.
+		//// 		...this is done by expanding the textarea to the element 
+		//// 		size and enabling it to intercept clicks correctly...
+		//// XXX this is a hack -- need to style the thing in such away 
+		//// 		so as to not require this step...
+		//setTimeout(function(){
+		//	var f = that._updateCodeSize.bind(that)
+		//	//var f = that._syncTextSize.bind(that)
+		//	for(var e of [...that.outline.querySelectorAll('textarea')]){
+		//		f(e) } }, 0)
 		return this },
 	//*/
 

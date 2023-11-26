@@ -48,28 +48,22 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
-  - BUG leading/trailing blank lines mishandled:
+  - BUG whitespace after trailing code block is not shown (see next bug for details)
+    - also see: `POST_PRE_WHITESPACE`
+  - DONE BUG horizontal whitespace after a block of code create an empty line after the `<pre>` tag...
+    collapsed:: true
+    - ```
+      code block -- resized on block edit (`keydown` in edit mode)
+      ```
+      - this is due to `.update(..)` adding a `' '` to the text...
+  - DONE BUG leading/trailing blank lines mishandled:
+    collapsed:: true
     - block sizing
       - issues:
         - 
           blank lines above and below -- the trailing blank is not initially shown
           
-          - _not sure about this yet..._
-        - ```
-          code block -- resized on block edit (`keydown` in edit mode)
-          ```
-          - _this seems to be because of a stray `\n` after re-render + `white-space: ...` in the `.view` element..._
-            _...this is logical as we do not render code on load and to on after edit_
-          - narrowed the issue down to `.update(..)` and adding a ' ' to the text...
-    - ways to fix:
-      - semi-active (current):
-        - active mode currently disabled (see: `UPDATE_CODE_SIZE`)
-        - TEST
-      - passive (preferred):
-        - REJECT try `display:flex` on `.block` and position one elem over the other...
-        - REJECT another way to go is to wrap `.text` stuff in a div and style that...
-      - active:
-        - ...
+        - the main reason for this is that we are not adding a `" "` after each generated block as we do on `.update(..)` -- move this functionality up...
     - blank line at end of block is initially not shown
       - this block contains two lines (empty below)
         
@@ -88,32 +82,6 @@ var setup = function(){
       - 
         this block contains three lines (empty above and below)
         
-    - DONE blank line at start of block is shown but removed on edit
-      collapsed:: true
-      - 
-        this block also contains two lines (empty above)
-        - `editor.data(editor.get()).text` -- no `\n` at start...
-        - `editor.get().querySelector('.code').value` -- no `\n` at start...
-        - ```
-          d = document.createElement('div')
-          d.innerHTML = editor.htmlBlock({text: '\nabc\n'}) // -> '\n' exists...
-          d.querySelector('.code').value // -> no '\n' at start...
-          ```
-          ...seems that the `\n` is lost on html parse...
-      - 
-        this block contains three lines (empty above and below)
-        
-    - _this seams to be a problem only on the initial render -- edit/exit fixes the issue..._
-    - _Q: are we using different code paths for initial render and element render???_
-  - DONE BUG: can't move down out of a code block (_directly connected to the above_)
-    collapsed:: true
-    - edit this line, then move down
-    - ```
-      code
-      ```
-    - this node can't be reached.
-    - _this appears to be due to how we are resizing the text..._ 
-    - BUG resizing seems to be broken -- edit triggers a bad resize
   - BUG: styling error...
     - this _seems `to` work_
     - `while` _this `does` not_
@@ -185,7 +153,7 @@ var setup = function(){
       ```
   -
 - ## ToDo:
-  - clicking left of the block can select one of parent blocks -- bug or a feature??
+  - clicking left of the block can select one of parent blocks -- bug or feature??
   - `.json(..)`, `.data(..)`, ... should be signature compatible with `.get(..)` (???)
     - _current state causes constant confusion..._
   - Time to think about a standalone client -- at least to edit own notes as a test...

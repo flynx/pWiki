@@ -44,11 +44,10 @@
 	display: block;
 	position: relative;
 
-	/* XXX do we need this???
-	.code {
+	/* hide the root editor code... */
+	&>.code {
 		display: none;
 	}
-	*/
 
 	/* header */
 	.header {
