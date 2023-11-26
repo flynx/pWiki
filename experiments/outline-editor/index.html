@@ -60,6 +60,7 @@ var setup = function(){
           ```
           - _this seems to be because of a stray `\n` after re-render + `white-space: ...` in the `.view` element..._
             _...this is logical as we do not render code on load and to on after edit_
+          - narrowed the issue down to `.update(..)` and adding a ' ' to the text...
     - ways to fix:
       - semi-active (current):
         - active mode currently disabled (see: `UPDATE_CODE_SIZE`)

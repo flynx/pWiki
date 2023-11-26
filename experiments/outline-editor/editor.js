@@ -1532,6 +1532,7 @@ var Outline = {
 				// NOTE: we are ignoring the .collapsed attr here 
 				parsed = this.__code2html__(data.text, {...data})
 				html.innerHTML = 
+					//(parsed.text == '' || parsed.text.endsWith('</pre>')) ?
 					parsed.text == '' ?
 						parsed.text
 						// NOTE: adding a space here is done to prevent the browser 
@@ -1545,6 +1546,7 @@ var Outline = {
 				delete parsed.style
 			} else {
 				html.innerHTML = 
+					//(data.text == '' || data.text.endsWith('</pre>')) ?
 					data.text == '' ?
 						data.text
 						// NOTE: adding a space here is done to prevent the browser 
