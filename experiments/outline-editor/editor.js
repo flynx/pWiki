@@ -1907,6 +1907,7 @@ var Outline = {
 	/*/ XXX 
 	load: function(data){
 		var that = this
+		this.dom.classList.add('loading')
 		data = typeof(data) == 'string' ?
 				this.parse(data)
 			: data instanceof Array ?
@@ -1937,10 +1938,12 @@ var Outline = {
 		//	//var f = that._syncTextSize.bind(that)
 		//	for(var e of [...that.outline.querySelectorAll('textarea')]){
 		//		f(e) } }, 0)
+		this.dom.classList.remove('loading')
 		return this },
 	/*/ // XXX JSON version...
 	load: function(data){
 		var that = this
+		this.dom.classList.add('loading')
 		data = typeof(data) == 'string' ?
 				this.parse(data)
 			: data instanceof Array ?
@@ -1963,6 +1966,7 @@ var Outline = {
 		//	//var f = that._syncTextSize.bind(that)
 		//	for(var e of [...that.outline.querySelectorAll('textarea')]){
 		//		f(e) } }, 0)
+		this.dom.classList.remove('loading')
 		return this },
 	//*/
 

@@ -108,17 +108,9 @@ var setup = function(){
       - side margins are a bit too large
         - still need to account for toolbar to the right
         - left side does not need to be as wide
-  - DONE TEST BUG: parser: code blocks do not ignore single back-quotes...
-    collapsed:: true
-    - ```
-      x = `moo`
-      ```
-    - _this also leads to double quoting of html..._
-      ```
-      x = `<i>moo</i>`
-      ```
   -
 - ## ToDo:
+  - add loading spinner -- `.loading` class set on `.load(..)` and unset when done...
   - clicking left of the block can select one of parent blocks -- bug or feature??
   - `.json(..)`, `.data(..)`, ... should be signature compatible with `.get(..)` (???)
     - _current state causes constant confusion..._

@@ -44,7 +44,12 @@
 	display: block;
 	position: relative;
 
-	/* hide the root editor code... */
+	/* loading indicator */
+	&.loading {
+		/* XXX */
+	}
+
+	/* editor code */
 	&>.code {
 		display: none;
 	}
