@@ -288,7 +288,7 @@ var quoted = {
 	quote: function(_, code){
 		return `<code>${ this.encode(code) }</code>` },
 
-	pre_pattern: /(?<!\\)```(.*\s*\n)((\n|.)*?)\h*(?<!\\)```[ \t]*(?:$|\n)/g,
+	pre_pattern: /(?<!\\)```(.*\s*\n)((\n|.)*?)\h*(?<!\\)```[ \t]*(?:$|\n)/gm,
 	preEncode: function(text){
 		return this.encode(text)
 			.replace(/`/, '\\`') },
@@ -912,7 +912,7 @@ var JSONOutline = {
 			code.replace(/\x00/g, ''))
 		// split text into parsable and non-parsable sections...
 		var sections = text
-			// split fomat:
+			// split format:
 			// 	[ text <match> <type> <body>, ... ]
 			.split(/(<(pre|code)(?:|\s[^>]*)>((?:\n|.)*)<\/\2>)/g)
 		// sort out the sections...
@@ -934,14 +934,11 @@ var JSONOutline = {
 			.join('') 
 		// stage: post...
 		elem.text = run('post', text)
-
-
+		// patch for showing trailing empty lines in dom...
 		elem.text = 
-			// XXX POST_PRE_WHITESPACE adding a </pre> exception here feels hacky...
-			// 		...a space after pre will force a new line but not 
-			// 		adding it will hide a single empty line after...
 			(elem.text == '' 
-					|| elem.text.endsWith('</pre>')) ?
+					// XXX adding a </pre> exception here feels hacky...
+					|| elem.text.trim().endsWith('</pre>')) ?
 				elem.text 
 				// NOTE: adding a space here is done to prevent the browser 
 				// 		from hiding the last newline...
@@ -1930,16 +1927,16 @@ var Outline = {
 			.clear()
 			.outline
 				.append(...level(data))
-		// update sizes of all the textareas (transparent)...
-		// NOTE: this is needed to make initial clicking into multi-line 
-		// 		blocks place the cursor into the clicked location.
-		// 		...this is done by expanding the textarea to the element 
-		// 		size and enabling it to intercept clicks correctly...
-		setTimeout(function(){
-			var f = that._updateCodeSize
-			//var f = that._syncTextSize.bind(that)
-			for(var e of [...that.outline.querySelectorAll('textarea')]){
-				f(e) } }, 0)
+		//// update sizes of all the textareas (transparent)...
+		//// NOTE: this is needed to make initial clicking into multi-line 
+		//// 		blocks place the cursor into the clicked location.
+		//// 		...this is done by expanding the textarea to the element 
+		//// 		size and enabling it to intercept clicks correctly...
+		//setTimeout(function(){
+		//	var f = that._updateCodeSize
+		//	//var f = that._syncTextSize.bind(that)
+		//	for(var e of [...that.outline.querySelectorAll('textarea')]){
+		//		f(e) } }, 0)
 		return this },
 	/*/ // XXX JSON version...
 	load: function(data){
