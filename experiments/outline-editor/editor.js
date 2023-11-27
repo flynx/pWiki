@@ -1503,6 +1503,8 @@ var Outline = {
 	/* XXX not used -- do we need this??
 	// XXX UPDATE_CODE_SIZE this is a no-op at this point -- do we need this???
 	_updateCodeSize: function(code, view){
+		// XXX
+		return this
 		code.style.height = 
 			getComputedStyle(
 					view 
@@ -1691,12 +1693,9 @@ var Outline = {
 		state = state == 'next' ?
 			node.getAttribute('collapsed') != ''
 			: state
-		if(state){
+		state ?
 			node.setAttribute('collapsed', '')
-		} else {
-			node.removeAttribute('collapsed')
-			for(var elem of [...node.querySelectorAll('textarea')]){
-				elem.updateSize() } }
+			: node.removeAttribute('collapsed')
 		this.__change__()
 		return node },
 	show: function(node='focused', offset){
@@ -2584,7 +2583,9 @@ var Outline = {
 					// give the browser a chance to update the DOM...
 					// XXX revise...
 					setTimeout(function(){
-						that.runPlugins('__editedcode__', evt, that, elem) }, 0) } 
+						that.runPlugins('__editedcode__', evt, that, elem) 
+						// this will resize the text to fill the available area...
+						elem.style.removeProperty('height') }, 0) } 
 
 				that.runPlugins('__focusout__', evt, that, elem) })
 		// update .code...
