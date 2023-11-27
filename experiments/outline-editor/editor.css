@@ -44,10 +44,32 @@
 	display: block;
 	position: relative;
 
+
 	/* loading indicator */
 	&.loading {
-		/* XXX */
+		.outline {
+			pointer-events: none;
+		}
+		.outline>.block {
+			opacity: 0.2;
+		}
+		/* XXX STUB... */
+		.outline:before {
+			content: "Loading...";
+			display: block;
+			position: absolute;
+			top: 1em;
+		}
+		.outline:empty:before {
+			position: relative;
+			top: 0;
+		}
+		/* override empty indicator */
+		.outline:after {
+			content: "" !important;
+		}
 	}
+
 
 	/* editor code */
 	&>.code {
