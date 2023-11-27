@@ -111,7 +111,10 @@ var setup = function(){
   -
 - ## ToDo:
   - add loading spinner -- `.loading` class set on `.load(..)` and unset when done...
+    - DONE set/unset class
+    - add animation
   - clicking left of the block can select one of parent blocks -- bug or feature??
+    - _can we extend the left click zone all the way to the left edge???_
   - `.json(..)`, `.data(..)`, ... should be signature compatible with `.get(..)` (???)
     - _current state causes constant confusion..._
   - Time to think about a standalone client -- at least to edit own notes as a test...
@@ -121,7 +124,6 @@ var setup = function(){
   - Q: When moving up/down between nodes do we want to place the caret relative to markdown (current) or to view? (see: `CARET_V_MOVE`)
   - Q: Should we use `HTMLTextAreaElement.autoUpdateSize(..)` or handle it globally in setup???
     - _...I'm leaning towards the later..._
-  - Q: Can we place a cursor in a table correctly???
   - Q: Should tables be text-based markdown or higher-level?
     collapsed:: true
     - for reference a normal table
@@ -185,9 +187,8 @@ var setup = function(){
     - delete
     - copy/cut/past (???)
     - touch/mouse (???)
-  - Q: should we select text (mouse/touch) without first focusing??
-    - _...logseq does not do this either_
-    - now this is possible by dragging from a click zone...
+  - Q: should we select text through multiple nodes??
+    - _...should this turn into node selection as soon as node boundary is crossed???_
   - copy/paste nodes/trees
   - numbered lists: add counters to a depth of 6-7...
     - _or find a way to make them repeat..._
@@ -519,6 +520,18 @@ var setup = function(){
     - 
   - ---
   - ### Playground for testing
+    - Empty line tests::
+      - 
+        leading
+      - trailing
+        
+      - 
+        both
+        
+      - ```
+        block with trailing empty line
+        ```
+        
     - A
       collapsed:: true
       - a

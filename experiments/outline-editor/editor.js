@@ -886,6 +886,7 @@ var JSONOutline = {
 	__styles: undefined,
 
 	// block render...
+	// XXX PRE_POST_NEWLINE can we avoid explicitly patching for empty lines after pre???
 	__code2html__: function(code, elem={}){
 		var that = this
 
@@ -937,7 +938,10 @@ var JSONOutline = {
 		// patch for showing trailing empty lines in dom...
 		elem.text = 
 			(elem.text == '' 
-					// XXX adding a </pre> exception here feels hacky...
+					// XXX PRE_POST_NEWLINE can we avoid this??
+					//		...simply .replace(/\n$/, '\n ') does not solve
+					// 		this -- doubles the single trailing empty line after pre...
+					// 		...this will require a test for all block elements eventually (???)
 					|| elem.text.trim().endsWith('</pre>')) ?
 				elem.text 
 				// NOTE: adding a space here is done to prevent the browser 
