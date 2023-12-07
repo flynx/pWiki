@@ -48,15 +48,14 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
-  - BUG: caret  placement is off again...
-    - ```
-      text text text
-      ```
-      text text text (a click here is offset right)
-      - the offset's amount depends on where in the text we click after the code block, the farther right the greater the offset...
-	  - this seems to be the same as the below `div` case... (TEST)
   - BUG: caret positioning broken
     - *TODO*::
+      - ```
+        text text text
+        ```
+        text text text (a click here is offset right)
+        - the offset's amount depends on where in the text we click after the code block, the farther right the greater the offset...
+        - `getCharOffset(..)` produces correct results, the problem is in `getMarkdownOffset(..)`
       - text text text
         <div>
         block element
@@ -81,6 +80,9 @@ var setup = function(){
       - text	text	text
       - text text text
         text text text
+        text text text
+      - text text text
+        text &amp; text &amp; text
         text text text
       - M
         M can't place cursor before first char

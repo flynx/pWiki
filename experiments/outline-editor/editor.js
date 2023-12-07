@@ -191,6 +191,15 @@ var getMarkdownOffset = function(markdown, text, i){
     return map[i] }
 //*/
 
+getText = function(elem, res=[]){
+    for(var n of elem.childNodes){
+        if(n.nodeType == n.TEXT_NODE){
+            res.push(n.textContent)
+        } else {
+            getText(n, res) } }
+    return res }
+
+
 
 
 //---------------------------------------------------------------------
