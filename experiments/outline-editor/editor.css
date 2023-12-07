@@ -180,6 +180,8 @@
 			&>.code {
 				position: absolute;
 				top: 0;
+				/* XXX this is not correct -- it expands the code to cover 
+						the whole element incl. children... */
 				height: 100%;
 				/*height: calc(2 * var(--item-padding) + 1em);*/
 				overflow: hidden;
@@ -282,6 +284,10 @@
 			}
 			&[collapsed]>.view:after {
 				content: "●";
+			}
+
+			&>.children {
+				position: relative;
 			}
 		}
 

@@ -117,13 +117,13 @@ var setup = function(){
       - side margins are a bit too large
         - still need to account for toolbar to the right
         - left side does not need to be as wide
+  - BUG? `.code` is currently over-extended and covers the whole element area (incl. `.children`)
+    - this currently has no side-effects but is not pretty (???)
   -
 - ## ToDo:
   - add loading spinner -- `.loading` class set on `.load(..)` and unset when done...
     - DONE set/unset class
     - add animation
-  - clicking left of the block can select one of parent blocks -- bug or feature??
-    - _can we extend the left click zone all the way to the left edge???_
   - `.json(..)`, `.data(..)`, ... should be signature compatible with `.get(..)` (???)
     - _current state causes constant confusion..._
   - Time to think about a standalone client -- at least to edit own notes as a test...

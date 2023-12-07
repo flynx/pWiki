@@ -2411,6 +2411,11 @@ var Outline = {
 		outline.addEventListener('mousedown', 
 			function(evt){
 				var elem = evt.target
+				// prevent clicking through children to parent elements...
+				if(elem.classList.contains('children')){
+					evt.preventDefault()
+					outline.focus()
+					return }
 				// place the cursor where the user clicked in code/text...
 				if(elem.classList.contains('code') 
 						&& document.activeElement !== elem){
