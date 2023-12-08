@@ -191,14 +191,59 @@ var getMarkdownOffset = function(markdown, text, i){
     return map[i] }
 //*/
 
-getText = function(elem, res=[]){
+/* XXX this is not needed...
+var getText = function(elem, res=[]){
     for(var n of elem.childNodes){
-        if(n.nodeType == n.TEXT_NODE){
+        n.nodeType == n.TEXT_NODE ?
             res.push(n.textContent)
-        } else {
-            getText(n, res) } }
+            : getText(n, res) }
     return res }
+//*/
 
+var offsetAt = function(A, B, i){
+    i ??= A.length-1
+    var o = 0
+    var p = 0
+    for(var n=0; n <= i; n++){
+        while(A[n] != B[n+o]){
+            if(n+o >= B.length){
+                o = p
+                break }
+            o++ }
+        p = o }
+    return o }
+
+//
+// 	offsetMap(
+// 			'abMcdefg',
+// 			'abcdeXfg')
+// 		-> [0, 0, , -1, -1, -1, 0, 0]
+// 
+// XXX this is still wrong -- the problem is that in more complex cases 
+// 		this finds a non-optimal solution...
+// 			m = `text text text
+//			<div>
+//			block element
+//			</div>
+//			this line, and above placement of completely broken`
+//			t = 'text text text\n\n\nblock element\n\n\nthis line, and above placement of completely broken '
+//			o = offsetMap(m, t)
+//			// this should reproduce common sections...
+//			console.log('---', o.map(function(e, i){ return m[i+e] }).join(''))
+var offsetMap = function(A, B, m=[]){
+    var o = 0
+    var p = 0
+    for(var n=0; n < A.length; n++){
+        while(A[n] != B[n+o]){
+            if(n+o >= B.length){
+				m.length += 1
+                o = p-1
+                break }
+            o++ }
+        A[n] == B[n+o]
+			&& m.push(o)
+        p = o }
+    return m }
 
 
 
