@@ -230,6 +230,7 @@ var offsetAt = function(A, B, i){
 //			o = offsetMap(m, t)
 //			// this should reproduce common sections...
 //			console.log('---', o.map(function(e, i){ return m[i+e] }).join(''))
+// XXX can we cheat here???
 var offsetMap = function(A, B, m=[]){
     var o = 0
     var p = 0
