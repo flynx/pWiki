@@ -44,13 +44,6 @@ var getCharOffset = function(elem, x, y, data){
 				?? 0
 		// text node...
 		if(e instanceof Text){
-			/* XXX GETTEXT: not needed wit getText(..)
-			// count "virtual" newlines between text and block elements... 
-			if(data.prev_elem == 'block'){
-				data.c += 1 }
-			data.prev_elem = 'text'
-			//*/
-
 			var rect, cursor_line, line_start, offset
 			for(var i=0; i < e.length; i++){
 				r.setStart(e, i)
@@ -103,37 +96,8 @@ var getCharOffset = function(elem, x, y, data){
 					&& ' \t\n'.includes(data.last)){
 				return data.c - 1 }
 
-			/* XXX GETTEXT: not needed wit getText(..)
-			// count "virtual" newlines between text and block elements... 
-			var type = getComputedStyle(e).display
-			var block = [
-				'block', 
-				// XXX these do not add up yet...
-				//'table', 
-				//'table-row', 
-				//'table-cell', 
-				'flex', 
-				'grid',
-			].includes(type)
-			if(block 
-					&& data.prev_elem
-					&& data.prev_elem != 'block'){
-				data.c += 1 }
-			data.prev_elem = block ? 
-				'block' 
-				: 'elem'
-			//*/
-
 			// handle the node...
 			data = getCharOffset(e, x, y, data)
-
-			/* XXX GETTEXT: not needed wit getText(..)
-			// compensate for table stuff...
-			if(type == 'table-row'){
-				data.c -= 1 }
-			if(type == 'table-cell'){
-				data.c += 1 }
-			//*/
 
 			if(typeof(data) != 'object'){
 				return data } } }
@@ -152,8 +116,7 @@ var getCharOffset = function(elem, x, y, data){
 //		                  |
 //		markdown:	'# Hea|ding'
 //
-// XXX we are not checking both lengths of markdown AND text...
-// XXX
+// XXX should this be replaced with offsetAt(..)???
 var getMarkdownOffset = function(markdown, text, i){
 	i = i ?? text.length
 	var m = 0
@@ -169,40 +132,17 @@ var getMarkdownOffset = function(markdown, text, i){
 		if(m >= markdown.length){
 			m = p } }
 	return m - t }
-/*/
-// XXX when one string is guaranteed to be a strict subset of the other
-// 		this is trivial, but in the general case we can have differences 
-// 		both ways, for example the "virtual" newlines added by block 
-// 		elements mess up the text...
-// 		...so this in the current form is fundamentally broken as skipping 
-// 		chars in text can lead to false positives and lots of potential 
-// 		(not implemented) backtracking...
-// 		...needs thought...
-// 		Q: can we cheat with this? =)
-// XXX BUG: clicking right of last line places the caret before the last char...
-var getMarkdownOffset = function(markdown, text, i){
-	i = i ?? text.length
-	var map = []
-    for(var t=0, m=0; t <= text.length; t++, m++){
-        var o = 0
-        while(text[t] != markdown[m+o] 
-				&& m+o < markdown.length){
-            o++ }
-        if(m+o >= markdown.length){
-            m--
-        } else {
-            m += o } 
-		map[t] = m - t
-	}
-    return map[i] }
-//*/
 
-var getText = function(elem, res=[]){
+// NOTE: this is the same as .innerText but will not add extra "\n" after 
+// 		each block element...
+var getTexts = function(elem, res=[]){
     for(var n of elem.childNodes){
         n.nodeType == n.TEXT_NODE ?
             res.push(n.textContent)
-            : getText(n, res) }
+            : getTexts(n, res) }
     return res }
+var getText = function(elem){
+	return getTexts(elem).join('') }
 
 var offsetAt = function(A, B, i){
     i ??= A.length-1
@@ -235,6 +175,7 @@ var offsetAt = function(A, B, i){
 //			// this should reproduce common sections...
 //			console.log('---', o.map(function(e, i){ return m[i+e] }).join(''))
 // XXX can we cheat here???
+// XXX do we need this???
 var offsetMap = function(A, B, m=[]){
     var o = 0
     var p = 0
@@ -249,31 +190,6 @@ var offsetMap = function(A, B, m=[]){
 			&& m.push(o)
         p = o }
     return m }
-
-
-
-// find all common sections...
-// XXX test...
-function cs(A, B){
-    var map = []
-    for(var i=0; i < A.length; i++){
-        for(var j=0; j < B.length; j++){
-            var l = 0
-            while(A[i+j+l] == B[j+l] 
-                    && j+l < B.length){
-                l++ }
-            if(l > 0){
-                map.push([i, j, l]) 
-                // Q: can we skip here? ...will skipping
-                //    prevent matching "ababc" with "abc"??
-                j += l } } }
-    return map }
-
-// build chains of blocks with their lengths...
-function comb(map){
-    XXX
-}
-
 
 
 
@@ -2498,8 +2414,7 @@ var Outline = {
 					var view = that.get(elem).querySelector('.view')
 					var initial = elem.selectionStart
 					var c = getCharOffset(view, evt.clientX, evt.clientY)
-					//var m = getMarkdownOffset(elem.value, view.innerText, c)
-					var m = getMarkdownOffset(elem.value, getText(view).join(''), c)
+					var m = getMarkdownOffset(elem.value, getText(view), c)
 					// selecting an element with text offset by markup...
 					if(m != 0){
 						evt.preventDefault()
