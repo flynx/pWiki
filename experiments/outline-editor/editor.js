@@ -246,6 +246,31 @@ var offsetMap = function(A, B, m=[]){
 
 
 
+// find all common sections...
+// XXX test...
+function cs(A, B){
+    var map = []
+    for(var i=0; i < A.length; i++){
+        for(var j=0; j < B.length; j++){
+            var l = 0
+            while(A[i+j+l] == B[j+l] 
+                    && j+l < B.length){
+                l++ }
+            if(l > 0){
+                map.push([i, j, l]) 
+                // Q: can we skip here? ...will skipping
+                //    prevent matching "ababc" with "abc"??
+                j += l } } }
+    return map }
+
+// build chains of blocks with their lengths...
+function comb(map){
+    XXX
+}
+
+
+
+
 //---------------------------------------------------------------------
 // Plugins...
 
