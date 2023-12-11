@@ -48,7 +48,8 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
-  - BUG: caret positioning broken
+  - DONE BUG: caret positioning broken (ASAP CLEANUP: GETTEXT)
+    collapsed:: true
     - Strategies to test:: 
       - ASAP use `getText(..)` to build the input text instead of `.innerText`
         - DONE adds 1 char offset per block element
@@ -58,10 +59,13 @@ var setup = function(){
       - try and build offset maps on parse
         _(potentially too complicated)_
     - *TODO*::
+    - *DONE*::
+      collapsed:: true
       - ```
         text text text
         ```
         text text text (a click here is offset right)
+        collapsed:: true
         - the offset's amount depends on where in the text we click after the code block, the farther right the greater the offset...
         - `getCharOffset(..)` produces correct results, the problem is in `getMarkdownOffset(..)`
       - text text text
@@ -69,6 +73,7 @@ var setup = function(){
         block element
         </div>
         this line, and above placement of completely broken
+        collapsed:: true
         - the odd thing is that a nested (bug) qupted text below also breaks...
         - _this seems to be an issue with: `.getMarkdownOffset(..)`_
           - ```
@@ -83,8 +88,6 @@ var setup = function(){
             this returns `69` while it should return `5`
             _...replacing `\n\n\n` with `\n\n` seems to fix the issue (also works with spaces)_
             (BUG also the above line is not italic -- can't reproduce)
-    - *DONE*::
-      collapsed:: true
       - text	text	text
       - text text text
         text text text

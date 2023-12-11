@@ -44,7 +44,7 @@ var getCharOffset = function(elem, x, y, data){
 				?? 0
 		// text node...
 		if(e instanceof Text){
-			/* XXX not needed wit getText(..)
+			/* XXX GETTEXT: not needed wit getText(..)
 			// count "virtual" newlines between text and block elements... 
 			if(data.prev_elem == 'block'){
 				data.c += 1 }
@@ -103,7 +103,7 @@ var getCharOffset = function(elem, x, y, data){
 					&& ' \t\n'.includes(data.last)){
 				return data.c - 1 }
 
-			/* XXX not needed wit getText(..)
+			/* XXX GETTEXT: not needed wit getText(..)
 			// count "virtual" newlines between text and block elements... 
 			var type = getComputedStyle(e).display
 			var block = [
@@ -127,7 +127,7 @@ var getCharOffset = function(elem, x, y, data){
 			// handle the node...
 			data = getCharOffset(e, x, y, data)
 
-			/* XXX not needed wit getText(..)
+			/* XXX GETTEXT: not needed wit getText(..)
 			// compensate for table stuff...
 			if(type == 'table-row'){
 				data.c -= 1 }
