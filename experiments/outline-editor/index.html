@@ -48,6 +48,26 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
+  - BUG: styling error...
+    - this _seems `to` work_
+    - `while` _this `does` not_
+    - _seems to be connected with quoting..._
+  - BUG? should the following render to the save view? (currently not)
+    - text<hr>text
+    - text
+      <hr>
+      text (extra newline rendered)
+  - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
+    - FF:
+      - zooming on edited field
+      - normal textarea is not sized correctly
+    - General:
+      - bullets are too close to text
+      - side margins are a bit too large
+        - still need to account for toolbar to the right
+        - left side does not need to be as wide
+  - BUG? `.code` is currently over-extended and covers the whole element area (incl. `.children`)
+    - this currently has no side-effects but is not pretty (???)
   - DONE BUG: caret positioning broken (ASAP CLEANUP: GETTEXT)
     collapsed:: true
     - Strategies to test:: 
@@ -115,21 +135,6 @@ var setup = function(){
       - |text|text|text|
         |text|text|text|
         |text|text|text|
-  - BUG: styling error...
-    - this _seems `to` work_
-    - `while` _this `does` not_
-    - _seems to be connected with quoting..._
-  - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
-    - FF:
-      - zooming on edited field
-      - normal textarea is not sized correctly
-    - General:
-      - bullets are too close to text
-      - side margins are a bit too large
-        - still need to account for toolbar to the right
-        - left side does not need to be as wide
-  - BUG? `.code` is currently over-extended and covers the whole element area (incl. `.children`)
-    - this currently has no side-effects but is not pretty (???)
   -
 - ## ToDo:
   - add loading spinner -- `.loading` class set on `.load(..)` and unset when done...
@@ -142,8 +147,6 @@ var setup = function(){
   - Q: Make the heading level depend on its depth??
   - Might be a good idea to think how to avoid the constant selections on focus...
   - Q: When moving up/down between nodes do we want to place the caret relative to markdown (current) or to view? (see: `CARET_V_MOVE`)
-  - Q: Should we use `HTMLTextAreaElement.autoUpdateSize(..)` or handle it globally in setup???
-    - _...I'm leaning towards the later..._
   - Q: Should tables be text-based markdown or higher-level?
     collapsed:: true
     - for reference a normal table
@@ -251,6 +254,10 @@ var setup = function(){
       - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
+  - DONE Q: Should we use `HTMLTextAreaElement.autoUpdateSize(..)` or handle it globally in setup???
+    collapsed:: true
+    - _...I'm leaning towards the later..._
+    - currently solved passively...
   - DONE place the caret when moving between nodes
   - DONE selecting expanded code by _click-n-drag_
     collapsed:: true
