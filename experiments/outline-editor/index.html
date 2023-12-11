@@ -49,7 +49,12 @@ var setup = function(){
 - ## Bugs:
   focused:: true
   - BUG: caret positioning broken
-    - new strategy: try and build offset maps on parse...
+    - Strategies to test:: 
+      - ASAP use `getText(..)` to build the input text instead of `.innerText`
+      - normalize `.innerText` to remove duplicate `"\n"`'s
+        _(will break placement on empty lines... ???)_
+      - try and build offset maps on parse
+        _(potentially too complicated)_
     - *TODO*::
       - ```
         text text text
