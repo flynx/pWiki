@@ -44,10 +44,12 @@ var getCharOffset = function(elem, x, y, data){
 				?? 0
 		// text node...
 		if(e instanceof Text){
+			/* XXX not needed wit getText(..)
 			// count "virtual" newlines between text and block elements... 
 			if(data.prev_elem == 'block'){
 				data.c += 1 }
 			data.prev_elem = 'text'
+			//*/
 
 			var rect, cursor_line, line_start, offset
 			for(var i=0; i < e.length; i++){
@@ -101,6 +103,7 @@ var getCharOffset = function(elem, x, y, data){
 					&& ' \t\n'.includes(data.last)){
 				return data.c - 1 }
 
+			/* XXX not needed wit getText(..)
 			// count "virtual" newlines between text and block elements... 
 			var type = getComputedStyle(e).display
 			var block = [
@@ -119,15 +122,18 @@ var getCharOffset = function(elem, x, y, data){
 			data.prev_elem = block ? 
 				'block' 
 				: 'elem'
+			//*/
 
 			// handle the node...
 			data = getCharOffset(e, x, y, data)
 
+			/* XXX not needed wit getText(..)
 			// compensate for table stuff...
 			if(type == 'table-row'){
 				data.c -= 1 }
 			if(type == 'table-cell'){
 				data.c += 1 }
+			//*/
 
 			if(typeof(data) != 'object'){
 				return data } } }
@@ -2492,7 +2498,8 @@ var Outline = {
 					var view = that.get(elem).querySelector('.view')
 					var initial = elem.selectionStart
 					var c = getCharOffset(view, evt.clientX, evt.clientY)
-					var m = getMarkdownOffset(elem.value, view.innerText, c)
+					//var m = getMarkdownOffset(elem.value, view.innerText, c)
+					var m = getMarkdownOffset(elem.value, getText(view).join(''), c)
 					// selecting an element with text offset by markup...
 					if(m != 0){
 						evt.preventDefault()

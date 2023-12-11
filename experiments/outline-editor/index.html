@@ -51,6 +51,8 @@ var setup = function(){
   - BUG: caret positioning broken
     - Strategies to test:: 
       - ASAP use `getText(..)` to build the input text instead of `.innerText`
+        - DONE adds 1 char offset per block element
+        - this greatly simplifies things...
       - normalize `.innerText` to remove duplicate `"\n"`'s
         _(will break placement on empty lines... ???)_
       - try and build offset maps on parse
