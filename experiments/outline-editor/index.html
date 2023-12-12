@@ -52,11 +52,6 @@ var setup = function(){
     - this _seems `to` work_
     - `while` _this `does` not_
     - _seems to be connected with quoting..._
-  - BUG? should the following render to the save view? (currently not)
-    - text<hr>text
-    - text
-      <hr>
-      text (extra newline rendered)
   - BUG: mobile browsers behave quite chaotically ignoring parts of the styling...
     - FF:
       - zooming on edited field
@@ -68,6 +63,15 @@ var setup = function(){
         - left side does not need to be as wide
   - BUG? `.code` is currently over-extended and covers the whole element area (incl. `.children`)
     - this currently has no side-effects but is not pretty (???)
+  - DONE BUG? should the following render to the save view? (currently not)
+    collapsed:: true
+    - text<hr>text
+    - text
+      <hr>
+      text (extra newline rendered)
+    - text
+      ---
+      text
   - DONE BUG: caret positioning broken (ASAP CLEANUP: GETTEXT)
     collapsed:: true
     - Strategies to test:: 

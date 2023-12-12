@@ -256,23 +256,23 @@ var blocks = {
 		return text 
 			// markdown...
 			// style: headings...
-			.replace(/^(?<!\\)######\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-6']))
-			.replace(/^(?<!\\)#####\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-5']))
-			.replace(/^(?<!\\)####\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-4']))
-			.replace(/^(?<!\\)###\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-3']))
-			.replace(/^(?<!\\)##\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-2']))
-			.replace(/^(?<!\\)#\s+(.*)$/m, this.style(editor, elem, ['heading', 'heading-1']))
+			.replace(/^(?<!\\)######\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-6']))
+			.replace(/^(?<!\\)#####\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-5']))
+			.replace(/^(?<!\\)####\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-4']))
+			.replace(/^(?<!\\)###\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-3']))
+			.replace(/^(?<!\\)##\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-2']))
+			.replace(/^(?<!\\)#\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-1']))
 			// style: list...
 			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
 			.replace(/^\s*(.*)(?<!\\):\s*$/, this.style(editor, elem, 'list'))
 			.replace(/^\s*(.*)(?<!\\)#\s*$/, this.style(editor, elem, 'numbered-list'))
 			// style: misc...
-			.replace(/^\s*(?<!\\)>\s+(.*)$/m, this.style(editor, elem, 'quote'))
-			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/m, this.style(editor, elem, 'comment'))
-			.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/m, this.style(editor, elem, 'NOTE'))
-			.replace(/^\s*(?<!\\)XXX\s+(.*)$/m, this.style(editor, elem, 'XXX'))
-			.replace(/^(.*)\s*(?<!\\)XXX$/m, this.style(editor, elem, 'XXX'))
-			.replace(/^\s*---\s*$/m, this.style(editor, elem, 'hr', '<hr>')) } ,
+			.replace(/^\s*(?<!\\)>\s+(.*)$/, this.style(editor, elem, 'quote'))
+			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/, this.style(editor, elem, 'comment'))
+			.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/, this.style(editor, elem, 'NOTE'))
+			.replace(/^\s*(?<!\\)XXX\s+(.*)$/, this.style(editor, elem, 'XXX'))
+			.replace(/^(.*)\s*(?<!\\)XXX\s*$/, this.style(editor, elem, 'XXX'))
+			.replace(/^\s*---\+\s*$/, this.style(editor, elem, 'hr', '<hr>')) } ,
 }
 
 
@@ -733,7 +733,7 @@ var styling = {
 			.replace(/(\s*)(?<!\\)(ASAP|TEST|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/gm, 
 				'$1<span class="highlight $2">$2</span>$3')
 			// elements...
-			.replace(/(\n|^)(?<!\\)---*\h*(\n|$)/m, '$1<hr>')
+			.replace(/(\n|^)(?<!\\)---+[\t ]*(\n|$)/m, '$1<hr>')
 			// basic styling...
 			.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
 			.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
