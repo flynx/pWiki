@@ -1776,7 +1776,17 @@ var Outline = {
 
 	// serialization...
 	data: function(elem, deep=true){
-		elem = this.get(elem)	
+		var that = this
+		// all elements...
+		elem = 
+			(elem == 'all' || elem == 'root' || elem == '*') ?
+				[...this.outline.children]
+			: this.get(elem)	
+		if(elem instanceof Array){
+			return elem
+				.map(function(elem){
+					return that.data(elem) }) }
+		// single element...
 		// XXX move these to config...
 		var attrs = this.__block_attrs__
 		var cls_attrs = ['focused']
@@ -1795,17 +1805,21 @@ var Outline = {
 							&& (res[attr] = true) }
 					return res }, {})),
 			...(deep ? 
-				{children: this.json(elem)}
+				//{children: this.json(elem)}
+				{children: [...elem.lastChild.children]
+					.map(function(elem){ 
+						return that.data(elem) })}
 				: {}),
 		} },
-	json: function(node){
-		var that = this
-		var children = [...(node ?
-			node.lastChild.children
-			: this.outline.children)]
-		return children
-			.map(function(elem){
-				return that.data(elem) }) },
+	// XXX do we need both this and data???
+	// 		...the only difference is the default behavior -- node vs all...
+	// XXX should this always return a list???
+	json: function(node='all'){
+		return [this.data(...(
+				arguments.length == 0 ? 
+					['all']
+					: arguments))]
+			.flat() },
 
 	// XXX should this handle children???
 	// XXX revise name...

@@ -144,8 +144,6 @@ var setup = function(){
   - add loading spinner -- `.loading` class set on `.load(..)` and unset when done...
     - DONE set/unset class
     - add animation
-  - `.json(..)`, `.data(..)`, ... should be signature compatible with `.get(..)` (???)
-    - _current state causes constant confusion..._
   - Time to think about a standalone client -- at least to edit own notes as a test...
     - _also this would be a nice opportunity to start the move to a newer electron version_
   - Q: Make the heading level depend on its depth??
@@ -258,6 +256,7 @@ var setup = function(){
       - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
+  - DONE `.json(..)`, `.data(..)`, ... should be signature compatible with `.get(..)` (???)
   - DONE Q: Should we use `HTMLTextAreaElement.autoUpdateSize(..)` or handle it globally in setup???
     collapsed:: true
     - _...I'm leaning towards the later..._
