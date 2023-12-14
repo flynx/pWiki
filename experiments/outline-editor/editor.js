@@ -1808,17 +1808,11 @@ var Outline = {
 							&& (res[attr] = true) }
 					return res }, {})),
 			...(deep ? 
-				//{children: this.json(elem)}
-				{children: [...elem.lastChild.children]
-					.map(function(elem){ 
-						return that.data(elem) })}
+				{children: this.data([...elem.lastChild.children])}
 				: {}),
 		} },
-	// XXX do we need both this and data???
-	// 		...the only differences are:
-	// 			- the default behavior node vs all
-	// 			- .json() always returns an array
-	// XXX should this always return a list???
+	// Same as .data(..) but by default returns the root nodes.
+	// NOTE: this always returns an array
 	json: function(node='all'){
 		return [this.data(...(
 				arguments.length == 0 ? 
