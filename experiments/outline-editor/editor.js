@@ -1777,16 +1777,19 @@ var Outline = {
 	// serialization...
 	data: function(elem, deep=true){
 		var that = this
-		// all elements...
 		elem = 
+			// all elements...
 			(elem == 'all' || elem == 'root' || elem == '*') ?
 				[...this.outline.children]
+			: elem instanceof Array ?
+				elem
 			: this.get(elem)	
+		// multiple nodes...
 		if(elem instanceof Array){
 			return elem
 				.map(function(elem){
 					return that.data(elem) }) }
-		// single element...
+		// single node...
 		// XXX move these to config...
 		var attrs = this.__block_attrs__
 		var cls_attrs = ['focused']
@@ -1812,7 +1815,9 @@ var Outline = {
 				: {}),
 		} },
 	// XXX do we need both this and data???
-	// 		...the only difference is the default behavior -- node vs all...
+	// 		...the only differences are:
+	// 			- the default behavior node vs all
+	// 			- .json() always returns an array
 	// XXX should this always return a list???
 	json: function(node='all'){
 		return [this.data(...(
