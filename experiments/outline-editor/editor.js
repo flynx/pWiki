@@ -29,7 +29,6 @@ function clickPoint(x,y){
 // box corresponds the to desired coordinates. This accounts for nested 
 // elements.
 //
-// XXX can we avoid tracking "virtual" newlines between text/block elements???
 // XXX do a binary search?? 
 var getCharOffset = function(elem, x, y, data){
 	data = data ?? {}
@@ -132,7 +131,6 @@ var getMarkdownOffset = function(markdown, text, i){
 		if(m >= markdown.length){
 			m = p } }
 	return m - t }
-
 var offsetAt = function(A, B, i){
     i ??= A.length-1
     var o = 0
@@ -146,6 +144,9 @@ var offsetAt = function(A, B, i){
         p = o }
     return o }
 
+
+// Get element text content...
+//
 // NOTE: this is the same as .innerText but will not add extra "\n" after 
 // 		each block element...
 var getTexts = function(elem, res=[]){
@@ -156,7 +157,6 @@ var getTexts = function(elem, res=[]){
     return res }
 var getText = function(elem){
 	return getTexts(elem).join('') }
-
 
 
 
@@ -2248,20 +2248,20 @@ var Outline = {
 		c: function(evt){
 			if(!this.get('edited')){
 				this.crop() } },
-			c_z: function(evt){
-				if(!this.get('edited')){
-					evt.preventDefault()
-					this.undo() } },
-			c_s_z: function(evt){
-				if(!this.get('edited')){
-					evt.preventDefault()
-					this.redo() } },
-			U: function(evt){
-				if(!this.get('edited')){
-					this.redo() } },
-			u: function(evt){
-				if(!this.get('edited')){
-					this.undo() } },
+		c_z: function(evt){
+			if(!this.get('edited')){
+				evt.preventDefault()
+				this.undo() } },
+		c_s_z: function(evt){
+			if(!this.get('edited')){
+				evt.preventDefault()
+				this.redo() } },
+		U: function(evt){
+			if(!this.get('edited')){
+				this.redo() } },
+		u: function(evt){
+			if(!this.get('edited')){
+				this.undo() } },
 
 		Delete: function(evt){
 			var edited = this.get('edited')
