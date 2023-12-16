@@ -142,6 +142,7 @@ var setup = function(){
   -
 - ## ToDo:
   - Q: should auto-headings be exported as normal/manual markdown headings???
+  - expand sub-tree on follow link...
   - Time to think about a standalone client -- at least to edit own notes as a test...
     - _also this would be a nice opportunity to start the move to a newer electron version_
   - Might be a good idea to think how to avoid the constant selections on focus...
@@ -556,6 +557,18 @@ var setup = function(){
     - Symbols -- _should these be ligatures?_
       - (i), (c), /!\, ...
 	  - -- and ---
+    - Table of content
+      - Global
+        - TOC
+      - Local
+        - toc
+        - demo content
+          collapsed:: true
+          - @ Heading
+            - @ Heading
+            - @ Heading
+              - @ Heading
+          - @ Heading
     - Attributes:
 	  id:: attributes
 	  - collapsed
