@@ -372,39 +372,42 @@
 
 :host .outline,
 .editor .outline {
-	.heading-1,
-	.heading-2,
-	.heading-3,
-	.heading-4,
-	.heading-5,
-	.heading-6 {
+	.heading {
 		margin-top: 1rem;
 
 		&>.text {
 			font-weight: bold;
+			border-bottom: solid 1px rgba(0,0,0,0.1);
 		}
 	}
-	.heading-1>.text,
-	.heading-2>.text,
-	.heading-3>.text {
-		border-bottom: solid 1px rgba(0,0,0,0.1);
+	.auto.heading .auto.heading .auto.heading .auto.heading>.text,
+	.heading-4>.text,
+	.heading-5>.text,
+	.heading-6>.text {
+		border-bottom: none;
 	}
 
+	.auto.heading>.text,
 	.heading-1>.text {
 		--font-size: 2.5em;
 	}
+	.auto.heading .auto.heading>.text,
 	.heading-2>.text {
 		--font-size: 1.9em;
 	}
+	.auto.heading .auto.heading .auto.heading>.text,
 	.heading-3>.text {
 		--font-size: 1.5em;
 	}
+	.auto.heading .auto.heading .auto.heading .auto.heading>.text,
 	.heading-4>.text {
 		--font-size: 1.3em;
 	}
+	.auto.heading .auto.heading .auto.heading .auto.heading .auto.heading>.text,
 	.heading-5>.text {
 		--font-size: 1.1em;
 	}
+	.auto.heading .auto.heading .auto.heading .auto.heading .auto.heading .auto.heading>.text,
 	.heading-6>.text {
 		--font-size: 1em;
 	}

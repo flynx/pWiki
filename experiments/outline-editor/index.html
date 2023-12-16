@@ -141,14 +141,6 @@ var setup = function(){
         |text|text|text|
   -
 - ## ToDo:
-  - FEATURE dunamic headings -- level depends on number of headings above..c
-    - syntax:
-	  ```
-	  @ Heading
-	  ```
-    - would be logical to:
-	  - only first top level heading is level 1
-	  - subsequent top level headings all level 2
   - Time to think about a standalone client -- at least to edit own notes as a test...
     - _also this would be a nice opportunity to start the move to a newer electron version_
   - Might be a good idea to think how to avoid the constant selections on focus...
@@ -158,7 +150,6 @@ var setup = function(){
     - DONE set/unset class
     - add animation
     - make this extensible from client...
-  - Q: Make the heading level depend on its depth??
   - Q: When moving up/down between nodes do we want to place the caret relative to markdown (current) or to view? (see: `CARET_V_MOVE`)
   - Q: Should tables be text-based markdown or higher-level?
     collapsed:: true
@@ -267,6 +258,18 @@ var setup = function(){
       - `<editable/>` -- field marker
       - each child node will copy the template and allow editing of only fields
       - not clear how to handle template changes...
+  - DONE FEATURE dynamic headings -- level depends on number of headings above...
+    - DONE Experimental syntax:
+      ```
+      @ Heading
+      ```
+    - Target syntax:
+      ```
+      # Heading
+      ```
+    - would be logical to (???):
+      - only first top level heading is level 1
+      - subsequent top level headings all level 2
   - DONE `.json(..)`, `.data(..)`, ... should be signature compatible with `.get(..)` (???)
   - DONE Q: Should we use `HTMLTextAreaElement.autoUpdateSize(..)` or handle it globally in setup???
     collapsed:: true
@@ -462,12 +465,20 @@ var setup = function(){
     - The formatting mostly adheres to the markdown spec with a few minor differences
     -
     - Styles:
-      - # Heading 1
-      - ## Heading 2
-      - ### Heading 3
-      - #### Heading 4
-      - ##### Heading 5
-      - ###### Heading 6
+      - Automatic Headings
+        - @ Heading 1
+          - @ Heading 2
+            - @ Heading 3
+              - @ Heading 4
+                - @ Heading 5
+                  - @ Heading 6
+      - Manual Headings
+        - # Heading 1
+        - ## Heading 2
+        - ### Heading 3
+        - #### Heading 4
+        - ##### Heading 5
+        - ###### Heading 6
       - Text
       - Lists::
         - bullet:

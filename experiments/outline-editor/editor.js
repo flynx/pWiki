@@ -229,6 +229,12 @@ var blocks = {
 			.replace(/^(?<!\\)###\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-3']))
 			.replace(/^(?<!\\)##\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-2']))
 			.replace(/^(?<!\\)#\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-1']))
+			// XXX EXPERIMENTAL
+			// XXX rename css class to "heading"
+			// XXX chose either this or manual headings...
+			// XXX if this is used change syntax to '#'
+			//.replace(/^(?<!\\)#\s+(.*)$/, this.style(editor, elem, ['heading']))
+			.replace(/^(?<!\\)@\s+(.*)$/, this.style(editor, elem, ['heading', 'auto']))
 			// style: list...
 			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
 			.replace(/^\s*(.*)(?<!\\):\s*$/, this.style(editor, elem, 'list'))
