@@ -590,38 +590,73 @@ var tasks = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
-// XXX needs lots more work...
+// XXX do a better default id...
 var toc = {
 	__proto__: plugin,
 
-	// XXX not sure on what to build the hierarchy...
-	// 		this could be:
-	// 			- heading level
-	// 			- topology
-	// 			- both
-	// 			- ...
+	__skip_local_root__: true,
+
 	update: function(editor, elem){
+		var that = this
 		var outline = editor.outline
+		var TOCs = [...outline.querySelectorAll('.TOC .view')]
 		var tocs = [...outline.querySelectorAll('.toc .view')]
-		if(tocs.length == 0){
+		if(TOCs.length + tocs.length == 0){
 			return }
-		var level = function(node){
+
+		var level = function(node, root=outline){
 			var depth = 0
 			var parent = node
-			while(parent !== outline 
+			while(parent !== root 
 					&& parent != null){
-				if(parent.classList.contains('block')){
+				if(parent.classList.contains('block')
+					&& parent.classList.contains('heading')){
 					depth++ }
 				parent = parent.parentElement }
 			return depth }
-		var headings = [...editor.outline.querySelectorAll('.block.heading>.view')]
-			.map(function(e){
-				return `<li>${ e.innerText.split(/\n/)[0] }</li>`
-			})
-		var lst = document.createElement('ul')
-		lst.innerHTML = headings.join('\n')
+		var makeTOC = function(root=outline){
+			var index = 0
+			var lst = document.createElement('ul')
+			var list = lst
+			var depth = 1
+			for(var e of [...root.querySelectorAll('.block.heading>.view')]){
+				var block = editor.get(e)
+				// skip the root element???
+				if(!that.__skip_local_root__ 
+						&& block === root){
+					continue }
+				var d = level(e, root)
+				// down...
+				if(d > depth){
+					var sub = document.createElement('ul')
+					lst.append(sub)
+					lst = sub
+					depth++
+				// up...
+				} else while(d < depth && depth > 0){
+					lst = lst.parentElement ?? lst
+					depth-- }
+				var elem = document.createElement('li')
+				var id = block.id == '' ?
+					// XXX do a better default...
+					'__'+ index++
+					: block.id
+				block.id = id
+				elem.innerHTML = `<a href="#${id}">${e.innerHTML.trim()}</a>`
+				lst.append(elem) } 
+			return list }
+
+		// global tocs...
+		var list = makeTOC()
+		for(var toc of TOCs){
+			toc.innerHTML = ''
+			toc.append(list) } 
+		// local tocs...
 		for(var toc of tocs){
-			toc.append(lst) } },
+			toc.innerHTML = ''
+			toc.append(
+				makeTOC(
+					editor.get(toc, 'parent'))) } },
 
 	__setup__: function(editor){
 		return this.update(editor) },
@@ -630,8 +665,10 @@ var toc = {
 
 	__parse__: function(text, editor, elem){
 		return text
+			.replace(/^\s*toc\s*$/, 
+				this.style(editor, elem, 'toc', '')) 
 			.replace(/^\s*TOC\s*$/, 
-				this.style(editor, elem, 'toc', '')) },
+				this.style(editor, elem, 'TOC', '')) },
 }
 
 
