@@ -1570,6 +1570,8 @@ var Outline = {
 
 	// NOTE: this does not internally handle undo as it would be too 
 	// 		granular...
+	// NOTE: to remove an attribute set it's value to null, undefined, 
+	// 		'null', or 'undefined'
 	update: function(node='focused', data){
 		var node = this.get(node)
 		data ??= this.data(node, false)
@@ -1615,7 +1617,9 @@ var Outline = {
 					: node.removeAttribute(attr) 
 			// dataset...
 			} else {
-				if(value == null){
+				if(value == null
+						|| value == 'null'
+						|| value == 'undefined'){
 					delete node.dataset[attr]
 				} else {
 					node.dataset[attr] = value } } }
