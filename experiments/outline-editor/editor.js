@@ -614,6 +614,24 @@ var toc = {
 					depth++ }
 				parent = parent.parentElement }
 			return depth }
+		// XXX revise...
+		var seen = new Set()
+		var makeID = function(text){
+			var id = encodeURI(
+				text
+					.trim()
+					.replace(/[#?$%:;.,]/g, '')
+					.replace(/\s+/g, '-'))
+			if(seen.has(id)
+					|| document.getElementById(id)){
+				var i = 1
+				var candidate = id +'-'+ i
+				while(seen.has(candidate)
+						|| document.getElementById(candidate)){
+					candidate = id +'-'+ i++ }
+				id = id +'-'+ i }
+			seen.add(id)
+			return id }
 		var makeTOC = function(root=outline){
 			var index = 0
 			var lst = document.createElement('ul')
@@ -639,7 +657,8 @@ var toc = {
 				var elem = document.createElement('li')
 				var id = block.id == '' ?
 					// XXX do a better default...
-					'__'+ index++
+					//'__'+ index++
+					makeID(e.innerText)
 					: block.id
 				block.id = id
 				elem.innerHTML = `<a href="#${id}">${e.innerHTML.trim()}</a>`
