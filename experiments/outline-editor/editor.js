@@ -216,7 +216,7 @@ var attributes = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
-// XXX convert auto-heading to markdown heading level and back...
+// XXX revise headings...
 var blocks = {
 	__proto__: plugin,
 
@@ -1155,6 +1155,9 @@ var JSONOutline = {
 					: undefined
 			} else if(type == 'attr' 
 					|| type == undefined){
+				// special case: dataset attrs...
+				if(type == undefined){
+					attr = 'data-'+ attr }
 				typeof(value) == 'boolean'?
 						(value ?
 							attrs.push(attr)
@@ -1602,16 +1605,20 @@ var Outline = {
 				value ?
 					node.classList.add(attr)
 					: node.classList.remove(attr) 
-
-			} else if(type == 'attr' 
-					|| type == undefined){
+			} else if(type == 'attr'){
 				typeof(value) == 'boolean'?
 						(value ?
 							node.setAttribute(attr, '')
 							: node.removeAttribute(attr))
 					: value != null ?
 						node.setAttribute(attr, value)
-					: node.removeAttribute(attr) } }
+					: node.removeAttribute(attr) 
+			// dataset...
+			} else {
+				if(value == null){
+					delete node.dataset[attr]
+				} else {
+					node.dataset[attr] = value } } }
 		this.__change__()
 		return node },
 
@@ -1861,6 +1868,8 @@ var Outline = {
 		var attrs = this.__block_attrs__
 		var cls_attrs = ['focused']
 		return {
+			// NOTE: this is first to prevent it from overriding system attrs...
+			...elem.dataset,
 			text: elem.querySelector('.code').value,
 			...(Object.entries(attrs)
 				.reduce(function(res, [attr, type]){
