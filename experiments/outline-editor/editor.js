@@ -216,6 +216,7 @@ var attributes = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
+// XXX convert auto-heading to markdown heading level and back...
 var blocks = {
 	__proto__: plugin,
 
@@ -223,6 +224,7 @@ var blocks = {
 		return text 
 			// markdown...
 			// style: headings...
+			/* XXX chose either this or auto headings -- move docs...
 			.replace(/^(?<!\\)######\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-6']))
 			.replace(/^(?<!\\)#####\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-5']))
 			.replace(/^(?<!\\)####\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-4']))
@@ -230,11 +232,12 @@ var blocks = {
 			.replace(/^(?<!\\)##\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-2']))
 			.replace(/^(?<!\\)#\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-1']))
 			// XXX EXPERIMENTAL
-			// XXX rename css class to "heading"
-			// XXX chose either this or manual headings...
-			// XXX if this is used change syntax to '#'
-			//.replace(/^(?<!\\)#\s+(.*)$/, this.style(editor, elem, ['heading']))
-			.replace(/^(?<!\\)@\s+(.*)$/, this.style(editor, elem, ['heading', 'auto']))
+			.replace(/^(?<!\\)@+\s+(.*)$/, this.style(editor, elem, ['heading', 'auto']))
+			/*/ 
+			// XXX EXPERIMENTAL
+			.replace(/^(?<!\\)#+\s+(.*)$/, this.style(editor, elem, ['heading']))
+			.replace(/^(?<!\\)@+\s+(.*)$/, this.style(editor, elem, ['heading', 'no-toc']))
+			//*/
 			// style: list...
 			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
 			.replace(/^\s*(.*)(?<!\\):\s*$/, this.style(editor, elem, 'list'))
@@ -640,8 +643,9 @@ var toc = {
 			for(var e of [...root.querySelectorAll('.block.heading>.view')]){
 				var block = editor.get(e)
 				// skip the root element???
-				if(!that.__skip_local_root__ 
-						&& block === root){
+				if(block.classList.contains('no-toc')
+						|| (!that.__skip_local_root__ 
+							&& block === root)){
 					continue }
 				var d = level(e, root)
 				// down...
@@ -669,7 +673,7 @@ var toc = {
 		var list = makeTOC()
 		for(var toc of TOCs){
 			toc.innerHTML = ''
-			toc.append(list) } 
+			toc.append(list.cloneNode(true)) } 
 		// local tocs...
 		for(var toc of tocs){
 			toc.innerHTML = ''
@@ -1094,6 +1098,7 @@ var JSONOutline = {
 	// XXX
 	json: function(){},
 
+	// XXX add plugin hooks...
 	// XXX add option to customize indent size...
 	text: function(node, indent, level){
 		// .text(<indent>, <level>)
