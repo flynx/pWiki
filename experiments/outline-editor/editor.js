@@ -1014,7 +1014,7 @@ var JSONOutline = {
 	//		-> <elem>
 	//
 	// XXX move to config...
-	__code_attrs__: true,
+	__code_attrs__: false,
 	parseBlockAttrs: function(text, keep=!!this.__code_attrs__, elem={}){
 		if(typeof(keep) == 'object'){
 			elem = keep
