@@ -920,6 +920,7 @@ var JSONOutline = {
 
 	// block render...
 	// XXX PRE_POST_NEWLINE can we avoid explicitly patching for empty lines after pre???
+	__view_attrs__: false,
 	__code2html__: function(code, elem={}){
 		var that = this
 
@@ -937,7 +938,7 @@ var JSONOutline = {
 			}[stage]
 			return that.threadPlugins(meth, text, that, elem) }
 
-		elem = this.parseBlockAttrs(code, elem)
+		elem = this.parseBlockAttrs(code, this.__view_attrs__, elem)
 		code = elem.text
 
 		// stage: pre...
@@ -1012,12 +1013,14 @@ var JSONOutline = {
 	//	.parseBlockAttrs(<text>, 'all'[, <elem>])
 	//		-> <elem>
 	//
-	parseBlockAttrs: function(text, keep=false, elem={}){
+	// XXX move to config...
+	__code_attrs__: true,
+	parseBlockAttrs: function(text, keep=!!this.__code_attrs__, elem={}){
 		if(typeof(keep) == 'object'){
 			elem = keep
 			keep = typeof(elem) == 'boolean' ?
 				elem
-				: false }
+				: this.__code_attrs__ }
 		var system = this.__block_attrs__
 		var clean = text
 			// XXX for some reason changing the first group into (?<= .. )
@@ -1568,6 +1571,8 @@ var Outline = {
 			: this._updateViewSize(view, code) },
 	//*/
 
+	// Update node from data...
+	//
 	// NOTE: this does not internally handle undo as it would be too 
 	// 		granular...
 	// NOTE: to remove an attribute set it's value to null, undefined, 

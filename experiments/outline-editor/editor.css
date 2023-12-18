@@ -414,6 +414,18 @@
 }
 
 
+/*----------------------------------------------------------- TOC ---*/
+
+:host .outline,
+.editor .outline {
+	.toc>.view,
+	.TOC>.view {
+		padding-top: 0px;
+		padding-bottom: 0px;
+	}
+}
+
+
 /*--------------------------------------------------------- Quote ---*/
 
 :host .outline .quote>.text,
