@@ -5,6 +5,11 @@
 **********************************************************************/
 
 
+// XXX
+var PLUGIN_ATTRS = true
+
+
+
 //---------------------------------------------------------------------
 // Helpers...
 
@@ -192,25 +197,68 @@ var plugin = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
-// XXX style attributes... 
+// XXX PLUGIN_ATTRS
+// XXX this needs to know in what context it is called -- view or code...
+// 		.__pre_parse__(..) implements the view handler but we have no 
+// 		way yet to hook into code parsing...
+// XXX need to call plugins from JSONOutline...
 var attributes = {
 	__proto__: plugin,
 
-	__parse__: function(text, editor, elem){
-		var skip = new Set([
-			'text', 
-			'focused',
-			'collapsed',
-			'id',
-			'children', 
-			'style',
-		])
-		return text 
-			+ Object.entries(elem)
-				.reduce(function(res, [key, value]){
-					return skip.has(key) ?
-						res
-						: res + `<br>${key}: ${value}` }, '') },
+	// XXX where should we get .__block_attrs__???
+	// 		...editor, plugin, ...???
+	// XXX might be a good idea to split out the actual code handler to 
+	// 		be overloadable by other plugins... 
+	parseBlockAttrs: function(editor, text, keep=false, elem={}){
+		if(typeof(keep) == 'object'){
+			elem = keep
+			keep = typeof(elem) == 'boolean' ?
+				elem
+				: false }
+		var system = editor.__block_attrs__
+		var clean = text
+			// XXX for some reason changing the first group into (?<= .. )
+			// 		still eats up the whitespace...
+			// 		...putting the same pattern in a normal group and 
+			// 		returning it works fine...
+			//.replace(/(?<=[\n\h]*)(?:(?:\n|^)\s*\w*\s*::\s*[^\n]*\s*)*$/, 
+			.replace(/([\n\t ]*)(?:(?:\n|^)[\t ]*\w+[\t ]*::[\t ]*[^\n]+[\t ]*)+$/, 
+				function(match, ws){
+					var attrs = match
+						.trim()
+						.split(/(?:[\t ]*::[\t ]*|[\t ]*\n[\t ]*)/g)
+					while(attrs.length > 0){
+						var [name, val] = attrs.splice(0, 2)
+						elem[name] = 
+							val == 'true' ?
+				   				true
+							: val == 'false' ?
+								false
+							: val 
+						// keep non-system attrs...
+						if(keep 
+								&& !(name in system)){
+							ws += `\n${name}::${val}` } } 
+					return ws })
+		elem.text = keep == 'all' ? 
+			text 
+			: clean
+		return elem },
+
+	__parse_block__: function(code, editor, elem){
+		return this.parseBlockAttrs(
+				editor, 
+				code, 
+				editor.__code_attrs__, 
+				elem)
+			.text },
+	__pre_parse__: function(text, editor, elem){
+		return this.parseBlockAttrs(
+				editor, 
+				text, 
+				editor.__view_attrs__, 
+				elem)
+			.text },
 }
 
 
@@ -225,29 +273,30 @@ var blocks = {
 			// markdown...
 			// style: headings...
 			/* XXX chose either this or auto headings -- move docs...
-			.replace(/^(?<!\\)######\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-6']))
-			.replace(/^(?<!\\)#####\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-5']))
-			.replace(/^(?<!\\)####\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-4']))
-			.replace(/^(?<!\\)###\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-3']))
-			.replace(/^(?<!\\)##\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-2']))
-			.replace(/^(?<!\\)#\s+(.*)$/, this.style(editor, elem, ['heading', 'heading-1']))
+			.replace(/^(?<!\\)######\s+([^]*)$/, this.style(editor, elem, ['heading', 'heading-6']))
+			.replace(/^(?<!\\)#####\s+([^]*)$/, this.style(editor, elem, ['heading', 'heading-5']))
+			.replace(/^(?<!\\)####\s+([^]*)$/, this.style(editor, elem, ['heading', 'heading-4']))
+			.replace(/^(?<!\\)###\s+([^]*)$/, this.style(editor, elem, ['heading', 'heading-3']))
+			.replace(/^(?<!\\)##\s+([^]*)$/, this.style(editor, elem, ['heading', 'heading-2']))
+			.replace(/^(?<!\\)#\s+([^]*)$/, this.style(editor, elem, ['heading', 'heading-1']))
 			// XXX EXPERIMENTAL
-			.replace(/^(?<!\\)@+\s+(.*)$/, this.style(editor, elem, ['heading', 'auto']))
+			.replace(/^(?<!\\)@+\s+([^]*)$/, this.style(editor, elem, ['heading', 'auto']))
 			/*/ 
 			// XXX EXPERIMENTAL
-			.replace(/^(?<!\\)#+\s+(.*)$/, this.style(editor, elem, ['heading']))
-			.replace(/^(?<!\\)@+\s+(.*)$/, this.style(editor, elem, ['heading', 'no-toc']))
+			// NOTE: '[^]' is the same as [\s\S] but is unique to JS...
+			.replace(/^(?<!\\)#+\s+([^]*)$/, this.style(editor, elem, ['heading']))
+			.replace(/^(?<!\\)@+\s+([^]*)$/, this.style(editor, elem, ['heading', 'no-toc']))
 			//*/
 			// style: list...
-			//.replace(/^(?<!\\)[-\*]\s+(.*)$/m, style('list-item'))
-			.replace(/^\s*(.*)(?<!\\):\s*$/, this.style(editor, elem, 'list'))
-			.replace(/^\s*(.*)(?<!\\)#\s*$/, this.style(editor, elem, 'numbered-list'))
+			//.replace(/^(?<!\\)[-\*]\s+([^]*)$/m, style('list-item'))
+			.replace(/^\s*([^]*)(?<!\\):\s*$/, this.style(editor, elem, 'list'))
+			.replace(/^\s*([^]*)(?<!\\)#\s*$/, this.style(editor, elem, 'numbered-list'))
 			// style: misc...
-			.replace(/^\s*(?<!\\)>\s+(.*)$/, this.style(editor, elem, 'quote'))
-			.replace(/^\s*(?<!\\)((\/\/|;)\s+.*)$/, this.style(editor, elem, 'comment'))
-			.replace(/^\s*(?<!\\)NOTE:?\s*(.*)$/, this.style(editor, elem, 'NOTE'))
-			.replace(/^\s*(?<!\\)XXX\s+(.*)$/, this.style(editor, elem, 'XXX'))
-			.replace(/^(.*)\s*(?<!\\)XXX\s*$/, this.style(editor, elem, 'XXX'))
+			.replace(/^\s*(?<!\\)>\s+([^]*)$/, this.style(editor, elem, 'quote'))
+			.replace(/^\s*(?<!\\)((\/\/|;)\s+[^]*)$/, this.style(editor, elem, 'comment'))
+			.replace(/^\s*(?<!\\)NOTE:?\s*([^]*)$/, this.style(editor, elem, 'NOTE'))
+			.replace(/^\s*(?<!\\)XXX\s+([^]*)$/, this.style(editor, elem, 'XXX'))
+			.replace(/^([^]*)\s*(?<!\\)XXX\s*$/, this.style(editor, elem, 'XXX'))
 			.replace(/^\s*---\+\s*$/, this.style(editor, elem, 'hr', '<hr>')) } ,
 }
 
@@ -841,6 +890,65 @@ var escaping = {
 //---------------------------------------------------------------------
 
 var JSONOutline = {
+	// Plugins...
+	//
+	// The order of plugins can be significant in the following cases:
+	// 	- parsing
+	// 	- event dropping
+	//
+	// NOTE: this is split into three to make recomposition simpler for 
+	// 		inheritance...
+	// 		XXX do we need this structure???
+	//
+	// XXX split out DOM-specific plugins into Outline.plugins...
+	pre_plugins: [
+		// XXX PLUGIN_ATTRS
+		...(PLUGIN_ATTRS ?
+			[attributes]
+			: []),
+		//*/
+		blocks,
+		quoted,
+	],
+	norm_plugins: [
+		// NOTE: this needs to be before styling to prevent it from 
+		// 		treating '[_] ... [_]' as italic...
+		tasks,
+		toc,
+		styling,
+		// XXX
+		tables,
+		symbols,
+		//syntax,
+	],
+	post_plugins: [
+		// keep this last...
+		// XXX revise -- should this be external???
+		escaping,
+	],
+	__plugins: undefined,
+	get plugins(){
+		return this.__plugins 
+			?? (this.__plugins = [
+				...this.pre_plugins,
+				...this.norm_plugins,
+				...this.post_plugins,
+			]) },
+
+	// NOTE: if a handler returns false it will break plugin execution...
+	// 		XXX is this the right way to go???
+	runPlugins: function(method, ...args){
+		for(var plugin of this.plugins){
+			if(method in plugin){
+				if(plugin[method](...args) === false){
+					return false } } } 
+		return true },
+	threadPlugins: function(method, value, ...args){
+		for(var plugin of this.plugins){
+			method in plugin
+				&& (value = plugin[method](value, ...args)) }
+		return value },
+
 	// format:
 	// 	{
 	// 		<id>: <node>,
@@ -919,6 +1027,12 @@ var JSONOutline = {
 	__styles: undefined,
 
 	// block render...
+	//
+	// This will call plugins':
+	//		.__pre_parse__(..)
+	//		.__parse__(..)
+	//		.__post_parse__(..)
+	//
 	// XXX PRE_POST_NEWLINE can we avoid explicitly patching for empty lines after pre???
 	__view_attrs__: false,
 	__code2html__: function(code, elem={}){
@@ -938,8 +1052,12 @@ var JSONOutline = {
 			}[stage]
 			return that.threadPlugins(meth, text, that, elem) }
 
-		elem = this.parseBlockAttrs(code, this.__view_attrs__, elem)
-		code = elem.text
+		if(PLUGIN_ATTRS){
+			elem.text = code
+		} else {
+			elem = this.parseBlockAttrs(code, this.__view_attrs__, elem)
+			code = elem.text
+		}
 
 		// stage: pre...
 		var text = run('pre', 
@@ -1014,6 +1132,7 @@ var JSONOutline = {
 	//		-> <elem>
 	//
 	// XXX move to config...
+	// XXX PLUGIN_ATTRS...
 	__code_attrs__: false,
 	parseBlockAttrs: function(text, keep=!!this.__code_attrs__, elem={}){
 		if(typeof(keep) == 'object'){
@@ -1069,7 +1188,12 @@ var JSONOutline = {
 				// same level...
 				if(sep.length == prev_sep.length){
 					var [_, block] = lst.splice(0, 2)
-					var attrs = that.parseBlockAttrs(block)
+					// XXX PLUGIN_ATTRS...
+					if(PLUGIN_ATTRS){
+						var attrs = {}
+						attrs.text = that.threadPlugins('__parse_block__', block, that, attrs)
+					} else {
+						var attrs = that.parseBlockAttrs(block) }
 					attrs.text = that.__text2code__(attrs.text
 						// normalize indent...
 						.split(new RegExp('\n'+sep+'  ', 'g'))
@@ -1237,44 +1361,15 @@ var Outline = {
 	// XXX not sure what should the default be...
 	trim_block_text: false,
 
-
-	// Plugins...
-	//
-	// The order of plugins can be significant in the following cases:
-	// 	- parsing
-	// 	- event dropping
-	plugins: [
-		blocks,
-		quoted,
-
-		// NOTE: this needs to be before styling to prevent it from 
-		// 		treating '[_] ... [_]' as italic...
-		tasks,
-		toc,
-		styling,
-		// XXX
-		//attributes,
-		tables,
-		symbols,
-		//syntax,
-
-		// keep this last...
-		// XXX revise -- should this be external???
-		escaping,
+	pre_plugins: [
+		...JSONOutline.pre_plugins,
 	],
-	// NOTE: if a handler returns false it will break plugin execution...
-	// 		XXX is this the right way to go???
-	runPlugins: function(method, ...args){
-		for(var plugin of this.plugins){
-			if(method in plugin){
-				if(plugin[method](...args) === false){
-					return false } } } 
-		return true },
-	threadPlugins: function(method, value, ...args){
-		for(var plugin of this.plugins){
-			method in plugin
-				&& (value = plugin[method](value, ...args)) }
-		return value },
+	norm_plugins: [
+		...JSONOutline.norm_plugins,
+	],
+	post_plugins: [
+		...JSONOutline.post_plugins,
+	],
 
 
 	get header(){
@@ -2635,10 +2730,17 @@ var Outline = {
 				if(elem.classList.contains('code')){
 					var block = that.get(elem)
 					// clean out attrs...
-					elem.value = 
-						that.trim_block_text ?
-							that.parseBlockAttrs(elem.value).text.trim()
-							: that.parseBlockAttrs(elem.value).text
+					// XXX PLUGIN_ATTRS...
+					if(PLUGIN_ATTRS){
+						elem.value = 
+							that.trim_block_text ?
+								that.threadPlugins('__parse_block__', elem.value, that).trim()
+								: that.threadPlugins('__parse_block__', elem.value, that)
+					} else {
+						elem.value = 
+							that.trim_block_text ?
+								that.parseBlockAttrs(elem.value).text.trim()
+								: that.parseBlockAttrs(elem.value).text }
 					that.update(block) 
 					// undo...
 					if(elem.value != elem.dataset.original){
