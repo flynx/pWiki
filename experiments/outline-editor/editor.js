@@ -198,15 +198,11 @@ var plugin = {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
 // XXX PLUGIN_ATTRS
-// XXX this needs to know in what context it is called -- view or code...
-// 		.__pre_parse__(..) implements the view handler but we have no 
-// 		way yet to hook into code parsing...
-// XXX need to call plugins from JSONOutline...
 var attributes = {
 	__proto__: plugin,
 
 	// XXX where should we get .__block_attrs__???
-	// 		...editor, plugin, ...???
+	// 		...editor (current), plugin, ...???
 	// XXX might be a good idea to split out the actual code handler to 
 	// 		be overloadable by other plugins... 
 	parseBlockAttrs: function(editor, text, keep=false, elem={}){
@@ -245,7 +241,7 @@ var attributes = {
 			: clean
 		return elem },
 
-	__parse_block__: function(code, editor, elem){
+	__parse_code__: function(code, editor, elem){
 		return this.parseBlockAttrs(
 				editor, 
 				code, 
@@ -1191,7 +1187,7 @@ var JSONOutline = {
 					// XXX PLUGIN_ATTRS...
 					if(PLUGIN_ATTRS){
 						var attrs = {}
-						attrs.text = that.threadPlugins('__parse_block__', block, that, attrs)
+						attrs.text = that.threadPlugins('__parse_code__', block, that, attrs)
 					} else {
 						var attrs = that.parseBlockAttrs(block) }
 					attrs.text = that.__text2code__(attrs.text
@@ -2734,8 +2730,8 @@ var Outline = {
 					if(PLUGIN_ATTRS){
 						elem.value = 
 							that.trim_block_text ?
-								that.threadPlugins('__parse_block__', elem.value, that).trim()
-								: that.threadPlugins('__parse_block__', elem.value, that)
+								that.threadPlugins('__parse_code__', elem.value, that).trim()
+								: that.threadPlugins('__parse_code__', elem.value, that)
 					} else {
 						elem.value = 
 							that.trim_block_text ?
