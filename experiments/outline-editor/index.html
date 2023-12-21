@@ -146,7 +146,16 @@ var setup = function(){
   - ASAP: expand sub-tree on follow link...
   - ASAP: attributes: finalize base mechanics:
     - code filtering
+      ```
+      .__code_attrs__(attrs, code, elem)
+          -> bool
+      ```
 	- view filtering
+      ```
+      .__view_attrs__(attrs, code, elem)
+          -> str
+          -> undefined
+      ```
   - attributes: need to show/hide the attributes -- option?
     attr::value
     - `.__parse_code__(..)`: add data attributes to code if missing...
