@@ -193,6 +193,13 @@ var plugin = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
+// Process attributes in code and update the attributes in element data...
+//
+// This does:
+// 	- parse attributes
+// 	- update element data (JSON)
+// 	- filter attributes out (optionally)
+//
 var attributes = {
 	__proto__: plugin,
 
@@ -646,6 +653,7 @@ var tasks = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
+// XXX add depth...
 // XXX do a better default id...
 var toc = {
 	__proto__: plugin,
