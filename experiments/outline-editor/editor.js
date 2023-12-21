@@ -5,10 +5,6 @@
 **********************************************************************/
 
 
-// XXX
-var PLUGIN_ATTRS = true
-
-
 
 //---------------------------------------------------------------------
 // Helpers...
@@ -197,10 +193,22 @@ var plugin = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
-// XXX PLUGIN_ATTRS
 var attributes = {
 	__proto__: plugin,
 
+	//
+	//	Parse attrs...
+	//	.parseBlockAttrs(<text>[, <elem>])
+	//		-> <elem>
+	//
+	//	Parse attrs keeping non-system attrs in .text...
+	//	.parseBlockAttrs(<text>, true[, <elem>])
+	//		-> <elem>
+	//
+	//	Parse attrs keeping all attrs in .text...
+	//	.parseBlockAttrs(<text>, 'all'[, <elem>])
+	//		-> <elem>
+	//
 	// XXX where should we get .__block_attrs__???
 	// 		...editor (current), plugin, ...???
 	// XXX might be a good idea to split out the actual code handler to 
@@ -886,6 +894,15 @@ var escaping = {
 //---------------------------------------------------------------------
 
 var JSONOutline = {
+
+	__code_attrs__: false,
+	__view_attrs__: false,
+	__block_attrs__: {
+		id: 'attr',
+		collapsed: 'attr',
+		focused: 'cls',
+	},
+
 	// Plugins...
 	//
 	// The order of plugins can be significant in the following cases:
@@ -898,11 +915,7 @@ var JSONOutline = {
 	//
 	// XXX split out DOM-specific plugins into Outline.plugins...
 	pre_plugins: [
-		// XXX PLUGIN_ATTRS
-		...(PLUGIN_ATTRS ?
-			[attributes]
-			: []),
-		//*/
+		attributes,
 		blocks,
 		quoted,
 	],
@@ -1030,13 +1043,12 @@ var JSONOutline = {
 	//		.__post_parse__(..)
 	//
 	// XXX PRE_POST_NEWLINE can we avoid explicitly patching for empty lines after pre???
-	__view_attrs__: false,
 	__code2html__: function(code, elem={}){
 		var that = this
 
 		// only whitespace -> keep element blank...
+		elem.text = code
 		if(code.trim() == ''){
-			elem.text = code
 			return elem }
 
 		// helpers...
@@ -1047,13 +1059,6 @@ var JSONOutline = {
 				post: '__post_parse__',
 			}[stage]
 			return that.threadPlugins(meth, text, that, elem) }
-
-		if(PLUGIN_ATTRS){
-			elem.text = code
-		} else {
-			elem = this.parseBlockAttrs(code, this.__view_attrs__, elem)
-			code = elem.text
-		}
 
 		// stage: pre...
 		var text = run('pre', 
@@ -1109,62 +1114,6 @@ var JSONOutline = {
 			text.trim()
 			: text },
 
-	__block_attrs__: {
-		id: 'attr',
-		collapsed: 'attr',
-		focused: 'cls',
-	},
-	//
-	//	Parse attrs...
-	//	.parseBlockAttrs(<text>[, <elem>])
-	//		-> <elem>
-	//
-	//	Parse attrs keeping non-system attrs in .text...
-	//	.parseBlockAttrs(<text>, true[, <elem>])
-	//		-> <elem>
-	//
-	//	Parse attrs keeping all attrs in .text...
-	//	.parseBlockAttrs(<text>, 'all'[, <elem>])
-	//		-> <elem>
-	//
-	// XXX move to config...
-	// XXX PLUGIN_ATTRS...
-	__code_attrs__: false,
-	parseBlockAttrs: function(text, keep=!!this.__code_attrs__, elem={}){
-		if(typeof(keep) == 'object'){
-			elem = keep
-			keep = typeof(elem) == 'boolean' ?
-				elem
-				: this.__code_attrs__ }
-		var system = this.__block_attrs__
-		var clean = text
-			// XXX for some reason changing the first group into (?<= .. )
-			// 		still eats up the whitespace...
-			// 		...putting the same pattern in a normal group and 
-			// 		returning it works fine...
-			//.replace(/(?<=[\n\h]*)(?:(?:\n|^)\s*\w*\s*::\s*[^\n]*\s*)*$/, 
-			.replace(/([\n\t ]*)(?:(?:\n|^)[\t ]*\w+[\t ]*::[\t ]*[^\n]+[\t ]*)+$/, 
-				function(match, ws){
-					var attrs = match
-						.trim()
-						.split(/(?:[\t ]*::[\t ]*|[\t ]*\n[\t ]*)/g)
-					while(attrs.length > 0){
-						var [name, val] = attrs.splice(0, 2)
-						elem[name] = 
-							val == 'true' ?
-				   				true
-							: val == 'false' ?
-								false
-							: val 
-						// keep non-system attrs...
-						if(keep 
-								&& !(name in system)){
-							ws += `\n${name}::${val}` } } 
-					return ws })
-		elem.text = keep == 'all' ? 
-			text 
-			: clean
-		return elem },
 	parse: function(text){
 		var that = this
 		text = text
@@ -1184,16 +1133,12 @@ var JSONOutline = {
 				// same level...
 				if(sep.length == prev_sep.length){
 					var [_, block] = lst.splice(0, 2)
-					// XXX PLUGIN_ATTRS...
-					if(PLUGIN_ATTRS){
-						var attrs = {}
-						attrs.text = that.threadPlugins('__parse_code__', block, that, attrs)
-					} else {
-						var attrs = that.parseBlockAttrs(block) }
-					attrs.text = that.__text2code__(attrs.text
-						// normalize indent...
-						.split(new RegExp('\n'+sep+'  ', 'g'))
-						.join('\n'))
+					var attrs = {}
+					attrs.text = that.__text2code__(
+						that.threadPlugins('__parse_code__', block, that, attrs)
+							// normalize indent...
+							.split(new RegExp('\n'+sep+'  ', 'g'))
+							.join('\n'))
 					parent.push({ 
 						collapsed: false,
 						focused: false,
@@ -1624,12 +1569,6 @@ var Outline = {
 					&& that.__change__() }, 
 			that.change_interval || 1000) 
 		return this },
-
-	__block_attrs__: {
-		id: 'attr',
-		collapsed: 'attr',
-		focused: 'cls',
-	},
 
 	/* XXX not used -- do we need this??
 	// XXX UPDATE_CODE_SIZE this is a no-op at this point -- do we need this???
@@ -2726,17 +2665,10 @@ var Outline = {
 				if(elem.classList.contains('code')){
 					var block = that.get(elem)
 					// clean out attrs...
-					// XXX PLUGIN_ATTRS...
-					if(PLUGIN_ATTRS){
-						elem.value = 
-							that.trim_block_text ?
-								that.threadPlugins('__parse_code__', elem.value, that).trim()
-								: that.threadPlugins('__parse_code__', elem.value, that)
-					} else {
-						elem.value = 
-							that.trim_block_text ?
-								that.parseBlockAttrs(elem.value).text.trim()
-								: that.parseBlockAttrs(elem.value).text }
+					elem.value = 
+						that.trim_block_text ?
+							that.threadPlugins('__parse_code__', elem.value, that).trim()
+							: that.threadPlugins('__parse_code__', elem.value, that)
 					that.update(block) 
 					// undo...
 					if(elem.value != elem.dataset.original){
