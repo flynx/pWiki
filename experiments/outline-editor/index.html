@@ -148,8 +148,10 @@ var setup = function(){
     - code filtering
       ```
       .__code_attrs__(attrs, code, elem)
-          -> bool
+          -> true
+          -> false
       ```
+      _system attrs are always hidden, the client can control whether the code is shown or not_
 	- view filtering
       ```
       .__view_attrs__(attrs, code, elem)
