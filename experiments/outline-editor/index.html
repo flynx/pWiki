@@ -157,6 +157,7 @@ var setup = function(){
           -> str
           -> undefined
       ```
+    - might be a good idea to change `.parseBlockAttrs(..)` to return an array of text and attrs (str) and handle the above `.__code_attrs__(..)` and `.__view_attrs__(..)` in the respective handlers...
   - attributes: need to show/hide the attributes -- option?
     attr::value
     - `.__parse_code__(..)`: add data attributes to code if missing...
