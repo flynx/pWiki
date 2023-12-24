@@ -206,28 +206,17 @@ var attributes = {
 	//
 	//	Parse attrs...
 	//	.parseBlockAttrs(<text>[, <elem>])
-	//		-> <elem>
-	//
-	//	Parse attrs keeping non-system attrs in .text...
-	//	.parseBlockAttrs(<text>, true[, <elem>])
-	//		-> <elem>
-	//
-	//	Parse attrs keeping all attrs in .text...
-	//	.parseBlockAttrs(<text>, 'all'[, <elem>])
-	//		-> <elem>
+	//		-> [<elem>, <attrs>, <sys-attrs>]
 	//
 	// XXX where should we get .__block_attrs__???
 	// 		...editor (current), plugin, ...???
 	// XXX might be a good idea to split out the actual code handler to 
 	// 		be overloadable by other plugins... 
-	parseBlockAttrs: function(editor, text, keep=false, elem={}){
-		if(typeof(keep) == 'object'){
-			elem = keep
-			keep = typeof(elem) == 'boolean' ?
-				elem
-				: false }
+	parseBlockAttrs: function(editor, text, elem={}){
 		var system = editor.__block_attrs__
-		var clean = text
+		var attrs = ''
+		var sysattrs = ''
+		elem.text = text
 			// XXX for some reason changing the first group into (?<= .. )
 			// 		still eats up the whitespace...
 			// 		...putting the same pattern in a normal group and 
@@ -235,11 +224,11 @@ var attributes = {
 			//.replace(/(?<=[\n\h]*)(?:(?:\n|^)\s*\w*\s*::\s*[^\n]*\s*)*$/, 
 			.replace(/([\n\t ]*)(?:(?:\n|^)[\t ]*\w+[\t ]*::[\t ]*[^\n]+[\t ]*)+$/, 
 				function(match, ws){
-					var attrs = match
+					match = match
 						.trim()
 						.split(/(?:[\t ]*::[\t ]*|[\t ]*\n[\t ]*)/g)
-					while(attrs.length > 0){
-						var [name, val] = attrs.splice(0, 2)
+					while(match.length > 0){
+						var [name, val] = match.splice(0, 2)
 						elem[name] = 
 							val == 'true' ?
 				   				true
@@ -247,29 +236,38 @@ var attributes = {
 								false
 							: val 
 						// keep non-system attrs...
-						if(keep 
-								&& !(name in system)){
-							ws += `\n${name}::${val}` } } 
+						if(!(name in system)){
+							attrs += `\n${name}::${val}`
+						} else {
+							sysattrs += `\n${name}::${val}` } }
 					return ws })
-		elem.text = keep == 'all' ? 
-			text 
-			: clean
-		return elem },
+		return [
+			elem, 
+			attrs, 
+			sysattrs,
+		] },
 
 	__parse_code__: function(code, editor, elem){
-		return this.parseBlockAttrs(
-				editor, 
-				code, 
-				editor.__code_attrs__, 
-				elem)
-			.text },
+		var [elem, attrs, system] = this.parseBlockAttrs(editor, code, elem)
+		// XXX use filter handler here...
+		return editor.__code_attrs__ ?
+			elem.text +'\n'+ attrs
+			: elem.text },
 	__pre_parse__: function(text, editor, elem){
-		return this.parseBlockAttrs(
-				editor, 
-				text, 
-				editor.__view_attrs__, 
-				elem)
-			.text },
+		var [elem, attrs, system] = this.parseBlockAttrs(editor, text, elem)
+		// XXX use filter handler here...
+		return editor.__view_attrs__ ?
+			elem.text +'\n'+ attrs
+			: elem.text },
+
+	// XXX revise naming...
+	// XXX revise attr order...
+	__code_attrs__: function(editor, elem, attrs, system){
+		// XXX
+	},
+	__view_attrs__: function(editor, elem, attrs, system){
+		// XXX
+	},
 }
 
 
