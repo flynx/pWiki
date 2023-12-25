@@ -208,6 +208,7 @@ var attributes = {
 	//	.parseBlockAttrs(<text>[, <elem>])
 	//		-> [<elem>, <attrs>, <sys-attrs>]
 	//
+	// XXX add attributes set in elem but not present in code to attrs/sysattrs...
 	// XXX where should we get .__block_attrs__???
 	// 		...editor (current), plugin, ...???
 	// XXX might be a good idea to split out the actual code handler to 
@@ -234,13 +235,17 @@ var attributes = {
 				   				true
 							: val == 'false' ?
 								false
-							: val 
-						// keep non-system attrs...
-						if(!(name in system)){
-							attrs += `\n${name}::${val}`
-						} else {
-							sysattrs += `\n${name}::${val}` } }
+							: val }
 					return ws })
+		// NOTE: we are not doing this in the loop above to include all 
+		// 		the attributes that are in the elem but not explicitly 
+		// 		given in code...
+		for(var name in elem){
+			var val = elem[name]
+			if(!(name in system)){
+				attrs += `\n${name}::${val}`
+			} else {
+				sysattrs += `\n${name}::${val}` } }
 		return [
 			elem, 
 			attrs, 
@@ -248,26 +253,46 @@ var attributes = {
 		] },
 
 	// generate code...
+	// 
+	// this is controlled by the value of editor.__code_attrs__:
+	// 	false / undefined	- strip attrs
+	// 	true				- add attrs to code if available
+	// 	'all'				- add attrs, including system attrs to 
+	// 						  code if available,
 	__parse_code__: function(code, editor, elem){
 		var [elem, attrs, system] = this.parseBlockAttrs(editor, code, elem)
 		return !editor.__code_attrs__ ?
 				elem.text
 			: editor.__code_attrs__ == 'all' ?
-				elem.text +'\n'+ attrs +'\n'+ system
-			: elem.text +'\n'+ attrs },
+				elem.text 
+					+ (attrs.length > 0 ? 
+						'\n'+ attrs
+						: '')
+					+ (system.length > 0 ?
+						'\n'+ system
+						: '')
+			: attrs.length > 0 ?
+				elem.text +'\n'+ attrs 
+			: elem.text },
+
 	// generate view...
+	//
+	// this is controlled by the value of editor.__view_attrs__:
+	// 	false / undefined	- strip attrs
+	// 	true				- call the handler XXX
 	__pre_parse__: function(text, editor, elem){
+		// NOTE: we are intentionally neglecting system attrs here...
 		var [elem, attrs, system] = this.parseBlockAttrs(editor, text, elem)
-		// XXX use filter handler here...
-		return !editor.__view_attrs__ ?
-			elem.text 
-			: elem.text +'\n'+ attrs
-	},
+		if(editor.__view_attrs__ 
+				&& attrs.length > 0){
+			attrs = editor.threadPlugins('__parse_attrs__', attrs, editor, elem)
+			if(attrs && attrs.length > 0){
+				return text +'\n'+ attrs } }
+		return elem.text },
 
 	// XXX
-	__parse_attrs__: function(){
-		// XXX
-	}
+	//__parse_attrs__: function(attrs, editor, elem){
+	//	return attrs }
 }
 
 

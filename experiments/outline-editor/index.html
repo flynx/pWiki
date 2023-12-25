@@ -143,25 +143,11 @@ var setup = function(){
   -
 - ## ToDo:
   - ASAP: expand sub-tree on follow link...
-  - ASAP: attributes: finalize base mechanics:
-    - code filtering
-      ```
-      .__code_attrs__(attrs, code, elem)
-          -> true
-          -> false
-      ```
-      _system attrs are always hidden, the client can control whether the code is shown or not_
-	- view filtering
-      ```
-      .__view_attrs__(attrs, code, elem)
-          -> str
-          -> undefined
-      ```
-    - might be a good idea to change `.parseBlockAttrs(..)` to return an array of text and attrs (str) and handle the above `.__code_attrs__(..)` and `.__view_attrs__(..)` in the respective handlers...
+  - ASAP TEST: attributes: finalize base mechanics...
   - attributes: need to show/hide the attributes -- option?
     attr::value
-    - `.__parse_code__(..)`: add data attributes to code if missing...
-    - do we need `.__code_attrs__` / `.__view_attrs__`??? 
+    - DONE `.__parse_code__(..)`: add data attributes to code if missing...
+    - DONE do we need `.__code_attrs__` / `.__view_attrs__`??? -- YES
     - handle attr delete correctly -- i.e. if shown attr removed from code -> delete attr...
     - BUG? can't set `''` as attr value -- parser??
   - TOC: tweaking: add args like depth, ... -- as attributes...
