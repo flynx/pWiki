@@ -247,27 +247,27 @@ var attributes = {
 			sysattrs,
 		] },
 
+	// generate code...
 	__parse_code__: function(code, editor, elem){
 		var [elem, attrs, system] = this.parseBlockAttrs(editor, code, elem)
-		// XXX use filter handler here...
-		return editor.__code_attrs__ ?
-			elem.text +'\n'+ attrs
-			: elem.text },
+		return !editor.__code_attrs__ ?
+				elem.text
+			: editor.__code_attrs__ == 'all' ?
+				elem.text +'\n'+ attrs +'\n'+ system
+			: elem.text +'\n'+ attrs },
+	// generate view...
 	__pre_parse__: function(text, editor, elem){
 		var [elem, attrs, system] = this.parseBlockAttrs(editor, text, elem)
 		// XXX use filter handler here...
-		return editor.__view_attrs__ ?
-			elem.text +'\n'+ attrs
-			: elem.text },
+		return !editor.__view_attrs__ ?
+			elem.text 
+			: elem.text +'\n'+ attrs
+	},
 
-	// XXX revise naming...
-	// XXX revise attr order...
-	__code_attrs__: function(editor, elem, attrs, system){
+	// XXX
+	__parse_attrs__: function(){
 		// XXX
-	},
-	__view_attrs__: function(editor, elem, attrs, system){
-		// XXX
-	},
+	}
 }
 
 
