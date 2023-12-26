@@ -855,7 +855,7 @@ var styling = {
 			.replace(/(\s*)(?<!\\)(ASAP|TEST|BUG|FIX|HACK|STUB|WARNING|CAUTION)(\s*)/gm, 
 				'$1<span class="highlight $2">$2</span>$3')
 			// elements...
-			.replace(/(\n|^)(?<!\\)---+[\t ]*(\n|$)/m, '$1<hr>')
+			.replace(/(\n|^)(?<!\\)---+[\t ]*(\n|$)/gm, '$1<hr>')
 			// basic styling...
 			.replace(/(?<!\\)\*(?=[^\s*])(([^*]|\\\*)*[^\s*])(?<!\\)\*/gm, '<b>$1</b>')
 			.replace(/(?<!\\)~(?=[^\s~])(([^~]|\\~)*[^\s~])(?<!\\)~/gm, '<s>$1</s>')
