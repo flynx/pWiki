@@ -203,13 +203,14 @@ var plugin = {
 var attributes = {
 	__proto__: plugin,
 
+	// XXX should attr settings be set here or in the Outline???
+	// 		...this includes .__block_attrs__ and .__system_attrs__
+
 	//
 	//	Parse attrs...
 	//	.parseBlockAttrs(<text>[, <elem>])
 	//		-> [<elem>, <attrs>, <sys-attrs>]
 	//
-	// XXX where should we get .__block_attrs__???
-	// 		...editor (current), plugin, ...???
 	parseBlockAttrs: function(editor, text, elem={}){
 		var system = editor.__block_attrs__
 		var attrs = ''
@@ -227,6 +228,9 @@ var attributes = {
 						.split(/(?:[\t ]*::[\t ]*|[\t ]*\n[\t ]*)/g)
 					while(match.length > 0){
 						var [name, val] = match.splice(0, 2)
+						// ignore non-settable attrs...
+						if(editor.__system_attrs__.includes(name)){
+							continue }
 						elem[name] = 
 							val == 'true' ?
 				   				true
@@ -234,10 +238,14 @@ var attributes = {
 								false
 							: val }
 					return ws })
+		// build the attr strings...
 		// NOTE: we are not doing this in the loop above to include all 
 		// 		the attributes that are in the elem but not explicitly 
 		// 		given in code...
 		for(var name in elem){
+			// ignore non-settable attrs...
+			if(editor.__system_attrs__.includes(name)){
+				continue }
 			var val = elem[name]
 			if(!(name in system)){
 				attrs += `\n${name}::${val}`
@@ -925,11 +933,16 @@ var JSONOutline = {
 
 	__code_attrs__: false,
 	__view_attrs__: false,
+	__system_attrs__: [
+		'text',
+		'children',
+	],
 	__block_attrs__: {
 		id: 'attr',
 		collapsed: 'attr',
 		focused: 'cls',
 	},
+
 
 	// Plugins...
 	//
