@@ -1210,6 +1210,7 @@ var JSONOutline = {
 	// XXX add plugin hooks...
 	// XXX add option to customize indent size...
 	text: function(node, indent, level){
+		var that = this
 		// .text(<indent>, <level>)
 		if(typeof(node) == 'string'){
 			;[node, indent='  ', level=''] = [undefined, ...arguments] }
@@ -1225,8 +1226,7 @@ var JSONOutline = {
 					// attrs... 
 					+ (Object.keys(elem)
 						.reduce(function(res, attr){
-							return (attr == 'text' 
-									|| attr == 'children') ?
+							return that.__system_attrs__.includes(attr) ?
 								res
 								: res 
 									+ (elem[attr] ?
@@ -1252,7 +1252,7 @@ var JSONOutline = {
 		var attrs = []
 
 		for(var [attr, value] of Object.entries({...data, ...parsed})){
-			if(attr == 'children' || attr == 'text'){
+			if(this.__system_attrs__.includes(attr)){
 				continue }
 			var i
 			var type = this.__block_attrs__[attr]
@@ -1675,8 +1675,12 @@ var Outline = {
 			//this._syncTextSize(code, html) }
 
 		for(var [attr, value] of Object.entries({...data, ...parsed})){
-			if(attr == 'children' || attr == 'text'){
+			if(this.__system_attrs__.includes(attr)){
 				continue }
+
+			// quoted value...
+			if(value && /^\s*([`'"])([^\1]*)\1\s*$/.test(value)){
+				value = value.replace(/^\s*([`'"])([^\1]*)\1\s*$/, '$2') }
 
 			var type = this.__block_attrs__[attr]
 			if(type == 'cls'){
@@ -1693,6 +1697,7 @@ var Outline = {
 					: node.removeAttribute(attr) 
 			// dataset...
 			} else {
+				// remove attr...
 				if(value == null
 						|| value == 'null'
 						|| value == 'undefined'){
