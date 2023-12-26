@@ -208,11 +208,8 @@ var attributes = {
 	//	.parseBlockAttrs(<text>[, <elem>])
 	//		-> [<elem>, <attrs>, <sys-attrs>]
 	//
-	// XXX add attributes set in elem but not present in code to attrs/sysattrs...
 	// XXX where should we get .__block_attrs__???
 	// 		...editor (current), plugin, ...???
-	// XXX might be a good idea to split out the actual code handler to 
-	// 		be overloadable by other plugins... 
 	parseBlockAttrs: function(editor, text, elem={}){
 		var system = editor.__block_attrs__
 		var attrs = ''
