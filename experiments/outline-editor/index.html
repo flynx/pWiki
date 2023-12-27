@@ -168,6 +168,12 @@ var setup = function(){
           \- [foo](#foo)
       ---
     - ASAP check if we can add blocks during element handling...
+    - the main problem here is where to get the data for the index?
+      possible sources:
+      - JSON -- preferred
+      - DOM -- current
+      - text
+    - DOM/JSON would require a post-load generation stage...
   - simple use strategies:
     - custom element
 	- constructor
