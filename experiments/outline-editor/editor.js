@@ -681,8 +681,8 @@ var tasks = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
-// XXX add depth...
 // XXX do a better default id...
+// XXX make this persistent -- add to code...
 var toc = {
 	__proto__: plugin,
 
