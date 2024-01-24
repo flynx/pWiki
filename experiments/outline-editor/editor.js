@@ -183,11 +183,19 @@ var plugin = {
 		return function(_, text){
 			elem.style ??= []
 			elem.style.push(...style)
-			return typeof(code) == 'function' ?
-					code(...arguments)
-				: code != null ?
-					code
-				: text } },
+			// handler...
+			if(typeof(code) == 'function'){
+				return code(...arguments) }
+			// explicit code...
+			if(code != null){
+				return code }
+			// get first non-empty group...
+			var groups = [...arguments].slice(1, -2)
+			while(groups.length > 0 
+					&& groups[0] == null){
+				groups.shift() }
+			return groups[0] 
+				?? '' } },
 }
 
 
@@ -434,6 +442,7 @@ var tasks = {
 	status: [
 		'DONE',
 		'REJECT',
+		//'TODO',
 	],
 	// format:
 	// 	[
