@@ -142,23 +142,51 @@ var setup = function(){
         |text|text|text|
   -
 - ## ToDo:
-  - Deployment:
-    - html
-	  - constructor
-	  - events/callbacks
-      - basic storage adapters (LocalStorage/SessionStorage, FileAPI, IndexDB???)
-        - _...Did I say that I hate how they crippled the FileAPI to the point
-          that it is only usable for cool demos and not usable for any serious 
-          applications..._
-	  - plugin API (???)
-    - web component
-      collapsed:: true
-	  - tag/attrs
-	  - events
-      - basic storage adapters
-	  - plugin API (???)
-    - file editor (electron/web)
-    - notes (pWiki/electron/web)
+  - Time to think about a standalone client -- at least to edit own notes as a test...
+    - _also this would be a nice opportunity to start the move to a newer electron version_
+    - Deployment:
+      - html
+  	  - constructor
+  	  - events/callbacks
+        - basic storage adapters (LocalStorage/SessionStorage, FileAPI, IndexDB???)
+          - _...Did I say that I hate how they crippled the FileAPI to the point
+            that it is only usable for cool demos and not usable for any serious 
+            applications..._
+  	  - plugin API (???)
+      - web component
+        collapsed:: true
+  	  - tag/attrs
+  	  - resolve issues and unify text containmet:
+  	    - `value=...` attr
+  		  quote escaping (editing html/export/save)
+  	    - tag body
+  		  escaping html stuff
+            escaping `</outline-editor>` in code
+  	    - custom escaping api per input/output stream/source...
+  	  - events
+        - basic storage adapters
+  	  - plugin API (???)
+  	  - XXX load issues???
+      - file editor (electron/web)
+      - notes (pWiki/electron/web)
+  - custom element / web component
+    - BUG: select via double/triple clicks does not work...
+	  - _looks like something is refocusing the element..._
+    - BUG/race: the non-value versions of custom elem seem to sometimes get loaded as empty...
+    - DONE data interface:
+	  collapsed:: true
+      - the "natural" way to pass data is to use the same mechanism as `<textarea>` the problem is that we can't extend `HTMLTextAreaElement` as it can not have shadow dom (reject?)
+      - adding an explicit textarea element is an odd requirement (reject?)
+      - seems that the least bad way to go is to use the `value` attribute
+    - DONE API: directly mixin Outline?
+    - DONE `.value` / `.code` should be both updated internally and also load new content when updated externally -- not yet sure how...
+    - events 
+    - test nesting...
+    - Q: can we get rid of the editor block??:
+      - CSS breaks if we do...
+      - need to figure out a way to handle autofocus for host/editor uniformly 
+    - 
+  - ASAP: FEATURE: images as blocks...
   - ASAP: expand sub-tree on follow link...
   - ASAP TEST: attributes: finalize base mechanics...
   - attributes: need to show/hide the attributes -- option?
@@ -169,7 +197,7 @@ var setup = function(){
     - delete attr from code -- by removing it from attr list (when shown)...
     - DONE BUG? can't set `''` as attr value -- parser??
   - TOC: tweaking: add args like depth, ... -- as attributes...
-  - TOC: persistently generate as code
+  - TOC: persistently generate as code (option)
     - ```
       TOC
       ```
@@ -191,14 +219,8 @@ var setup = function(){
       - DOM -- current
       - text
     - DOM/JSON would require a post-load generation stage...
-  - simple use strategies:
-    - custom element
-	- constructor
-  - FEATURE: images as blocks...
   - export auto-headings as normal/manual markdown headings...
     - add plugin callback on `.text(..)` / ...
-  - Time to think about a standalone client -- at least to edit own notes as a test...
-    - _also this would be a nice opportunity to start the move to a newer electron version_
   - Might be a good idea to think how to avoid the constant selections on focus...
   - Focus of elements needs cleanup...
     - navigation up/down to a root element is a bit jumpy...
@@ -246,29 +268,13 @@ var setup = function(){
       - | A | B | C |
       - |  |  |  |
       -
-  - custom element / web component
-    - BUG: select via double/triple clicks does not work...
-	  - _looks like something is refocusing the element..._
-    - BUG/race: the non-value versions of custom elem seem to sometimes get loaded as empty...
-    - DONE data interface:
-	  collapsed:: true
-      - the "natural" way to pass data is to use the same mechanism as `<textarea>` the problem is that we can't extend `HTMLTextAreaElement` as it can not have shadow dom (reject?)
-      - adding an explicit textarea element is an odd requirement (reject?)
-      - seems that the least bad way to go is to use the `value` attribute
-    - DONE API: directly mixin Outline?
-    - DONE `.value` / `.code` should be both updated internally and also load new content when updated externally -- not yet sure how...
-    - events 
-    - test nesting...
-    - Q: can we get rid of the editor block??:
-      - CSS breaks if we do...
-      - need to figure out a way to handle autofocus for host/editor uniformly 
-    - 
   - node selection
     - DONE multiple node selection (via shift+motion)
       - fixed state -- while `shift` pressed select or deselect only depending on first action (a-la FAR)
     - DONE double/triple click working...
     - delete
-    - copy/cut/past (???)
+    - copy/cut/paste (???)
+	  - _idea: cope as code and parse on paste..._
     - touch/mouse (???)
   - Q: should we select text through multiple nodes??
     - _...should this turn into node selection as soon as node boundary is crossed???_
@@ -276,7 +282,6 @@ var setup = function(){
   - numbered lists: add counters to a depth of 6-7...
     - _or find a way to make them repeat..._
   - FEATURE: read-only mode
-  - FEATURE: TOC (???)
   - FEATURE: auto-shift done blocks to the end of siblings... (option?)
     - ...or should this be `sort:: done` -- i.e. sort children by done status??
   - codeblock as a block
