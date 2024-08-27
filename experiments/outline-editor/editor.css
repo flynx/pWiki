@@ -590,9 +590,12 @@
 	.XXX>.view {
 		background: yellow;
 	}
+	.XXX:hover>.view {
+		background: rgb(253, 218, 13, 0.5) !important;
+	}
 	.focused.XXX>.view {
 		/* XXX can we avoid !important here??? */
-		background: #FDDA0D !important;
+		background: rgb(253, 218, 13) !important;
 	}
 }
 
