@@ -590,6 +590,10 @@
 	.XXX>.view {
 		background: yellow;
 	}
+	.focused.XXX>.view {
+		/* XXX can we avoid !important here??? */
+		background: #FDDA0D !important;
+	}
 }
 
 
