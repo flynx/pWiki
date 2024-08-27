@@ -597,6 +597,9 @@
 		/* XXX can we avoid !important here??? */
 		background: rgb(253, 218, 13) !important;
 	}
+	.focused.XXX:hover>.view {
+		background: rgb(253, 218, 13, 0.7) !important;
+	}
 }
 
 
