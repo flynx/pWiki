@@ -583,22 +583,32 @@
 
 :host .outline,
 .editor .outline {
+	--highlight-color: yellow;
+	--highlight-focus-color: rgb(253, 218, 13);
+	--highlight-hover-color: rgba(253, 218, 13, 0.5);
+	--highlight-focus-hover-color: rgba(253, 218, 13, 0.7);
+	
 	.highlight {
 		font-weight: bold;
 		background: yellow;
 	}
-	.XXX>.view {
-		background: yellow;
-	}
-	.XXX:hover>.view {
-		background: rgb(253, 218, 13, 0.5) !important;
-	}
-	.focused.XXX>.view {
-		/* XXX can we avoid !important here??? */
-		background: rgb(253, 218, 13) !important;
-	}
-	.focused.XXX:hover>.view {
-		background: rgb(253, 218, 13, 0.7) !important;
+	.XXX {
+		&>.view {
+			background: var(--highlight-color);
+		}
+		&:hover>.view {
+			background: var(--highlight-hover-color) !important;
+		}
+		&.focused {
+			&>.view,
+			&>.text {
+				/* XXX can we avoid !important here??? */
+				background: var(--highlight-focus-color) !important;
+			}
+			&:hover>.view {
+				background: var(--highlight-focus-hover-color) !important;
+			}
+		}
 	}
 }
 
