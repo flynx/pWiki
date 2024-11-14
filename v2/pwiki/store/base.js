@@ -7,7 +7,7 @@
 (function(require){ var module={} // make module AMD/node compatible...
 /*********************************************************************/
 
-var flexsearch = require('flexsearch')
+//var flexsearch = require('flexsearch')
 
 var object = require('ig-object')
 var types = require('ig-types')
@@ -460,123 +460,6 @@ module.BaseStore = {
 							&& !cur.has(t)){
 						seen.add(t)
 						yield t } } } } },
-
-
-	// XXX text search index (???)
-	// XXX do we index .data.text or .raw or .text
-	// XXX should we have separate indexes for path, text and tags or 
-	// 		cram the three together?
-	// XXX need to store this...
-	/* XXX
-	__search_options: {
-		preset: 'match',
-		tokenize: 'full',
-	},
-	//*/
-	__search: index.makeIndex('search',
-		// XXX do a load if present...
-		async function(){
-			// load index...
-			var path = this.__cache_path__ +'/search_index'
-			if(this.__cache_path__ 
-					&& await this.exists(path)){
-				return this.__search.options.load.call(this, null, 'search')
-			// generate...
-			} else {
-				var index = new flexsearch.Index(
-					this.__search_options 
-						?? {}) 
-				var update = this.__search.options.update
-				for(var path of (await this.paths)){
-					update.call(this, index, 'search', path, await this.get(path)) }
-				return index } }, {
-		update: async function(data, name, path, update){
-			/*/ XXX CACHE_INDEX...
-			// do not index cache...
-			if(this.__cache_path__ 
-					&& path.startsWith(this.__cache_path__)){
-				return data }
-			//*/
-			var {text, tags} = update
-			text = [
-				'',
-				path,
-				(text 
-						&& typeof(text) != 'function') ?
-					text
-					: '',
-				tags ?
-					'#'+ tags.join(' #')
-					: '',
-			].join('\n\n')
-			;(await data)
-				.add(path, text) 
-			// handle changes...
-			//this.__search.options.__save_changes.call(this, name, 'update', path, update)
-			return data },
-		remove: async function(data, name, path){
-			data = await data
-			data 
-				&& data.remove(path) 
-			// handle changes...
-			//this.__search.options.__save_changes.call(this, name, 'remove', path)
-			return data }, 
-		// XXX EXPERIMENTAL...
-		// XXX for this to work need to figure out how to save a page 
-		// 		without triggering an index update...
-		// 		...and do it fast!!
-		__save_changes: async function(name, action, path, ...args){
-			if(this.__cache_path__ 
-					&& !path.startsWith(this.__cache_path__)){
-				var p = [this.__cache_path__, name+'_index', 'changes'].join('/')
-				// XXX can we get/update in one op???
-				var {changes} = await this.get(p) ?? {}
-				changes = changes ?? []
-				changes.push([Date.now(), action, path, ...args])
-				// XXX this needs not to neither trigger handlers nor .index('update', ...)...
-				return this.__update(p, {changes}, 'unindexed') } },
-		save: async function(data, name){
-			if(this.__cache_path__){
-				var that = this
-				var path = this.__cache_path__ +'/'+ name+'_index'
-				//this.delete(path +'/changes')
-				// XXX HACK this thing runs async but does not return a promise...
-				// 		...this is quote ugly but I can't figure out a way to 
-				// 		track when exporting is done...
-				var index = {}
-				data.export(
-					function(key, value){
-						index[key] = value
-						return that.update(path, {index}) }) }
-				/*/
-				var index = {}
-				data.export(
-					function(key, value){
-						index[key] = value })
-				this.update(path, {index}) }
-				//*/
-			return data },
-		load: async function(data, name){
-			if(this.__cache_path__){
-				var path = this.__cache_path__ +'/'+ name+'_index'
-				var changes = path +'/changes'
-				var {index} = await this.get(path) ?? {}
-				var data = 
-					new flexsearch.Index(
-						this.__search_options 
-							?? {}) 
-				for(var [key, value] of Object.entries(index ?? {})){
-					data.import(key, value) } }
-			return data }, 
-		reset: function(_, name){
-			this.__cache_path__
-				&& this.delete(this.__cache_path__ +'/'+ name+'_index') }, }),
-	search: function(...args){
-		var s = this.__search()
-		return s instanceof Promise ?
-			s.then(function(s){
-				return s.search(...args)})
-			: s.search(...args) },
 
 
 	// XXX EXPERIMENTAL...
@@ -1518,6 +1401,129 @@ module.BaseStore = {
 				&& typeof(res) != 'string') ?
 			JSON.stringify(res, options.replacer, options.space)
 			: res },
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+// XXX BROKEN...
+var BaseStoreWithSearch = {
+	__proto__: BaseStore,
+
+	// XXX text search index (???)
+	// XXX do we index .data.text or .raw or .text
+	// XXX should we have separate indexes for path, text and tags or 
+	// 		cram the three together?
+	// XXX need to store this...
+	/* XXX
+	__search_options: {
+		preset: 'match',
+		tokenize: 'full',
+	},
+	//*/
+	__search: index.makeIndex('search',
+		// XXX do a load if present...
+		async function(){
+			// load index...
+			var path = this.__cache_path__ +'/search_index'
+			if(this.__cache_path__ 
+					&& await this.exists(path)){
+				return this.__search.options.load.call(this, null, 'search')
+			// generate...
+			} else {
+				var index = new flexsearch.Index(
+					this.__search_options 
+						?? {}) 
+				var update = this.__search.options.update
+				for(var path of (await this.paths)){
+					update.call(this, index, 'search', path, await this.get(path)) }
+				return index } }, {
+		update: async function(data, name, path, update){
+			/*/ XXX CACHE_INDEX...
+			// do not index cache...
+			if(this.__cache_path__ 
+					&& path.startsWith(this.__cache_path__)){
+				return data }
+			//*/
+			var {text, tags} = update
+			text = [
+				'',
+				path,
+				(text 
+						&& typeof(text) != 'function') ?
+					text
+					: '',
+				tags ?
+					'#'+ tags.join(' #')
+					: '',
+			].join('\n\n')
+			;(await data)
+				.add(path, text) 
+			// handle changes...
+			//this.__search.options.__save_changes.call(this, name, 'update', path, update)
+			return data },
+		remove: async function(data, name, path){
+			data = await data
+			data 
+				&& data.remove(path) 
+			// handle changes...
+			//this.__search.options.__save_changes.call(this, name, 'remove', path)
+			return data }, 
+		// XXX EXPERIMENTAL...
+		// XXX for this to work need to figure out how to save a page 
+		// 		without triggering an index update...
+		// 		...and do it fast!!
+		__save_changes: async function(name, action, path, ...args){
+			if(this.__cache_path__ 
+					&& !path.startsWith(this.__cache_path__)){
+				var p = [this.__cache_path__, name+'_index', 'changes'].join('/')
+				// XXX can we get/update in one op???
+				var {changes} = await this.get(p) ?? {}
+				changes = changes ?? []
+				changes.push([Date.now(), action, path, ...args])
+				// XXX this needs not to neither trigger handlers nor .index('update', ...)...
+				return this.__update(p, {changes}, 'unindexed') } },
+		save: async function(data, name){
+			if(this.__cache_path__){
+				var that = this
+				var path = this.__cache_path__ +'/'+ name+'_index'
+				//this.delete(path +'/changes')
+				// XXX HACK this thing runs async but does not return a promise...
+				// 		...this is quote ugly but I can't figure out a way to 
+				// 		track when exporting is done...
+				var index = {}
+				data.export(
+					function(key, value){
+						index[key] = value
+						return that.update(path, {index}) }) }
+				/*/
+				var index = {}
+				data.export(
+					function(key, value){
+						index[key] = value })
+				this.update(path, {index}) }
+				//*/
+			return data },
+		load: async function(data, name){
+			if(this.__cache_path__){
+				var path = this.__cache_path__ +'/'+ name+'_index'
+				var changes = path +'/changes'
+				var {index} = await this.get(path) ?? {}
+				var data = 
+					new flexsearch.Index(
+						this.__search_options 
+							?? {}) 
+				for(var [key, value] of Object.entries(index ?? {})){
+					data.import(key, value) } }
+			return data }, 
+		reset: function(_, name){
+			this.__cache_path__
+				&& this.delete(this.__cache_path__ +'/'+ name+'_index') }, }),
+	search: function(...args){
+		var s = this.__search()
+		return s instanceof Promise ?
+			s.then(function(s){
+				return s.search(...args)})
+			: s.search(...args) },
 }
 
 
