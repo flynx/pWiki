@@ -28,6 +28,9 @@
 
 	/*text-size-adjust: none;*/
 	text-size-adjust: 180%;
+
+	background: white;
+	color: black;
 }
 
 :host,

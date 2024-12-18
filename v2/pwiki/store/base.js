@@ -1406,6 +1406,7 @@ module.BaseStore = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 // XXX BROKEN...
+// XXX a mixin??
 var BaseStoreWithSearch = {
 	__proto__: BaseStore,
 
