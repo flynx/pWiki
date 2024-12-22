@@ -50,6 +50,14 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
+  - BUG: to level headings style may not be correct...
+    - # H1
+      - # H2
+      - some text on same level
+        - # H2 (Not H3)
+		  - this is not H3 because it is not under H2 (not in sub-tree) though it is on a deeper level...
+		  - this is not intuitive at first glance, but is logical...
+		  - Q: should we account for this?? (XXX)
   - BUG: indenting items in/out results in items below jumping down/up...
     (this only happens when in edit mode)
     - a
