@@ -963,6 +963,7 @@ var JSONOutline = {
 	// 		inheritance...
 	// 		XXX do we need this structure???
 	//
+	// XXX should we movw this to plugin and use these as override???
 	// XXX split out DOM-specific plugins into Outline.plugins...
 	pre_plugins: [
 		attributes,
