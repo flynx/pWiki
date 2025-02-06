@@ -4,6 +4,7 @@
 *
 **********************************************************************/
 
+// XXX add something like .closeToViewport(..) 
 Element.prototype.visibleInViewport = function(partial=false){
   var { top, left, bottom, right } = this.getBoundingClientRect()
   var { innerHeight, innerWidth } = window
