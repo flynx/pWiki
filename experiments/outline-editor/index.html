@@ -155,6 +155,28 @@ var setup = function(){
         |text|text|text|
   -
 - ## ToDo:
+  - Item templates:
+    - inline
+      - [template title]
+        text [cursor]
+    - sub-tree 
+      - [template title]
+        - text [cursor]
+    - multi-template
+      - [template title A]
+        text [cursor]
+      - [template title B]
+        - text [cursor]
+    - renders as:
+      - <button>title</button>
+      - <select>
+          <option>title A</option>
+          <option>title B</option>
+        </select>
+    - action
+      - duplicate template text / subtree (w.o. markers)
+      - select / place cursor at cursor marker
+    - XXX revise syntac
   - Time to think about a standalone client -- at least to edit own notes as a test...
     - _also this would be a nice opportunity to start the move to a newer electron version_
     - Deployment:
