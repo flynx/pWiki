@@ -221,6 +221,8 @@
 				/* clickable things in view */
 				& a,
 				& pre,
+                & button,
+                & select,
 				& input {
 					pointer-events: auto;
 				}

@@ -157,26 +157,44 @@ var setup = function(){
 - ## ToDo:
   - Item templates:
     - inline
-      - [template title]
+      - TEMPLATE
+        text [cursor]
+      - TEMPLATE title
         text [cursor]
     - sub-tree 
-      - [template title]
+      - TEMPLATE title
         - text [cursor]
     - multi-template
-      - [template title A]
+      - TEMPLATE title A
         text [cursor]
-      - [template title B]
+      - TEMPLATE title B
         - text [cursor]
     - renders as:
       - <button>title</button>
       - <select>
           <option>title A</option>
           <option>title B</option>
-        </select>
-    - action
+        </select><button>new</button>
+    - action:
       - duplicate template text / subtree (w.o. markers)
       - select / place cursor at cursor marker
-    - XXX revise syntac
+	- TODO:
+      - nested templates??
+      - global templates -- or should this be an external macro???
+      - revise syntax
+      - templated lists -- a list that uses a template for it's items
+        - something like:
+          - or here there is an explicit item template
+            - TEMPLATE new
+              - [ ] [cursor]
+            - [ ] A
+            - [ ] B
+            - [ ] C
+        - and a shorthand for todo:
+          - TODO in lists like this new items will be created with a todo template
+            - [ ] A
+            - [ ] B
+            - [ ] C
   - Time to think about a standalone client -- at least to edit own notes as a test...
     - _also this would be a nice opportunity to start the move to a newer electron version_
     - Deployment:

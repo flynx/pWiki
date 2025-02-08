@@ -311,6 +311,46 @@ var attributes = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
+// XXX make this collapsed...
+// XXX handle cursor marker...
+var templates = {
+	__proto__: plugin,
+
+	nodeFromTemplate: function(){
+	},
+
+	__pre_parse__: function(text, editor, elem){
+		if(!text.startsWith('TEMPLATE')){
+			return text }
+
+		text = text
+			.replace(/^TEMPLATE/, '')
+		var [header, ...lines] = text.split(/\n/g)
+		 header = 
+			`<button>${
+				header.trim() == '' ?
+					'new'
+					: header.trim()
+			}</button>`
+
+		// body...
+		// XXX only do this if we have nested elements...
+		elem.collapsed = true
+		// XXX
+		
+		// button...
+		return header },
+	// XXX focus button...
+	__focusin__: function(evt, editor, elem){
+	},
+	// XXX handle button???
+	__click__: function(evt, editor, elem){
+	},
+}
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
+
 // XXX revise headings...
 var blocks = {
 	__proto__: plugin,
@@ -967,6 +1007,7 @@ var JSONOutline = {
 	// XXX split out DOM-specific plugins into Outline.plugins...
 	pre_plugins: [
 		attributes,
+        templates,
 		blocks,
 		quoted,
 	],
