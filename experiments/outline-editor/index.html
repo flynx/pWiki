@@ -699,6 +699,22 @@ var setup = function(){
             - @ Heading
               - @ Heading
           - @ Heading
+    - Templating:
+      - Inline
+        - TEMPLATE
+          [ ] 
+        - [ ] example item
+      - Nested
+        - TEMPLATE creates [below]
+          - [ ] 
+        - [ ] example item
+        - TEMPLATE^ creates [above]
+          - [ ] 
+      - Multiple nested
+        - TEMPLATE [ToDo] [Note]
+          - [ ] 
+          - 
+        - [ ] example item
     - Attributes:
 	  id:: attributes
 	  - collapsed
