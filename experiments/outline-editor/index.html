@@ -164,10 +164,18 @@ var setup = function(){
     - sub-tree 
       - TEMPLATE title
         - text [cursor]
+      - TEMPLATE title *boo*
+        - text [cursor]
+      - TEMPLATE title [new]
+        - text [cursor]
     - multi-template
+      - TEMPLATE [A] [B] [C]
+        - aaa
+        - bbb
+        - ccc
       - TEMPLATE title A
         text [cursor]
-      - TEMPLATE title B
+      - TEMPLATE^ title B
         - text [cursor]
     - renders as:
       - <button>title</button>

@@ -311,10 +311,11 @@ var attributes = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
-// XXX make this collapsed...
 // XXX handle cursor marker...
 var templates = {
 	__proto__: plugin,
+
+	__default_button_text__: 'New',
 
 	nodeFromTemplate: function(){
 	},
@@ -326,17 +327,33 @@ var templates = {
 		text = text
 			.replace(/^TEMPLATE/, '')
 		var [header, ...lines] = text.split(/\n/g)
-		 header = 
-			`<button>${
-				header.trim() == '' ?
-					'new'
-					: header.trim()
-			}</button>`
+
+		// set direction...
+		if(header[0] == '^'){
+			header = header.slice(1) 
+			elem.create_new = 'above' 
+		} else {
+			elem.create_new = 'below' }
+		
+		// nested button...
+		var nested_button
+		header = header
+			.replace(/\[([^\]]*)\]/g, 
+				function(_, text){
+					nested_button = true
+					return `<button>${ text.trim() }</button>` })
+		// whole text is a button...
+		if(!nested_button){
+			header = 
+				`<button>${
+					header.trim() == '' ?
+						this.__default_button_text__
+						: header.trim()
+				}</button>` }
 
 		// body...
 		// XXX only do this if we have nested elements...
 		elem.collapsed = true
-		// XXX
 		
 		// button...
 		return header },
@@ -345,15 +362,22 @@ var templates = {
 		//var node = editor.get(elem)
 		//node.querySelector('button').focus() 
 	},
-	// XXX restrict this to the button???
 	__click__: function(evt, editor, elem){
-		if(evt.target.tagName == 'BUTTON'){
+		e = evt.target
+		// check if we are clicking a button...
+		while(e.tagName != 'BUTTON' 
+				&& e.parentElement != null){
+			e = e.parentElement }
+		if(e.tagName == 'BUTTON'){
 			// get template data...
 			var data = editor.data(elem)
 			// subtree...
 			if(data.children.length > 0){
-				data = data.children[0]
-			// text...
+				// get the corresponding template...
+				var i = [...editor.get(elem).querySelectorAll('button')]
+					.indexOf(e)
+				data = data.children[i]
+			// text -> trim off the TEMPLATE header...
 			} else {
 				data.text = data.text
 					.split(/\n/)
@@ -363,8 +387,10 @@ var templates = {
 			// XXX handle cursor placement / selection...
 			// XXX
 
-			// XXX how do we get this???
-			var direction = 'next'
+			var direction = 
+				editor.data(elem).create_new == 'above' ? 
+					'prev' 
+					: 'next'
 
 			editor.focus(elem)
 			editor.edit(
