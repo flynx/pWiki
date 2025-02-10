@@ -342,10 +342,21 @@ var templates = {
 		return header },
 	// XXX focus button...
 	__focusin__: function(evt, editor, elem){
+		//var node = editor.get(elem)
+		//node.querySelector('button').focus() 
 	},
-	// XXX handle button???
+	// XXX restrict this to the button???
 	__click__: function(evt, editor, elem){
-	},
+		if(evt.target.tagName == 'BUTTON'){
+			//var node = editor.get(elem)
+			//
+			// XXX get the template data...
+			var data = {}
+			var direction = 'next'
+
+			editor.focus(elem)
+			editor.edit(
+				editor.Block(data, direction)) } },
 }
 
 
