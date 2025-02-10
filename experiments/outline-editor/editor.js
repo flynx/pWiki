@@ -348,14 +348,28 @@ var templates = {
 	// XXX restrict this to the button???
 	__click__: function(evt, editor, elem){
 		if(evt.target.tagName == 'BUTTON'){
-			//var node = editor.get(elem)
-			//
-			// XXX get the template data...
-			var data = {}
+			// get template data...
+			var data = editor.data(elem)
+			// subtree...
+			if(data.children.length > 0){
+				data = data.children[0]
+			// text...
+			} else {
+				data.text = data.text
+					.split(/\n/)
+					.slice(1)
+					.join('\n') }
+
+			// XXX handle cursor placement / selection...
+			// XXX
+
+			// XXX how do we get this???
 			var direction = 'next'
 
 			editor.focus(elem)
 			editor.edit(
+				// XXX BUG? currently this only creates a single node, 
+				// 		should be recursive...
 				editor.Block(data, direction)) } },
 }
 
