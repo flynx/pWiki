@@ -357,10 +357,10 @@ var templates = {
 		
 		// button...
 		return header },
-	// XXX focus button...
+	// XXX focus button -- see todo...
 	__focusin__: function(evt, editor, elem){
-		//var node = editor.get(elem)
-		//node.querySelector('button').focus() 
+		//elem.classList.contains('block')
+		//	&& elem.querySelector('button').focus() 
 	},
 	__click__: function(evt, editor, elem){
 		e = evt.target
@@ -384,7 +384,7 @@ var templates = {
 					.slice(1)
 					.join('\n') }
 
-			// XXX handle cursor placement / selection...
+			// XXX handle cursor placement / selection markers...
 			// XXX
 
 			var direction = 
@@ -395,7 +395,7 @@ var templates = {
 			editor.focus(elem)
 			editor.edit(
 				// XXX BUG? currently this only creates a single node, 
-				// 		should be recursive...
+				// 		should be recursive, i.e. subtree...
 				editor.Block(data, direction)) } },
 }
 

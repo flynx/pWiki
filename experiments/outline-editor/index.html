@@ -50,6 +50,14 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
+  - BUG: need to account for hidden elements when cursoring between elements
+    - to reproduce::
+      - XXX move from/to this element
+      - abcdefghijklmnopqrstuvwxyz
+      - [ ] and to/from this (this produces a small shift compared the the above)
+    - there's a simple and a complex solutions to this:
+      - simple: avoid hiding stuff -- not sure if this is achivable
+      - complex: estimate size of elements, including hidden ones, and account for them
   - BUG: to level headings style may not be correct...
     - # H1
       - # H2
