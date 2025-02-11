@@ -338,14 +338,17 @@ var templates = {
 		// nested button...
 		var nested_button
 		header = header
+			.trim()
 			.replace(/\[([^\]]*)\]/g, 
 				function(_, text){
 					nested_button = true
-					return `<button>${ text.trim() }</button>` })
+					return `<button class="template-action">${ 
+							text.trim() 
+						}</button>` })
 		// whole text is a button...
 		if(!nested_button){
 			header = 
-				`<button>${
+				`<button class="template-action">${
 					header.trim() == '' ?
 						this.__default_button_text__
 						: header.trim()
@@ -368,6 +371,8 @@ var templates = {
 		while(e.tagName != 'BUTTON' 
 				&& e.parentElement != null){
 			e = e.parentElement }
+		if(!e.classList.contains('template-action')){
+			return }
 		if(e.tagName == 'BUTTON'){
 			// get template data...
 			var data = editor.data(elem)
