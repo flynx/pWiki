@@ -164,19 +164,22 @@ var setup = function(){
   -
 - ## ToDo:
   - Item templates:
-    - inline
+    - inline DONE
+	  collapsed:: true
       - TEMPLATE
         text [cursor]
       - TEMPLATE title
         text [cursor]
-    - sub-tree 
+    - sub-tree DONE
+	  collapsed:: true
       - TEMPLATE title
         - text [cursor]
       - TEMPLATE title *boo*
         - text [cursor]
       - TEMPLATE title [new]
         - text [cursor]
-    - multi-template
+    - multi-template DONE
+	  collapsed:: true
       - TEMPLATE [A] [B] [C]
         - aaa
         - bbb
@@ -719,7 +722,8 @@ var setup = function(){
         - TEMPLATE^ creates [above]
           - [ ] 
       - Multiple nested
-        - TEMPLATE [ToDo] [Note]
+        - TEMPLATE [\ASAP] [ToDo] [Note]
+          - [ ] ASAP 
           - [ ] 
           - 
         - [ ] example item
