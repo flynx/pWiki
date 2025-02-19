@@ -357,7 +357,9 @@ var templates = {
 		// body...
 		// XXX only do this if we have nested elements...
 		elem.collapsed = true
-		
+
+		elem.ignore = true
+
 		// button...
 		return header },
 	// XXX focus button -- see todo...
@@ -532,6 +534,7 @@ var quoted = {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
+// XXX add ability to skip subtree from status calculation...
 var tasks = {
 	__proto__: plugin,
 
@@ -558,6 +561,8 @@ var tasks = {
 					return res }, {})) },
 
 	// State...
+	// NOTE: this will not count checkboxes under '[ignore]', this is 
+	// 		useful for not ounting items withing templates and the like...
 	updateStatus: function(editor, node){
 		node = editor.get(node)
 		if(node == null){
@@ -566,10 +571,16 @@ var tasks = {
 			.querySelector('.view')
 				.querySelector('.completion')
 		if(state){
+			var checkboxes = 
+				node.querySelectorAll('input[type=checkbox]').length 
+				// XXX should we check ignore value here???
+				- node.querySelectorAll('[ignore] input[type=checkbox]').length
+			var checkboxes_checked = 
+				node.querySelectorAll('input[type=checkbox]:checked').length 
+				// XXX should we check ignore value here???
+				- node.querySelectorAll('[ignore] input[type=checkbox]:checked').length
 			var c = 
-				((node.querySelectorAll('input[type=checkbox]:checked').length
-						/ node.querySelectorAll('input[type=checkbox]').length)
-					* 100)
+				((checkboxes_checked / checkboxes) * 100)
 				.toFixed(0)
 			!isNaN(c)
 				&& state.setAttribute('completion', c +'%') }
@@ -1045,6 +1056,7 @@ var JSONOutline = {
 	__block_attrs__: {
 		id: 'attr',
 		collapsed: 'attr',
+		ignore: 'attr',
 		focused: 'cls',
 	},
 

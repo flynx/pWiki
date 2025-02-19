@@ -50,6 +50,7 @@ var setup = function(){
   - 
 - ## Bugs:
   focused:: true
+  - BUG: refreshes under FF sometimes produce partial/inconsistent views...
   - BUG: need to account for hidden elements when cursoring between elements
     - to reproduce::
       - XXX move from/to this element
@@ -219,10 +220,18 @@ var setup = function(){
             - [ ] B
             - [ ] C
         - and a shorthand for todo:
-          - TODO in lists like this new items will be created with a todo template
+          - TODO in lists like this new items will be created with a todo 
+            template automatically (???)
             - [ ] A
             - [ ] B
             - [ ] C
+        - Need to ignore the template subtree in `[%]` calculation... DONE
+          collapsed:: true
+          - Example [%] (should be 50%)
+            - TEMPLATE new
+              - [ ] 
+            - [x] Done
+            - [ ] Undone
   - Time to think about a standalone client -- at least to edit own notes as a test...
     - _also this would be a nice opportunity to start the move to a newer electron version_
     - Deployment:
