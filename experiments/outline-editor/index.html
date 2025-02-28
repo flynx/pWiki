@@ -178,15 +178,15 @@ var setup = function(){
 	- cordova app
 	  - fs ???
   - Item templates:
-	collapsed:: true
+    - ASAP keyboard actuation (a-la checkboxes)
     - inline DONE
-	  collapsed:: true
+	    collapsed:: true
       - TEMPLATE
         text [cursor]
       - TEMPLATE title
         text [cursor]
     - sub-tree DONE
-	  collapsed:: true
+	    collapsed:: true
       - TEMPLATE title
         - text [cursor]
       - TEMPLATE title *boo*
@@ -194,7 +194,7 @@ var setup = function(){
       - TEMPLATE title [new]
         - text [cursor]
     - multi-template DONE
-	  collapsed:: true
+	    collapsed:: true
       - TEMPLATE [A] [B] [C]
         - aaa
         - bbb
@@ -212,7 +212,7 @@ var setup = function(){
     - action:
       - duplicate template text / subtree (w.o. markers)
       - select / place cursor at cursor marker
-	- TODO:
+    - TODO:
       - nested templates??
       - global templates -- or should this be an external macro???
       - revise syntax
@@ -706,15 +706,6 @@ var setup = function(){
       - ---
     - # Markers: 
       - ASAP, TEST, BUG, FIX, HACK, STUB, WARNING, and CAUTION 
-    - # Basic task management
-      - [%] Completion status
-        - Inline [X] checkboxes [_]
-        - To do items/blocks
-          - [_] undone item
-            _(clicking the checkbox updates the item)_
-          - [X] done item
-          - [_] we can also add inline [x] checkboxes and states: [%]
-        - navigating checkboxes in view mode can be done via `ctrl-left` / `ctrl-right` and toggling is done via `space`
     - # links
       - [link](about:blank)
       - [local links](#attributes)
@@ -740,6 +731,20 @@ var setup = function(){
             - @ Heading
               - @ Heading
           - @ Heading
+    - # Basic task management
+      - [%] Completion status
+        - Inline [X] checkboxes [_]
+        - To do items/blocks
+          - [_] undone item
+            _(clicking the checkbox updates the item)_
+          - [X] done item
+          - [_] we can also add inline [x] checkboxes and states: [%]
+        - Navigating checkboxes in view mode can be done via `ctrl-left` / `ctrl-right` and toggling is done via `space`
+        - Setting `ignore:: true` will not count the nested checkboxes 
+          in the parent status (see child checkboxes)
+          collapsed:: true
+          ignore:: true
+          - [X] these [ ] checkboxes are ignored from the above summery status.
     - # Templating:
       - # Inline
         - TEMPLATE
