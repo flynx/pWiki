@@ -631,23 +631,24 @@ var setup = function(){
   - ### Formatting
     - The formatting mostly adheres to the markdown spec with a few minor differences
     -
-    - Styles:
-      - Automatic Headings
+    - # Node styles:
+      - # Automatic Headings
+        - Heading level is determined by topology
+        - # Heading
+          - # Heading
+            - # Heading
+              - ...
+        - NOTE: Heading created via `@` will not show up in index.
+      - # Manual Headings (disabled)
+        collapsed:: true
         - @ Heading 1
-          - @ Heading 2
-            - @ Heading 3
-              - @ Heading 4
-                - @ Heading 5
-                  - @ Heading 6
-      - Manual Headings
-        - # Heading 1
-        - ## Heading 2
-        - ### Heading 3
-        - #### Heading 4
-        - ##### Heading 5
-        - ###### Heading 6
-      - Text
-      - Lists::
+        - @@ Heading 2
+        - @@@ Heading 3
+        - @@@@ Heading 4
+        - @@@@@ Heading 5
+        - @@@@@@ Heading 6
+      - # Text
+      - # Lists::
         - bullet:
           - a:
             collapsed:: true
@@ -675,21 +676,25 @@ var setup = function(){
             - y
             - z
           - c
-      - > quote
-      - Notes
+      - # Quoting
+        - > quote
+      - # Notes
           - NOTE: a note text
           - NOTE:
             - a root note can also be empty
             - click on the outer border to edit root
-      - // C-style comment
-      - ; ASM-style comment
+      - # Comments
+        - // C-style comment
+        - ; ASM-style comment
       - XXX Highlight
-	  - Status (toggle all via: `alt-s`)
-        - DONE Done (toggled via: `alt-x`)
-        - REJECT Reject (toggled via: `alt-r`)
-    - Basic inline *bold*, _italic_ and ~striked~
-    - Marking ==text==
-    - Code:
+    - # Status 
+      - Status of any node can be toggled via: `alt-s`
+        - DONE Done (explicitly toggled via: `alt-x`)
+        - REJECT Reject (explicitly toggled via: `alt-r`)
+    - # Inline styles:
+      - Basic inline *bold*, _italic_ and ~striked~
+      - Marking ==text==
+    - # Code:
       - Inline quoting `html <b>code</b>`
       - code blocks
         ```javascript
@@ -697,34 +702,36 @@ var setup = function(){
 
         console.log(text)
         ```
-	- Line
-		- ---
-	- Markers: ASAP, TEST, BUG, FIX, HACK, STUB, WARNING, and CAUTION 
-    - Basic task management
+    - # Line
+      - ---
+    - # Markers: 
+      - ASAP, TEST, BUG, FIX, HACK, STUB, WARNING, and CAUTION 
+    - # Basic task management
       - [%] Completion status
         - Inline [X] checkboxes [_]
-	    - To do items/blocks
-	      - [_] undone item
+        - To do items/blocks
+          - [_] undone item
             _(clicking the checkbox updates the item)_
-	      - [X] done item
-	      - [_] we can also add inline [x] checkboxes and states: [%]
+          - [X] done item
+          - [_] we can also add inline [x] checkboxes and states: [%]
         - navigating checkboxes in view mode can be done via `ctrl-left` / `ctrl-right` and toggling is done via `space`
-	- links
+    - # links
       - [link](about:blank)
       - [local links](#attributes)
       - https://example.com
       - ./path/to/file /path/to -- _not supported yet_
-    - Tables
+    - # Tables
       - | a | b | c |
         | 1 | 2 | 3 |
         | 11 | 22 | 33 |
-    - Symbols -- _should these be ligatures?_
+    - # Symbols
+      - _should these be ligatures?_
       - (i), (c), /!\, ...
-	  - -- and ---
-    - Table of content
-      - Global
+      - -- and ---
+    - # Table of content
+      - # Global
         - TOC
-      - Local
+      - # Local
         - toc
         - demo content
           collapsed:: true
@@ -733,38 +740,38 @@ var setup = function(){
             - @ Heading
               - @ Heading
           - @ Heading
-    - Templating:
-      - Inline
+    - # Templating:
+      - # Inline
         - TEMPLATE
           [ ] 
         - [ ] example item
-      - Nested
+      - # Nested
         - TEMPLATE creates [below]
           - [ ] 
         - [ ] example item
         - TEMPLATE^ creates [above]
           - [ ] 
-      - Multiple nested
+      - # Multiple nested
         - TEMPLATE [\ASAP] [ToDo] [Note]
           - [ ] ASAP 
           - [ ] 
           - 
         - Q: should we include button text in item???
-    - Attributes:
-	  id:: attributes
-	  - collapsed
-	    collapsed:: true
-		- a
-		- b
-		- c
+    - # Attributes:
+      id:: attributes
+      - collapsed
+        collapsed:: true
+        - a
+        - b
+        - c
       - id
-	    id:: node-with-id
-	  - combined
+        id:: node-with-id
+      - combined
         id:: combined-several-ids
-		collapsed:: true
-		- a
-		- b
-		- c
+        collapsed:: true
+        - a
+        - b
+        - c
     - 
   - ---
   - ### Playground for testing
