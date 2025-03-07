@@ -164,6 +164,50 @@ var getText = function(elem){
 
 //---------------------------------------------------------------------
 // Plugins...
+//
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//
+// 	var somePlugin = {
+// 		__proto__: plugin,
+//
+// 		XXX
+// 	}
+//
+// 	.encode(<str>)
+// 		-> <str>
+//
+//	.__setup__(<editor>)
+//		-> <this>
+//
+//
+// 	.__parse_code__(<string>, <editor>, <elem>)
+// 		-> <string>
+//
+//
+// 	.__pre_parse__(<string>, <editor>, <elem>)
+// 		-> <string>
+//
+// 	.__parse__(<string>, <editor>, <elem>)
+// 		-> <string>
+//
+// 	.__post_parse__(<string>, <editor>, <elem>)
+// 		-> <string>
+//
+//
+//	.__parse_attrs__(<attrs>, <editor>, <elem>)
+//		-> <attrs>
+//
+//	.__click__()
+//	.__focusin__()
+//	.__focusout__()
+//	.__keydown__()
+//	.__keyup__()
+//	.__editedcode__()
+//
+//
+//
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//
 
 // general helpers and utils...
 var plugin = {
