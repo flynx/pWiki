@@ -197,13 +197,21 @@ var getText = function(elem){
 //	.__parse_attrs__(<attrs>, <editor>, <elem>)
 //		-> <attrs>
 //
+//	.__change__()
+//
+//	.__editedview__()
+//	.__editedcode__()
+//
 //	.__click__()
 //	.__focusin__()
 //	.__focusout__()
 //	.__keydown__()
 //	.__keyup__()
-//	.__editedcode__()
 //
+//
+// NOTE: new extension methods can be defined/called in plugins via 
+// 		the .runPlugins(..) method.
+// 		
 //
 //
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
