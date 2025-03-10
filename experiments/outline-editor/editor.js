@@ -212,6 +212,7 @@ var getText = function(elem){
 // NOTE: new extension methods can be defined/called in plugins via 
 // 		the .runPlugins(..) method.
 // XXX reference where (plugin) a method is defined if it is not system...
+// 		...both hereand in the plugin itself.
 // 		
 //
 //
