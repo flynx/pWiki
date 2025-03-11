@@ -167,15 +167,6 @@ var getText = function(elem){
 //
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-// 	var somePlugin = {
-// 		__proto__: plugin,
-//
-// 		XXX
-// 	}
-//
-// 	.encode(<str>)
-// 		-> <str>
-//
 //	.__setup__(<editor>)
 //		-> <this>
 //
@@ -207,6 +198,10 @@ var getText = function(elem){
 //	.__focusout__()
 //	.__keydown__()
 //	.__keyup__()
+//
+//
+// 	.encode(<str>)
+// 		-> <str>
 //
 //
 // NOTE: new extension methods can be defined/called in plugins via 
