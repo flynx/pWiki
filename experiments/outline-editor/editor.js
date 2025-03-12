@@ -362,6 +362,7 @@ var attributes = {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -      
 
 // XXX handle cursor marker...
+// XXX do button naviigation a-la tasks...
 var templates = {
 	__proto__: plugin,
 
