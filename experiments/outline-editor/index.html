@@ -166,19 +166,20 @@ var setup = function(){
 - ## ToDo:
   - ASAP Basic standalone client (file-oriented)
     - _the main idea is to provide a minimal usable app with syncable data_
-    - PWA (shared api)
-	  - localStorage
-	  - FileSystemAPI
-        - is this usable???
-          ...this boils down to if we need to ask for access every run or
-          once per install, if it's the former this API is essentially 
-		  unusable... 
-		- basic conflict resolution (external sync)
-	  - Nextcloud (???)
-	- Desktop / electron app
-	  - node fs
-	- Mobile / cordova app
-	  - fs
+    - Levels::
+      - PWA (shared api)
+        - localStorage
+        - FileSystemAPI
+          - is this usable???
+              ...this boils down to if we need to ask for access every run or
+              once per install, if it's the former this API is essentially 
+              unusable... 
+        - Conflict resolution
+      - Nextcloud (???)
+      - Desktop / electron app
+        - node fs
+      - Mobile / cordova app
+        - fs
   - Item templates:
     - ASAP keyboard actuation (a-la checkboxes)
     - inline DONE
