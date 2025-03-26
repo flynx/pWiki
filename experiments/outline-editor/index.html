@@ -188,13 +188,13 @@ var setup = function(){
   - Item templates:
     - ASAP keyboard actuation (a-la checkboxes)
     - inline DONE
-	    collapsed:: true
+        collapsed:: true
       - TEMPLATE
         text [cursor]
       - TEMPLATE title
         text [cursor]
     - sub-tree DONE
-	    collapsed:: true
+        collapsed:: true
       - TEMPLATE title
         - text [cursor]
       - TEMPLATE title *boo*
@@ -202,7 +202,7 @@ var setup = function(){
       - TEMPLATE title [new]
         - text [cursor]
     - multi-template DONE
-	    collapsed:: true
+        collapsed:: true
       - TEMPLATE [A] [B] [C]
         - aaa
         - bbb
@@ -249,35 +249,35 @@ var setup = function(){
     - _also this would be a nice opportunity to start the move to a newer electron version_
     - Deployment:
       - html
-  	  - constructor
-  	  - events/callbacks
+      - constructor
+      - events/callbacks
         - basic storage adapters (LocalStorage/SessionStorage, FileAPI, IndexDB???)
           - _...Did I say that I hate how they crippled the FileAPI to the point
             that it is only usable for cool demos and not usable for any serious 
             applications..._
-  	  - plugin API (???)
+      - plugin API (???)
       - web component
         collapsed:: true
-  	  - tag/attrs
-  	  - resolve issues and unify text containmet:
-  	    - `value=...` attr
-  		  quote escaping (editing html/export/save)
-  	    - tag body
-  		  escaping html stuff
-            escaping `</outline-editor>` in code
-  	    - custom escaping api per input/output stream/source...
-  	  - events
+      - tag/attrs
+      - resolve issues and unify text containmet:
+        - `value=...` attr
+          quote escaping (editing html/export/save)
+        - tag body
+          escaping html stuff
+          escaping `</outline-editor>` in code
+        - custom escaping api per input/output stream/source...
+      - events
         - basic storage adapters
-  	  - plugin API (???)
-  	  - XXX load issues???
+      - plugin API (???)
+      - XXX load issues???
       - file editor (electron/web)
       - notes (pWiki/electron/web)
   - custom element / web component
     - BUG: select via double/triple clicks does not work...
-	  - _looks like something is refocusing the element..._
+      - _looks like something is refocusing the element..._
     - BUG/race: the non-value versions of custom elem seem to sometimes get loaded as empty...
     - DONE data interface:
-	  collapsed:: true
+      collapsed:: true
       - the "natural" way to pass data is to use the same mechanism as `<textarea>` the problem is that we can't extend `HTMLTextAreaElement` as it can not have shadow dom (reject?)
       - adding an explicit textarea element is an odd requirement (reject?)
       - seems that the least bad way to go is to use the `value` attribute
@@ -871,4 +871,4 @@ var setup = function(){
 
 </body>
 </html>
-<!-- vim:set ts=4 sw=4 nowrap : -->
+<!-- vim:set ts=2 sw=2 expandtab nowrap : -->
