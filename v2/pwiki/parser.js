@@ -441,8 +441,132 @@ module.BaseParser = {
 	// 		- expand local macros
 	// 		- collect links
 	// 		- ...
-	ast: function*(...args){
-		yield* this.group(...args) },
+	ast: function(...args){
+		return [...this.group(...args)] },
+
+	// XXX NEW_PARSER
+	// 		the parser is always sync
+	// 			- macros always return sync but can be resolved or not resolved
+	// 			- each level is always sequential
+	// 			- isolated macros can be resolved in any order
+	// 			- macros can wait on:
+	// 				- nested
+	// 					e.g. a @var needs all the previous @var's to resolve 
+	// 					but does not care about isolated @include's
+	// 				- full
+	// 					a full include needs all nesteds to resolve, both 
+	// 					isolated and not
+	// 			- first nested item in one macro waits for last relevant 
+	// 				nested item in previous macro -> i.e. for previous 
+	// 				macro to resolve in a relevant way...
+	// 			- everything returns an ast
+	// 			- callbacks/events/handlers to trigger on specific macro 
+	// 				resolution
+	// XXX Remove async/await... (???)
+	//			- for trivial stuff they are nice
+	//			- infectios -- force all subsequent levels to use async/await
+	//			- provide no alternatives
+	//				...i.e. promises can be extended to indlude partial 
+	//				states and the like, async/await can't...
+	// XXX Q: do we need generators?
+	// XXX Handle errors...
+	fullAST: true,
+	// XXX this needs a careful rewrite of the .macros.* for the new scheme:
+	// 		- expand
+	// 		- "merge"
+	// 			a rendering API: a set ov events/callbacks allowing both 
+	// 			sync (text) and async (DOM) rendering
+	// 			in the simplest form: take the expanded AST and merge 
+	// 			into a single string
+	_expand: function(page, ast, state={}){
+		var that = this
+		ast = typeof(ast) != 'object' ?
+				this.group(page, ast)
+			: ast instanceof types.Generator ?
+				ast
+			: ast.iter()
+
+		// XXX revise names...
+		state.waitNested ??= false
+		var waitFull = new Set()
+		state.waitFull instanceof Promise 
+			&& waitFull.add(state.waitFull)
+		var resolve, reject
+		state.waitFull = new Promise(function(){
+			;[resolve, reject] = arguments })
+
+		var children = state.children ??= []
+
+		for(var elem of ast){
+			// text block...
+			if(typeof(elem) == 'string'){
+				children.push(elem)
+				continue }
+
+			// macro...
+			var {name, args, body} = elem
+
+			// nested macro -- skip...
+			// XXX revise...
+			if(typeof(that.macros[name]) != 'function'){
+				children.push({...elem, skip: true}) 
+				continue }
+
+			// call macro...
+			var res = that.callMacro(page, name, args, body, state)
+			// async...
+			if(res instanceof Promise){
+				state.waitFull.add(res)
+				if(!res.isolated){
+					state.waitNested = res }
+				res.then(
+					function(value){
+						state.waitFull.delete(res)
+						if(state.waitNested === res){
+							state.waitNested = false }
+						elem.value = value },
+					function(err){
+						state.errors ??= []
+						state.errors.push(elem)
+						elem.error = err })
+			// sync...
+			} else if('fullAST' in state ?
+						state.fullAST
+					: 'fullAST' in page ?
+						page.fullAST
+					: this.fullAST){
+				elem.value = res
+			} else {
+				elem = res }
+			children.push(elem) }
+
+		// wait for isolated macros to resolve...
+		if(waitFull.size > 0){
+			Promise.all(waitFull)
+				.then(
+					function(res){
+						resolve(res) },
+					function(err){
+						reject(res) }) 
+		// done...
+		} else {
+			/* XXX should we reject here???
+			//		...technically we do not need to completely break 
+			//		unless something is really broken + we can always check
+			//		.errors...
+			//		but on the other hand the async version will reject 
+			//		if at least one error is detected...
+			'errors' in state ?
+				reject(state)
+				: resolve(state)
+			/*/
+			resolve(state)
+			//*/
+			state.waitFull = false }
+
+		return state },
+
+
 
 
 	// Expand macros...
@@ -735,6 +859,8 @@ module.parser = {
 					: v
 				return v
 					|| (args['else']
+						// XXX PARSE should this be page-level (cur) or parser-level???
+						// XXX should we await here???
 						&& this.parse(args['else'])) }),
 		'': Macro(
 			['name', 'else', ['local']],
@@ -1161,6 +1287,7 @@ module.parser = {
 
 				// parse arg values...
 				name = name ?
+					// XXX PARSE should this be page-level (cur) or parser-level???
 					await this.parse(name, state)
 					: name
 
@@ -1232,6 +1359,7 @@ module.parser = {
 				var name = args.name
 				if(!name){
 					return '' }
+				// XXX PARSE should this be page-level (cur) or parser-level???
 				name = await this.parse(name, state)
 				// XXX INC_DEC
 				var inc = args.inc
@@ -1303,6 +1431,7 @@ module.parser = {
 				// set...
 				if(text){
 					text = vars[name] = 
+						// XXX PARSE should this be page-level (cur) or parser-level???
 						await this.parse(text, state)
 					return show ?? false ?
 						text
@@ -1315,6 +1444,7 @@ module.parser = {
 				state.vars 
 					?? {}
 			for(var [name, value] of Object.entries(args)){
+				// XXX PARSE should these be page-level (cur) or parser-level???
 				vars[await this.parse(name, state)] =
 					await this.parse(value, state) }
 			return '' },
