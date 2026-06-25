@@ -22,8 +22,9 @@ typeof(module) != "undefined"
 
 
 // XXX add support for json...
-glob('bootstrap/**/*.@(tpl|md|css|html|txt)')
-	.on('match', function(path){
+new glob.Glob('bootstrap/**/*.@(tpl|md|css|html|txt)', {})
+	.stream()
+	.on('data', function(path){
 		var p = path
 			.replace('bootstrap/', '')
 			.replace(/\.(json|txt|md|css|html|txt)/, '')

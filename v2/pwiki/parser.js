@@ -437,6 +437,14 @@ module.BaseParser = {
 			// normal value...
 			yield value } }, 
 
+	// XXX do we need a pre-parse stage???
+	// 		- expand local macros
+	// 		- collect links
+	// 		- ...
+	ast: function*(...args){
+		yield* this.group(...args) },
+
+
 	// Expand macros...
 	//
 	//	<ast> ::= [ <item>, .. ]

@@ -4,30 +4,33 @@
   "author": "Alex A. Naanou <alex.nanou@gmail.com>",
   "license": "BSD",
   "dependencies": {
-    "@toast-ui/editor": "^3.2.0",
-    "any-date-parser": "^1.5.3",
-    "file-saver": "^2.0.5",
-    "flexsearch": "^0.7.43",
-    "glob": "*",
-    "idb-keyval": "^6.2.0",
     "ig-actions": "*",
     "ig-features": "*",
     "ig-object": "*",
-    "ig-types": "^6.26.2",
-    "jszip": "*",
-    "medium-editor": "^5.23.3",
-    "medium-editor-markdown": "^3.2.2",
-    "pouchdb": "^7.3.0",
-    "pouchdb-browser": "^7.3.0",
+    "ig-types": "*",
+
     "requirejs": "*",
-    "showdown": "^2.1.0"
+    "uuid": "*",
+    "glob": "*",
+    "jszip": "*",
+
+    "any-date-parser": "*",
+    "file-saver": "*",
+    "flexsearch": "*",
+    "idb-keyval": "*"
   },
   "disabled-dependencies": {
     "peer": "*",
     "pouch-replicate-webrtc": "*",
     "pouchdb": "*",
     "showdown": "*",
-    "xss": "*"
+    "xss": "*",
+    "@toast-ui/editor": "*",
+    "medium-editor": "*",
+    "medium-editor-markdown": "*",
+    "pouchdb": "*",
+    "pouchdb-browser": "*",
+    "showdown": "*"
   },
   "scripts": {
     "bootstrap": "node scripts/bootstrap.js"
