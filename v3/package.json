@@ -1,0 +1,38 @@
+{
+  "name": "pWiki",
+  "version": "0.0.1",
+  "author": "Alex A. Naanou <alex.nanou@gmail.com>",
+  "license": "BSD",
+  "dependencies": {
+    "requirejs": "*",
+    "uuid": "*",
+    "glob": "*",
+    
+    "ig-actions": "*",
+    "ig-features": "*",
+    "ig-object": "*",
+    "ig-types": "*",
+    "ig-test": "*"
+  },
+  "disabled-dependencies": {
+    "jszip": "*",
+    "any-date-parser": "*",
+    "file-saver": "*",
+    "flexsearch": "*",
+    "idb-keyval": "*",
+    "peer": "*",
+    "pouch-replicate-webrtc": "*",
+    "pouchdb": "*",
+    "showdown": "*",
+    "xss": "*",
+    "@toast-ui/editor": "*",
+    "medium-editor": "*",
+    "medium-editor-markdown": "*",
+    "pouchdb": "*",
+    "pouchdb-browser": "*",
+    "showdown": "*"
+  },
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.js"
+  }
+}

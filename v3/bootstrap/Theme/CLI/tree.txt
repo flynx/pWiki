@@ -1,0 +1,2 @@
+@source(../name)<macro src="../*">
+  <include src="@source(./path)/tree" recursive="..."/></macro>

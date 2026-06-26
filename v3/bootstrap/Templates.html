@@ -1,0 +1,20 @@
+<p>
+XXX Genereal template description...
+</p>
+
+<macro name="show-source" src="./**" sort="path">
+	<hr>
+	<h2>
+		<a href="#@source(./path)/_edit">@source(./path)</a>
+	</h2>
+	<p>
+		<pre><code>@quote(./raw)</code></pre>
+	</p>
+</macro>
+
+<macro name="show-source" src="Templates"/>
+
+<macro name="show-source" src="System/style"/>
+
+<!-- @filter(-wikiword) -->
+<!-- vim:set ts=4 sw=4 : -->
