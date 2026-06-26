@@ -956,6 +956,82 @@ module.parser = {
 	// XXX ASYNC make these support async page getters...
 	macros: {
 
+		// Filter...
+		//
+		// 	@filter(<filter-spec>)
+		// 	<filter <filter-spec>/>
+		//
+		// 	<filter <filter-spec>>
+		// 		...
+		// 	</filter>
+		//
+		// 	<filter-spec> ::=
+		// 		<filter> <filter-spec>
+		// 		| -<filter> <filter-spec>
+		//
+		// XXX BUG: this does not show any results:
+		//			pwiki.parse('<filter test>moo test</filter>')
+		//				-> ''
+		//		while these do:
+		//    		pwiki.parse('<filter test/>moo test')
+		//				-> 'moo TEST'
+		//			await pwiki.parse('<filter test>moo test</filter>@var()')
+		//				-> 'moo TEST'
+		//		for more info see:
+		//			file:///L:/work/pWiki/pwiki2.html#/Editors/Results
+		//		XXX do we fix this or revise how/when filters work???
+		//			...including accounting for variables/expansions and the like...
+		// XXX REVISE...
+		// XXX UPDATE...
+		filter: function(parser, args, body, state, expand=true){
+			var that = this
+
+			var outer = state.filters = 
+				state.filters ?? []
+			var local = Object.keys(args)
+
+			// trigger quote-filter...
+			var quote = local
+				.map(function(filter){
+					return (that.filters[filter] ?? {})['quote'] ?? [] })
+				.flat()
+			quote.length > 0
+				&& parser.macros['quote-filter'].call(
+					this, 
+					parser, 
+					Object.fromEntries(Object.entries(quote)), 
+					null, 
+					state)
+
+			// local filters...
+			if(body != null){
+				// expand the body...
+				var ast = expand ?
+						this.__parser__.expand(this, body, state)
+					: body instanceof Array ?
+						body
+					// NOTE: wrapping the body in an array effectively 
+					// 		escapes it from parsing...
+					: [body]
+
+				return function(state){
+					// XXX can we loose stuff from state this way???
+					// 		...at this stage it should more or less be static -- check!
+					return Promise.awaitOrRun(
+						// XXX how do we resolve the await loop?
+						parser.parse(this, ast, {
+							...state,
+							filters: local.includes(this.ISOLATED_FILTERS) ?
+								local
+								: [...outer, ...local],
+						}),
+						function(res){
+							return {data: res} }) }
+			// global filters...
+			} else {
+				state.filters = [...outer, ...local] } },
+
+
 		// Args...
 		//
 		//	@(<name>[ <else>][ local])
@@ -991,6 +1067,126 @@ module.parser = {
 						&& parser.expand(this, args['else'], state)) }),
 		args: function(){
 			return pwpath.obj2args(this.args) },
+
+		// XXX EXPERIMENTAL...
+		//
+		// NOTE: var value is parsed only on assignment and not on dereferencing...
+		//
+		// XXX should alpha/Alpha be 0 (current) or 1 based???
+		// XXX do we need a default attr???
+		// 		...i.e. if not defined set to ..
+		// XXX INC_DEC do we need inc/dec and parent???
+		'var': Macro(
+			['name', 'text', 
+				// XXX INC_DEC
+				['shown', 'hidden', 
+					'parent', 
+					'inc', 'dec', 
+					'alpha', 'Alpha', 'roman', 'Roman']],
+				/*/
+				['shown', 'hidden']],
+				//*/
+			function(parser, args, body, state){
+				var name = args.name
+				if(!name){
+					return '' }
+
+				return Promise.awaitOrRun(
+					state.waitNested,
+					parser.parseNested(this, name, state),
+					function(_, name){
+						// XXX INC_DEC
+						var inc = args.inc
+						var dec = args.dec
+						//*/
+						var text = args.text 
+							?? body 
+						// NOTE: .hidden has priority...
+						var show = 
+								('hidden' in args ?
+									!args.hidden
+									: undefined)
+								?? args.shown 
+
+						var vars = state.vars ??= {}
+						// XXX INC_DEC
+						if(args.parent && name in vars){
+							while(!vars.hasOwnProperty(name)
+									&& vars.__proto__ !== Object.prototype){
+								vars = vars.__proto__ } }
+
+						var handleFormat = function(value){
+							// roman number...
+							if(args.roman || args.Roman){
+								var n = parseInt(value)
+								return isNaN(n) ?
+										''
+									: args.Roman ?
+										n.toRoman()
+									: n.toRoman().toLowerCase() }
+							// alpha number...
+							if(args.alpha || args.Alpha){
+								var n = parseInt(value)
+								return isNaN(n) ?
+										''
+									: args.Alpha ?
+										n.toAlpha().toUpperCase()
+									: n.toAlpha() } 
+							return value }
+
+						// inc/dec...
+						if(inc || dec){
+							if(!(name in vars) 
+									|| isNaN(parseInt(vars[name]))){
+								return '' }
+							var cur = parseInt(vars[name])
+							cur += 
+								inc === true ? 
+									1 
+								: !inc ?
+									0
+								: parseInt(inc)
+							cur -= 
+								dec === true ? 
+									1 
+								: !dec ?
+									0
+								: parseInt(dec)
+							vars[name] = cur + ''
+
+							// as-is...
+							return show ?? true ?
+								handleFormat(vars[name])
+								: '' }
+						//*/
+
+						// set...
+						if(text){
+							return Promise.awaitOrRun(
+								state.waitNested,
+								parser.parseNested(this, text, state),
+								function(_, value){
+									text = vars[name] = value
+									return show ?? false ?
+										text
+										: '' })
+						// get...
+						} else {
+							return handleFormat(vars[name] ?? '') } }) }),
+		vars: function(parser, args, body, state){
+			var lst = []
+			for(var [name, value] of Object.entries(args)){
+				lst.push(
+					parser.parseNested(this, name, state),
+					parser.parseNested(this, value, state)) }
+			var vars = state.vars ??= {}
+			return Promise.awaitOrRun(
+				state.waitNested,
+				...lst,
+				function(_, ...lst){
+					for(var i=0; i < lst.length; i+=2){
+						vars[lst[i]] = lst[i+1] }
+					return '' }) },
 
 		// Slot...
 		//
@@ -1085,89 +1281,6 @@ module.parser = {
 		'content': ['slot'],
 
 
-		// Filter...
-		//
-		// 	@filter(<filter-spec>)
-		// 	<filter <filter-spec>/>
-		//
-		// 	<filter <filter-spec>>
-		// 		...
-		// 	</filter>
-		//
-		// 	<filter-spec> ::=
-		// 		<filter> <filter-spec>
-		// 		| -<filter> <filter-spec>
-		//
-		// XXX BUG: this does not show any results:
-		//			pwiki.parse('<filter test>moo test</filter>')
-		//				-> ''
-		//		while these do:
-		//    		pwiki.parse('<filter test/>moo test')
-		//				-> 'moo TEST'
-		//			await pwiki.parse('<filter test>moo test</filter>@var()')
-		//				-> 'moo TEST'
-		//		for more info see:
-		//			file:///L:/work/pWiki/pwiki2.html#/Editors/Results
-		//		XXX do we fix this or revise how/when filters work???
-		//			...including accounting for variables/expansions and the like...
-		// XXX REVISE...
-		// XXX UPDATE...
-		filter: function(args, body, state, expand=true){
-			var that = this
-
-			var outer = state.filters = 
-				state.filters ?? []
-			var local = Object.keys(args)
-
-			// trigger quote-filter...
-			var quote = local
-				.map(function(filter){
-					return (that.filters[filter] ?? {})['quote'] ?? [] })
-				.flat()
-			quote.length > 0
-				&& this.__parser__.macros['quote-filter']
-					.call(this, Object.fromEntries(Object.entries(quote)), null, state)
-
-			// local filters...
-			if(body != null){
-				// expand the body...
-				var ast = expand ?
-						this.__parser__.expand(this, body, state)
-					: body instanceof Array ?
-						body
-					// NOTE: wrapping the body in an array effectively 
-					// 		escapes it from parsing...
-					: [body]
-
-				return function(state){
-					// XXX can we loose stuff from state this way???
-					// 		...at this stage it should more or less be static -- check!
-					return Promise.awaitOrRun(
-						this.__parser__.parse(this, ast, {
-							...state,
-							filters: local.includes(this.ISOLATED_FILTERS) ?
-								local
-								: [...outer, ...local],
-						}),
-						function(res){
-							return {data: res} }) }
-				/*/ // XXX ASYNC...
-				return async function(state){
-					// XXX can we loose stuff from state this way???
-					// 		...at this stage it should more or less be static -- check!
-					var res = 
-						await this.__parser__.parse(this, ast, {
-							...state,
-							filters: local.includes(this.ISOLATED_FILTERS) ?
-								local
-								: [...outer, ...local],
-						})
-					return {data: res} }
-				//*/
-
-			// global filters...
-			} else {
-				state.filters = [...outer, ...local] } },
 		//
 		// 	@include(<path>)
 		//
@@ -1463,119 +1576,6 @@ module.parser = {
 			var filters = state.quote_filters = 
 				state.quote_filters ?? []
 			filters.splice(filters.length, 0, ...Object.keys(args)) },
-
-		// XXX EXPERIMENTAL...
-		//
-		// NOTE: var value is parsed only on assignment and not on dereferencing...
-		//
-		// XXX should alpha/Alpha be 0 (current) or 1 based???
-		// XXX do we need a default attr???
-		// 		...i.e. if not defined set to ..
-		// XXX INC_DEC do we need inc/dec and parent???
-		// XXX UPDATE...
-		'var': Macro(
-			['name', 'text', 
-				// XXX INC_DEC
-				['shown', 'hidden', 
-					'parent', 
-					'inc', 'dec', 
-					'alpha', 'Alpha', 'roman', 'Roman']],
-				/*/
-				['shown', 'hidden']],
-				//*/
-			async function(args, body, state){
-				var name = args.name
-				if(!name){
-					return '' }
-				// XXX PARSE should this be page-level (cur) or parser-level???
-				name = await this.parse(name, state)
-				// XXX INC_DEC
-				var inc = args.inc
-				var dec = args.dec
-				//*/
-				var text = args.text 
-					?? body 
-				// NOTE: .hidden has priority...
-				var show = 
-						('hidden' in args ?
-							!args.hidden
-							: undefined)
-						?? args.shown 
-
-				var vars = state.vars = 
-					state.vars 
-						?? {}
-				// XXX INC_DEC
-				if(args.parent && name in vars){
-					while(!vars.hasOwnProperty(name)
-							&& vars.__proto__ !== Object.prototype){
-						vars = vars.__proto__ } }
-
-				var handleFormat = function(value){
-					// roman number...
-					if(args.roman || args.Roman){
-						var n = parseInt(value)
-						return isNaN(n) ?
-								''
-							: args.Roman ?
-								n.toRoman()
-							: n.toRoman().toLowerCase() }
-					// alpha number...
-					if(args.alpha || args.Alpha){
-						var n = parseInt(value)
-						return isNaN(n) ?
-								''
-							: args.Alpha ?
-								n.toAlpha().toUpperCase()
-							: n.toAlpha() } 
-					return value }
-
-				// inc/dec...
-				if(inc || dec){
-					if(!(name in vars) 
-							|| isNaN(parseInt(vars[name]))){
-						return '' }
-					var cur = parseInt(vars[name])
-					cur += 
-						inc === true ? 
-							1 
-						: !inc ?
-							0
-						: parseInt(inc)
-					cur -= 
-						dec === true ? 
-							1 
-						: !dec ?
-							0
-						: parseInt(dec)
-					vars[name] = cur + ''
-
-					// as-is...
-					return show ?? true ?
-						handleFormat(vars[name])
-						: '' }
-				//*/
-
-				// set...
-				if(text){
-					text = vars[name] = 
-						// XXX PARSE should this be page-level (cur) or parser-level???
-						await this.parse(text, state)
-					return show ?? false ?
-						text
-						: ''
-				// get...
-				} else {
-					return handleFormat(vars[name] ?? '') } }),
-		vars: async function(args, body, state){
-			var vars = state.vars = 
-				state.vars 
-					?? {}
-			for(var [name, value] of Object.entries(args)){
-				// XXX PARSE should these be page-level (cur) or parser-level???
-				vars[await this.parse(name, state)] =
-					await this.parse(value, state) }
-			return '' },
 
 		// 	
 		// 	<macro src=<url>> .. </macro>
