@@ -19,6 +19,8 @@ var pwpath = require('./path')
 //---------------------------------------------------------------------
 // Parser...
 
+// XXX TODO:
+// 		callbacks on elements resolving...
 // XXX ASAP move the macros here...
 // XXX should we warn about stuff like <macro src=/moo/> -- currently 
 // 		this will simply be ignored, i.e. passed trough the parser 
@@ -471,7 +473,13 @@ module.BaseParser = {
 	//
 	//
 	//	<state> ::= {
+	//		// wait for last non-isolated...
 	//		waitNested: <promise> | null,
+	//
+	//		// wait for last isolated...
+	//		waitAll: <promise> | null,
+	//
+	//		// wait for all...
 	//		wait: <promise> | null,
 	//	}
 	//
@@ -517,7 +525,6 @@ module.BaseParser = {
 				ast
 			: ast.iter()
 
-		// XXX revise names...
 		var wait = new Set()
 		state.wait instanceof Promise 
 			&& wait.add(state.wait)
@@ -540,8 +547,11 @@ module.BaseParser = {
 
 			var {name, args, body} = elem
 
-			// XXX revise -- do we need this???
 			// nested macro -- skip...
+			if(that.macros[name] instanceof Array){
+				elems.push({...elem})
+				continue }
+			// drop non-macros/aliases...
 			if(typeof(that.macros[name]) != 'function' 
 					&& typeof(that.macros[name]) != 'string'){
 				continue }
@@ -558,11 +568,15 @@ module.BaseParser = {
 			if(res instanceof Promise){
 				elem.resolving = res
 				wait.add(res)
+				state.waitAll = res
+				// XXX is .isolated implemented???
 				if(!res.isolated){
 					state.waitNested = res }
 				res.then(
 					function(value){
 						wait.delete(res)
+						if(state.waitAll === res){
+							delete state.waitAll }
 						if(state.waitNested === res){
 							delete state.waitNested }
 						delete elem.resolving
@@ -650,18 +664,32 @@ module.BaseParser = {
 			if(elem instanceof Array){
 				merge(...this.resolve(page, elem, state)) 
 				continue }
+			// nested macro with no value set -- skip...
+			if(this.macros[elem.name] instanceof Array){
+				continue }
 			// unresolved...
 			merge(elem) }
 
 		return elems },
 
+	// XXX render api...
+	// XXX how should this play with filters???
+	// 		...should filters be client-side only??
+	render: function*(page, ast, callback, state={}){
+		ast = this.resolve(page, ast, state)
+		for(var elem of ast){
+			yield Promise.awaitOrRun(
+				elem,
+				callback) } },
+
 	// XXX
+	// XXX how should this play with filters???
+	// 		...should filters be client-side only??
 	parseNested: function(page, ast, state={}){
 		var that = this
 		ast = this.resolve(page, ast, state)
 		// XXX
 		if(state.waitNested){
-			// XXX for some odd reason returning this breaks everything...
 			return state.waitNested
 				.then(function(){
 					return that.parse(page, ast, state) }) }
@@ -671,12 +699,14 @@ module.BaseParser = {
 		}
 		return ast[0] },
 
+	// XXX this can't be used from within macros -- will deadlock the results...
+	// XXX how should this play with filters???
+	// 		...should filters be client-side only??
 	parse: function(page, ast, state={}){
 		var that = this
 		ast = this.resolve(page, ast, state)
-		// XXX
+		// XXX .wait or .waitAll ???
 		if(state.wait){
-			// XXX for some odd reason returning this breaks everything...
 			return state.wait
 				.then(function(){
 					return that.parse(page, ast, state) }) }
@@ -1092,9 +1122,8 @@ module.parser = {
 					return '' }
 
 				return Promise.awaitOrRun(
-					state.waitNested,
 					parser.parseNested(this, name, state),
-					function(_, name){
+					function(name){
 						// XXX INC_DEC
 						var inc = args.inc
 						var dec = args.dec
@@ -1163,9 +1192,9 @@ module.parser = {
 						// set...
 						if(text){
 							return Promise.awaitOrRun(
-								state.waitNested,
+								//state.waitNested,
 								parser.parseNested(this, text, state),
-								function(_, value){
+								function(value){
 									text = vars[name] = value
 									return show ?? false ?
 										text
@@ -1218,6 +1247,12 @@ module.parser = {
 		// 		This also works for cases where slots override slots they 
 		// 		are contained in, this will not lead to recursion.
 		//
+		// XXX do we show a slot with unfilled content??? 
+		// 		...what's the point in having <content>, can't is just 
+		// 		be replaced by a slot?
+		// 		...content + hidden allows us not just to fill a slot 
+		// 		but to also place it...
+		// XXX revise/document how shown/hidden work...
 		// XXX revise the use of hidden/shown use mechanic and if it's 
 		// 		needed...
 		slot: Macro(
@@ -1230,10 +1265,8 @@ module.parser = {
 					// 		correctly...
 					?? []
 				return Promise.awaitOrRun(
-					state.waitNested,
-					name 
-						|| parser.parseNested(this, name, state),
-					function(_, name){
+					parser.parseNested(this, name, state),
+					function(name){
 						var slots = state.slots ??= {}
 
 						//var hidden = name in slots
@@ -1260,15 +1293,18 @@ module.parser = {
 						// handle <content/>...
 						for(prev of stack){
 							// get the first <content/>
-							for(var i in slot){
-								if(typeof(slot[i]) != 'string'
-										&& slot[i].name == 'content'){
+							// XXX this is a flat search, should be deep...
+							for(var i in prev){
+								if(typeof(prev[i]) != 'string'
+										&& prev[i].name == 'content'){
 									break } 
 								i = null }
 							i != null
-								&& slot.splice(i, 1, 
+								&& (prev[i].value = [...slot])
+								&& slot.splice(0, slot.length, 
 									...prev
 										// remove nested slot handlers...
+										// XXX do we need this???
 										.filter(function(e){
 											return typeof(e) != 'function'
 													|| e.slot != name }) ) }
@@ -1276,7 +1312,8 @@ module.parser = {
 							''
 							: Object.assign(
 								function(st){
-									return ((st ?? state).slots ?? {})[name] ?? original },
+									return ((st ?? state).slots ?? {})[name] 
+										?? original },
 								{slot: name}) }) }), 
 		'content': ['slot'],
 
