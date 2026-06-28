@@ -1321,7 +1321,7 @@ module.parser = {
 									: name in slots)
 
 						// set slot value...
-						// XXX simplify this...
+						/* XXX CONTENT...
 						var stack = []
 						slots[name]
 							&& stack.push(slots[name])
@@ -1357,6 +1357,17 @@ module.parser = {
 										.filter(function(e){
 											return typeof(e) != 'function'
 													|| e.slot != name }) ) }
+						/*/
+						text = text ?
+							parser.expand(this, text ?? [], state)
+							: text
+						if(body && text){
+							var slot = text
+						} else {
+							var slot = body ?? text }
+						var original = slot
+						slots[name] = slot
+						//*/
 						return hidden ?
 							''
 							: Object.assign(
@@ -1364,7 +1375,8 @@ module.parser = {
 									return ((st ?? state).slots ?? {})[name] 
 										?? original },
 								{slot: name}) }) }), 
-		'content': ['slot'],
+		// XXX CONTENT...
+		//'content': ['slot'],
 
 
 		//

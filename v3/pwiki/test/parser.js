@@ -54,6 +54,7 @@ test.Setups({
 			...ins.map(function(e){
 				return e + '<slot slot>third</slot>' }),
 			'third' ] },
+	/* XXX CONTENT...
 	slot_content_empty: function(assert){
 		return [
 			'@slot(slot body="[[ <content/> ]]")',
@@ -71,7 +72,9 @@ test.Setups({
 			...ins.map(function(i){
 				return i +'@slot(slot value)' }),
 			expect.replace('default', 'value') ] },
+	//*/
 
+	// XXX these are an alternative to <content/>...
 	slot_nested: function(assert){
 		return [
 			'<slot slot>[[ <slot slot.content/> ]]</slot>@slot(slot.content value)',
@@ -81,6 +84,7 @@ test.Setups({
 			'<slot slot>[[ <slot slot.content/> ]]</slot>@slot(slot value)',
 			'value' ] },
 
+	/* XXX CONTENT...
 	// XXX the question with the next tow is:
 	// 		should body override or nest?
 	// 		...both are logical but in either case the result should be 
@@ -146,6 +150,7 @@ test.Setups({
 			...ins.map(function(i){
 				return i +'@slot(slot shown)' }),
 			'' ] },
+	//*/
 })
 
 
