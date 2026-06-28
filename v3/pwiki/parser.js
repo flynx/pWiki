@@ -229,7 +229,9 @@ module.BaseParser = {
 					macro.arg_spec 
 						?? [], 
 					args),
-				body, 
+				// XXX
+				body 
+					?? args.body, 
 				state, 
 				...rest) },
 
@@ -256,7 +258,12 @@ module.BaseParser = {
 	// 			args: {
 	// 				<index>: <value>,
 	// 				<key>: <value>,
+	//
 	// 				...
+	//
+	// 				// special case: .body argument's value is treated in
+	// 				//		the same way as block body -- it is parsed.
+	// 				body: <ast>,
 	// 			}
 	// 			match: <string>,
 	// 		}
@@ -335,6 +342,10 @@ module.BaseParser = {
 								?? groups.unnamedArg)
 							.replace(/\\(["'])/g, '$1') }
 
+				// special case: .body arg -> lex...
+				if(args.body){
+					args.body = [...this.lex(page, args.body)] }
+
 				// macro-spec...
 				yield {
 					name: (cur.nameInline 
@@ -384,7 +395,7 @@ module.BaseParser = {
 	//
 	// NOTE: this internaly uses .macros to check for propper nesting
 	//group: function*(page, lex, to=false){
-	group: function*(page, lex, to=false, parent){
+	group: function*(page, lex, to=false, parent, context){
 		// XXX we can't get .raw from the page without going async...
 		//lex = lex
 		//	?? this.lex(page) 
@@ -421,14 +432,28 @@ module.BaseParser = {
 							: value.match ) }
 				continue }
 
+			// special case: .body argument -> group...
+			if((value.args ?? {}).body){
+				value.args.body = 
+					[...this.group(
+						page, 
+						value.args.body.iter(), 
+						false, 
+						parent, 
+						value.name)] }
+
 			// assert nesting rules...
 			// NOTE: we only check for direct nesting...
 			// XXX might be a good idea to link nested block to the parent...
 			if(this.macros[value.name] instanceof Array
+					// stray nesting...
+					&& (context 
+						&& !this.macros[value.name].includes(context))
+					// stray nesting/closing...
 					&& !this.macros[value.name].includes(to)
 					// do not complain about closing nestable tags...
-					&& !(value.name == to 
-						&& value.type == 'closing')){
+						&& !(value.name == to 
+							&& value.type == 'closing') ){
 				throw new Error(
 					'Unexpected <'+ value.name +'> macro' 
 						+(to ? 
@@ -556,6 +581,12 @@ module.BaseParser = {
 					&& typeof(that.macros[name]) != 'string'){
 				continue }
 
+			// expand down...
+			body 
+				&& (body = this.expand(page, body, state))
+			;(args ?? {}).body
+				&& (args.body = this.expand(page, args.body, state))
+
 			// cleanup...
 			elem = {...elem}
 			delete elem.error
@@ -646,11 +677,13 @@ module.BaseParser = {
 
 		for(var elem of ast){
 			// nesting...
-			while(elem.value){
+			while(elem && elem.value){
 				elem = elem.value 
 				// exec stage II macros...
 				if(typeof(elem) == 'function'){
-					elem = elem(state) } } 
+					elem = elem(state) } }
+			if(elem == null){
+				continue }
 			// atomic values...
 			if(typeof(elem) != 'object'){
 				merge(elem) 
@@ -662,8 +695,12 @@ module.BaseParser = {
 				continue }
 			// expand ast...
 			if(elem instanceof Array){
+				//merge(...this.resolve(page, elem, state)) 
 				merge(...this.resolve(page, elem, state)) 
 				continue }
+			// expand .body attribute...
+			if((elem.attrs ?? {}).body instanceof Array){
+				elem.attrs.body = this.resolve(page, elem.attrs.body, state) }
 			// nested macro with no value set -- skip...
 			if(this.macros[elem.name] instanceof Array){
 				continue }
@@ -697,7 +734,8 @@ module.BaseParser = {
 		if(ast.length > 1){
 			throw new Error('!!!!')
 		}
-		return ast[0] },
+		return ast[0] 
+			?? '' },
 
 	// XXX this can't be used from within macros -- will deadlock the results...
 	// XXX how should this play with filters???
@@ -714,7 +752,8 @@ module.BaseParser = {
 		if(ast.length > 1){
 			throw new Error('!!!!')
 		}
-		return ast[0] },
+		return ast[0] 
+			?? '' },
 
 
 
@@ -1247,6 +1286,10 @@ module.parser = {
 		// 		This also works for cases where slots override slots they 
 		// 		are contained in, this will not lead to recursion.
 		//
+		// XXX do we actually need <content/>??
+		// 		<slot slot>
+		// 			<slot slot.content/>
+		// 		</slot>
 		// XXX do we show a slot with unfilled content??? 
 		// 		...what's the point in having <content>, can't is just 
 		// 		be replaced by a slot?
@@ -1260,10 +1303,7 @@ module.parser = {
 			function(parser, args, body, state){
 				var name = args.name
 				var text = args.text 
-					?? body 
-					// NOTE: this can't be undefined for .expand(..) to work 
-					// 		correctly...
-					?? []
+
 				return Promise.awaitOrRun(
 					parser.parseNested(this, name, state),
 					function(name){
@@ -1281,19 +1321,28 @@ module.parser = {
 									: name in slots)
 
 						// set slot value...
+						// XXX simplify this...
 						var stack = []
 						slots[name]
 							&& stack.push(slots[name])
 						delete slots[name]
-						var slot = parser.expand(this, text, state)
+						text = text ?
+							parser.expand(this, text ?? [], state)
+							: text
+						if(body && text){
+							stack.push(body)
+							var slot = text
+						} else {
+							var slot = body ?? text }
 						var original = slot
 						slots[name]
 							&& stack.unshift(slot)
 						slot = slots[name] ??= slot
 						// handle <content/>...
-						for(prev of stack){
+						for(prev of stack.reverse()){
 							// get the first <content/>
-							// XXX this is a flat search, should be deep...
+							// NOTE: this is a flat search because we can't 
+							// 		have indirect nesting (see: .group(..))
 							for(var i in prev){
 								if(typeof(prev[i]) != 'string'
 										&& prev[i].name == 'content'){

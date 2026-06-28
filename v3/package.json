@@ -11,7 +11,9 @@
     "ig-actions": "*",
     "ig-features": "*",
     "ig-object": "*",
-    "ig-types": "*",
+    "ig-types": "*"
+  },
+  "devDependencies": {
     "ig-test": "*"
   },
   "disabled-dependencies": {
