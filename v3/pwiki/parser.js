@@ -1287,9 +1287,10 @@ module.parser = {
 		// 		are contained in, this will not lead to recursion.
 		//
 		// XXX do we actually need <content/>??
-		// 		<slot slot>
-		// 			<slot slot.content/>
-		// 		</slot>
+		// 			<slot slot>
+		// 				<slot slot.content/>
+		// 			</slot>
+		// 		nesting slots basically does the same thing...
 		// XXX do we show a slot with unfilled content??? 
 		// 		...what's the point in having <content>, can't is just 
 		// 		be replaced by a slot?
@@ -1321,43 +1322,6 @@ module.parser = {
 									: name in slots)
 
 						// set slot value...
-						/* XXX CONTENT...
-						var stack = []
-						slots[name]
-							&& stack.push(slots[name])
-						delete slots[name]
-						text = text ?
-							parser.expand(this, text ?? [], state)
-							: text
-						if(body && text){
-							stack.push(body)
-							var slot = text
-						} else {
-							var slot = body ?? text }
-						var original = slot
-						slots[name]
-							&& stack.unshift(slot)
-						slot = slots[name] ??= slot
-						// handle <content/>...
-						for(prev of stack.reverse()){
-							// get the first <content/>
-							// NOTE: this is a flat search because we can't 
-							// 		have indirect nesting (see: .group(..))
-							for(var i in prev){
-								if(typeof(prev[i]) != 'string'
-										&& prev[i].name == 'content'){
-									break } 
-								i = null }
-							i != null
-								&& (prev[i].value = [...slot])
-								&& slot.splice(0, slot.length, 
-									...prev
-										// remove nested slot handlers...
-										// XXX do we need this???
-										.filter(function(e){
-											return typeof(e) != 'function'
-													|| e.slot != name }) ) }
-						/*/
 						text = text ?
 							parser.expand(this, text ?? [], state)
 							: text
@@ -1365,18 +1329,15 @@ module.parser = {
 							var slot = text
 						} else {
 							var slot = body ?? text }
-						var original = slot
 						slots[name] = slot
-						//*/
+
 						return hidden ?
 							''
 							: Object.assign(
 								function(st){
 									return ((st ?? state).slots ?? {})[name] 
-										?? original },
+										?? slot },
 								{slot: name}) }) }), 
-		// XXX CONTENT...
-		//'content': ['slot'],
 
 
 		//

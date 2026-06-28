@@ -54,25 +54,6 @@ test.Setups({
 			...ins.map(function(e){
 				return e + '<slot slot>third</slot>' }),
 			'third' ] },
-	/* XXX CONTENT...
-	slot_content_empty: function(assert){
-		return [
-			'@slot(slot body="[[ <content/> ]]")',
-			'<slot slot>[[ <content/> ]]</slot>',
-				'[[  ]]' ] },
-	slot_content_default: function(assert){
-		return [
-			'@slot(slot default body="[[ <content/> ]]")',
-			'<slot slot default>[[ <content/> ]]</slot>',
-			'[[ default ]]' ] },
-	slot_content_fill: function(assert){
-		var ins = this.slot_content_default(assert)
-		var expect = ins.pop()
-		return [
-			...ins.map(function(i){
-				return i +'@slot(slot value)' }),
-			expect.replace('default', 'value') ] },
-	//*/
 
 	// XXX these are an alternative to <content/>...
 	slot_nested: function(assert){
@@ -84,43 +65,7 @@ test.Setups({
 			'<slot slot>[[ <slot slot.content/> ]]</slot>@slot(slot value)',
 			'value' ] },
 
-	/* XXX CONTENT...
-	// XXX the question with the next tow is:
-	// 		should body override or nest?
-	// 		...both are logical but in either case the result should be 
-	// 		consistent.
-	//
-	// XXX should the new body/content override or expand the original???
-	slot_content_content: function(assert){
-		var ins = this.slot_content_default(assert)
-		var expect = ins.pop()
-		return [
-			...ins.map(function(i){
-				return i +'@slot(slot body="(( @content() ))")' }),
-			// XXX should this override the default above???
-			//expect.replace('default', '(( default ))') ] },
-			expect.replace('default', '((  ))') ] },
-	slot_content_content_content: function(assert){
-		var ins = this.slot_content_content(assert)
-		var expect = ins.pop()
-		return [
-			...ins.map(function(i){
-				return i +'@slot(slot body="<< @content() >>")' }),
-			// XXX should this override the default above???
-			//expect.replace('default', '(( default ))') ] },
-			expect.replace('((  ))', '(( <<  >> ))') ] },
-	// XXX if we are expanding (see above) why are we overriding here???
-	slot_content_content_fill: function(assert){
-		var ins = this.slot_content_content(assert)
-		var expect = ins.pop()
-		return [
-			...ins.map(function(i){
-				return i +'@slot(slot value)' }),
-			expect.replace('((  ))', '(( value ))') ] },
-			//expect.replace('((  ))', 'value') ] },
-			//
-
-
+	/* XXX SHOWN_HIDDEN
 	// XXX these need to be revised...
 	// 		...do we actually need hidden/shown???
 	//
