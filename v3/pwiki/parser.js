@@ -1286,17 +1286,6 @@ module.parser = {
 		// 		This also works for cases where slots override slots they 
 		// 		are contained in, this will not lead to recursion.
 		//
-		// XXX do we actually need <content/>??
-		// 			<slot slot>
-		// 				<slot slot.content/>
-		// 			</slot>
-		// 		nesting slots basically does the same thing...
-		// XXX do we show a slot with unfilled content??? 
-		// 		...what's the point in having <content>, can't is just 
-		// 		be replaced by a slot?
-		// 		...content + hidden allows us not just to fill a slot 
-		// 		but to also place it...
-		// XXX revise/document how shown/hidden work...
 		// XXX revise the use of hidden/shown use mechanic and if it's 
 		// 		needed...
 		slot: Macro(
