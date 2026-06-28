@@ -2,6 +2,7 @@
 //---------------------------------------------------------------------
 
 var test = require('ig-test')
+var serialize = require('ig-serialize')
 
 var parser = require('../parser').parser
 
@@ -10,10 +11,15 @@ var parser = require('../parser').parser
 
 test.Setups({
 	empty: function(assert){
-		return [ '', '' ] },
+		return { code: [ '', '' ] }},
 
+	// XXX var...
+	
+	// XXX arg...
+
+	// slot...
 	slot_empty: function(assert){
-		return [
+		return {code: [
 			'@slot(slot)',
 			'@slot("slot")',
 			'@slot(\'slot\')',
@@ -26,44 +32,44 @@ test.Setups({
 			'<slot name=slot/>',
 			'<slot name="slot"/>',
 			'<slot name=\'slot\'/>',
-				'' ] },
+				'' ]} },
 	slot_value: function(assert){
-		return [
+		return {code: [
 			'<slot slot value/>',
 			'<slot slot text=value/>',
 			'@slot(slot value)',
 			'@slot(slot text=value)',
-				'value' ] },
+				'value' ]} },
 	slot_fill: function(assert){
-		var ins = this.slot_value(assert).slice(0, -1)
-		return [
+		var ins = this.slot_value(assert).code.slice(0, -1)
+		return {code: [
 			...ins.map(function(e){
 				return e + '@slot(slot other)' }),
 			...ins.map(function(e){
 				return e + '<slot slot other/>' }),
 			...ins.map(function(e){
 				return e + '<slot slot>other</slot>' }),
-			'other' ] },
+			'other' ]} },
 	slot_fill_fill: function(assert){
-		var ins = this.slot_fill(assert).slice(0, -1)
-		return [
+		var ins = this.slot_fill(assert).code.slice(0, -1)
+		return {code: [
 			...ins.map(function(e){
 				return e + '@slot(slot third)' }),
 			...ins.map(function(e){
 				return e + '<slot slot third/>' }),
 			...ins.map(function(e){
 				return e + '<slot slot>third</slot>' }),
-			'third' ] },
+			'third' ]} },
 
 	// XXX these are an alternative to <content/>...
 	slot_nested: function(assert){
-		return [
+		return {code: [
 			'<slot slot>[[ <slot slot.content/> ]]</slot>@slot(slot.content value)',
-			'[[ value ]]' ] },
+			'[[ value ]]' ]} },
 	slot_nested_overwrite: function(assert){
-		return [
+		return {code: [
 			'<slot slot>[[ <slot slot.content/> ]]</slot>@slot(slot value)',
-			'value' ] },
+			'value' ]} },
 
 	/* XXX SHOWN_HIDDEN
 	// XXX these need to be revised...
@@ -72,29 +78,29 @@ test.Setups({
 	slot_shown: function(assert){
 		var ins = this.slot_value(assert)
 		var expect = ins.pop()
-		return [
+		return {code: [
 			...ins.map(function(i){
 				return i +' @slot(slot that shown)' }),
-			'that that' ] },
+			'that that' ]} },
 	slot_hidden: function(assert){
-		return [
+		return {code: [
 			'<slot slot value hidden/>',
 			'@slot(slot value hidden)',
-				'' ] },
+				'' ]} },
 	slot_hidden_value: function(assert){
 		var ins = this.slot_hidden(assert)
 		var expect = ins.pop()
-		return [
+		return {code: [
 			...ins.map(function(i){
 				return i +'@slot(slot other)' }),
-			'' ] },
+			'' ]} },
 	slot_hidden_shown: function(assert){
 		var ins = this.slot_hidden(assert)
 		var expect = ins.pop()
-		return [
+		return {code: [
 			...ins.map(function(i){
 				return i +'@slot(slot shown)' }),
-			'' ] },
+			'' ]} },
 	//*/
 })
 
@@ -105,16 +111,22 @@ test.Modifiers({
 
 test.Tests({
 	parse: function(assert, state){
+		var {page, code, st} = state
+		page ??= {}
+		st ??= {}
+
 		var res
-		var inputs = state.slice(0, -1)
-		var expect = state.at(-1)
+		var inputs = code.slice(0, -1)
+		var expect = code.at(-1)
 		var i = 0
-		for(var input of inputs){
+		for(var input of inputs){	
+			var p = serialize.partialDeepCopy(page)
+			var s = serialize.partialDeepCopy(st)
 			assert(
 				(res = parser.parse(
-						{},
+						p,
 						input,
-						{}))
+						s))
 					=== expect,
 				'Parsing:',
 					'\n\t      in: "'+ input +'"',

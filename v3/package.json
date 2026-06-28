@@ -11,7 +11,8 @@
     "ig-actions": "*",
     "ig-features": "*",
     "ig-object": "*",
-    "ig-types": "*"
+    "ig-types": "*",
+    "ig-serialize": "*"
   },
   "devDependencies": {
     "ig-test": "*"

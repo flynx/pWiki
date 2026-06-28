@@ -1355,10 +1355,15 @@ module.parser = {
 		// XXX need a way to make encode option transparent...
 		// XXX store a page cache in state...
 		// XXX UPDATE...
+		include2: Macro(
+			['src', 'recursive', 'join', 
+				['s', 'strict', 'isolated']],
+			function*(parser, args, body, state, key='included', handler){
+			}),
 		include: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],
-			async function*(args, body, state, key='included', handler){
+			async function*(parser, args, body, state, key='included', handler){
 				var macro = 'include'
 				if(typeof(args) == 'string'){
 					var [macro, args, body, state, key, handler] = arguments 
