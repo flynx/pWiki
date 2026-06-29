@@ -1280,14 +1280,13 @@ module.parser = {
 		// 		all other slots with <name> will replace its content, unless
 		// 		explicit shown/hidden arguments are given.
 		// NOTE: hidden has precedence over shown if both are given.
-		// NOTE: slots are handled in order of occurrence of opening tags 
-		// 		in text and not by hierarchy, i.e. the later slot overrides
-		// 		the former and the most nested overrides the parent.
-		// 		This also works for cases where slots override slots they 
-		// 		are contained in, this will not lead to recursion.
+		// 		XXX revise...
 		//
 		// XXX revise the use of hidden/shown use mechanic and if it's 
 		// 		needed...
+		// XXX do we need to guard from recursion???
+		// 		...do not think it's possible -- everything is resolved 
+		// 		once and just inseerted as-is (revise)
 		slot: Macro(
 			['name', 'text', ['shown', 'hidden']],
 			function(parser, args, body, state){
@@ -1352,14 +1351,75 @@ module.parser = {
 		// 		At the moment nested recursion is checked in a fast but 
 		// 		not 100% correct manner focusing on path depth and ignoring
 		// 		the context, this potentially can lead to false positives.
+		//
 		// XXX need a way to make encode option transparent...
+		// XXX need a way to wrap the included page...
+		// 		- template page...
+		// 		- prefix/sufix...
 		// XXX store a page cache in state...
 		// XXX UPDATE...
 		include2: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],
-			function*(parser, args, body, state, key='included', handler){
-			}),
+			// XXX thinking that reimplementing this is a bit less boring than
+			// 		refactoring, and should be cleaner...
+			// XXX if the src is empty return nothing...
+			// XXX this needs to be reusable...
+			// XXX need a wrapper protocol -- is this the level for it???
+			// XXX page API used:
+			// 		.basepath
+			// 		.resolvePathVars(path)
+			// 		.get(path)
+			// 			is this a promise/value, iterable promise a generator
+			// 			an async generator, ... or a combination/stack of the above???
+			function(parser, args, body, state, key='included', handler){
+
+				var base = this.basepath
+				// XXX 
+				//var src = parser.parse(this.resolvePathVars(args.src))
+				var src = args.src
+
+				return Promise.awaitOrRun(
+					parser.parse(this, src, state),
+					function(src){
+						var cache = state.cache ??= {}
+						if(cache[src]){
+							return cache[src] }
+
+						// XXX should this be a tree??
+						// 		...need to at least split direct and 
+						// 		indirect dependencies...
+						var depends = ((state.depends ??= {})[base] ??= {})
+
+						handler ??= 
+							function(parser, page, state){
+								// XXX get page text
+								// XXX setup state
+								return parser.parse(this, page, state) }
+						var pageHandler =
+							function(page){
+								// XXX cache...
+								return handler.call(this, parser, page, state) }
+
+						// XXX can we do:
+						// 		return this.get(...)
+						// 			.iter()
+						// 			.map(...)
+						// 			.sync()
+						return Promise.awaitOrRun(
+							this.get(src),
+							function(pages){
+								return Promise.awaitOrRun(
+									// handle pages...
+									Promise
+										.iter(
+											pages
+												.map(pageHandler))
+										.sync(),
+									// cache the final result...
+									function(pages){
+										return (cache[src] = pages) }) }) }) }),
+
 		include: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],

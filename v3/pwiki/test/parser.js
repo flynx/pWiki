@@ -13,10 +13,6 @@ test.Setups({
 	empty: function(assert){
 		return { code: [ '', '' ] }},
 
-	// XXX var...
-	
-	// XXX arg...
-
 	// slot...
 	slot_empty: function(assert){
 		return {code: [
@@ -60,6 +56,12 @@ test.Setups({
 			...ins.map(function(e){
 				return e + '<slot slot>third</slot>' }),
 			'third' ]} },
+	/* XXX not sure how...
+	slot_recursion: function(assert){
+		return {code: [
+			'<slot slot> <slot slot.inner/> </slot> <slot slot.inner "@slot"/>',
+				'', ]} },
+	//*/
 
 	// XXX these are an alternative to <content/>...
 	slot_nested: function(assert){
@@ -76,7 +78,7 @@ test.Setups({
 	// 		...do we actually need hidden/shown???
 	//
 	slot_shown: function(assert){
-		var ins = this.slot_value(assert)
+		var ins = this.slot_value(assert).code
 		var expect = ins.pop()
 		return {code: [
 			...ins.map(function(i){
@@ -88,24 +90,37 @@ test.Setups({
 			'@slot(slot value hidden)',
 				'' ]} },
 	slot_hidden_value: function(assert){
-		var ins = this.slot_hidden(assert)
+		var ins = this.slot_hidden(assert).code
 		var expect = ins.pop()
 		return {code: [
 			...ins.map(function(i){
 				return i +'@slot(slot other)' }),
 			'' ]} },
 	slot_hidden_shown: function(assert){
-		var ins = this.slot_hidden(assert)
+		var ins = this.slot_hidden(assert).code
 		var expect = ins.pop()
 		return {code: [
 			...ins.map(function(i){
 				return i +'@slot(slot shown)' }),
 			'' ]} },
 	//*/
+	
+	// XXX var...
+	// XXX
+	
+	// XXX arg...
+	// XXX
+
 })
 
 
 test.Modifiers({
+	args: function(assert, state){
+		;(state.state = (state.state ?? {})).args = {
+			number: 1,
+			string: 'string',
+		}
+		return state },
 })
 
 
