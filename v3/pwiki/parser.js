@@ -1429,7 +1429,13 @@ module.parser = {
 						var pageHandler =
 							function(text, i, l){
 								return [
-										handler.call(that, parser, text, state),
+										handler.call(that, 
+											parser, 
+											text, 
+											args.isolated ?
+												// XXX clean (now), partial or derp-copy?
+												{}
+												: state),
 										// join...
 										(args.join 
 												&& i < l.length - 1) ?
@@ -2022,4 +2028,4 @@ module.P = {
 
 
 /**********************************************************************
-* vim:set ts=4 sw=4 :                               */ return module })
+* vim:set ts=4 sw=4 nowrap :                        */ return module })
