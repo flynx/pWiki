@@ -9,6 +9,7 @@
 
 var object = require('ig-object')
 var types = require('ig-types')
+var serialize = require('ig-serialize')
 
 var pwpath = require('./path')
 
@@ -219,19 +220,34 @@ module.BaseParser = {
 					(res[e] = true)
 					: (res[order.shift()] = e) })
 		return res },
+	// NOTE: this unifies the body, body argument and text argument (in 
+	// 		order of priority) and passes the value in the body macro 
+	// 		handler argument.
 	callMacro: function(page, macro, args, body, state, ...rest){
 		do {
 			macro = this.macros[macro] 
 		} while(typeof(macro) == 'string')
+		var args = 
+			this.parseArgs(
+				macro.arg_spec 
+					?? [], 
+				args)
+		body = body == '' ?
+			undefined
+			: body
+		if(args.body 
+				|| args.text 
+				|| body){
+			body = 
+			args.body = 
+			args.text =
+				body
+					?? args.body 
+					?? args.text }
 		return macro.call(page, 
 				this,
-				this.parseArgs(
-					macro.arg_spec 
-						?? [], 
-					args),
-				// XXX
-				body 
-					?? args.body, 
+				args,
+				body, 
 				state, 
 				...rest) },
 
@@ -342,10 +358,6 @@ module.BaseParser = {
 								?? groups.unnamedArg)
 							.replace(/\\(["'])/g, '$1') }
 
-				// special case: .body arg -> lex...
-				if(args.body){
-					args.body = [...this.lex(page, args.body)] }
-
 				// macro-spec...
 				yield {
 					name: (cur.nameInline 
@@ -393,12 +405,18 @@ module.BaseParser = {
 	// 			...
 	// 		}
 	//
+	// Special arguments:
+	// 	.args.body | .args.text
+	// 		- if .body is given both arges are ignored and dropped
+	// 		- if .body is empty and one of the args is present it's 
+	// 			content will be set as .body and grouped while the rest 
+	// 			is dropped
+	// 		- priority order:
+	// 			.body -> .args.body -> .args.text
+	//
 	// NOTE: this internaly uses .macros to check for propper nesting
 	//group: function*(page, lex, to=false){
 	group: function*(page, lex, to=false, parent, context){
-		// XXX we can't get .raw from the page without going async...
-		//lex = lex
-		//	?? this.lex(page) 
 		lex = typeof(lex) != 'object' ?
 			this.lex(page, lex)
 			: lex
@@ -432,16 +450,6 @@ module.BaseParser = {
 							: value.match ) }
 				continue }
 
-			// special case: .body argument -> group...
-			if((value.args ?? {}).body){
-				value.args.body = 
-					[...this.group(
-						page, 
-						value.args.body.iter(), 
-						false, 
-						parent, 
-						value.name)] }
-
 			// assert nesting rules...
 			// NOTE: we only check for direct nesting...
 			// XXX might be a good idea to link nested block to the parent...
@@ -459,17 +467,37 @@ module.BaseParser = {
 						+(to ? 
 							' in <'+to+'>' 
 							: '')) }
+
 			// open block...
 			if(value.type == 'opening'){
 				//value.body = [...this.group(page, lex, value.name)]
 				value.body = [...this.group(page, lex, value.name, value)]
 				value.type = 'block'
+
+				// unify .body, .args.body and .args.text into .body...
+				// (first non-empty takes precedance, the rest are removed)
+				if(value.body.length == 0 
+						&& (value.args.body 
+							?? value.args.text)){
+					value.body = 
+						[...this.group(
+							page,
+							value.args.body
+								?? value.args.text,
+							false,
+							parent,
+							value.name)] }
+				delete value.args.body
+				delete value.args.text 
+
 			// close block...
 			} else if(value.type == 'closing'){
 				if(value.name != to){
 					throw new Error('Unexpected </'+ value.name +'>') }
 				// NOTE: we are intentionally not yielding the value here...
+				// 		...this supports the above scan use-case.
 				return } 
+
 			// normal value...
 			yield value } }, 
 
@@ -567,14 +595,21 @@ module.BaseParser = {
 			// do not re-expand expanded elements...
 			if('value' in elem
 					&& !state.forceReExpand){
-				elems.push({...elem})
+				elems.push(serialize.partialDeepCopy(elem))
 				continue }
+
+			// cleanup...
+			//elem = {...elem}
+			elem = serialize.partialDeepCopy(elem)
+			delete elem.error
+			delete elem.value
+			//delete elem.resolving
 
 			var {name, args, body} = elem
 
 			// nested macro -- skip...
 			if(that.macros[name] instanceof Array){
-				elems.push({...elem})
+				elems.push(elem)
 				continue }
 			// drop non-macros/aliases...
 			if(typeof(that.macros[name]) != 'function' 
@@ -583,15 +618,8 @@ module.BaseParser = {
 
 			// expand down...
 			body 
+				&& !that.macros[name].lazy
 				&& (body = this.expand(page, body, state))
-			;(args ?? {}).body
-				&& (args.body = this.expand(page, args.body, state))
-
-			// cleanup...
-			elem = {...elem}
-			delete elem.error
-			delete elem.value
-			//delete elem.resolving
 
 			// call macro...
 			var res = that.callMacro(page, name, args, body, state)
@@ -990,6 +1018,7 @@ module.BaseParser = {
 
 // XXX do we need anything else like .doc, attrs???
 // XXX might be a good idea to offload arg value parsing to here...
+// XXX should macros be lazy by default???
 var Macro =
 module.Macro = 
 function(spec, func){
@@ -1005,9 +1034,15 @@ function(spec, func){
 
 var isolated =
 module.isolated = 
-function(func){
-	func.isolated = true
-	return func }
+function(macro){
+	macro.isolated = true
+	return macro }
+
+var lazy =
+module.lazy =
+function(macro){
+	macro.lazy = true
+	return macro }
 
 
 // XXX RENAME...
@@ -1284,6 +1319,12 @@ module.parser = {
 		//	<content/>
 		//
 		//
+		// NOTE: slots are expanded in order of occurance not in order 
+		// 		of topology, thus nested can override slots they are 
+		// 		nested in, e.g.:
+		// 			'<slot moo>[[ <slot moo "new value"> ]]</slot>'
+		// 		will resolve to:
+		// 			'new value'
 		// NOTE: by default only the first slot with <name> is visible, 
 		// 		all other slots with <name> will replace its content, unless
 		// 		explicit shown/hidden arguments are given.
@@ -1297,9 +1338,9 @@ module.parser = {
 		// 		once and just inseerted as-is (revise)
 		slot: Macro(
 			['name', 'text', ['shown', 'hidden']],
+			lazy(
 			function(parser, args, body, state){
 				var name = args.name
-				var text = args.text 
 
 				return Promise.awaitOrRun(
 					parser.parseNested(this, name, state),
@@ -1318,22 +1359,34 @@ module.parser = {
 									: name in slots)
 
 						// set slot value...
-						text = text ?
-							parser.expand(this, text ?? [], state)
-							: text
-						if(body && text){
-							var slot = text
-						} else {
-							var slot = body ?? text }
-						slots[name] = slot
+						delete slots[name]
+						body = body ?
+							parser.expand(this, body ?? [], state)
+							: body
+						// XXX BUG: this breaks into infinite recursion:
+						//			'<slot a>[[ <slot a> ]]</slot>'
+						//				-> err
+						// 		need to somehow break recursion here, if the
+						// 		nested slot had no/empty body...
+						//			slots[name] ??= body ?? []
+						//		fixes the recursion but also resets the 
+						//		parent value...
+						//		need to meke the behavior of the following 
+						//		the saem:
+						//			'<slot a>[[ <slot a> ]]</slot>'
+						//				-> err
+						//		and:
+						//			'<slot a>[[ <slot a> ]]</slot> @slot(a)'
+						//				-> '[[  ]]'
+						slots[name] ??= body 
 
 						return hidden ?
 							''
 							: Object.assign(
 								function(st){
 									return ((st ?? state).slots ?? {})[name] 
-										?? slot },
-								{slot: name}) }) }), 
+										?? body },
+								{slot: name}) }) })), 
 
 
 		//
@@ -1432,9 +1485,14 @@ module.parser = {
 										handler.call(that, 
 											parser, 
 											text, 
-											args.isolated ?
-												// XXX clean (now), partial or derp-copy?
-												{}
+											// isolated up -- will see all 
+											// the state but can have no 
+											// side-effects...
+											args.isolated == 'partial' ?
+													serialize.partialDeepCopy(state)
+												// fully isolated...
+												: args.isolated ?
+													{}
 												: state),
 										// join...
 										(args.join 

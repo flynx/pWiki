@@ -56,14 +56,7 @@ test.Setups({
 			...ins.map(function(e){
 				return e + '<slot slot>third</slot>' }),
 			'third' ]} },
-	/* XXX not sure how...
-	slot_recursion: function(assert){
-		return {code: [
-			'<slot slot> <slot slot.inner/> </slot> <slot slot.inner "@slot"/>',
-				'', ]} },
-	//*/
 
-	// XXX these are an alternative to <content/>...
 	slot_nested: function(assert){
 		return {code: [
 			'<slot slot>[[ <slot slot.content/> ]]</slot>@slot(slot.content value)',
@@ -73,11 +66,18 @@ test.Setups({
 			'<slot slot>[[ <slot slot.content/> ]]</slot>@slot(slot value)',
 			'value' ]} },
 
-	// XXX should this work???
+	// recursion...
 	slot_nested_nested: function(assert){
 		return {code: [
 			'<slot slot>[[ <slot slot value/> ]]</slot>',
+			'<slot slot shown>[[ <slot slot value/> ]]</slot>',
 			'value' ]} },
+	/*/ XXX recursion...
+	slot_nested_shown_nested: function(assert){
+		return {code: [
+			'<slot slot>[[ <slot slot/> ]]</slot>',
+			'[[  ]]' ]} },
+	//*/
 
 	/* XXX SHOWN_HIDDEN
 	// XXX these need to be revised...
