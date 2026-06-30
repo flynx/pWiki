@@ -1399,7 +1399,13 @@ module.parser = {
 						var pageHandler =
 							function(page){
 								// XXX cache...
-								return handler.call(this, parser, page, state) }
+								return handler.call(this, 
+									parser, 
+									page, 
+									args.isolated ?
+										// XXX clean (now), partial or derp-copy?
+										{}
+										: state) }
 
 						// XXX can we do:
 						// 		return this.get(...)
@@ -1948,4 +1954,4 @@ module.parser = {
 
 
 /**********************************************************************
-* vim:set ts=4 sw=4 :                               */ return module })
+* vim:set ts=4 sw=4 nowrap :                        */ return module })
