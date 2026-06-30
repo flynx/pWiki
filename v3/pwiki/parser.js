@@ -600,7 +600,13 @@ module.BaseParser = {
 				elem.resolving = res
 				wait.add(res)
 				state.waitAll = res
-				// XXX is .isolated implemented???
+				// XXX do we need to wait till the last .waitNested is 
+				// 		resolved?
+				// 		...should it's handlers complete??
+				// XXX can this be controlled by the macro???
+				// 		...one way to do in is to ger pass a resolve(..) 
+				// 		func to the macro...
+				// 		...do we need this?
 				if(!res.isolated){
 					state.waitNested = res }
 				res.then(
@@ -720,40 +726,35 @@ module.BaseParser = {
 				callback) } },
 
 	// XXX
+	_parse: function(page, ast, state={}){
+		return Promise.awaitOrRun(
+			this.resolve(page, ast, state),
+			function(ast){
+				// XXX
+				if(ast.length > 1){
+					throw new Error('!!!!')
+				}
+				return ast[0] 
+					?? '' }) },
+	// XXX
 	// XXX how should this play with filters???
 	// 		...should filters be client-side only??
 	parseNested: function(page, ast, state={}){
-		var that = this
-		ast = this.resolve(page, ast, state)
-		// XXX
-		if(state.waitNested){
-			return state.waitNested
-				.then(function(){
-					return that.parse(page, ast, state) }) }
-		// XXX
-		if(ast.length > 1){
-			throw new Error('!!!!')
-		}
-		return ast[0] 
-			?? '' },
+		return Promise.awaitOrRun(
+			state.waitNested,
+			this._parse(page, ast, state),
+			function(_, ast){
+				return ast }) },
 
 	// XXX this can't be used from within macros -- will deadlock the results...
 	// XXX how should this play with filters???
 	// 		...should filters be client-side only??
 	parse: function(page, ast, state={}){
-		var that = this
-		ast = this.resolve(page, ast, state)
-		// XXX .wait or .waitAll ???
-		if(state.wait){
-			return state.wait
-				.then(function(){
-					return that.parse(page, ast, state) }) }
-		// XXX
-		if(ast.length > 1){
-			throw new Error('!!!!')
-		}
-		return ast[0] 
-			?? '' },
+		return Promise.awaitOrRun(
+			state.wait,
+			this._parse(page, ast, state),
+			function(_, ast){
+				return ast }) },
 
 
 
@@ -1002,6 +1003,13 @@ function(spec, func){
 	return func }
 
 
+var isolated =
+module.isolated = 
+function(func){
+	func.isolated = true
+	return func }
+
+
 // XXX RENAME...
 // 		...this is more of an expander/executer...
 // 		...might be a good idea to also do a check without executing...
@@ -1088,7 +1096,7 @@ module.parser = {
 					// 		...at this stage it should more or less be static -- check!
 					return Promise.awaitOrRun(
 						// XXX how do we resolve the await loop?
-						parser.parse(this, ast, {
+						parser.parseNested(this, ast, {
 							...state,
 							filters: local.includes(this.ISOLATED_FILTERS) ?
 								local
@@ -1364,23 +1372,26 @@ module.parser = {
 			// XXX thinking that reimplementing this is a bit less boring than
 			// 		refactoring, and should be cleaner...
 			// XXX if the src is empty return nothing...
-			// XXX this needs to be reusable...
 			// XXX need a wrapper protocol -- is this the level for it???
 			// XXX page API used:
-			// 		.basepath
 			// 		.resolvePathVars(path)
 			// 		.get(path)
 			// 			is this a promise/value, iterable promise a generator
 			// 			an async generator, ... or a combination/stack of the above???
 			function(parser, args, body, state, key='included', handler){
+				var that = this
+
+				var recursive = 
+				state.recursive = 
+					args.recursive 
+						?? body
+						?? state.recursive
 
 				var base = this.basepath
-				// XXX 
-				//var src = parser.parse(this.resolvePathVars(args.src))
-				var src = args.src
+				var src = this.resolvePathVars(args.src)
 
 				return Promise.awaitOrRun(
-					parser.parse(this, src, state),
+					parser.parseNested(this, src, state),
 					function(src){
 						var cache = state.cache ??= {}
 						if(cache[src]){
@@ -1389,36 +1400,72 @@ module.parser = {
 						// XXX should this be a tree??
 						// 		...need to at least split direct and 
 						// 		indirect dependencies...
-						var depends = ((state.depends ??= {})[base] ??= {})
+						// XXX would be nice to separate direct (in-page) 
+						// 		depenedencies nad nested...
+						// XXX do we need the same for real paths???
+						// 		no, because actual paths are meaningless 
+						// 		out of context...
+						var depends = ((state.depends ??= {})[src] ??= {})
 
+						// check for recursion...
+						// XXX do we do this for pattern paths???
+						// XXX this does not catch the /A/A/A/... recursion...
+						var stack = state.include_stack ??= []
+						// XXX is this the right separator???
+						// 		...need something that can't be in a path...
+						var base_src = base +'|'+ src
+						if(stack.includes(base_src)){
+							if(recursive){
+								return recursive }
+							throw new Error('Recursion:\n\t'+ 
+								[...stack, base_src].join('\n\t\t-> ')) }
+						stack.push(base_src)
+
+						// content handler...
 						handler ??= 
-							function(parser, page, state){
-								// XXX get page text
-								// XXX setup state
-								return parser.parse(this, page, state) }
-						var pageHandler =
-							function(page){
-								// XXX cache...
-								return handler.call(this, parser, page, state) }
+							function(parser, text, state){
+								return parser._parse(that, text, state) }
 
-						// XXX can we do:
-						// 		return this.get(...)
-						// 			.iter()
-						// 			.map(...)
-						// 			.sync()
-						return Promise.awaitOrRun(
-							this.get(src),
+						var pageHandler =
+							function(text, i, l){
+								return [
+										handler.call(that, parser, text, state),
+										// join...
+										(args.join 
+												&& i < l.length - 1) ?
+											parser._parse(that, args.join, state)
+											: []
+									].flat() }
+						var resultHandler =
 							function(pages){
+								// XXX not sure if this can happen or why...
+								if(state.include_stack.at(-1) != base_src){
+									throw new Error('Include stack error') }
+								state.include_stack.pop()
+								// cleanup...
+								if(state.include_stack.length == 0){
+									delete state.include_stack
+									delete state.recursive }
+								// cache the final result...
+								// XXX wrap??
+								cache[src] = pages
+						   		return pages }
+
+						// get and run things...
+						return Promise.awaitOrRun(
+							that.get(src).raw,
+							function(pages){
+								pages = pages instanceof Array ?
+									pages
+									: [pages]
 								return Promise.awaitOrRun(
 									// handle pages...
 									Promise
-										.iter(
-											pages
-												.map(pageHandler))
+										.iter(pages
+											.map( pageHandler ))
+										.flat()
 										.sync(),
-									// cache the final result...
-									function(pages){
-										return (cache[src] = pages) }) }) }) }),
+									resultHandler ) }) }) }),
 
 		include: Macro(
 			['src', 'recursive', 'join', 
@@ -1943,6 +1990,33 @@ module.parser = {
 		'join': ['macro'],
 	},
 
+}
+
+
+
+// XXX for testing...
+
+var P = 
+module.P = {
+	//* XXX
+	_content: [
+		'first page text',
+		'second page text',
+	],
+	/*/
+	_content: 'page text',
+	//*/
+	
+	path: '/path/to/page',
+	basepath: '/path/to/',
+
+	get raw(){
+		return this._content ?? '' },
+	get: function(){
+		return this },
+
+	resolvePathVars: function(path){
+		return path },
 }
 
 

@@ -73,6 +73,12 @@ test.Setups({
 			'<slot slot>[[ <slot slot.content/> ]]</slot>@slot(slot value)',
 			'value' ]} },
 
+	// XXX should this work???
+	slot_nested_nested: function(assert){
+		return {code: [
+			'<slot slot>[[ <slot slot value/> ]]</slot>',
+			'value' ]} },
+
 	/* XXX SHOWN_HIDDEN
 	// XXX these need to be revised...
 	// 		...do we actually need hidden/shown???
