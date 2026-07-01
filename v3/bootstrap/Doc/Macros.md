@@ -7,6 +7,8 @@ Any macro can be used in any of the two forms, either _inline_ or _HTML-like_.
 Inline:
 ```
 @macro-name(value)
+
+@macro-name(value text=" ...text... ")
 ```
 
 HTML-style:
@@ -26,6 +28,28 @@ The two forms exist to fill two distinct functions:
 - inline: compatible with attribute values and short
 - html-like: element-like, simpler when dealing with html
 
+
+### Positional and keyword attributes
+
+Attributes (arguments) can be set sequentially by value, as they are 
+defined or by name in any order.
+
+The following are equivalent:
+```
+<slot abc "some text"/>
+<slot name=abc text="some text"/>
+<slot "some text" name=abc/>
+```
+
+Keyword attributes are special attributes that are given by name rather 
+than by value by default and if no value is set explicitly it defaults 
+to `true` if passed, and to false if omitted.
+
+The following are equivalent:
+```
+<slot some-name hidden/>
+<slot some-name hidden=true/>
+```
 
 ### Special attributes
 
@@ -108,6 +132,7 @@ This will enable writing documents (mainly in _markdown_) that are usable
 bot from within pWiki as well as outside.
 
 
+
 ## Macros
 
 ### now ()
@@ -132,32 +157,55 @@ use.
 
 
 
-### slot (<name> <text> shown|hidden)
+### slot (<name> <text> shown|hidden) / content
 
 ```
-\@slot(<name>)
-\@slot(<name> <text>)
-\@slot(<name> <text> hidden)
-\@slot(<name> <text> shown)
+@slot(<name>)
+@slot(<name> <text>)
+@slot(<name> <text> hidden)
+@slot(<name> <text> shown)
+
+<slot <name> ...>
+	...
+	<content/>
+	...
+</slot>
 ```
 
 Define or fill a slot.
 
 First occurrence of a slot `name` will _define_ a slot and set its value 
 (fill it) with `text` if given.
-Each new occurrence of a name will override slot content.
+Each new occurrence of a slot with the same name will override slot content.
 
 Only the first occurance of the `name` slot macro is displayed by default.
 
 Slot display can be explicitly controlled via the `hidden` and `shown` 
-keywords, if both are given `hidden` has precedence.
+keywords, if both are given `hidden` has precedence. All _shown_ slots of 
+the same name will display the same value.
 
 Nested slots are processed in order of occurrence, i.e. a nested slot can 
 override it's parent's value.
+
+**Example:**
 ```
-<slot X> some text <slot X "new text"/></slot>
+<slot X>
+	some text 
+	<slot X "new text"/>
+</slot>
 ```
 Will resolve to: `new text`
+
+`<content/>` / `@content()` if encountered will be replaced with previous 
+slot value.
+
+**Example:**
+```
+<slot X text="some text"/>
+
+<slot X>[[ <content/> ]]</slot>
+```
+Will resolve to `[[ some text ]]`
 
 
 **Example:**
@@ -182,7 +230,7 @@ Will resolve to: `new text`
 
 
 
-
+---
 
 ### filter (name)
 

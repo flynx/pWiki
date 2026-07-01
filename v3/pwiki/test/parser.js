@@ -56,7 +56,7 @@ test.Setups({
 			...ins.map(function(e){
 				return e + '<slot slot>third</slot>' }),
 			'third' ]} },
-
+	// nested...
 	slot_nested: function(assert){
 		return {code: [
 			'<slot slot>[[ <slot slot.content/> ]]</slot>@slot(slot.content value)',
@@ -65,8 +65,7 @@ test.Setups({
 		return {code: [
 			'<slot slot>[[ <slot slot.content/> ]]</slot>@slot(slot value)',
 			'value' ]} },
-
-	// recursion...
+	// nested-self...
 	slot_nested_nested: function(assert){
 		return {code: [
 			'<slot slot>[[ <slot slot value/> ]]</slot>',
@@ -76,6 +75,32 @@ test.Setups({
 		return {code: [
 			'<slot slot>[[ <slot slot/> ]]</slot>',
 			'[[  ]]' ]} },
+	// slot content...
+	slot_content: function(assert){
+		return {code: [
+			'<slot slot>[[ <content/> ]]</slot>',
+			'[[  ]]' ]} },
+	slot_content_multi: function(assert){
+		return {code: [
+			'<slot slot "moo"/><slot slot>[[ <content/> <content/> <content/> ]]</slot>',
+			'[[ moo moo moo ]]' ]} },
+	slot_content_filled: function(assert){
+		var ins = this.slot_content(assert).code.slice(0, -1)
+		return {code: [
+			...ins.map(function(e){
+				return '<slot slot "content"/>' + e }),
+			'[[ content ]]' ]} },
+	slot_content_content_filled: function(assert){
+		var ins = this.slot_content_filled(assert).code
+		var res = ins.pop()
+		return {code: [
+			...ins.map(function(e){
+				return e +'<slot slot>(( <content/> ))</slot>' }),
+			'(( '+ res +' ))' ]} },
+	slot_content_nested: function(assert){
+		return {code: [
+			'<slot slot>moo<slot slot>[[ <content/> ]]</slot></slot>',
+			'[[ moo ]]' ]} },
 
 	/* XXX SHOWN_HIDDEN
 	// XXX these need to be revised...
@@ -124,6 +149,24 @@ test.Modifiers({
 			number: 1,
 			string: 'string',
 		}
+		return state },
+	slot: function(assert, state){
+		state.code = [
+			...state.code
+				.slice(0, -1)
+				.map(function(e){
+					return `[[ <slot parent>${e}</slot> ]]` }),
+			`[[ ${state.code.at(-1)} ]]`,
+		]
+		return state },
+	slot_expand: function(assert, state){
+		state.code = [
+			...state.code
+				.slice(0, -1)
+				.map(function(e){
+					return `[[ <slot parent/> ]]<slot parent>${e}</slot>` }),
+			`[[ ${state.code.at(-1)} ]]`,
+		]
 		return state },
 })
 

@@ -1309,6 +1309,13 @@ module.parser = {
 		//		...
 		//	</slot>
 		//
+		//	Wrap previous value of slot
+		//	<slot name=<name>>
+		//		...
+		//		<content/>
+		//		...
+		//	</slot>
+		//
 		//	Force show a slot...
 		//	<slot shown ... />
 		//
@@ -1325,12 +1332,9 @@ module.parser = {
 		// 		all other slots with <name> will replace its content, unless
 		// 		explicit shown/hidden arguments are given.
 		// NOTE: hidden has precedence over shown if both are given.
-		// 		XXX revise...
 		//
-		// XXX do we need to be able to insert previous slot value???
-		// 		...this was implemented via <content/>, but the naming
-		// 		was not obvious, should be something like <overridden/>
-		// 		or <previous/>...
+		// XXX can there be a situation where not all <content/> elements 
+		// 		are cleared???
 		// XXX revise the use of hidden/shown use mechanic and if it's 
 		// 		needed...
 		slot: Macro(
@@ -1358,34 +1362,43 @@ module.parser = {
 
 						// set slot value...
 						//
-						// NOTE: the slots are filled sequentially, in 
-						// 		order of opening elements, rather than 
-						// 		topologically, i.e. filled on the way down
-						// 		 the tree vs. up.
 						var slot = slots[name] ??= []
 						// NOTE: the placeholder is a stand-in for our 
-						// 		current value that is still to be generated.
-						var placeholder = [...(0 in slot ? slot : [])]
+						// 		current value that is still to be generated...
+						var placeholder = [...slot]
 						slot.splice(0, slot.length, placeholder)
-						// expand slot body...
+						// expand body...
 						body = body ?
 							parser.expand(this, body ?? [], state)
 							: body
 						// if slot not overriden, write our value...
 						if(slot[0] === placeholder){
-							slot.splice(0, 1, 
+							slot.splice(0, slot.length, 
 								...(body != null ?
 									[body]
-									: placeholder)) }
+									: placeholder)) 
+							// placeholder -> <content/>
+							body = placeholder }
+						// <content/> -- handle slot's original value... 
+						slot[0] = 
+							body.flat().length > 0 
+									&& slot[0] instanceof Array ?
+								slot[0]
+									.map(function(e){
+										if(e && e.name == 'content'){
+											return body }
+										return e })
+								: slot[0]
 
 						return hidden ?
 							''
 							: Object.assign(
 								// stage II: place the latest slot value...
 								function(st){
-									return ((st ?? state).slots ?? {})[name] 
-										?? body },
+									return ((st ?? state).slots ?? {})[name] },
 								{slot: name}) }) })), 
+		// XXX do not like this name...
+		content: ['slot'],
 
 
 		//
