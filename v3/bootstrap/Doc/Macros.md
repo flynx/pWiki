@@ -201,11 +201,11 @@ slot value.
 
 **Example:**
 ```
-<slot X text="some text"/>
+This is: <slot X text="some text"/>
 
 <slot X>[[ <content/> ]]</slot>
 ```
-Will resolve to `[[ some text ]]`
+Will resolve to `This is: [[ some text ]]`
 
 
 **Example:**
