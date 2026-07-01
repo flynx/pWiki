@@ -244,12 +244,7 @@ module.BaseParser = {
 				body
 					?? args.body 
 					?? args.text }
-		return macro.call(page, 
-				this,
-				args,
-				body, 
-				state, 
-				...rest) },
+		return macro.call(page, this, args, body, state, ...rest) },
 
 
 	// Strip comments...
@@ -1343,6 +1338,7 @@ module.parser = {
 			// 		overrides in nesteed slots...
 			lazy(
 			function(parser, args, body, state){
+				var that = this
 				var name = args.name
 
 				return Promise.awaitOrRun(
@@ -1369,7 +1365,7 @@ module.parser = {
 						slot.splice(0, slot.length, placeholder)
 						// expand body...
 						body = body ?
-							parser.expand(this, body ?? [], state)
+							parser.expand(that, body ?? [], state)
 							: body
 						// if slot not overriden, write our value...
 						if(slot[0] === placeholder){
@@ -1425,13 +1421,16 @@ module.parser = {
 		// 		not 100% correct manner focusing on path depth and ignoring
 		// 		the context, this potentially can lead to false positives.
 		//
+		// XXX add path recursion test to data -- fail if two paths resolve 
+		// 		to the same context...
 		// XXX need a way to make encode option transparent...
 		// XXX need a way to wrap the included page...
 		// 		- template page...
 		// 		- prefix/sufix...
 		// XXX store a page cache in state...
+		// XXX do we want to load a specific slot/block???
 		// XXX UPDATE...
-		include2: Macro(
+		include: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],
 			// XXX thinking that reimplementing this is a bit less boring than
@@ -1443,6 +1442,7 @@ module.parser = {
 			// 		.get(path)
 			// 			is this a promise/value, iterable promise a generator
 			// 			an async generator, ... or a combination/stack of the above???
+			lazy(
 			function(parser, args, body, state, key='included', handler){
 				var that = this
 
@@ -1453,6 +1453,7 @@ module.parser = {
 						?? state.recursive
 
 				var base = this.basepath
+				// XXX we do this before or after we parse???
 				var src = this.resolvePathVars(args.src)
 
 				return Promise.awaitOrRun(
@@ -1494,24 +1495,24 @@ module.parser = {
 						var pageHandler =
 							function(text, i, l){
 								return [
-										handler.call(that, 
-											parser, 
-											text, 
-											// isolated up -- will see all 
-											// the state but can have no 
-											// side-effects...
-											args.isolated == 'partial' ?
-													serialize.partialDeepCopy(state)
-												// fully isolated...
-												: args.isolated ?
-													{}
-												: state),
-										// join...
-										(args.join 
-												&& i < l.length - 1) ?
-											parser._parse(that, args.join, state)
-											: []
-									].flat() }
+									handler.call(that, 
+										parser, 
+										text, 
+										// isolated up -- will see all 
+										// the state but can have no 
+										// side-effects...
+										args.isolated == 'partial' ?
+												serialize.partialDeepCopy(state)
+											// fully isolated...
+											: args.isolated ?
+												{}
+											: state),
+									// join...
+									(args.join 
+											&& i < l.length - 1) ?
+										parser._parse(that, args.join, state)
+										: []
+								].flat() }
 						var resultHandler =
 							function(pages){
 								// XXX not sure if this can happen or why...
@@ -1541,9 +1542,9 @@ module.parser = {
 											.map( pageHandler ))
 										.flat()
 										.sync(),
-									resultHandler ) }) }) }),
+									resultHandler ) }) }) })),
 
-		include: Macro(
+		_include: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],
 			async function*(parser, args, body, state, key='included', handler){
@@ -2066,33 +2067,6 @@ module.parser = {
 		'join': ['macro'],
 	},
 
-}
-
-
-
-// XXX for testing...
-
-var P = 
-module.P = {
-	//* XXX
-	_content: [
-		'first page text',
-		'second page text',
-	],
-	/*/
-	_content: 'page text',
-	//*/
-	
-	path: '/path/to/page',
-	basepath: '/path/to/',
-
-	get raw(){
-		return this._content ?? '' },
-	get: function(){
-		return this },
-
-	resolvePathVars: function(path){
-		return path },
 }
 
 

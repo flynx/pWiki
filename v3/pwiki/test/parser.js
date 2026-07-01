@@ -1,10 +1,50 @@
 #!/usr/bin/node
 //---------------------------------------------------------------------
 
+var path = require('path')
+
 var test = require('ig-test')
 var serialize = require('ig-serialize')
 
 var parser = require('../parser').parser
+
+
+//---------------------------------------------------------------------
+
+var PAGES = 
+module.exports.PAGES = {
+	'/blank': '',
+	'/page': 'Page',
+	'/async/page': Promise.resolve('Page'),
+	'/includePage': '@include(/page)',
+}
+
+var P = 
+module.exports.P = {
+	__pages__: PAGES,
+	__parser__: parser,
+	
+	path: '/',
+
+	get basepath(){
+		return path.dirname(this.path ?? '') },
+
+	get raw(){
+		return this.__pages__[this.path] ?? '' },
+	get text(){
+		return this.__parser__.parse(this, this.raw, {}) },
+
+	get: function(p){
+		return {
+			__proto__: P,
+			path: path.resolve(this.path, p),
+		} },
+
+	// XXX
+	resolvePathVars: function(path){
+		return path },
+}
+
 
 
 //---------------------------------------------------------------------
@@ -140,6 +180,28 @@ test.Setups({
 	// XXX arg...
 	// XXX
 
+	// include...
+	// XXX these do not play well with modifiers...
+	include: function(assert, path='/blank', expected){
+		return { 
+			page: P,
+			code: [ 
+				`@include(${path})`, 
+				// XXX for some reason this does not parse int a macro....
+				//'<include /blank />', 
+				`<include "${path}" />`, 
+					expected 
+						?? P.get(path).raw,
+			],
+		}},
+	include_page: function(assert){
+		return this.include(assert, '/page') },
+	include_include_page: function(assert){
+		return this.include(assert, '/includePage', 'Page') },
+	/* XXX
+	include_async: function(assert){
+		return this.include(assert, '/async/page') },
+	//*/
 })
 
 
