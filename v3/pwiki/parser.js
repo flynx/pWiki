@@ -1315,10 +1315,6 @@ module.parser = {
 		//	Force hide a slot...
 		//	<slot hidden ... />
 		//
-		//	Insert previous slot content...
-		//	<content/>
-		//
-		//
 		// NOTE: slots are expanded in order of occurance not in order 
 		// 		of topology, thus nested can override slots they are 
 		// 		nested in, e.g.:
@@ -1331,11 +1327,12 @@ module.parser = {
 		// NOTE: hidden has precedence over shown if both are given.
 		// 		XXX revise...
 		//
+		// XXX do we need to be able to insert previous slot value???
+		// 		...this was implemented via <content/>, but the naming
+		// 		was not obvious, should be something like <overridden/>
+		// 		or <previous/>...
 		// XXX revise the use of hidden/shown use mechanic and if it's 
 		// 		needed...
-		// XXX do we need to guard from recursion???
-		// 		...do not think it's possible -- everything is resolved 
-		// 		once and just inseerted as-is (revise)
 		slot: Macro(
 			['name', 'text', ['shown', 'hidden']],
 			lazy(
@@ -1348,7 +1345,6 @@ module.parser = {
 						var slots = state.slots ??= {}
 
 						//var hidden = name in slots
-						// XXX EXPERIMENTAL
 						var hidden = 
 							// 'hidden' has priority... 
 							args.hidden
@@ -1359,30 +1355,31 @@ module.parser = {
 									: name in slots)
 
 						// set slot value...
-						delete slots[name]
+						//
+						// NOTE: the slots are filled sequentially, in 
+						// 		order of opening elements, rather than 
+						// 		topologically, i.e. filled on the way down
+						// 		 the tree vs. up.
+						var slot = slots[name] ??= []
+						// NOTE: the placeholder is a stand-in for our 
+						// 		current value that is still to be generated.
+						var placeholder = [...(0 in slot ? slot : [])]
+						slot.splice(0, slot.length, placeholder)
+						// expand slot body...
 						body = body ?
 							parser.expand(this, body ?? [], state)
 							: body
-						// XXX BUG: this breaks into infinite recursion:
-						//			'<slot a>[[ <slot a> ]]</slot>'
-						//				-> err
-						// 		need to somehow break recursion here, if the
-						// 		nested slot had no/empty body...
-						//			slots[name] ??= body ?? []
-						//		fixes the recursion but also resets the 
-						//		parent value...
-						//		need to meke the behavior of the following 
-						//		the saem:
-						//			'<slot a>[[ <slot a> ]]</slot>'
-						//				-> err
-						//		and:
-						//			'<slot a>[[ <slot a> ]]</slot> @slot(a)'
-						//				-> '[[  ]]'
-						slots[name] ??= body 
+						// if slot not overriden, write our value...
+						if(slot[0] === placeholder){
+							slot.splice(0, 1, 
+								...(body != null ?
+									[body]
+									: placeholder)) }
 
 						return hidden ?
 							''
 							: Object.assign(
+								// stage II: place the latest slot value...
 								function(st){
 									return ((st ?? state).slots ?? {})[name] 
 										?? body },

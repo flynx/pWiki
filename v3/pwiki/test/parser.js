@@ -72,12 +72,10 @@ test.Setups({
 			'<slot slot>[[ <slot slot value/> ]]</slot>',
 			'<slot slot shown>[[ <slot slot value/> ]]</slot>',
 			'value' ]} },
-	/*/ XXX recursion...
 	slot_nested_shown_nested: function(assert){
 		return {code: [
 			'<slot slot>[[ <slot slot/> ]]</slot>',
 			'[[  ]]' ]} },
-	//*/
 
 	/* XXX SHOWN_HIDDEN
 	// XXX these need to be revised...
