@@ -677,6 +677,7 @@ module.BaseParser = {
 
 	// resolve stage II macros and merge results...
 	//
+	// XXX BUG: sync/async paths seem to diverge...
 	resolve: function(page, ast, state={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
@@ -704,7 +705,12 @@ module.BaseParser = {
 					prev = '' }
 				if(args.length > 0){
 					elems.push(args.shift()) } } }
+		var unpack = function(elem){
+			// XXX
+		}
 
+		// XXX can ast be a promise???
+		// XXX elems can be unresolved -- need a merge strategy for them...
 		for(var elem of ast){
 			// nesting...
 			while(elem && elem.value){
@@ -714,6 +720,11 @@ module.BaseParser = {
 					elem = elem(state) } }
 			if(elem == null){
 				continue }
+			// XXX do a delayed merge...
+			// 		...but for this we need to also apply the rest of this iteration to the result...
+			if(elem.resolving){
+				console.log('!!!!!!!!!!!!!!!!!!!')
+			}
 			// atomic values...
 			if(typeof(elem) != 'object'){
 				merge(elem) 
@@ -725,11 +736,12 @@ module.BaseParser = {
 				continue }
 			// expand ast...
 			if(elem instanceof Array){
-				//merge(...this.resolve(page, elem, state)) 
+				// XXX this can containe promises...
 				merge(...this.resolve(page, elem, state)) 
 				continue }
 			// expand .body attribute...
 			if((elem.attrs ?? {}).body instanceof Array){
+				// XXX this can containe promises...
 				elem.attrs.body = this.resolve(page, elem.attrs.body, state) }
 			// nested macro with no value set -- skip...
 			if(this.macros[elem.name] instanceof Array){
@@ -1527,7 +1539,6 @@ module.parser = {
 									delete state.include_stack
 									delete state.recursive }
 								// cache the final result...
-								// XXX wrap??
 								cache[src] = pages
 						   		return pages }
 

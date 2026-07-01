@@ -198,7 +198,7 @@ test.Setups({
 		return this.include(assert, '/page') },
 	include_include_page: function(assert){
 		return this.include(assert, '/includePage', 'Page') },
-	/* XXX
+	/* XXX parser.resolve(..) does not handle promises correctly yet...
 	include_async: function(assert){
 		return this.include(assert, '/async/page') },
 	//*/
@@ -256,6 +256,8 @@ test.Tests({
 					'\n\t      in: "'+ input +'"',
 					'\n\t     out: "'+ res +'"',
 					'\n\texpected: "'+ expect +'"') } },
+	//asyncParse: async function(assert, state){
+	//	return await this.parse(assert, state) },
 })
 
 
