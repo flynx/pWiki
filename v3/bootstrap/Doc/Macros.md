@@ -27,6 +27,32 @@ The two forms exist to fill two distinct functions:
 - html-like: element-like, simpler when dealing with html
 
 
+### Special attributes
+
+Two special attributes are handled differently: `text` and `body`, these 
+are equivalent, the two names exist to make the semantics of macros simpler.
+
+If both attributes are defined `body` takes precedence over `text` and 
+both are overriden by a non-empty body, e.g. the following:
+```
+<slot slot text=text-attr body=body-attr>body</slot>
+```
+will resolve to `body`.
+
+The main difference from normal attributes is that the value of these is
+parsed in the same way as the element's body is. Thus, the following are
+identical:
+```
+<macro-name text="body text"/>
+
+<macro-name body="body text"/>
+
+<macro-name>body text</macro-name>
+```
+
+The values are parsed lazily, i.e. only the final value is parsed, the 
+overridden values are ignored.
+
 
 ### Escaping macros
 
@@ -86,6 +112,10 @@ bot from within pWiki as well as outside.
 
 ### now ()
 
+```
+\@now()
+```
+
 Get current date in seconds since epoch, this is equivalet Javascript's
 `Date.now()`.
 
@@ -96,14 +126,61 @@ the date once per page load, i.e. the date changes on page load, while
 `$NOW` is set every time the path is used, i.e. on every click or script
 use.
 
-**Example:**
-```
-\@now()
-```
-
 <pwiki-comment>Will produce: `1471389217848`</pwiki-comment>
 
 <!--[pWiki[  Will produce: `@now()` ]]-->
+
+
+
+### slot (<name> <text> shown|hidden)
+
+```
+\@slot(<name>)
+\@slot(<name> <text>)
+\@slot(<name> <text> hidden)
+\@slot(<name> <text> shown)
+```
+
+Define or fill a slot.
+
+First occurrence of a slot `name` will _define_ a slot and set its value 
+(fill it) with `text` if given.
+Each new occurrence of a name will override slot content.
+
+Only the first occurance of the `name` slot macro is displayed by default.
+
+Slot display can be explicitly controlled via the `hidden` and `shown` 
+keywords, if both are given `hidden` has precedence.
+
+Nested slots are processed in order of occurrence, i.e. a nested slot can 
+override it's parent's value.
+```
+<slot X> some text <slot X "new text"/></slot>
+```
+Will resolve to: `new text`
+
+
+**Example:**
+
+<pwiki-comment>
+- [bootstrap view](/bootstrap/Templates/_view.html)
+- [bootstrap edit](/bootstrap/Templates/_edit.html)
+</pwiki-comment>
+
+<!--[pWiki[
+[Templates/\_view] / [bootstrap view](bootstrap/Templates/_view.html):
+```
+@source(Templates/_view)
+```
+
+[Templates/\_edit] / [bootstrap edit](bootstrap/Templates/_edit.html):
+```
+@source(Templates/_edit)
+```
+]]-->
+
+
+
 
 
 
@@ -177,33 +254,6 @@ Arguments:
 [Templates/\_css] / [bootstrap css](bootstrap/Templates/_css.html):
 ```
 @source(Templates/_css)
-```
-]]-->
-
-
-### slot (name text)
-
-Define or fill a slot.
-
-First occurrence of a `name` will _define_ a slot and fill it with `text`.
-Each new occurrence of a name will change slot content.
-
-**Example:**
-
-<pwiki-comment>
-- [bootstrap view](/bootstrap/Templates/_view.html)
-- [bootstrap edit](/bootstrap/Templates/_edit.html)
-</pwiki-comment>
-
-<!--[pWiki[
-[Templates/\_view] / [bootstrap view](bootstrap/Templates/_view.html):
-```
-@source(Templates/_view)
-```
-
-[Templates/\_edit] / [bootstrap edit](bootstrap/Templates/_edit.html):
-```
-@source(Templates/_edit)
 ```
 ]]-->
 

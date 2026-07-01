@@ -1335,6 +1335,8 @@ module.parser = {
 		// 		needed...
 		slot: Macro(
 			['name', 'text', ['shown', 'hidden']],
+			// NOTE: this is needed to be able to control the sequence of
+			// 		overrides in nesteed slots...
 			lazy(
 			function(parser, args, body, state){
 				var name = args.name
