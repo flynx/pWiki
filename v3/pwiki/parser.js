@@ -223,6 +223,7 @@ module.BaseParser = {
 	// NOTE: this unifies the body, body argument and text argument (in 
 	// 		order of priority) and passes the value in the body macro 
 	// 		handler argument.
+	// XXX should a macro be run in the context of the page or the parser???
 	callMacro: function(page, macro, args, body, state, ...rest){
 		do {
 			macro = this.macros[macro] 
@@ -244,7 +245,7 @@ module.BaseParser = {
 				body
 					?? args.body 
 					?? args.text }
-		return macro.call(page, this, args, body, state, ...rest) },
+		return macro.call(this, page, args, body, state, ...rest) },
 
 
 	// Strip comments...
@@ -1159,21 +1160,21 @@ module.parser = {
 		'': 'arg',
 		arg: Macro(
 			['name', 'else', ['local']],
-			function(parser, args, _, state){
-				var v = (this.args ?? {})[args.name] 
+			function(page, args, _, state){
+				var v = (page.args ?? {})[args.name] 
 					|| (!args.local 
-						&& (this.renderer
-							&& this.renderer.args[args.name])
-						|| (this.root
-							&& this.root.args[args.name]))
+						&& (page.renderer
+							&& page.renderer.args[args.name])
+						|| (page.root
+							&& page.root.args[args.name]))
 				v = v === true ?
 					args.name
 					: v
 				return v
 					|| (args['else']
-						&& parser.expand(this, args['else'], state)) }),
-		args: function(){
-			return pwpath.obj2args(this.args) },
+						&& this.expand(this, args['else'], state)) }),
+		args: function(page){
+			return pwpath.obj2args(page.args) },
 
 		// XXX EXPERIMENTAL...
 		//
@@ -1193,13 +1194,14 @@ module.parser = {
 				/*/
 				['shown', 'hidden']],
 				//*/
-			function(parser, args, body, state){
+			function(page, args, body, state){
+				var that = this
 				var name = args.name
 				if(!name){
 					return '' }
 
 				return Promise.awaitOrRun(
-					parser.parseNested(this, name, state),
+					this.parseNested(page, name, state),
 					function(name){
 						// XXX INC_DEC
 						var inc = args.inc
@@ -1270,7 +1272,7 @@ module.parser = {
 						if(text){
 							return Promise.awaitOrRun(
 								//state.waitNested,
-								parser.parseNested(this, text, state),
+								that.parseNested(page, text, state),
 								function(value){
 									text = vars[name] = value
 									return show ?? false ?
@@ -1279,12 +1281,13 @@ module.parser = {
 						// get...
 						} else {
 							return handleFormat(vars[name] ?? '') } }) }),
-		vars: function(parser, args, body, state){
+		vars: function(page, args, body, state){
+			var that = this
 			var lst = []
 			for(var [name, value] of Object.entries(args)){
 				lst.push(
-					parser.parseNested(this, name, state),
-					parser.parseNested(this, value, state)) }
+					this.parseNested(page, name, state),
+					this.parseNested(page, value, state)) }
 			var vars = state.vars ??= {}
 			return Promise.awaitOrRun(
 				state.waitNested,
@@ -1337,12 +1340,12 @@ module.parser = {
 			// NOTE: this is needed to be able to control the sequence of
 			// 		overrides in nesteed slots...
 			lazy(
-			function(parser, args, body, state){
+			function(page, args, body, state){
 				var that = this
 				var name = args.name
 
 				return Promise.awaitOrRun(
-					parser.parseNested(this, name, state),
+					this.parseNested(page, name, state),
 					function(name){
 						var slots = state.slots ??= {}
 
@@ -1365,7 +1368,7 @@ module.parser = {
 						slot.splice(0, slot.length, placeholder)
 						// expand body...
 						body = body ?
-							parser.expand(that, body ?? [], state)
+							that.expand(page, body ?? [], state)
 							: body
 						// if slot not overriden, write our value...
 						if(slot[0] === placeholder){
@@ -1443,7 +1446,7 @@ module.parser = {
 			// 			is this a promise/value, iterable promise a generator
 			// 			an async generator, ... or a combination/stack of the above???
 			lazy(
-			function(parser, args, body, state, key='included', handler){
+			function(page, args, body, state, key='included', handler){
 				var that = this
 
 				var recursive = 
@@ -1452,12 +1455,12 @@ module.parser = {
 						?? body
 						?? state.recursive
 
-				var base = this.basepath
+				var base = page.basepath
 				// XXX we do this before or after we parse???
-				var src = this.resolvePathVars(args.src)
+				var src = page.resolvePathVars(args.src)
 
 				return Promise.awaitOrRun(
-					parser.parseNested(this, src, state),
+					this.parseNested(page, src, state),
 					function(src){
 						var cache = state.cache ??= {}
 						if(cache[src]){
@@ -1489,14 +1492,14 @@ module.parser = {
 
 						// content handler...
 						handler ??= 
-							function(parser, text, state){
-								return parser._parse(that, text, state) }
+							function(page, text, state){
+								return this._parse(page, text, state) }
 
 						var pageHandler =
 							function(text, i, l){
 								return [
 									handler.call(that, 
-										parser, 
+										page, 
 										text, 
 										// isolated up -- will see all 
 										// the state but can have no 
@@ -1510,7 +1513,7 @@ module.parser = {
 									// join...
 									(args.join 
 											&& i < l.length - 1) ?
-										parser._parse(that, args.join, state)
+										that._parse(page, args.join, state)
 										: []
 								].flat() }
 						var resultHandler =
@@ -1530,7 +1533,7 @@ module.parser = {
 
 						// get and run things...
 						return Promise.awaitOrRun(
-							that.get(src).raw,
+							page.get(src).raw,
 							function(pages){
 								pages = pages instanceof Array ?
 									pages
