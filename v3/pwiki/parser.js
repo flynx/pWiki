@@ -574,14 +574,6 @@ module.BaseParser = {
 				ast
 			: ast.iter()
 
-		var wait = new Set()
-		state.wait instanceof Promise 
-			&& wait.add(state.wait)
-		var resolve, reject
-		state.wait = new Promise(
-			function(){
-				;[resolve, reject] = arguments })
-
 		var elems = []
 		for(let elem of ast){
 			// text block...
@@ -621,9 +613,10 @@ module.BaseParser = {
 			var res = that.callMacro(page, name, args, body, state)
 			// async...
 			if(res instanceof Promise){
+				let all, nested
+				all = state.waitAll = 
+					Promise.all([state.waitAll, res])
 				elem.resolving = res
-				wait.add(res)
-				state.waitAll = res
 				// XXX do we need to wait till the last .waitNested is 
 				// 		resolved?
 				// 		...should it's handlers complete??
@@ -632,13 +625,13 @@ module.BaseParser = {
 				// 		func to the macro...
 				// 		...do we need this?
 				if(!res.isolated){
-					state.waitNested = res }
+					nested = state.waitNested = 
+						Promise.all([state.waitNested, res]) }
 				res.then(
 					function(value){
-						wait.delete(res)
-						if(state.waitAll === res){
+						if(state.waitAll === all){
 							delete state.waitAll }
-						if(state.waitNested === res){
+						if(state.waitNested === nested){
 							delete state.waitNested }
 						delete elem.resolving
 						elem.value = value 
@@ -659,25 +652,52 @@ module.BaseParser = {
 				elem = res }
 			elems.push(elem) }
 
-		// handle wait for isolated macros to resolve...
-		var done = function(){
-			resolve(state)
-			delete state.wait }
-		if(wait.size > 0){
-			Promise.all(wait)
-				.then(
-					done,
-					function(err){
-						reject(err) }) 
-		// done...
-		} else {
-			done() }
+		// cleanup...
+		var wait
+		var waitAll = state.waitAll
+		state.waitAll
+			&& state.waitAll
+				.then(function(){
+					// only cleanup our own mess =)
+					waitAll === state.waitAll
+						&& (delete state.waitAll) })
+			&& (wait = state.wait = waitAll
+				.then(function(){ 
+					wait === state.wait
+						&& (delete state.wait)
+					return elems }))
+		var waitNested = state.waitNested
+		state.waitNested
+			&& state.waitNested
+				.then(function(){
+					// only cleanup our own mess =)
+					waitNested === state.waitNested
+						&& (delete state.waitNested) })
 
 		return elems },
 
 	// resolve stage II macros and merge results...
 	//
-	// XXX BUG: sync/async paths seem to diverge...
+	/* XXX 
+	// XXX these yeild different results:
+	// 			r = parser.resolve(
+	// 				tests.P, 
+	// 				'<slot X>@include(/async/page)</slot> <slot X value>',
+	// 				s = {})
+	// 			s.wait.then(function(){
+	// 				console.log(r) }) // -> ['Page '] (err)
+	// 		and:
+	// 			r = parser.expand(
+	// 				tests.P, 
+	// 				'<slot X>@include(/async/page)</slot> <slot X slot/>',
+	// 				s = {})
+	// 			s.wait.then(function(){
+	// 				r = parser.resolve(test.P, r, s)
+	// 				console.log(r) }) // -> ['slot '] (correct)
+	// 		-> promises seem to not be sequenced correctly here...
+	// 		XXX it looks like the first slot is resolved before the last 
+	// 			slot has a chance to set the value as it is waiting for 
+	// 			the first slot to finish...
 	resolve: function(page, ast, state={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
@@ -705,29 +725,89 @@ module.BaseParser = {
 					prev = '' }
 				if(args.length > 0){
 					elems.push(args.shift()) } } }
-		var unpack = function(elem){
-			// XXX
-		}
 
+		// XXX can we make this more granular and wait only where we need 
+		// 		to wait?
+		// 		....the wait is logical as we need to return a string here 
+		// 		eventually.
+		// 		should this be split into .resolve(..) nad .merge(..)???
+		return Promise.awaitOrRun(
+			state.wait,
+			function(){
+				// XXX can ast be a promise???
+				// XXX elems can be unresolved -- need a merge strategy for them...
+				//var waiting = []
+				for(var elem of ast){
+					// nesting...
+					while(elem && elem.value){
+						elem = elem.value 
+						// exec stage II macros...
+						// XXX this should be called when all the promises before 
+						// 		are resolved...
+						if(typeof(elem) == 'function'){
+							elem = elem(state) } }
+					if(elem == null){
+						continue }
+					// atomic values...
+					if(typeof(elem) != 'object'){
+						merge(elem) 
+						continue }
+					// value is resolved but "empty" -> skip...
+					if('value' in elem 
+							&& (elem.value == null 
+								|| elem.value == '')){
+						continue }
+					// expand ast...
+					if(elem instanceof Array){
+						// XXX this can be or containe promises...
+						merge(...that.resolve(page, elem, state)) 
+						continue }
+					// expand .body attribute...
+					// XXX is this needed here???
+					if(elem.body instanceof Array){
+						console.warn('!!! RESOLVE_BODY')
+						// XXX this can be or containe promises...
+						elem.body = that.resolve(page, elem.body, state) }
+					// nested macro with no value set -- skip...
+					if(that.macros[elem.name] instanceof Array){
+						continue }
+					// unresolved...
+					merge(elem) }
+
+				return elems }) },
+	//*/
+	resolve: function(page, ast, state={}){
+		var that = this
+		ast = typeof(ast) != 'object' ?
+				this.expand(page, ast, state)
+			: ast instanceof types.Generator ?
+				ast
+			: ast.iter()
+
+		// merge resolved elements into the last item of elems...
 		// XXX can ast be a promise???
 		// XXX elems can be unresolved -- need a merge strategy for them...
+		var  elems = []
 		for(var elem of ast){
 			// nesting...
 			while(elem && elem.value){
-				elem = elem.value 
 				// exec stage II macros...
-				if(typeof(elem) == 'function'){
-					elem = elem(state) } }
+				if(typeof(elem.value) == 'function'){
+					let e = elem
+					// NOTE: if not everything is resolved, delay the stage II
+					// 		callbacks till .wait is done...
+					Promise.awaitOrRun(
+						state.wait,
+						function(){
+							return elem = e.value = 
+								e.value(state) }) 
+					break } 
+				elem = elem.value }
 			if(elem == null){
 				continue }
-			// XXX do a delayed merge...
-			// 		...but for this we need to also apply the rest of this iteration to the result...
-			if(elem.resolving){
-				console.log('!!!!!!!!!!!!!!!!!!!')
-			}
 			// atomic values...
 			if(typeof(elem) != 'object'){
-				merge(elem) 
+				elems.push(elem) 
 				continue }
 			// value is resolved but "empty" -> skip...
 			if('value' in elem 
@@ -736,61 +816,48 @@ module.BaseParser = {
 				continue }
 			// expand ast...
 			if(elem instanceof Array){
-				// XXX this can containe promises...
-				merge(...this.resolve(page, elem, state)) 
+				// XXX this can be or containe promises...
+				elems.push(...that.resolve(page, elem, state)) 
 				continue }
 			// expand .body attribute...
-			if((elem.attrs ?? {}).body instanceof Array){
-				// XXX this can containe promises...
-				elem.attrs.body = this.resolve(page, elem.attrs.body, state) }
+			/* XXX is this needed here???
+			if(elem.body instanceof Array){
+				console.warn('!!! RESOLVE_BODY')
+				// XXX this can be or containe promises...
+				elem.body = that.resolve(page, elem.body, state) }
+			//*/
 			// nested macro with no value set -- skip...
-			if(this.macros[elem.name] instanceof Array){
+			if(that.macros[elem.name] instanceof Array){
 				continue }
 			// unresolved...
-			merge(elem) }
+			elems.push(elem) }
 
 		return elems },
+
 
 	// XXX render api...
 	// XXX how should this play with filters???
 	// 		...should filters be client-side only??
 	render: function*(page, ast, callback, state={}){
-		ast = this.resolve(page, ast, state)
-		for(var elem of ast){
-			yield Promise.awaitOrRun(
-				elem,
-				callback) } },
+		// XXX
+	},
 
 	// XXX
-	_parse: function(page, ast, state={}){
+	parse: function(page, ast, state={}, wait='wait'){
+		var that = this
+		var reresolve = !!state.wait
 		return Promise.awaitOrRun(
 			this.resolve(page, ast, state),
-			function(ast){
-				// XXX
-				if(ast.length > 1){
-					throw new Error('!!!!')
-				}
-				return ast[0] 
-					?? '' }) },
-	// XXX
+			state[wait],
+			function(ast, reresolve){
+				ast = reresolve ?
+					that.resolve(page, ast, state)
+					: ast
+				return (ast ?? '').join('') }) },
 	// XXX how should this play with filters???
 	// 		...should filters be client-side only??
 	parseNested: function(page, ast, state={}){
-		return Promise.awaitOrRun(
-			state.waitNested,
-			this._parse(page, ast, state),
-			function(_, ast){
-				return ast }) },
-
-	// XXX this can't be used from within macros -- will deadlock the results...
-	// XXX how should this play with filters???
-	// 		...should filters be client-side only??
-	parse: function(page, ast, state={}){
-		return Promise.awaitOrRun(
-			state.wait,
-			this._parse(page, ast, state),
-			function(_, ast){
-				return ast }) },
+		return this.parse(page, ast, state, 'waitNestedi') },
 
 
 
@@ -1505,7 +1572,7 @@ module.parser = {
 						// content handler...
 						handler ??= 
 							function(page, text, state){
-								return this._parse(page, text, state) }
+								return this.expand(page, text, state) }
 
 						var pageHandler =
 							function(text, i, l){
@@ -1525,7 +1592,7 @@ module.parser = {
 									// join...
 									(args.join 
 											&& i < l.length - 1) ?
-										that._parse(page, args.join, state)
+										that.expand(page, args.join, state)
 										: []
 								].flat() }
 						var resultHandler =

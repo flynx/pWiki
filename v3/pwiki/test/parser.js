@@ -181,7 +181,6 @@ test.Setups({
 	// XXX
 
 	// include...
-	// XXX these do not play well with modifiers...
 	include: function(assert, path='/blank', expected){
 		return { 
 			page: P,
@@ -190,18 +189,18 @@ test.Setups({
 				// XXX for some reason this does not parse int a macro....
 				//'<include /blank />', 
 				`<include "${path}" />`, 
-					expected 
-						?? P.get(path).raw,
+				`<include src="${path}" />`, 
+
+				expected 
+					?? P.get(path).raw,
 			],
 		}},
 	include_page: function(assert){
 		return this.include(assert, '/page') },
 	include_include_page: function(assert){
 		return this.include(assert, '/includePage', 'Page') },
-	/* XXX parser.resolve(..) does not handle promises correctly yet...
 	include_async: function(assert){
-		return this.include(assert, '/async/page') },
-	//*/
+		return this.include(assert, '/async/page', 'Page') },
 })
 
 
@@ -234,7 +233,7 @@ test.Modifiers({
 
 
 test.Tests({
-	parse: function(assert, state){
+	parse: async function(assert, state){
 		var {page, code, st} = state
 		page ??= {}
 		st ??= {}
@@ -247,7 +246,7 @@ test.Tests({
 			var p = serialize.partialDeepCopy(page)
 			var s = serialize.partialDeepCopy(st)
 			assert(
-				(res = parser.parse(
+				(res = await parser.parse(
 						p,
 						input,
 						s))
