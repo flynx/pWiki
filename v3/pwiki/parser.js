@@ -530,6 +530,8 @@ module.BaseParser = {
 	//
 	//		// wait for all...
 	//		wait: <promise> | null,
+	//
+	//		...
 	//	}
 	//
 	//
@@ -1572,28 +1574,25 @@ module.parser = {
 						// content handler...
 						handler ??= 
 							function(page, text, state){
-								return this.expand(page, text, state) }
+								// XXX should this be the difference between 
+								// 		@include(..) and @source(..)???
+								return args.isolated ?
+									this.resolve(page, text, 
+										args.isolated == 'partial' ?
+											// XXX
+											serialize.partialDeepCopy(state)
+											: {}) 
+									: this.expand(page, text, state)}
 
 						var pageHandler =
 							function(text, i, l){
 								return [
-									handler.call(that, 
-										page, 
-										text, 
-										// isolated up -- will see all 
-										// the state but can have no 
-										// side-effects...
-										args.isolated == 'partial' ?
-												serialize.partialDeepCopy(state)
-											// fully isolated...
-											: args.isolated ?
-												{}
-											: state),
+									handler.call(that, page, text, state),
 									// join...
 									(args.join 
 											&& i < l.length - 1) ?
 										that.expand(page, args.join, state)
-										: []
+										: [],
 								].flat() }
 						var resultHandler =
 							function(pages){

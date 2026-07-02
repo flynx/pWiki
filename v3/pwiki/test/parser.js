@@ -17,6 +17,7 @@ module.exports.PAGES = {
 	'/page': 'Page',
 	'/async/page': Promise.resolve('Page'),
 	'/includePage': '@include(/page)',
+	'/isolated': '@slot(slot original)'
 }
 
 var P = 
@@ -177,6 +178,7 @@ test.Setups({
 	// XXX
 
 	// include...
+	// XXX see inside...
 	include: function(assert, path='/blank', expected){
 		return { 
 			page: P,
@@ -197,6 +199,25 @@ test.Setups({
 		return this.include(assert, '/includePage', 'Page') },
 	include_async: function(assert){
 		return this.include(assert, '/async/page', 'Page') },
+	// islotaed...
+	include_nonisolated: function(assert){
+		return {
+			page: P,
+			code:[
+				'@include("/isolated") @slot(slot overloaded)',
+					'overloaded ',
+			],
+		} },
+	include_isolated: function(assert){
+		return {
+			page: P,
+			code:[
+				'@include(isolated /isolated) @slot(slot overloaded)',
+					'original overloaded',
+			],
+		} },
+	// XXX recursion...
+	// XXX
 })
 
 
