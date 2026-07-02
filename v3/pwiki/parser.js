@@ -1664,26 +1664,34 @@ module.parser = {
 						return '' }) }),
 
 		// XXX a naive version, see ._quote(..) for reference...
+		// XXX might be a good idea to do an auto-filter that would be 
+		// 		apropriately selected according to format -- md, html, ...
 		quote: Macro(
 			['src', 'join', 'filter'],
 			quoting(
 			function(page, args, body, state){
-				var res = 
-					(args.src ?
-							page.get(args.src).raw
-						: body ?
-							body
-						: [])
+				var that = this
 				return Promise.awaitOrRun(
-					res,
-					function(res){
-						// filter...
-						if(args.filter){
-							// XXX
-						}
-						// XXX join...
-						// XXX
-						return res }) })),
+					args.src 
+						&& this.parseNested(page, args.src, state),
+					function(src){
+						var text = 
+							src ?
+								// can be async...
+								page.get(src).raw
+							: body ?
+								body
+							: []
+						return Promise.awaitOrRun(
+							text,
+							function(text){
+								// filter...
+								if(args.filter){
+									// XXX
+								}
+								// XXX join...
+								// XXX
+								return text }) }) })),
 
 		//
 		// 	@quote(<src>)
