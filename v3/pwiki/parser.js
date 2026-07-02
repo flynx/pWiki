@@ -418,7 +418,7 @@ module.BaseParser = {
 			: lex
 
 		var quoting = to 
-			&& (page.QUOTING_MACROS ?? []).includes(to)
+			&& !!this.macros[to].quoting
 			&& []
 
 		// NOTE: we are not using for .. of .. here as it depletes the 
@@ -1121,6 +1121,12 @@ function(macro){
 	macro.lazy = true
 	return macro }
 
+var quoting =
+module.quoting =
+function(macro){
+	macro.quoting = true
+	return macro }
+
 
 // XXX RENAME...
 // 		...this is more of an expander/executer...
@@ -1128,9 +1134,6 @@ function(macro){
 var parser =
 module.parser = {
 	__proto__: BaseParser,
-
-	// list of macros that will get raw text of their content...
-	QUOTING_MACROS: ['quote'],
 
 	//
 	// 	<macro>(<args>, <body>, <state>){ .. }
@@ -1527,7 +1530,7 @@ module.parser = {
 			// 			is this a promise/value, iterable promise a generator
 			// 			an async generator, ... or a combination/stack of the above???
 			lazy(
-			function(page, args, body, state, key='included', handler){
+			function(page, args, body, state, handler){
 				var that = this
 
 				var recursive = 
@@ -1576,6 +1579,9 @@ module.parser = {
 							function(page, text, state){
 								// XXX should this be the difference between 
 								// 		@include(..) and @source(..)???
+								// 		i.e. 
+								// 			.include(..) -> .resolve(..)
+								// 			.source(..) -> .expand(..)
 								return args.isolated ?
 									this.resolve(page, text, 
 										args.isolated == 'partial' ?
@@ -1624,106 +1630,6 @@ module.parser = {
 										.sync(),
 									resultHandler ) }) }) })),
 
-		_include: Macro(
-			['src', 'recursive', 'join', 
-				['s', 'strict', 'isolated']],
-			async function*(parser, args, body, state, key='included', handler){
-				var macro = 'include'
-				if(typeof(args) == 'string'){
-					var [macro, args, body, state, key, handler] = arguments 
-					key = key ?? 'included' }
-				var base = this.get(this.path.split(/\*/).shift())
-				var src = args.src
-					&& this.resolvePathVars(
-						await base.parse(args.src, state))
-				if(!src){
-					return }
-				// XXX INHERIT_ARGS special-case: inherit args by default...
-				// XXX should this be done when isolated???
-				if(this.actions_inherit_args 
-						&& this.actions_inherit_args.has(pwpath.basename(src))
-						&& this.get(pwpath.dirname(src)).path == this.path){
-					src += ':$ARGS' }
-				var recursive = args.recursive ?? body
-				var isolated = args.isolated 
-				var strict = args.strict
-				var strquotes = args.s
-				var join = args.join 
-					&& await base.parse(args.join, state)
-
-				var depends = state.depends = 
-					state.depends 
-						?? new Set()
-				// XXX DEPENDS_PATTERN
-				depends.add(src)
-
-				handler = handler 
-					?? async function(src, state){
-						return isolated ?
-							//{data: await this.get(src)
-							{data: await this
-								.parse({
-									seen: state.seen, 
-									depends,
-									renderer: state.renderer,
-								})}
-							//: this.get(src)
-							: this
-								.parse(state) }
-
-				var first = true
-				for await (var page of this.get(src).asPages(strict)){
-					if(join && !first){
-						yield join }
-					first = false
-
-					//var full = page.path
-					var full = page.location
-
-					// handle recursion...
-					var parent_seen = 'seen' in state
-					var seen = state.seen = 
-						new Set(state.seen ?? [])
-					if(seen.has(full)
-							// nesting path recursion...
-							|| (full.length % (this.NESTING_RECURSION_TEST_THRESHOLD || 50) == 0
-								&& (pwpath.split(full).length > 3
-									&& new Set([
-											await page.find(),
-											await page.get('..').find(),
-											await page.get('../..').find(),
-										]).size == 1
-									// XXX HACK???
-									|| pwpath.split(full).length > (this.NESTING_DEPTH_LIMIT || 20)))){
-						if(recursive == null){
-							console.warn(
-								`@${key}(..): ${
-									seen.has(full) ?
-										'direct'
-										: 'depth-limit'
-								} recursion detected:`, full, seen)
-							yield page.get(page.RECURSION_ERROR).parse() 
-							continue }
-						// have the 'recursive' arg...
-						yield base.parse(recursive, state) 
-						continue }
-					seen.add(full)
-
-					// load the included page...
-					var res = await handler.call(page, full, state)
-					depends.add(full)
-					res = strquotes ?
-						res
-							.replace(/["']/g, function(c){
-								return '%'+ c.charCodeAt().toString(16) })
-						: res
-
-					// NOTE: we only track recursion down and not sideways...
-					seen.delete(full)
-					if(!parent_seen){
-						delete state.seen }
-
-					yield res } }),
 		// NOTE: the main difference between this and @include is that 
 		// 		this renders the src in the context of current page while 
 		// 		include is rendered in the context of its page but with
@@ -1737,30 +1643,48 @@ module.parser = {
 			['src', 'recursive', 'join', 
 				['s', 'strict']],
 			//['src'],
-			async function*(args, body, state){
+			function(page, args, body, state){
 				var that = this
-				yield* this.__parser__.macros.include.call(this, 
-					'source',
-					args, body, state, 'sources', 
-					async function(src, state){
-						//return that.parse(that.get(src).raw, state) }) }),
-						return that.parse(this.raw, state) }) }),
+				return this.macros['include'].call(this, 
+					page, args, body, state,
+					function(page, text, state){
+						return that.expand(page, text, state) }) }),
 
 		// Load macro and slot definitions but ignore the page text...
 		//
 		// NOTE: this is essentially the same as @source(..) but returns ''.
 		// XXX revise name...
-		// XXX UPDATE...
 		load: Macro(
-			['src', ['strict']],
-			async function*(args, body, state){
+			['src'],
+			function(args, body, state){
 				var that = this
-				yield* this.__parser__.macros.include.call(this, 
-					'load',
-					args, body, state, 'sources', 
-					async function(src, state){
-						await that.parse(this.raw, state) 
+				return Promise.awaitOrRun(
+					this.macros['include'].call(this, page, args, body, state),
+					function(){
 						return '' }) }),
+
+		// XXX a naive version, see ._quote(..) for reference...
+		quote: Macro(
+			['src', 'join', 'filter'],
+			quoting(
+			function(page, args, body, state){
+				var res = 
+					(args.src ?
+							page.get(args.src).raw
+						: body ?
+							body
+						: [])
+				return Promise.awaitOrRun(
+					res,
+					function(res){
+						// filter...
+						if(args.filter){
+							// XXX
+						}
+						// XXX join...
+						// XXX
+						return res }) })),
+
 		//
 		// 	@quote(<src>)
 		//
@@ -1783,7 +1707,7 @@ module.parser = {
 		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
 		// XXX should join/else be sub-tags???
 		// XXX UPDATE...
-		quote: Macro(
+		_quote: Macro(
 			['src', 'filter', 'text', 'join', 'else',
 				['s', 'expandactions', 'strict']],
 			async function*(args, body, state){
@@ -1893,6 +1817,7 @@ module.parser = {
 			var filters = state.quote_filters = 
 				state.quote_filters ?? []
 			filters.splice(filters.length, 0, ...Object.keys(args)) },
+		//*/
 
 		// 	
 		// 	<macro src=<url>> .. </macro>
