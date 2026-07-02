@@ -50,6 +50,7 @@ module.exports.P = {
 //---------------------------------------------------------------------
 
 test.Setups({
+	// general parser...
 	empty: function(assert){
 		return { code: [ '', '' ] }},
 
@@ -141,11 +142,7 @@ test.Setups({
 		return {code: [
 			'<slot slot>moo<slot slot>[[ <content/> ]]</slot></slot>',
 			'[[ moo ]]' ]} },
-
-	/* XXX SHOWN_HIDDEN
-	// XXX these need to be revised...
-	// 		...do we actually need hidden/shown???
-	//
+	// shown/hidden..
 	slot_shown: function(assert){
 		var ins = this.slot_value(assert).code
 		var expect = ins.pop()
@@ -170,9 +167,8 @@ test.Setups({
 		var expect = ins.pop()
 		return {code: [
 			...ins.map(function(i){
-				return i +'@slot(slot shown)' }),
-			'' ]} },
-	//*/
+				return i +' | @slot(slot shown)' }),
+			' | value' ]} },
 	
 	// XXX var...
 	// XXX
