@@ -157,7 +157,7 @@ use.
 
 
 
-### slot (<name> <text> shown|hidden) / content
+### slot (_name_ _text_ shown|hidden) / content
 
 ```
 @slot(<name>)
@@ -229,39 +229,7 @@ Will resolve to `This is: [[ some text ]]`
 
 
 
-
----
-
-### filter (name)
-
-Enable or disable a page filter.
-
-A filter is a way to transform the page source.
-
-Arguments:
-- `name` -- filter name. If name is preceded with a '-' then it 
-will be forced off. This is useful for disabling _default_ filters, or 
-filters added previously in templates.
-
-Filters:
-- wikiword (default)
-- markdown
-
-**Example:**
-
-
-<!--[pWiki[
-- `[Templates/_edit/_edit]` &ndash; _see the macro at the end of the page._
-]]-->
-
-<pwiki-comment>
-- [bootstrap \_edit](/bootstrap/Templates/_edit.html) &ndash; _see the 
-macro at the end of the page._
-</pwiki-comment>
-
-
-
-### include (src isolated recursive) / content
+### include (_src_ _recursive_ _join_ isolated) / content
 
 ```
 @include(<src>)
@@ -318,6 +286,7 @@ Isolated up, i.e. the included page sees local state but can not affect it:
 Will render to: `original [  ]`
 
 
+
 ### source (src)
 
 ```
@@ -359,6 +328,38 @@ Arguments:
 @source(Templates/_css)
 ```
 ]]-->
+
+
+
+---
+
+### filter (name)
+
+Enable or disable a page filter.
+
+A filter is a way to transform the page source.
+
+Arguments:
+- `name` -- filter name. If name is preceded with a '-' then it 
+will be forced off. This is useful for disabling _default_ filters, or 
+filters added previously in templates.
+
+Filters:
+- wikiword (default)
+- markdown
+
+**Example:**
+
+
+<!--[pWiki[
+- `[Templates/_edit/_edit]` &ndash; _see the macro at the end of the page._
+]]-->
+
+<pwiki-comment>
+- [bootstrap \_edit](/bootstrap/Templates/_edit.html) &ndash; _see the 
+macro at the end of the page._
+</pwiki-comment>
+
 
 
 ### macro (name src sort) / else ()
