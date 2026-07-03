@@ -17,7 +17,10 @@ module.exports.PAGES = {
 	'/page': 'Page',
 	'/async/page': Promise.resolve('Page'),
 	'/includePage': '@include(/page)',
-	'/isolated': '@slot(slot original)'
+	'/isolated': '@slot(slot original)',
+	'/includeSelf': '@include(/includeSelf)',
+	'/async/includeSelf': Promise.resolve('@include(/includeSelf)'),
+	'/multi/page': [ 'A', 'B', 'C' ],
 }
 
 var P = 
@@ -218,6 +221,8 @@ test.Setups({
 		} },
 	// XXX recursion...
 	// XXX
+	
+	// quote...
 })
 
 

@@ -249,6 +249,7 @@ module.BaseParser = {
 
 	// place join block between block elements...
 	joinBlocks: function(page, blocks, join, state){
+		var that = this
 		if(typeof(blocks) == 'string' 
 				|| join == null){
 			return blocks }
@@ -256,10 +257,18 @@ module.BaseParser = {
 			.map(function(block, i, l){
 				return [
 					block,
-					this.expand(page, join, state),
+					...(i < l.length-1 ?
+						that.expand(page, join, state)
+						: []),
 				] })
 			.flat() },
+	filterBlocks: function(page, blocks, filter, state){
+		if(filter == null){
+			return blocks }
 
+		// XXX
+
+		return blocks },
 
 	// Strip comments...
 	//
@@ -1649,9 +1658,7 @@ module.parser = {
 		// 		i.e. for @include(PATH) the paths within the included page 
 		// 		are resolved relative to PATH while for @source(PATH) 
 		// 		relative to the page containing the @source(..) statement...
-		// XXX UPDATE...
 		source: Macro(
-			// XXX should this have the same args as include???
 			['src', 'recursive', 'join', 
 				['s', 'strict']],
 			//['src'],
@@ -1689,7 +1696,6 @@ module.parser = {
 					function(src){
 						var text = 
 							src ?
-								// can be async...
 								page.get(src).raw
 							: body ?
 								body
@@ -1697,7 +1703,15 @@ module.parser = {
 						return Promise.awaitOrRun(
 							text,
 							function(text){
-								return that.joinBlocks(page, text, args.join, state) }) }) })),
+								return that.joinBlocks(
+									page, 
+									that.filterBlocks(
+										page, 
+										text, 
+										args.filter, 
+										state), 
+									args.join, 
+									state) }) }) })),
 
 		//
 		// 	@quote(<src>)
