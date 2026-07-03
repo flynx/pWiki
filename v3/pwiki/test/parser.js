@@ -27,6 +27,19 @@ module.exports.PAGES = {
 	'/async/recursive/SelfOther': Promise.resolve('<< @include(/async/recursive/OtherSelf) >>'),
 
 	'/multi/page': [ 'A', 'B', 'C' ],
+	'/async/multi/page': Promise.resolve([ 'A', 'B', 'C' ]),
+	// XXX is this actually possible ???
+	'/multi/async/page': [ 
+		Promise.resolve('A'), 
+		Promise.resolve('B'), 
+		Promise.resolve('C'),
+	],
+	// XXX is this actually possible ???
+	'/multi/async/multi/page': Promise.resolve([
+		Promise.resolve('A'), 
+		Promise.resolve('B'), 
+		Promise.resolve('C'),
+	]),
 }
 
 var P = 

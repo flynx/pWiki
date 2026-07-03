@@ -261,25 +261,80 @@ macro at the end of the page._
 
 
 
-### include (src isolated text)
+### include (src isolated recursive) / content
 
-Include a page. The included page is rendered independently from current
-page and is inserted as-is in macro body.
+```
+@include(<src>)
+@include(<src> [recursive=".."] [join=".."] [isolated])
+@include(<src> [recursive=".."] [join=".."] [isolated="partial"])
 
-Note that this will produce a `include` tag in the code that contains 
-the included page, this makes this tag not suitable for use anywhere 
-but an html element body.
+<include <src>>
+	...
+	<content/>
+	...
+</include>
+```
 
-Arguments:
-- `src` -- path to source page.
-- `isolated` -- prevent slots from included page from affecting the including page. 
-- `text` -- is used when recursive include is detected and ignored otherwise.
+Include a page. The included page is rendered relative to the spurce page
+resolved from `<src>`, independently from current page, but in the current 
+namespace, and is inserted as-is.
 
-_For examples see `slot` macro exaples below._
+If body is not empty, it will render instead of included page content.
+If body contains `<content/>` macro, it will be replaced with included 
+page content.
+If more than one page matches `<src>`, the body will be copied once per 
+page and the page's content will be inserted into each respective `<content/>`
+macro.
+
+`join` is inserted between pages if more than one page is matched by `<src>`.
+
+If `isolated` is given, prevent slots from included page from affecting 
+the including page. 
+
+**Example:**
+`/some/page`:
+```
+<slot X value/>
+```
+
+Normal case: render included page but in view of current namespace:
+```
+<slot X original/><include src=/some/page> [ <content/> ] </include>
+```
+Will render to: `value [  ]`
+
+
+Completely isolated:
+```
+<slot X original/><include src=/some/page isolated> [ <content/> ] </include>
+```
+Will render to: `original [ value ]`
+
+
+Isolated up, i.e. the included page sees local state but can not affect it:
+```
+<slot X original/><include src=/some/page isolated=partial> [ <content/> ] </include>
+```
+Will render to: `original [  ]`
+
+
+### source (src)
+
+```
+@source(<src>)
+
+<source <src>>
+	...
+	<content/>
+	...
+</source>
+```
+
+Load page source into the current page.
 
 
 
-### source (src) / quote (src)
+### quote (src)
 
 Insert a page without rendering. This is similar to include but will not
 render the page. 

@@ -443,7 +443,7 @@ module.BaseParser = {
 	//
 	// NOTE: this internaly uses .macros to check for propper nesting
 	//group: function*(page, lex, to=false){
-	group: function*(lex, to=false, parent, context){
+	group: function*(lex, to=false, context){
 		lex = typeof(lex) != 'object' ?
 			this.lex(lex)
 			: lex
@@ -511,7 +511,6 @@ module.BaseParser = {
 							value.args.body
 								?? value.args.text,
 							false,
-							parent,
 							value.name)] }
 				delete value.args.body
 				delete value.args.text 
@@ -1446,7 +1445,7 @@ module.parser = {
 									return ((st ?? state).slots ?? {})[name] },
 								{slot: name}) }) })), 
 		// XXX do not like this name...
-		content: ['slot', 'include'],
+		content: ['slot', 'include', 'quote'],
 
 
 		//
@@ -1521,18 +1520,14 @@ module.parser = {
 					this.parseNested(page, src, state),
 					function(src){
 						// check for recursion...
-						// XXX do we do this for pattern paths???
-						// XXX this does not catch the /A/A/A/... recursion...
+						// XXX will this work for @source(..)???
 						var stack = state.include_stack ??= []
-						// XXX is this the right separator???
-						// 		...need something that can't be in a path...
-						var base_src = base +'|'+ src
-						if(stack.includes(base_src)){
+						if(stack.includes(src)){
 							if(recursive){
 								return that.expand(page, recursive, state) }
 							throw new Error('Recursion:\n\t'+ 
-								[...stack, base_src].join('\n\t\t-> ')) }
-						stack.push(base_src)
+								[...stack, src].join('\n\t\t-> ')) }
+						stack.push(src)
 
 						var cache = state.cache ??= {}
 						if(cache[src]){
@@ -1550,19 +1545,18 @@ module.parser = {
 
 						// content handler...
 						handler ??= 
-							function(page, text, state){
-								// XXX should this be the difference between 
-								// 		@include(..) and @source(..)???
-								// 		i.e. 
-								// 			.include(..) -> .resolve(..)
-								// 			.source(..) -> .expand(..)
+							function(page, src, text, state){
+								page = page.get(src)
 								return args.isolated ?
-									this.resolve(page, text, 
-										args.isolated == 'partial' ?
-											// XXX
-											serialize.partialDeepCopy(state)
-											: {}) 
-									: this.expand(page, text, state)}
+									this.resolve(
+										page, 
+										text, 
+										Object.assign(
+											args.isolated == 'partial' ?
+												serialize.partialDeepCopy(state)
+												: {},
+											{stack: state.stack ?? []}))
+									: this.expand(page, text, state) }
 
 						var pageHandler =
 							function(text){
@@ -1573,18 +1567,18 @@ module.parser = {
 										that.expand(page, body, state, 
 											{ content: function(){
 												content_handled = true
-												return text = handler.call(that, page, text, state) } }),
+												return text = handler.call(that, page, src, text, state) } }),
 										function(text){
 											// if no <content/> present we still 
 											// need to handle the included page...
 											content_handled 
-												|| handler.call(that, page, text, state)
+												|| handler.call(that, page, src, text, state)
 											return text })
 									// place as-is...
-									: handler.call(that, page, text, state) }
+									: handler.call(that, page, src, text, state) }
 						var resultHandler =
 							function(pages){
-								state.include_stack.at(-1) == base_src
+								state.include_stack.at(-1) == src
 									&& state.include_stack.pop()
 								// cleanup...
 								if(state.include_stack.length == 0){
@@ -1629,25 +1623,51 @@ module.parser = {
 				var that = this
 				return this.macros['include'].call(this, 
 					page, args, body, state,
-					function(page, text, state){
+					function(page, src, text, state){
 						return that.expand(page, text, state) }) }),
 
 		// Load macro and slot definitions but ignore the page text...
 		//
 		// NOTE: this is essentially the same as @source(..) but returns ''.
-		// XXX revise name...
 		load: Macro(
 			['src'],
-			function(args, body, state){
+			function(page, args, body, state){
 				var that = this
 				return Promise.awaitOrRun(
 					this.macros['include'].call(this, page, args, body, state),
 					function(){
 						return '' }) }),
 
-		// XXX a naive version, see ._quote(..) for reference...
+		//
+		// 	@quote(<src>)
+		//
+		// 	<quote src=<src>[ filter="<filter> ..."]/>
+		//
+		// 	<quote text=" .. "[ filter="<filter> ..."]/>
+		//
+		// 	<quote[ filter="<filter> ..."]>
+		// 		..
+		// 	</quote>
+		//
+		// This has two modes of operation, i.e. the body can be treated
+		// in two destinct ways:
+		// 	- if both src and body are given -- like @include(..) body is 
+		// 	  used as a wrapper for the quoted page
+		// 	- if only body is given -- body is inderted as is without 
+		// 	  any processing.
+		// XXX not sure I like this, this might change in the futore...
+		// 		one way to split the two is to split this into two macros,
+		// 		but I can't make the split logical/obvious...
+		//
+		// NOTE: src ant text arguments are mutually exclusive, src takes 
+		// 		priority.
+		// NOTE: the filter argument has the same semantics as the filter 
+		// 		macro with one exception, when used in quote, the body is 
+		// 		not expanded...
+		// NOTE: the filter argument uses the same filters as @filter(..)
 		// XXX might be a good idea to do an auto-filter that would be 
 		// 		apropriately selected according to format -- md, html, ...
+		// XXX filter...
 		quote: Macro(
 			['src', 'join', 'filter'],
 			quoting(
@@ -1666,6 +1686,20 @@ module.parser = {
 						return Promise.awaitOrRun(
 							text,
 							function(text){
+								// XXX not sure I like that this has two "modes"...
+								text = src && body ?
+									// XXX do we need to account for generators???
+									(text instanceof Array ?
+											text
+											: [text])
+										.map(function(text){
+											return that.expand(
+												page, 
+												that.ast(body.join(''), false, 'quote'), 
+												state, 
+												{ content: function(){
+													return text }, }) })
+									: text
 								return that.joinBlocks(
 									page, 
 									that.filterBlocks(
@@ -1676,133 +1710,7 @@ module.parser = {
 									args.join, 
 									state) }) }) })),
 
-		//
-		// 	@quote(<src>)
-		//
-		// 	<quote src=<src>[ filter="<filter> ..."]/>
-		//
-		// 	<quote text=" .. "[ filter="<filter> ..."]/>
-		//
-		// 	<quote[ filter="<filter> ..."]>
-		// 		..
-		// 	</quote>
-		//
-		//
-		// NOTE: src ant text arguments are mutually exclusive, src takes 
-		// 		priority.
-		// NOTE: the filter argument has the same semantics as the filter 
-		// 		macro with one exception, when used in quote, the body is 
-		// 		not expanded...
-		// NOTE: the filter argument uses the same filters as @filter(..)
-		// NOTE: else argument implies strict mode...
-		// XXX need a way to escape macros -- i.e. include </quote> in a quoted text...
-		// XXX should join/else be sub-tags???
-		// XXX UPDATE...
-		_quote: Macro(
-			['src', 'filter', 'text', 'join', 'else',
-				['s', 'expandactions', 'strict']],
-			async function*(args, body, state){
-				var src = args.src //|| args[0]
-				var base = this.get(this.path.split(/\*/).shift())
-				var text = args.text 
-					?? body 
-					?? []
-				var strict = !!(args.strict 
-					?? args['else'] 
-					?? false)
-				// parse arg values...
-				src = src ? 
-					await base.parse(src, state)
-					: src
-				// XXX INHERIT_ARGS special-case: inherit args by default...
-				if(this.actions_inherit_args 
-						&& this.actions_inherit_args.has(pwpath.basename(src))
-						&& this.get(pwpath.dirname(src)).path == this.path){
-					src += ':$ARGS' }
-				var expandactions = 
-					args.expandactions
-						?? true
-				// XXX EXPERIMENTAL
-				var strquotes = args.s
-
-				var depends = state.depends = 
-					state.depends 
-						?? new Set()
-				// XXX DEPENDS_PATTERN
-				depends.add(src)
-
-				var pages = src ?
-						(!expandactions 
-								&& await this.get(src).type == 'action' ?
-							base.get(this.QUOTE_ACTION_PAGE)
-							: await this.get(src).asPages(strict))
-					: text instanceof Array ?
-						[text.join('')]
-					: typeof(text) == 'string' ?
-						[text]
-					: text
-				// else...
-				pages = ((!pages
-				   			|| pages.length == 0)	
-						&& args['else']) ?
-					[await base.parse(args['else'], state)]
-					: pages
-				// empty...
-				if(!pages || pages.length == 0){
-					return }
-
-				var join = args.join 
-					&& await base.parse(args.join, state)
-				var first = true
-				for await (var page of pages){
-					if(join && !first){
-						yield join }
-					first = false
-
-					text = typeof(page) == 'string' ?
-							page
-						: (!expandactions 
-								&& await page.type == 'action') ?
-							base.get(this.QUOTE_ACTION_PAGE).raw
-						: await page.raw
-					text = strquotes ?
-						text
-							.replace(/["']/g, function(c){
-								return '%'+ c.charCodeAt().toString(16) })
-						: text
-
-					page.path
-						&& depends.add(page.path)
-
-					var filters = 
-						args.filter 
-							&& args.filter
-								.trim()
-								.split(/\s+/g)
-
-					// NOTE: we are delaying .quote_filters handling here to 
-					// 		make their semantics the same as general filters...
-					// 		...and since we are internally calling .filter(..)
-					// 		macro we need to dance around it's architecture too...
-					// NOTE: since the body of quote(..) only has filters applied 
-					// 		to it doing the first stage of .filter(..) as late 
-					// 		as the second stage here will have no ill effect...
-					// NOTE: this uses the same filters as @filter(..)
-					// NOTE: the function wrapper here isolates text in 
-					// 		a closure per function...
-					yield (function(text){
-						return async function(state){
-							// add global quote-filters...
-							filters =
-								(state.quote_filters 
-										&& !(filters ?? []).includes(this.ISOLATED_FILTERS)) ?
-									[...state.quote_filters, ...(filters ?? [])]
-									: filters
-							return filters ?
-								await this.__parser__.callMacro(
-										this, 'filter', filters, text, state, false)
-									.call(this, state)
-								: text } })(text) } }),
+		/* XXX
 		// very similar to @filter(..) but will affect @quote(..) filters...
 		'quote-filter': function(args, body, state){
 			var filters = state.quote_filters = 
