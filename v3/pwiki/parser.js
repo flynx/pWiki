@@ -278,6 +278,7 @@ module.BaseParser = {
 
 		return blocks },
 
+
 	// Strip comments...
 	//
 	stripComments: function(str){
@@ -597,7 +598,7 @@ module.BaseParser = {
 	// 			sync (text) and async (DOM) rendering
 	// 			in the simplest form: take the expanded AST and merge 
 	// 			into a single string
-	expand: function(page, ast, state={}){
+	expand: function(page, ast, state={}, nested_handlers={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
 				this.group(ast)
@@ -607,8 +608,9 @@ module.BaseParser = {
 
 		var elems = []
 		for(let elem of ast){
+
 			// text block...
-			if(typeof(elem) == 'string'){
+			if(typeof(elem) != 'object'){
 				elems.push(elem)
 				continue }
 			// do not re-expand expanded elements...
@@ -618,7 +620,6 @@ module.BaseParser = {
 				continue }
 
 			// cleanup...
-			//elem = {...elem}
 			elem = serialize.partialDeepCopy(elem)
 			delete elem.error
 			delete elem.value
@@ -626,9 +627,15 @@ module.BaseParser = {
 
 			var {name, args, body} = elem
 
-			// nested macro -- skip...
+			// nested macro...
 			if(that.macros[name] instanceof Array){
-				elems.push(elem)
+				// call handler...
+				if(nested_handlers[name]){
+					elems.push(
+						nested_handlers[name].call(that, elem))
+				// skip...
+				} else {
+					elems.push(elem) }
 				continue }
 			// drop non-macros/aliases...
 			if(typeof(that.macros[name]) != 'function' 
@@ -639,7 +646,7 @@ module.BaseParser = {
 			// XXX cache this as an AST
 			body 
 				&& !that.macros[name].lazy
-				&& (body = this.expand(page, body, state))
+				&& (body = this.expand(page, body, state, nested_handlers))
 
 			// call macro...
 			var res = that.callMacro(page, name, args, body, state)
@@ -731,10 +738,10 @@ module.BaseParser = {
 	// 		XXX it looks like the first slot is resolved before the last 
 	// 			slot has a chance to set the value as it is waiting for 
 	// 			the first slot to finish...
-	resolve: function(page, ast, state={}){
+	resolve: function(page, ast, state={}, nested_handlers={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
-				this.expand(page, ast, state)
+				this.expand(page, ast, state, nested_handlers)
 			: ast instanceof types.Generator ?
 				ast
 			: ast.iter()
@@ -798,21 +805,21 @@ module.BaseParser = {
 	},
 
 	// XXX
-	parse: function(page, ast, state={}, wait='wait'){
+	parse: function(page, ast, state={}, nested_handlers={}, wait='wait'){
 		var that = this
 		var reresolve = !!state.wait
 		return Promise.awaitOrRun(
-			this.resolve(page, ast, state),
+			this.resolve(page, ast, state, nested_handlers),
 			state[wait],
 			function(ast, reresolve){
 				ast = reresolve ?
-					that.resolve(page, ast, state)
+					that.resolve(page, ast, state, nested_handlers)
 					: ast
 				return (ast ?? '').join('') }) },
 	// XXX how should this play with filters???
 	// 		...should filters be client-side only??
-	parseNested: function(page, ast, state={}){
-		return this.parse(page, ast, state, 'waitNestedi') },
+	parseNested: function(page, ast, state={}, nested_handlers={}){
+		return this.parse(page, ast, state, nested_handlers, 'waitNestedi') },
 
 
 
@@ -1409,7 +1416,8 @@ module.parser = {
 						slot.splice(0, slot.length, placeholder)
 						// expand body...
 						body = body ?
-							that.expand(page, body ?? [], state)
+							// XXX can we pass content handler here???
+							that.expand(page, body ?? [], state, {})
 							: body
 						// if slot not overriden, write our value...
 						if(slot[0] === placeholder){
@@ -1438,7 +1446,7 @@ module.parser = {
 									return ((st ?? state).slots ?? {})[name] },
 								{slot: name}) }) })), 
 		// XXX do not like this name...
-		content: ['slot'],
+		content: ['slot', 'include'],
 
 
 		//
@@ -1557,9 +1565,14 @@ module.parser = {
 
 						var pageHandler =
 							function(text){
-								// XXX handle body / <content/>...
-								// XXX
-								return handler.call(that, page, text, state) }
+								// XXX NOTE: if body set and contains to <content/> macro
+								// 		then the included value will not be displayed...
+								return body ?
+									that.expand(page, body, state, 
+										{ content: function(){
+											handler_called = true
+											return text = handler.call(that, page, text, state) } })
+									: handler.call(that, page, text, state) }
 						var resultHandler =
 							function(pages){
 								state.include_stack.at(-1) == base_src
