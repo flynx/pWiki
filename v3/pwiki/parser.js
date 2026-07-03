@@ -1456,9 +1456,13 @@ module.parser = {
 		// 	@include(src=<path> isolated recursive=<text>)
 		//
 		// 	<include src=<path> .. >
-		// 		<text>
+		// 		...
+		// 		<concent/>
+		// 		...
 		// 	</include>
 		//
+		// NOTE: if body is not empty and <content/> is not present, the 
+		// 		included page will not be placed.
 		// NOTE: there can be two ways of recursion in pWiki:
 		// 			- flat recursion
 		// 				/A -> /A -> /A -> ..
@@ -1473,15 +1477,12 @@ module.parser = {
 		// 		not 100% correct manner focusing on path depth and ignoring
 		// 		the context, this potentially can lead to false positives.
 		//
-		// XXX might be a good idea to add a <content/> tag to place the 
-		// 		loaded text...
+		// XXX do we need the <context/> nested macro???
+		// XXX should this resolve join and/or body in the context of the 
+		// 		included page or the outer page (current)???
 		// XXX add path recursion test to data -- fail if two paths resolve 
 		// 		to the same context...
 		// XXX need a way to make encode option transparent...
-		// XXX need a way to wrap the included page...
-		// 		- template page...
-		// 		- prefix/sufix...
-		// XXX store a page cache in state...
 		// XXX do we want to load a specific slot/block???
 		// XXX UPDATE...
 		include: Macro(
@@ -1565,13 +1566,21 @@ module.parser = {
 
 						var pageHandler =
 							function(text){
-								// XXX NOTE: if body set and contains to <content/> macro
-								// 		then the included value will not be displayed...
+								var content_handled = false
 								return body ?
-									that.expand(page, body, state, 
-										{ content: function(){
-											handler_called = true
-											return text = handler.call(that, page, text, state) } })
+									// handle body / <content/>...
+									Promise.awaitOrRun(
+										that.expand(page, body, state, 
+											{ content: function(){
+												content_handled = true
+												return text = handler.call(that, page, text, state) } }),
+										function(text){
+											// if no <content/> present we still 
+											// need to handle the included page...
+											content_handled 
+												|| handler.call(that, page, text, state)
+											return text })
+									// place as-is...
 									: handler.call(that, page, text, state) }
 						var resultHandler =
 							function(pages){

@@ -225,8 +225,17 @@ test.Setups({
 					'original overloaded',
 			],
 		} },
+	// content...
+	include_content: function(assert){
+		return {
+			page: P,
+			code: [
+				'<include "/page">[[ <content/> ]]</include>',
+					'[[ '+ P.get('/page').raw +' ]]', ], } },
+	// XXX
+	
 	// recursion...
-	// XXX test path recursion: /A -> /A/A -> /A/A/A -> ...
+	// XXX handle test path recursion: /A -> /A/A -> /A/A/A -> ...
 	include_recursive_a: function(assert){
 		return {
 			page: P,
