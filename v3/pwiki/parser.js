@@ -247,6 +247,19 @@ module.BaseParser = {
 					?? args.text }
 		return macro.call(this, page, args, body, state, ...rest) },
 
+	// place join block between block elements...
+	joinBlocks: function(page, blocks, join, state){
+		if(typeof(blocks) == 'string' 
+				|| join == null){
+			return blocks }
+		return blocks
+			.map(function(block, i, l){
+				return [
+					block,
+					this.expand(page, join, state),
+				] })
+			.flat() },
+
 
 	// Strip comments...
 	//
@@ -1128,6 +1141,10 @@ function(macro){
 	return macro }
 
 
+
+
+
+
 // XXX RENAME...
 // 		...this is more of an expander/executer...
 // 		...might be a good idea to also do a check without executing...
@@ -1590,16 +1607,6 @@ module.parser = {
 											: {}) 
 									: this.expand(page, text, state)}
 
-						var pageHandler =
-							function(text, i, l){
-								return [
-									handler.call(that, page, text, state),
-									// join...
-									(args.join 
-											&& i < l.length - 1) ?
-										that.expand(page, args.join, state)
-										: [],
-								].flat() }
 						var resultHandler =
 							function(pages){
 								// XXX not sure if this can happen or why...
@@ -1624,8 +1631,13 @@ module.parser = {
 								return Promise.awaitOrRun(
 									// handle pages...
 									Promise
-										.iter(pages
-											.map( pageHandler ))
+										.iter(
+											that.joinBlocks(
+												page,
+												pages.map(function(text){
+													return handler.call(that, page, text, state) }), 
+												args.join, 
+												state))
 										.flat()
 										.sync(),
 									resultHandler ) }) }) })),
@@ -1685,13 +1697,7 @@ module.parser = {
 						return Promise.awaitOrRun(
 							text,
 							function(text){
-								// filter...
-								if(args.filter){
-									// XXX
-								}
-								// XXX join...
-								// XXX
-								return text }) }) })),
+								return that.joinBlocks(page, text, args.join, state) }) }) })),
 
 		//
 		// 	@quote(<src>)
