@@ -18,8 +18,14 @@ module.exports.PAGES = {
 	'/async/page': Promise.resolve('Page'),
 	'/includePage': '@include(/page)',
 	'/isolated': '@slot(slot original)',
-	'/includeSelf': '@include(/includeSelf)',
-	'/async/includeSelf': Promise.resolve('@include(/includeSelf)'),
+
+	'/recursive/Self': '<< @include(/recursive/Self) >>',
+	'/recursive/OtherSelf': '<< @include(/recursive/SelfOther) >>',
+	'/recursive/SelfOther': '<< @include(/recursive/OtherSelf) >>',
+	'/async/recursive/Self': Promise.resolve('<< @include(/async/recursive/Self) >>'),
+	'/async/recursive/OtherSelf': Promise.resolve('<< @include(/async/recursive/SelfOther) >>'),
+	'/async/recursive/SelfOther': Promise.resolve('<< @include(/async/recursive/OtherSelf) >>'),
+
 	'/multi/page': [ 'A', 'B', 'C' ],
 }
 
@@ -219,10 +225,26 @@ test.Setups({
 					'original overloaded',
 			],
 		} },
-	// XXX recursion...
-	// XXX
+	// recursion...
+	// XXX test path recursion: /A -> /A/A -> /A/A/A -> ...
+	include_recursive_a: function(assert){
+		return {
+			page: P,
+			code:[
+				'@include(/recursive/Self recursive="recursion found")',
+				'@include(/async/recursive/Self recursive="recursion found")',
+					'<< recursion found >>', ], } },
+	include_recursive_b: function(assert){
+		return {
+			page: P,
+			code:[
+				'@include(/recursive/SelfOther recursive="recursion found")',
+				'@include(/async/recursive/SelfOther recursive="recursion found")',
+					'<< << recursion found >> >>', ], } },
 	
 	// quote...
+	// for inline quoting see: test.Modifiers.quote
+	// XXX <quote src=.. />
 })
 
 
@@ -251,32 +273,49 @@ test.Modifiers({
 			`[[ ${state.code.at(-1)} ]]`,
 		]
 		return state },
+	quote: function(assert, state){
+		return state.code
+			.slice(0, -1)
+			.map(function(code){
+				code = code.replace(/<\/quote>/, '&lt;/quote&gt;')
+				return {
+					page: state.P,
+					code: [
+						`<quote>${ code }</quote>`,
+						code, 
+					], 
+				} }) },
 })
 
 
 test.Tests({
 	parse: async function(assert, state){
-		var {page, code, st} = state
-		page ??= {}
-		st ??= {}
+		var states = 
+			state instanceof Array ?
+				state
+				: [state]
+		for(state of states){
+			var {page, code, st} = state
+			page ??= {}
+			st ??= {}
 
-		var res
-		var inputs = code.slice(0, -1)
-		var expect = code.at(-1)
-		var i = 0
-		for(var input of inputs){	
-			var p = serialize.partialDeepCopy(page)
-			var s = serialize.partialDeepCopy(st)
-			assert(
-				(res = await parser.parse(
-						p,
-						input,
-						s))
-					=== expect,
-				'Parsing:',
-					'\n\t      in: "'+ input +'"',
-					'\n\t     out: "'+ res +'"',
-					'\n\texpected: "'+ expect +'"') } },
+			var res
+			var inputs = code.slice(0, -1)
+			var expect = code.at(-1)
+			var i = 0
+			for(var input of inputs){	
+				var p = serialize.partialDeepCopy(page)
+				var s = serialize.partialDeepCopy(st)
+				assert(
+					(res = await parser.parse(
+							p,
+							input,
+							s))
+						=== expect,
+					'Parsing:',
+						'\n\t      in: "'+ input +'"',
+						'\n\t     out: "'+ res +'"',
+						'\n\texpected: "'+ expect +'"') } } },
 	//asyncParse: async function(assert, state){
 	//	return await this.parse(assert, state) },
 })

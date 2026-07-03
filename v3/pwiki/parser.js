@@ -253,6 +253,14 @@ module.BaseParser = {
 		if(typeof(blocks) == 'string' 
 				|| join == null){
 			return blocks }
+		// we do not need to rebuild the ast for each use...
+		// XXX this can break things -- need to store the parse stage 
+		// 		in the structure so as to determine where we left off...
+		// 		...the problem is that we can't tell the difference 
+		// 		between a parsed and expanded stages -- one way, re-running 
+		// 		a stage is not an issue but the other way, skipping can 
+		// 		break...
+		//join = this.ast(page, join, state)
 		return blocks
 			.map(function(block, i, l){
 				return [
@@ -305,7 +313,7 @@ module.BaseParser = {
 	//
 	// NOTE: this internally uses .macros' keys to generate the 
 	// 		lexing pattern.
-	lex: function*(page, str){
+	lex: function*(str){
 		str = typeof(str) != 'string' ?
 			str+''
 			: str
@@ -434,9 +442,9 @@ module.BaseParser = {
 	//
 	// NOTE: this internaly uses .macros to check for propper nesting
 	//group: function*(page, lex, to=false){
-	group: function*(page, lex, to=false, parent, context){
+	group: function*(lex, to=false, parent, context){
 		lex = typeof(lex) != 'object' ?
-			this.lex(page, lex)
+			this.lex(lex)
 			: lex
 
 		var quoting = to 
@@ -488,8 +496,8 @@ module.BaseParser = {
 
 			// open block...
 			if(value.type == 'opening'){
-				//value.body = [...this.group(page, lex, value.name)]
-				value.body = [...this.group(page, lex, value.name, value)]
+				//value.body = [...this.group(lex, value.name)]
+				value.body = [...this.group(lex, value.name, value)]
 				value.type = 'block'
 
 				// unify .body, .args.body and .args.text into .body...
@@ -499,7 +507,6 @@ module.BaseParser = {
 							?? value.args.text)){
 					value.body = 
 						[...this.group(
-							page,
 							value.args.body
 								?? value.args.text,
 							false,
@@ -593,7 +600,7 @@ module.BaseParser = {
 	expand: function(page, ast, state={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
-				this.group(page, ast)
+				this.group(ast)
 			: ast instanceof types.Generator ?
 				ast
 			: ast.iter()
@@ -629,6 +636,7 @@ module.BaseParser = {
 				continue }
 
 			// expand down...
+			// XXX cache this as an AST
 			body 
 				&& !that.macros[name].lazy
 				&& (body = this.expand(page, body, state))
@@ -702,7 +710,8 @@ module.BaseParser = {
 
 	// resolve stage II macros and merge results...
 	//
-	/* XXX 
+	// XXX DNF
+	//
 	// XXX these yeild different results:
 	// 			r = parser.resolve(
 	// 				tests.P, 
@@ -722,84 +731,6 @@ module.BaseParser = {
 	// 		XXX it looks like the first slot is resolved before the last 
 	// 			slot has a chance to set the value as it is waiting for 
 	// 			the first slot to finish...
-	resolve: function(page, ast, state={}){
-		var that = this
-		ast = typeof(ast) != 'object' ?
-				this.expand(page, ast, state)
-			: ast instanceof types.Generator ?
-				ast
-			: ast.iter()
-
-		// merge resolved elements into the last item of elems...
-		var  elems = []
-		var merge = function(...args){
-			var prev = ''
-			while(args.length > 0){
-				while(args.length > 0 
-						&& typeof(args[0]) != 'object'
-						&& typeof(args[0]) != 'function'){
-					prev += args.shift() }
-				// merged section...
-				if(prev.length > 0){
-					if(elems.length > 0 
-							&& typeof(elems.at(-1)) == 'string'){
-						elems[elems.length-1] += prev
-					} else {
-						elems.push(prev) }
-					prev = '' }
-				if(args.length > 0){
-					elems.push(args.shift()) } } }
-
-		// XXX can we make this more granular and wait only where we need 
-		// 		to wait?
-		// 		....the wait is logical as we need to return a string here 
-		// 		eventually.
-		// 		should this be split into .resolve(..) nad .merge(..)???
-		return Promise.awaitOrRun(
-			state.wait,
-			function(){
-				// XXX can ast be a promise???
-				// XXX elems can be unresolved -- need a merge strategy for them...
-				//var waiting = []
-				for(var elem of ast){
-					// nesting...
-					while(elem && elem.value){
-						elem = elem.value 
-						// exec stage II macros...
-						// XXX this should be called when all the promises before 
-						// 		are resolved...
-						if(typeof(elem) == 'function'){
-							elem = elem(state) } }
-					if(elem == null){
-						continue }
-					// atomic values...
-					if(typeof(elem) != 'object'){
-						merge(elem) 
-						continue }
-					// value is resolved but "empty" -> skip...
-					if('value' in elem 
-							&& (elem.value == null 
-								|| elem.value == '')){
-						continue }
-					// expand ast...
-					if(elem instanceof Array){
-						// XXX this can be or containe promises...
-						merge(...that.resolve(page, elem, state)) 
-						continue }
-					// expand .body attribute...
-					// XXX is this needed here???
-					if(elem.body instanceof Array){
-						console.warn('!!! RESOLVE_BODY')
-						// XXX this can be or containe promises...
-						elem.body = that.resolve(page, elem.body, state) }
-					// nested macro with no value set -- skip...
-					if(that.macros[elem.name] instanceof Array){
-						continue }
-					// unresolved...
-					merge(elem) }
-
-				return elems }) },
-	//*/
 	resolve: function(page, ast, state={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
@@ -1534,6 +1465,8 @@ module.parser = {
 		// 		not 100% correct manner focusing on path depth and ignoring
 		// 		the context, this potentially can lead to false positives.
 		//
+		// XXX might be a good idea to add a <content/> tag to place the 
+		// 		loaded text...
 		// XXX add path recursion test to data -- fail if two paths resolve 
 		// 		to the same context...
 		// XXX need a way to make encode option transparent...
@@ -1559,10 +1492,16 @@ module.parser = {
 			function(page, args, body, state, handler){
 				var that = this
 
+				/* XXX see .joinBlocks(..) join caching for more info...
+				// cache body ast...
+				body = body ?
+					this.ast(body)
+					: body
+				//*/
+
 				var recursive = 
 				state.recursive = 
 					args.recursive 
-						?? body
 						?? state.recursive
 
 				var base = page.basepath
@@ -1572,6 +1511,20 @@ module.parser = {
 				return Promise.awaitOrRun(
 					this.parseNested(page, src, state),
 					function(src){
+						// check for recursion...
+						// XXX do we do this for pattern paths???
+						// XXX this does not catch the /A/A/A/... recursion...
+						var stack = state.include_stack ??= []
+						// XXX is this the right separator???
+						// 		...need something that can't be in a path...
+						var base_src = base +'|'+ src
+						if(stack.includes(base_src)){
+							if(recursive){
+								return that.expand(page, recursive, state) }
+							throw new Error('Recursion:\n\t'+ 
+								[...stack, base_src].join('\n\t\t-> ')) }
+						stack.push(base_src)
+
 						var cache = state.cache ??= {}
 						if(cache[src]){
 							return cache[src] }
@@ -1585,20 +1538,6 @@ module.parser = {
 						// 		no, because actual paths are meaningless 
 						// 		out of context...
 						var depends = ((state.depends ??= {})[src] ??= {})
-
-						// check for recursion...
-						// XXX do we do this for pattern paths???
-						// XXX this does not catch the /A/A/A/... recursion...
-						var stack = state.include_stack ??= []
-						// XXX is this the right separator???
-						// 		...need something that can't be in a path...
-						var base_src = base +'|'+ src
-						if(stack.includes(base_src)){
-							if(recursive){
-								return recursive }
-							throw new Error('Recursion:\n\t'+ 
-								[...stack, base_src].join('\n\t\t-> ')) }
-						stack.push(base_src)
 
 						// content handler...
 						handler ??= 
@@ -1616,12 +1555,15 @@ module.parser = {
 											: {}) 
 									: this.expand(page, text, state)}
 
+						var pageHandler =
+							function(text){
+								// XXX handle body / <content/>...
+								// XXX
+								return handler.call(that, page, text, state) }
 						var resultHandler =
 							function(pages){
-								// XXX not sure if this can happen or why...
-								if(state.include_stack.at(-1) != base_src){
-									throw new Error('Include stack error') }
-								state.include_stack.pop()
+								state.include_stack.at(-1) == base_src
+									&& state.include_stack.pop()
 								// cleanup...
 								if(state.include_stack.length == 0){
 									delete state.include_stack
@@ -1643,8 +1585,7 @@ module.parser = {
 										.iter(
 											that.joinBlocks(
 												page,
-												pages.map(function(text){
-													return handler.call(that, page, text, state) }), 
+												pages.map(pageHandler), 
 												args.join, 
 												state))
 										.flat()
