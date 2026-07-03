@@ -28,18 +28,19 @@ module.exports.PAGES = {
 
 	'/multi/page': [ 'A', 'B', 'C' ],
 	'/async/multi/page': Promise.resolve([ 'A', 'B', 'C' ]),
-	// XXX is this actually possible ???
+	/* XXX are these actually possible???
+	//		...and should these be handlable??
 	'/multi/async/page': [ 
 		Promise.resolve('A'), 
 		Promise.resolve('B'), 
 		Promise.resolve('C'),
 	],
-	// XXX is this actually possible ???
 	'/multi/async/multi/page': Promise.resolve([
 		Promise.resolve('A'), 
 		Promise.resolve('B'), 
 		Promise.resolve('C'),
 	]),
+	//*/
 }
 
 var P = 
