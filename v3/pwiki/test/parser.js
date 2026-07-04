@@ -53,8 +53,43 @@ module.exports.P = {
 	get basepath(){
 		return path.dirname(this.path ?? '') },
 
+	get matched(){
+		var path_action_pattern = /\/path\/?/
+		var path = this.path.replace(path_action_pattern, '')
+		var path_action = path != this.path
+
+		if(path.includes('*')){
+			var that = this
+			var re = new RegExp(path
+				.replace(/\//, '\\/')
+				.replace(/\*/g, '[^\\/]+'))
+			return Object.keys(this.__pages__)
+				.map(function(p){
+					return re.test(p) ?
+						[path_action ?
+							p +'/path'
+							:p]
+			   			: [] })
+				.flat() }
+		return [this.path] },
+
+	// * -> a promise or a list of promises???
 	get raw(){
-		return this.__pages__[this.path] ?? '' },
+		var res = []
+		var path_action_pattern = /\/path\/?/
+		var path_action = this.path.match(path_action_pattern)
+
+		for(var path of this.matched){
+			res.push(
+				path_action ?
+					path.replace(path_action_pattern, '')
+					: this.__pages__[path]) }
+
+		return res.length == 1 ?
+			res[0]
+			: res },
+
+	// XXX should this return an arrya for a multi-match???
 	get text(){
 		return this.__parser__.parse(this, this.raw, {}) },
 
@@ -194,12 +229,6 @@ test.Setups({
 				return i +' | @slot(slot shown)' }),
 			' | value' ]} },
 	
-	// XXX var...
-	// XXX
-	
-	// XXX arg...
-	// XXX
-
 	// include...
 	// XXX see inside...
 	include: function(assert, path='/blank', expected){
@@ -239,13 +268,23 @@ test.Setups({
 					'original overloaded',
 			],
 		} },
+	/* XXX
+	include_partial_isolated: function(assert){
+		return {
+			page: P,
+			code:[
+				'@include(isolated="partial" /isolated) @slot(slot overloaded)',
+					'original overloaded',
+			],
+		} },
+	//*/
 	// content...
-	include_content: function(assert){
+	include_content: function(assert, path='/page'){
 		return {
 			page: P,
 			code: [
-				'<include "/page">[[ <content/> ]]</include>',
-					'[[ '+ P.get('/page').raw +' ]]', ], } },
+				'<include "'+ path +'">[[ <content/> ]]</include>',
+					'[[ '+ P.get(path).raw +' ]]', ], } },
 	// XXX
 	
 	// recursion...
@@ -268,6 +307,22 @@ test.Setups({
 	// quote...
 	// for inline quoting see: test.Modifiers.quote
 	// XXX <quote src=.. />
+	quote_content: function(assert, path='/isolated'){
+		return {
+			page: P,
+			code: [
+				'<quote "'+ path +'">[[ <content/> ]]</quote>',
+					'[[ '+ P.get(path).raw +' ]]', ], } },
+
+	// XXX macro...
+	// XXX
+
+	// XXX var...
+	// XXX
+	
+	// XXX arg...
+	// XXX
+
 })
 
 

@@ -260,6 +260,7 @@ If `isolated` is given, prevent slots from included page from affecting
 the including page. 
 
 **Example:**
+
 `/some/page`:
 ```
 <slot X value/>

@@ -442,7 +442,6 @@ module.BaseParser = {
 	// 			.body -> .args.body -> .args.text
 	//
 	// NOTE: this internaly uses .macros to check for propper nesting
-	//group: function*(page, lex, to=false){
 	group: function*(lex, to=false, context){
 		lex = typeof(lex) != 'object' ?
 			this.lex(lex)
@@ -526,6 +525,9 @@ module.BaseParser = {
 			// normal value...
 			yield value } }, 
 
+	// NOTE: the output of this can be safely cached, it does not depend
+	// 		on anything external and as long as the code stays the same 
+	// 		this will not change.
 	// XXX do we need a pre-parse stage???
 	// 		- expand local macros
 	// 		- collect links
@@ -558,10 +560,19 @@ module.BaseParser = {
 	//		waitAll: <promise> | null,
 	//
 	//		// wait for all...
+	//		// NOTE: this is set just before .expand(..) returns and is 
+	//		//		not available during the expansion process.
 	//		wait: <promise> | null,
 	//
 	//		...
 	//	}
+	//
+	// NOTE: .waitNested and .waitAll are "live", i.e. while expanding,
+	//		at any given time they contain the promise of the last async
+	//		element upto the point of read. .wait however is set at the 
+	//		end of .expand(..), i.e. it has no meaning until .expand(..)
+	//		finishes, and represents the last .waitAll but will return 
+	//		the whole expanded ast.
 	//
 	//
 	// XXX the parser is always sync
@@ -819,236 +830,6 @@ module.BaseParser = {
 	// 		...should filters be client-side only??
 	parseNested: function(page, ast, state={}, nested_handlers={}){
 		return this.parse(page, ast, state, nested_handlers, 'waitNestedi') },
-
-
-
-	// Expand macros...
-	//
-	//	<ast> ::= [ <item>, .. ]
-	// 	<item> ::=
-	// 		<func>
-	// 		| <promise>
-	// 		| <string>
-	// 		| { skip: true, ... }
-	// 		| { data: <ast> }
-	// 		| <ast>
-	//
-	// XXX macros: we are mixing up ast state and parse state...
-	// 		one should only be used for parsing and be forgotten after 
-	// 		the ast is constructed the other should be part of the ast...
-	// XXX DOC inconsistent await behavior...
-	//		in var macro, as an example, there are two paths: the assign and 
-	//		the get, the assign calls .parse(..) and awaits for the result 
-	//		while the get path is "sync", this results in the first exec path
-	//		getting pushed to the next execution frame while the second is run
-	//		in sync with the caller, here is a simplified demo:
-	//			console.log(1)
-	//			// note that we are NOTE await'ing for the function here...
-	//			(async function f(){ 
-	//				console.log(2)})()
-	//			console.log(3)
-	//				-> prints 1, 2, 3
-	//		and:
-	//			console.log(1)
-	//			(async function f(){ 
-	//				// note the await -- this is the only difference...
-	//				console.log(await 2)})()
-	//			console.log(3)
-	//				-> prints 1, 3, 2
-	//		this could both be a bug or a feature depending on how you look
-	//		at it, but it makes promise sequencing very unpredictable...
-	//		...another problem here is that in the var macro, simply adding
-	//		an await of something does not fix the issue, we need to await 
-	//		for something significant -- await this.parse('') works, while
-	//		await vars[name] does not -- to the contrary of the above example...
-	/* XXX
-	expand: function(page, ast, state={}){
-		var that = this
-		ast = ast == null ?
-				Promise.awaitOrRun(
-					page.raw,
-					function(raw){
-						return that.group(page, raw ?? '') })
-			: typeof(ast) != 'object' ?
-				this.group(page, ast)
-			: ast instanceof types.Generator ?
-				ast
-			: ast.iter()
-
-		// NOTE this must execute sequentially for things that depend on 
-		// 		lexical scope not to get lost in the mess...
-		return Promise.seqiter(ast, 
-				function(value){
-					// text block...
-					if(typeof(value) == 'string'){
-						return value }
-					// macro...
-					var {name, args, body} = value
-					// nested macro -- skip...
-					if(typeof(that.macros[name]) != 'function'){
-						return {...value, skip: true} }
-					// macro call...
-					return Promise.awaitOrRun(
-						that.callMacro(page, name, args, body, state),
-						function(res){
-							res = res ?? ''
-							// result...
-							if(res instanceof Array 
-									|| that.macros[name] instanceof types.Generator){
-								return res
-							} else {
-								return [res] } }) },
-				function(err){
-					console.error(err)
-					return [page.parse(
-						// XXX add line number and page path...
-						'@include("./ParseError'
-							+':path='
-								// XXX use pwpath.encodeElem(..) ???
-								+ page.path 
-							+':msg='
-								+ err.message 
-									// quote html stuff...
-									.replace(/&/g, '&amp;')
-									.replace(/</g, '&lt;')
-									.replace(/>/g, '&gt;')
-									// quote argument syntax...
-									.replace(/["']/g, function(c){
-										return '%'+ c.charCodeAt().toString(16) })
-									.replace(/:/g, '&colon;')
-									.replace(/=/g, '&equals;')
-							+'")')] })
-				.sync() },
-	//*/
-
-
-	// recursively resolve and enumerate the ast...
-	//
-	//	<ast> ::= [ <item>, .. ]
-	// 	<item> ::=
-	// 		<string>
-	// 		| { data: <ast> }
-	// 		| <func>
-	//
-	// 	<func>(state)
-	// 		-> <ast>
-	//
-	//
-	// NOTE: <func>(..) is called in the context of page...
-	//
-	// XXX should this also resolve e.data???
-	/* XXX 
-	resolve: function(page, ast, state={}){
-		var that = this
-		ast = ast 
-			?? this.expand(page, null, state)
-		ast = typeof(ast) != 'object' ?
-			this.expand(page, ast, state)
-			: ast
-		// XXX .awaitOrRun(..) will check inside the input array for promises, do 
-		// 		we need to do this???
-		ast = Promise.awaitOrRun(
-			ast,
-			function(ast){
-				var async_content = false
-				return ast
-					.map(function(e){
-						// expand delayed sections...
-						e = typeof(e) == 'function' ?
-							e.call(page, state)
-							: e
-						// promise...
-						if(e instanceof Promise){
-							async_content = true
-							return e
-						// expand arrays...
-						} else if(e instanceof Array 
-								|| e instanceof types.Generator){
-							return that.resolve(page, e, state)
-						// data -- unwrap content...
-						} else if(e instanceof Object && 'data' in e){
-							var res = Promise.awaitOrRun(
-								that.resolve(page, e.data, state),
-								function(e){
-									return { data: e } })
-							res instanceof Promise
-								&& (async_content = true)
-							return res
-						// skipped items...
-						} else if(e instanceof Object && e.skip){
-							return []
-						} else {
-							return [e] } })
-					// NOTE: if we still have promises in the ast, wrap the 
-					// 		whole thing in a promise...
-					.run(function(){
-						return async_content ?
-								Promise.iter(this)
-								: this })
-					.flat() })
-		return ast instanceof Promise ?
-			// keep the API consistently array-like...
-			ast.iter()
-			: ast },
-	//*/
-
-	// Fully parse a page...
-	//
-	// This runs in two stages:
-	// 	- resolve the page
-	// 		- lex the page -- .lex(..)
-	// 		- group block elements -- .group(..)
-	// 		- expand macros -- .expand(..)
-	// 		- resolve ast -- .resolve(..)
-	// 	- apply filters
-	//
-	// NOTE: this has to synchronize everything between stage 1 (up to 
-	// 		and including expand) and stage 2 (post-handlers, filters, ...)
-	// 		because the former need a fully loaded and expanded page if 
-	// 		we want to do this in 2 stages and not 3...
-	// 		XXX might be fun to try a load-and-tweak approach the first 
-	// 			version used -- i.e. setting placeholders and replacing 
-	// 			them on demand rather than on encounter (as is now), e.g.
-	// 			a slot when loaded will replace the prior occurrences...
-	//
-	// XXX add a special filter to clear pending filters... (???)
-	/* XXX
-	parse: function(page, ast, state={}){
-		var that = this
-		return this.resolve(page, ast, state)
-			// filters...
-			.map(function(section){
-				// normalize types...
-				section = 
-					typeof(section) == 'number' ?
-						section + ''
-					: section == null ?
-						''
-					: section
-				return (
-					// expand section...
-					typeof(section) != 'string' ?
-						section.data
-					// global filters... 
-					: state.filters ?
-						that.normalizeFilters(state.filters)
-							.reduce(function(res, filter){
-								// unknown filter...
-								// NOTE: we try not to break on user errors
-								// 		if we can help it...
-								if(page.filters[filter] == null){
-									console.warn(
-										'.parse(..): unsupported filter: '+ filter) 
-									return res }
-								// NOTE: if a filter returns falsy then it 
-								// 		will have no effect on the result...
-								return page.filters[filter].call(page, res) 
-									?? res }, section)
-					// no global filters...
-					: section ) })
-			.flat()
-			.join('') },
-	//*/
 }
 
 
@@ -1085,9 +866,6 @@ module.quoting =
 function(macro){
 	macro.quoting = true
 	return macro }
-
-
-
 
 
 
@@ -1511,6 +1289,8 @@ module.parser = {
 				state.recursive = 
 					args.recursive 
 						?? state.recursive
+				// XXX get default...
+				recursive ??= ''
 
 				var base = page.basepath
 				// XXX we do this before or after we parse???
@@ -1523,10 +1303,7 @@ module.parser = {
 						// XXX will this work for @source(..)???
 						var stack = state.include_stack ??= []
 						if(stack.includes(src)){
-							if(recursive){
-								return that.expand(page, recursive, state) }
-							throw new Error('Recursion:\n\t'+ 
-								[...stack, src].join('\n\t\t-> ')) }
+							return that.expand(page, recursive, state) }
 						stack.push(src)
 
 						var cache = state.cache ??= {}
@@ -1559,12 +1336,12 @@ module.parser = {
 									: this.expand(page, text, state) }
 
 						var pageHandler =
-							function(text){
+							function([path, text]){
 								var content_handled = false
 								return body ?
 									// handle body / <content/>...
 									Promise.awaitOrRun(
-										that.expand(page, body, state, 
+										that.expand(page.get(path), body, state, 
 											{ content: function(){
 												content_handled = true
 												return text = handler.call(that, page, src, text, state) } }),
@@ -1590,8 +1367,12 @@ module.parser = {
 
 						// get and run things...
 						return Promise.awaitOrRun(
+							page.get(src).matched,
 							page.get(src).raw,
-							function(pages){
+							function(paths, pages){
+								paths = paths instanceof Array ?
+									paths
+									: [paths]
 								pages = pages instanceof Array ?
 									pages
 									: [pages]
@@ -1601,7 +1382,9 @@ module.parser = {
 										.iter(
 											that.joinBlocks(
 												page,
-												pages.map(pageHandler), 
+												Array
+													.zip(paths, pages)
+													.map(pageHandler), 
 												args.join, 
 												state))
 										.flat()
@@ -1718,6 +1501,7 @@ module.parser = {
 			filters.splice(filters.length, 0, ...Object.keys(args)) },
 		//*/
 
+		// expand the body in the context of a page...
 		// 	
 		// 	<macro src=<url>> .. </macro>
 		//
@@ -1759,6 +1543,12 @@ module.parser = {
 		// XXX SORT sorting not implemented yet...
 		// XXX UPDATE...
 		macro: Macro(
+			['name', 'src', 'sort', 'text', 'join', 'else',
+				['strict', 'isolated', 'inheritmacros', 'inheritvars']],
+			lazy(
+			function(page, args, body, state){
+			})),
+		_macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else',
 				['strict', 'isolated', 'inheritmacros', 'inheritvars']],
 			async function*(args, body, state){
