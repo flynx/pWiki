@@ -855,12 +855,15 @@ function(macro){
 	macro.isolated = true
 	return macro }
 
+
+// body: ast
 var lazy =
 module.lazy =
 function(macro){
 	macro.lazy = true
 	return macro }
 
+// body: as text
 var quoting =
 module.quoting =
 function(macro){
@@ -1222,8 +1225,6 @@ module.parser = {
 								function(st){
 									return ((st ?? state).slots ?? {})[name] },
 								{slot: name}) }) })), 
-		// XXX do not like this name...
-		content: ['slot', 'include', 'quote'],
 
 
 		//
@@ -1240,6 +1241,7 @@ module.parser = {
 		//
 		// NOTE: if body is not empty and <content/> is not present, the 
 		// 		included page will not be placed.
+		// NOTE: body is expanded in the context of the included page
 		// NOTE: there can be two ways of recursion in pWiki:
 		// 			- flat recursion
 		// 				/A -> /A -> /A -> ..
@@ -1261,7 +1263,6 @@ module.parser = {
 		// 		to the same context...
 		// XXX need a way to make encode option transparent...
 		// XXX do we want to load a specific slot/block???
-		// XXX UPDATE...
 		include: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],
@@ -1303,6 +1304,8 @@ module.parser = {
 						// XXX will this work for @source(..)???
 						var stack = state.include_stack ??= []
 						if(stack.includes(src)){
+							if(!recursive){
+								throw new Error('Recursive macro: '+stack) }
 							return that.expand(page, recursive, state) }
 						stack.push(src)
 
@@ -1541,224 +1544,31 @@ module.parser = {
 		// 			...this seems to effect non-pattern pages...
 		// XXX should macro:index be 0 or 1 (current) based???
 		// XXX SORT sorting not implemented yet...
-		// XXX UPDATE...
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else',
 				['strict', 'isolated', 'inheritmacros', 'inheritvars']],
 			lazy(
 			function(page, args, body, state){
-			})),
-		_macro: Macro(
-			['name', 'src', 'sort', 'text', 'join', 'else',
-				['strict', 'isolated', 'inheritmacros', 'inheritvars']],
-			async function*(args, body, state){
 				var that = this
-
-				// helpers...
-				var _getBlock = function(name){
-					var block = args[name] ?
-						[{
-							args: {},
-							body: args[name],
-						}]
-						: (text ?? [])
-							.filter(function(e){ 
-								return typeof(e) != 'string' 
-									&& e.name == name })
-					if(block.length == 0){
-						return }
-					// NOTE: when multiple blocks are present the 
-					// 		last one is used...
-					block = block.pop()
-					block = 
-						block.args.text 
-							?? block.body
-					return block }
-
-				var base = this.get(this.path.split(/\*/).shift())
-				var macros = state.macros = 
-					state.macros 
-						?? {}
-				var vars = state.vars = 
-					state.vars 
-						?? {}
-				var depends = state.depends = 
-					state.depends 
-						?? new Set()
-
-				// uninheritable args...
-				// NOTE: arg handling is split in two, to make things simpler 
-				// 		to process for retrieved named macros...
-				var src = args.src
-				var text = args.text 
-					?? body 
-					?? []
-				text = typeof(text) == 'string' ?
-					[...this.__parser__.group(this, text+'</macro>', 'macro')]
-					: text
-				var join, itext
-				var iargs = {}
-
-				// stored macros...
-				if(args.name){
-					var name = await base.parse(args.name, state)
-					// define new named macro...
-					if(text.length != 0){
-						// NOTE: we do not need to worry about saving 
-						// 		stateful text here because it is only 
-						// 		grouped and not expanded...
-						macros[name] = 
-							[ text, 
-								_getBlock('join'), 
-								JSON.parse(JSON.stringify(args)), ]
-					// use existing macro...
-					} else if(macros 
-							&& name in macros){
-						;[itext, join, iargs] = macros[name] } }
-
-				// inheritable args...
-				// XXX is there a point in overloading text???
-				text = text.length > 0 ? 
-					text 
-					: itext ?? text
-				var sort = (args.sort 
-						?? iargs.sort 
-						?? '')
-					.split(/\s+/g)
-					.filter(function(e){ 
-						return e != '' })
-				var strict = 
-					('strict' in args ?
-							args.strict 
-							: iargs.strict)
-						//?? true
-						?? false
-				var isolated = 
-					('isolated' in args ?
-							args.isolated
-							: iargs.isolated)
-						?? true
-				var inheritmacros = 
-					('inheritmacros' in args ?
-							args.inheritmacros
-							: iargs.inheritmacros)
-						?? true
-				var inheritvars = 
-					('inheritvars' in args ?
-							args.inheritvars
-							: iargs.inheritvars)
-						?? true
-
-				if(src){
-					src = await base.parse(src, state)
-					// XXX INHERIT_ARGS special-case: inherit args by default...
-					if(this.actions_inherit_args 
-							&& this.actions_inherit_args.has(pwpath.basename(src))
-							&& this.get(pwpath.dirname(src)).path == this.path){
-						src += ':$ARGS' }
-					// XXX DEPENDS_PATTERN
-					depends.add(src)
-
-					join = _getBlock('join') 
-						?? join 
-					join = join
-						&& await base.parse(join, state)
-
-					//var match = this.get(await base.parse(src, state))
-					//var match = this.get(src, strict)
-					var match = this.get(src)
-
-					// NOTE: thie does not introduce a dependency on each 
-					// 		of the iterated pages, that is handled by the 
-					// 		respective include/source/.. macros, this however
-					// 		only depends on page count...
-					depends.add(match.path)
-
-					// populate macrovars...
-					var macrovars = {}
-					for(var [key, value] 
-							of Object.entries(
-								Object.assign(
-									args,
-									iargs,
-									{
-										strict,
-										isolated,
-										inheritmacros,
-										inheritvars,
-									}))){
-						macrovars['macro:'+ key] = 
-							value === true ?
-								'yes'
-							: value === false ?
-								'no'
-							: value }
-
-					// handle count...
-					// NOTE: this duplicates <store>.match(..)'s functionality
-					// 		because we need to account for arbitrary macro 
-					// 		nesting that .match(..) does not know about...
-					// XXX revise var naming...
-					// XXX these can be overriden in nested macros...
-					var count = match.args.count
-					if(count){
-						var c =
-							count == 'inherit' ?
-								(!('macro:count' in vars) ?
-									this.args.count
-									: undefined)
-								: count 
-						if(c !== undefined){
-							vars['macro:count'] = 
-								isNaN(parseInt(c)) ?
-									c
-									: parseInt(c) 
-							vars['macro:index'] = 0 } }
-						
-					// expand matches...
-					var first = true
-					for await(var page of match.asPages(strict)){
-						// handle count...
-						if('macro:count' in vars){
-							if(vars['macro:count'] <= vars['macro:index']){
-								break }
-							object.sources(vars, 'macro:index')
-								.shift()['macro:index']++ }
-						// output join between elements....
-						if(join && !first){
-							yield join }
-						first = false 
-						if(isolated){
-							var _state = {
-								seen: state.seen, 
-								depends,
-								renderer: state.renderer,
-								macros: inheritmacros ?
-									{__proto__: macros}
-									: {},
-								vars: inheritvars ?
-									{__proto__: vars, 
-										...macrovars}
-									: {...macrovars},
-							}
-							yield this.__parser__.parse(page, 
-								this.__parser__.expand(page, 
-									text, _state), _state)
-						} else {
-							yield this.__parser__.expand(page, text, state) } }
-					// cleanup...
-					delete vars['macro:count']
-					delete vars['macro:index']
-					// else...
-					if(first
-							&& (text || args['else'])){
-						var else_block = _getBlock('else')
-						if(else_block){
-							yield this.__parser__.expand(this, else_block, state) } } } }),
+				return Promise.awaitOrRun(
+					this.parseNested(page, args.name, state),
+					function(name){
+						// set macro...
+						if(name && body){
+							;(state.macros ??= {})[name] = body
+						// get macro...
+						} else if(name){
+							body = (state.macros ?? {})[name] }
+						return args.src && body ?
+							// run macro...
+							that.macros.include.call(that, page, args, body, state)
+							: '' }) })),
 
 		// nesting rules...
 		'else': ['macro'],
-		'join': ['macro'],
+		join: ['macro'],
+		// XXX do not like this name...
+		content: ['slot', 'include', 'quote', 'macro'],
 	},
 
 }
