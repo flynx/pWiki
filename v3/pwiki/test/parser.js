@@ -301,6 +301,7 @@ test.Setups({
 			page: P,
 			code:[
 				'@include(/recursive/Self recursive="recursion found")',
+				// XXX this hangs...
 				'@include(/async/recursive/Self recursive="recursion found")',
 					'<< recursion found >>', ], } },
 	include_recursive_b: function(assert){
@@ -308,6 +309,7 @@ test.Setups({
 			page: P,
 			code:[
 				'@include(/recursive/SelfOther recursive="recursion found")',
+				// XXX this hangs...
 				'@include(/async/recursive/SelfOther recursive="recursion found")',
 					'<< << recursion found >> >>', ], } },
 	

@@ -1313,48 +1313,47 @@ module.parser = {
 						// content handler...
 						handler ??= 
 							function(page, body, path, text, state){
-								// check for recursion...
-								var include_stack = state.include_stack ??= []
+								return args.isolated ?
+									this.resolve(
+										page, 
+										text, 
+										args.isolated == 'partial' ?
+											serialize.partialDeepCopy(state)
+											: {})
+									: this.expand(page, text, state) }
+
+						var pageHandler =
+							function([path, text]){
+								// recursion...
+								// XXX for some reason this does not work for async...
+								// 		...and works quite differently in tests and 
+								// 		in console -- returns [object Object] in the
+								// 		former and hangs in the later...
+ 								var include_stack = state.include_stack ??= []
 								if(include_stack.includes(path)){
 									if(!recursive){
 										throw new Error('Recursive macro: '+include_stack) }
 									return that.expand(page, recursive, state) }
 								include_stack.push(path)
 
-								// XXX check cache???
+								// XXX cache???
 
-								var res = args.isolated ?
-									this.resolve(
-										page, 
-										text, 
-										Object.assign(
-											args.isolated == 'partial' ?
-												serialize.partialDeepCopy(state)
-												: {},
-											{include_stack}))
-									: this.expand(page, text, state) 
-
-								// handle recursion...
-								return Promise.awaitOrRun(
-									res,
-									function(){
-										state.include_stack.at(-1) == src
-											&& state.include_stack.pop()
-										// cleanup...
-										if(state.include_stack.length == 0){
-											delete state.include_stack
-											delete state.recursive } 
-
-										return res }) }
-
-						var pageHandler =
-							function([path, text]){
-								// handle nested promises...
+								// call the handler...
 								return Promise.awaitOrRun(
 									text,
 									function(text){
-										return handler.call(that, page, body, path, text, state) }) }
+										return Promise.awaitOrRun(
+											handler.call(that, page, body, path, text, state),
+											function(res){
+												// recursion
+												state.include_stack.at(-1) == src
+													&& state.include_stack.pop()
+												// cleanup...
+												if(state.include_stack.length == 0){
+													delete state.include_stack
+													delete state.recursive } 
 
+												return res }) }) }
 
 						// get and run things...
 						return Promise.awaitOrRun(
