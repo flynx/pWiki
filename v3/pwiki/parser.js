@@ -1308,12 +1308,11 @@ module.parser = {
 				recursive ??= ''
 
 				var base = page.basepath
-				// XXX we do this before or after we parse???
-				var src = page.resolvePathVars(args.src)
-
 				return Promise.awaitOrRun(
-					this.parseNested(page, src, state),
+					this.parseNested(page, args.src, state),
 					function(src){
+						//src = page.resolvePathVars(src)
+
 						// XXX should this be a tree??
 						// 		...need to at least split direct and 
 						// 		indirect dependencies...
@@ -1431,7 +1430,7 @@ module.parser = {
 				var that = this
 				return this.macros['include'].call(this, 
 					page, args, body, state,
-					function(page, src, text, state){
+					function(page, body, path, text, state){
 						return that.expand(page, text, state) }) }),
 
 		// Load macro and slot definitions but ignore the page text...
@@ -1442,7 +1441,8 @@ module.parser = {
 			function(page, args, body, state){
 				var that = this
 				return Promise.awaitOrRun(
-					this.macros['include'].call(this, page, args, body, state),
+					this.macros['include'].call(this, 
+						page, {src: args.src}, body, state),
 					function(){
 						return '' }) }),
 
@@ -1485,6 +1485,7 @@ module.parser = {
 					args.src 
 						&& this.parseNested(page, args.src, state),
 					function(src){
+						//src = page.resolvePathVars(src)
 						var text = 
 							src ?
 								page.get(src).raw
@@ -1494,20 +1495,6 @@ module.parser = {
 						return Promise.awaitOrRun(
 							text,
 							function(text){
-								// XXX not sure I like that this has two "modes"...
-								text = src && body ?
-									// XXX do we need to account for generators???
-									(text instanceof Array ?
-											text
-											: [text])
-										.map(function(text){
-											return that.expand(
-												page, 
-												that.ast(body.join(''), false, 'quote'), 
-												state, 
-												{ content: function(){
-													return text }, }) })
-									: text
 								return that.joinBlocks(
 									page, 
 									that.filterBlocks(
@@ -1582,40 +1569,20 @@ module.parser = {
 						// get macro...
 						} else if(name){
 							body = (state.macros ?? {})[name] }
+
+						// else...
+						if(args.src 
+								&& !page.get(args.src).exists()){
+							for(var elem of body){
+								if(elem.name == 'else'){
+									body = elem.body 
+									return that.expand(page.get(args.src), elem.body, state) } } }
+
 						return args.src && body ?
 							// run macro...
 							that.macros.include.call(that, page, args, body, state,
 								function(page, body, path, text, state){
-									var that = this
-
-									var handle = function(page, text, state){
-										return args.isolated ?
-											that.resolve(
-												page, 
-												text, 
-												Object.assign(
-													args.isolated == 'partial' ?
-														serialize.partialDeepCopy(state)
-														: {},
-													{include_stack: state.include_stack ?? []}))
-											: that.expand(page, text, state) }
-
-									//var content_handled = false
-									return body ?
-										// handle body / <content/>...
-										Promise.awaitOrRun(
-											that.expand(page.get(path), body, state, 
-												{ content: function(){
-													content_handled = true
-													return text = handle(page, text, state) } }),
-											function(text){
-												// if no <content/> present we still 
-												// need to handle the included page...
-												//content_handled 
-												//	|| handle.call(that, page, text, state)
-												return text })
-										// place as-is...
-										: handle(page, text, state) })
+									return this.expand(page.get(path), body, state) })
 							: '' }) })),
 
 		// nesting rules...

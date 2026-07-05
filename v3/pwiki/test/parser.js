@@ -56,6 +56,9 @@ module.exports.P = {
 	get matched(){
 		var path_action_pattern = /\/path\/?/
 		var path = this.path.replace(path_action_pattern, '')
+		path = path == '' ? 
+			'/' 
+			: path
 		var path_action = path != this.path
 
 		if(path.includes('*')){
@@ -72,17 +75,27 @@ module.exports.P = {
 			   			: [] })
 				.flat() }
 		return [this.path] },
+	exists: function(path){
+		var that = this
+		return (path ?
+				this.get(path).matched
+				: this.matched) 
+			.filter(function(p){
+				return p in that.__pages__ })
+			.length > 0 },
 
 	// * -> a promise or a list of promises???
 	get raw(){
 		var res = []
 		var path_action_pattern = /\/path\/?/
-		var path_action = this.path.match(path_action_pattern)
+		var path_action = path_action_pattern.test(this.path)
 
 		for(var path of this.matched){
 			res.push(
 				path_action ?
-					path.replace(path_action_pattern, '')
+					((path = path.replace(path_action_pattern, '')) == '' ?
+						'/'
+						: path)
 					: this.__pages__[path]) }
 
 		return res.length == 1 ?
@@ -315,13 +328,7 @@ test.Setups({
 	
 	// quote...
 	// for inline quoting see: test.Modifiers.quote
-	// XXX <quote src=.. />
-	quote_content: function(assert, path='/isolated'){
-		return {
-			page: P,
-			code: [
-				'<quote "'+ path +'">[[ <content/> ]]</quote>',
-					'[[ '+ P.get(path).raw +' ]]', ], } },
+	// XXX
 
 	// XXX macro...
 	// XXX
