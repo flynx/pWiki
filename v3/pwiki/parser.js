@@ -770,8 +770,6 @@ module.BaseParser = {
 			: ast.iter()
 
 		// merge resolved elements into the last item of elems...
-		// XXX can ast be a promise???
-		// XXX elems can be unresolved -- need a merge strategy for them...
 		var  elems = []
 		for(var elem of ast){
 			// nesting...
@@ -806,7 +804,6 @@ module.BaseParser = {
 			// nested macro with no value set -- skip...
 			if(that.macros[elem.name] instanceof Array){
 				continue }
-			//* XXX unresolved...
 			;(state.unresolved ??= [])
 				.push(elem.resolving instanceof Promise ?
 					elem.resolving
@@ -817,6 +814,14 @@ module.BaseParser = {
 			elems.push(elem) }
 
 		return elems },
+
+	isResolved: function(ast){
+		if(!(ast instanceof Array)){
+			return false }
+		for(var e of ast){
+			if(typeof(e) == 'object'){
+				return false } }
+		return true },
 
 	// XXX render api...
 	// XXX how should this play with filters???
@@ -830,12 +835,15 @@ module.BaseParser = {
 		// XXX might be a good idea to limit recursion depth here...
 		var merge = function(ast){
 			return Promise.awaitOrRun(
-				...state.unresolved,
+				...(state.unresolved ?? []),
 				function(){
 					delete state.unresolved
 					// re-resolve...
 					ast = that.resolve(page, ast, state, nested_handlers)
 
+					// NOTE: this is essentially running in the same frame
+					// 		as .resolve(..) above so there should not be 
+					// 		any races to delete .unresolved...
 					return state.unresolved ?
 						merge(ast)
 						: (ast ?? '').join('') }) }
@@ -844,14 +852,11 @@ module.BaseParser = {
 			this.resolve(page, ast, state, nested_handlers),
 			state[wait],
 			function(ast){
-				// NOTE: since we are waiting for state[wait], state.unresolved
-				// 		might get cleaned out by this point so we need to check
-				// 		manually...
-				for(var e of ast){
-					if(typeof(e) == 'object'){
-						state.unresolved = []
-						break } }
-				return state.unresolved ?
+				// NOTE: in an async world where any promised macro can 
+				// 		call .parse(..) / .parseNested(..) we can't trust
+				// 		the lack of .unresolved in state...
+				return (state.unresolved 
+						|| !that.isResolved(ast)) ?
 					merge(ast)
 					: (ast ?? '').join('') }) },
 
