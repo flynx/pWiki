@@ -87,7 +87,11 @@ module.exports.P = {
 
 		return res.length == 1 ?
 			res[0]
-			: res },
+			// if at least one page is a promise wait for all...
+			: Promise
+				.iter(res)
+				.sync() },
+			// res },
 
 	// XXX should this return an arrya for a multi-match???
 	get text(){

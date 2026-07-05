@@ -1371,15 +1371,16 @@ module.parser = {
 						// get and run things...
 						return Promise.awaitOrRun(
 							page.get(src).matched,
-							// XXX push this to a later stage -- we might not even need it...
-							page.get(src).raw,
 							function(paths, texts){
-								paths = paths instanceof Array ?
-									paths
-									: [paths]
-								texts = texts instanceof Array ?
-									texts
+								texts = 
+									// special case: list page...
+									paths.length == 1
+											&& texts instanceof Array ?
+										[texts]
+									: texts instanceof Array ?
+										texts
 									: [texts]
+
 								return Promise.awaitOrRun(
 									// handle pages...
 									Promise
