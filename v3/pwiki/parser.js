@@ -608,6 +608,9 @@ module.BaseParser = {
 	// 			sync (text) and async (DOM) rendering
 	// 			in the simplest form: take the expanded AST and merge 
 	// 			into a single string
+	// XXX BUG: .wait can resolve before everything in the tree is resolved...
+	// 		to reproduce:
+	// 			@include(/async/recursive/SelfOther recursive="recursion found")
 	expand: function(page, ast, state={}, nested_handlers={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
@@ -1263,6 +1266,8 @@ module.parser = {
 		// 		to the same context...
 		// XXX need a way to make encode option transparent...
 		// XXX do we want to load a specific slot/block???
+		// XXX REVISE...
+		INCLUDE_LIMIT: 20,
 		include: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],
@@ -1278,13 +1283,6 @@ module.parser = {
 			lazy(
 			function(page, args, body, state, handler){
 				var that = this
-
-				/* XXX see .joinBlocks(..) join caching for more info...
-				// cache body ast...
-				body = body ?
-					this.ast(body)
-					: body
-				//*/
 
 				var recursive = 
 				state.recursive = 
@@ -1313,8 +1311,18 @@ module.parser = {
 						// content handler...
 						handler ??= 
 							function(page, body, path, text, state){
+								// re-include limit...
+								// XXX HACK???
+								if( ++(state.included ??= {[path]: 0})[path] 
+										> this.macros.INCLUDE_LIMIT ?? 20){
+									// XXX BUG: for some reason for async recursion this
+									// 		breaks returning [object Object] overriding
+									// 		the actual return value
+									if(!recursive){
+										throw new Error(path +': include limit reached: '+ state.included[path]) }
+									return that.expand(page, recursive, state) }
 								// handle recursion...
-								// XXX for some reason this does not work for async...
+								// XXX BUG: for some reason this does not work for async...
 								// 		...and works quite differently in tests and 
 								// 		in console -- returns [object Object] in the
 								// 		former and hangs in the later...
@@ -1327,29 +1335,27 @@ module.parser = {
 
 								// XXX check cache???
 
-								return Promise.awaitOrRun(
+								var res = args.isolated ?
+									this.resolve(
+										page, 
+										text, 
+										args.isolated == 'partial' ?
+											serialize.partialDeepCopy(state)
+											: {})
+									: this.expand(page, text, state)
 
-									args.isolated ?
-										this.resolve(
-											page, 
-											text, 
-											Object.assign(
-												args.isolated == 'partial' ?
-													serialize.partialDeepCopy(state)
-													: {},
-												{include_stack}))
-										: this.expand(page, text, state),
-
-									function(res){
+								Promise.awaitOrRun(
+									state.waitAll,
+									function(){
 										// handle recursion...
 										state.include_stack.at(-1) == src
 											&& state.include_stack.pop()
 										// cleanup...
 										if(state.include_stack.length == 0){
 											delete state.include_stack
-											delete state.recursive } 
+											delete state.recursive } }) 
 
-										return res }) }
+								return res }
 
 						var pageHandler =
 							function([path, text]){
@@ -1542,6 +1548,7 @@ module.parser = {
 		// 			...this seems to effect non-pattern pages...
 		// XXX should macro:index be 0 or 1 (current) based???
 		// XXX SORT sorting not implemented yet...
+		// XXX check macro recursion...
 		macro: Macro(
 			['name', 'src', 'sort', 'text', 'join', 'else',
 				['strict', 'isolated', 'inheritmacros', 'inheritvars']],
