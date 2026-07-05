@@ -1371,6 +1371,7 @@ module.parser = {
 						// get and run things...
 						return Promise.awaitOrRun(
 							page.get(src).matched,
+							page.get(src).raw,
 							function(paths, texts){
 								texts = 
 									// special case: list page...
@@ -1380,18 +1381,13 @@ module.parser = {
 									: texts instanceof Array ?
 										texts
 									: [texts]
-
 								return Promise.awaitOrRun(
 									// handle pages...
 									Promise
 										.iter(
-											that.joinBlocks(
-												page,
-												Array
-													.zip(paths, texts)
-													.map(pageHandler), 
-												args.join, 
-												state))
+											Array
+												.zip(paths, texts)
+												.map(pageHandler))
 										.flat()
 										.sync(),
 									resultHandler ) }) }) })),
