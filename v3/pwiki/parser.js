@@ -1313,7 +1313,7 @@ module.parser = {
 						// content handler...
 						handler ??= 
 							function(page, body, path, text, state){
-								// check for recursion...
+								// handle recursion...
 								// XXX for some reason this does not work for async...
 								// 		...and works quite differently in tests and 
 								// 		in console -- returns [object Object] in the
@@ -1327,21 +1327,21 @@ module.parser = {
 
 								// XXX check cache???
 
-								var res = args.isolated ?
-									this.resolve(
-										page, 
-										text, 
-										Object.assign(
-											args.isolated == 'partial' ?
-												serialize.partialDeepCopy(state)
-												: {},
-											{include_stack}))
-									: this.expand(page, text, state) 
-
-								// handle recursion...
 								return Promise.awaitOrRun(
-									res,
-									function(){
+
+									args.isolated ?
+										this.resolve(
+											page, 
+											text, 
+											Object.assign(
+												args.isolated == 'partial' ?
+													serialize.partialDeepCopy(state)
+													: {},
+												{include_stack}))
+										: this.expand(page, text, state),
+
+									function(res){
+										// handle recursion...
 										state.include_stack.at(-1) == src
 											&& state.include_stack.pop()
 										// cleanup...
