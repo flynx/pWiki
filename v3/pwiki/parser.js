@@ -1300,19 +1300,6 @@ module.parser = {
 				return Promise.awaitOrRun(
 					this.parseNested(page, src, state),
 					function(src){
-						// check for recursion...
-						// XXX will this work for @source(..)???
-						var stack = state.include_stack ??= []
-						if(stack.includes(src)){
-							if(!recursive){
-								throw new Error('Recursive macro: '+stack) }
-							return that.expand(page, recursive, state) }
-						stack.push(src)
-
-						var cache = state.cache ??= {}
-						if(cache[src]){
-							return cache[src] }
-
 						// XXX should this be a tree??
 						// 		...need to at least split direct and 
 						// 		indirect dependencies...
@@ -1325,9 +1312,18 @@ module.parser = {
 
 						// content handler...
 						handler ??= 
-							function(page, src, text, state){
-								page = page.get(src)
-								return args.isolated ?
+							function(page, body, path, text, state){
+								// check for recursion...
+								var include_stack = state.include_stack ??= []
+								if(include_stack.includes(path)){
+									if(!recursive){
+										throw new Error('Recursive macro: '+include_stack) }
+									return that.expand(page, recursive, state) }
+								include_stack.push(path)
+
+								// XXX check cache???
+
+								var res = args.isolated ?
 									this.resolve(
 										page, 
 										text, 
@@ -1335,38 +1331,30 @@ module.parser = {
 											args.isolated == 'partial' ?
 												serialize.partialDeepCopy(state)
 												: {},
-											{stack: state.stack ?? []}))
-									: this.expand(page, text, state) }
+											{include_stack}))
+									: this.expand(page, text, state) 
+
+								// handle recursion...
+								return Promise.awaitOrRun(
+									res,
+									function(){
+										state.include_stack.at(-1) == src
+											&& state.include_stack.pop()
+										// cleanup...
+										if(state.include_stack.length == 0){
+											delete state.include_stack
+											delete state.recursive } 
+
+										return res }) }
 
 						var pageHandler =
 							function([path, text]){
-								var content_handled = false
-								return body ?
-									// handle body / <content/>...
-									Promise.awaitOrRun(
-										that.expand(page.get(path), body, state, 
-											{ content: function(){
-												content_handled = true
-												return text = handler.call(that, page, src, text, state) } }),
-										function(text){
-											// if no <content/> present we still 
-											// need to handle the included page...
-											content_handled 
-												|| handler.call(that, page, src, text, state)
-											return text })
-									// place as-is...
-									: handler.call(that, page, src, text, state) }
-						var resultHandler =
-							function(pages){
-								state.include_stack.at(-1) == src
-									&& state.include_stack.pop()
-								// cleanup...
-								if(state.include_stack.length == 0){
-									delete state.include_stack
-									delete state.recursive }
-								// cache the final result...
-								cache[src] = pages
-						   		return pages }
+								// handle nested promises...
+								return Promise.awaitOrRun(
+									text,
+									function(text){
+										return handler.call(that, page, body, path, text, state) }) }
+
 
 						// get and run things...
 						return Promise.awaitOrRun(
@@ -1374,23 +1362,32 @@ module.parser = {
 							page.get(src).raw,
 							function(paths, texts){
 								texts = 
+									// XXX how do we handle paths returning non-strings???
 									// special case: list page...
 									paths.length == 1
 											&& texts instanceof Array ?
 										[texts]
 									: texts instanceof Array ?
 										texts
-									: [texts]
+									: [texts ?? '']
 								return Promise.awaitOrRun(
 									// handle pages...
 									Promise
 										.iter(
-											Array
-												.zip(paths, texts)
-												.map(pageHandler))
+											that.joinBlocks(
+												page,
+												Array
+													.zip(paths, texts)
+													.map(pageHandler),
+												args.join,
+												state))
 										.flat()
 										.sync(),
-									resultHandler ) }) }) })),
+									function(pages){
+										/* XXX cache the final result...
+										cache[src] = pages
+										//*/
+										return pages }) }) }) })),
 
 		// NOTE: the main difference between this and @include is that 
 		// 		this renders the src in the context of current page while 
@@ -1559,7 +1556,38 @@ module.parser = {
 							body = (state.macros ?? {})[name] }
 						return args.src && body ?
 							// run macro...
-							that.macros.include.call(that, page, args, body, state)
+							that.macros.include.call(that, page, args, body, state,
+								function(page, body, path, text, state){
+									var that = this
+
+									var handle = function(page, text, state){
+										return args.isolated ?
+											that.resolve(
+												page, 
+												text, 
+												Object.assign(
+													args.isolated == 'partial' ?
+														serialize.partialDeepCopy(state)
+														: {},
+													{include_stack: state.include_stack ?? []}))
+											: that.expand(page, text, state) }
+
+									//var content_handled = false
+									return body ?
+										// handle body / <content/>...
+										Promise.awaitOrRun(
+											that.expand(page.get(path), body, state, 
+												{ content: function(){
+													content_handled = true
+													return text = handle(page, text, state) } }),
+											function(text){
+												// if no <content/> present we still 
+												// need to handle the included page...
+												//content_handled 
+												//	|| handle.call(that, page, text, state)
+												return text })
+										// place as-is...
+										: handle(page, text, state) })
 							: '' }) })),
 
 		// nesting rules...

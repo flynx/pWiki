@@ -92,7 +92,7 @@ module.exports.P = {
 				.iter(res)
 				.sync() },
 			/*/
-			res },
+			: res },
 			//*/
 
 	// XXX should this return an arrya for a multi-match???
@@ -284,13 +284,14 @@ test.Setups({
 			],
 		} },
 	//*/
-	// content...
+	/*/ XXX content...
 	include_content: function(assert, path='/page'){
 		return {
 			page: P,
 			code: [
 				'<include "'+ path +'">[[ <content/> ]]</include>',
 					'[[ '+ P.get(path).raw +' ]]', ], } },
+	//*/
 	// XXX
 	
 	// recursion...
