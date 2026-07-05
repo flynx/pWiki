@@ -730,7 +730,17 @@ module.BaseParser = {
 
 	// resolve stage II macros and merge results...
 	//
-	// XXX DNF
+	//	<ast> ::= [ <item>, ... ]
+	//	<item> ::=
+	//		<basic-value>
+	//		| <elem>
+	//
+	// <elem> is returned if its value is not resolved yet.
+	//
+	//
+	// NOTE: to fully resolve the ast this may need to be called several 
+	// 		times...
+	//
 	//
 	// XXX these yeild different results:
 	// 			r = parser.resolve(
@@ -769,9 +779,9 @@ module.BaseParser = {
 				// exec stage II macros...
 				if(typeof(elem.value) == 'function'){
 					let e = elem
-					// NOTE: if not everything is resolved, delay the stage II
-					// 		callbacks till .wait is done...
 					Promise.awaitOrRun(
+						// if not everything is resolved, delay the stage II
+						// callbacks till .wait is done...
 						state.wait,
 						function(){
 							return elem = e.value = 
@@ -791,24 +801,22 @@ module.BaseParser = {
 				continue }
 			// expand ast...
 			if(elem instanceof Array){
-				// XXX this can be or containe promises...
 				elems.push(...that.resolve(page, elem, state)) 
 				continue }
-			// expand .body attribute...
-			/* XXX is this needed here???
-			if(elem.body instanceof Array){
-				console.warn('!!! RESOLVE_BODY')
-				// XXX this can be or containe promises...
-				elem.body = that.resolve(page, elem.body, state) }
-			//*/
 			// nested macro with no value set -- skip...
 			if(that.macros[elem.name] instanceof Array){
 				continue }
-			// unresolved...
+			//* XXX unresolved...
+			;(state.unresolved ??= [])
+				.push(elem.resolving instanceof Promise ?
+					elem.resolving
+					: elem)
+			//*/
+			// NOTE: we do not need to expand .body attributes as these 
+			// 		are the responsibility of the respective macros...
 			elems.push(elem) }
 
 		return elems },
-
 
 	// XXX render api...
 	// XXX how should this play with filters???
@@ -817,18 +825,37 @@ module.BaseParser = {
 		// XXX
 	},
 
-	// XXX
 	parse: function(page, ast, state={}, nested_handlers={}, wait='wait'){
 		var that = this
-		var reresolve = !!state.wait
+		// XXX might be a good idea to limit recursion depth here...
+		var merge = function(ast){
+			return Promise.awaitOrRun(
+				...state.unresolved,
+				function(){
+					delete state.unresolved
+					// re-resolve...
+					ast = that.resolve(page, ast, state, nested_handlers)
+
+					return state.unresolved ?
+						merge(ast)
+						: (ast ?? '').join('') }) }
+
 		return Promise.awaitOrRun(
 			this.resolve(page, ast, state, nested_handlers),
 			state[wait],
-			function(ast, reresolve){
-				ast = reresolve ?
-					that.resolve(page, ast, state, nested_handlers)
-					: ast
-				return (ast ?? '').join('') }) },
+			function(ast){
+				// NOTE: since we are waiting for state[wait], state.unresolved
+				// 		might get cleaned out by this point so we need to check
+				// 		manually...
+				for(var e of ast){
+					if(typeof(e) == 'object'){
+						state.unresolved = []
+						break } }
+				return state.unresolved ?
+					merge(ast)
+					: (ast ?? '').join('') }) },
+
+
 	// XXX how should this play with filters???
 	// 		...should filters be client-side only??
 	parseNested: function(page, ast, state={}, nested_handlers={}){
@@ -1335,19 +1362,21 @@ module.parser = {
 
 								// XXX check cache???
 
+								var nested
 								var res = args.isolated ?
 									this.resolve(
 										page, 
 										text, 
-										args.isolated == 'partial' ?
+										nested = args.isolated == 'partial' ?
 											serialize.partialDeepCopy(state)
 											: {})
 									: this.expand(page, text, state)
 
+								// handle recursion...
 								Promise.awaitOrRun(
+									(nested ?? {}).waitAll,
 									state.waitAll,
 									function(){
-										// handle recursion...
 										state.include_stack.at(-1) == src
 											&& state.include_stack.pop()
 										// cleanup...
