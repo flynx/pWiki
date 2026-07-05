@@ -1371,14 +1371,15 @@ module.parser = {
 						// get and run things...
 						return Promise.awaitOrRun(
 							page.get(src).matched,
+							// XXX push this to a later stage -- we might not even need it...
 							page.get(src).raw,
-							function(paths, pages){
+							function(paths, texts){
 								paths = paths instanceof Array ?
 									paths
 									: [paths]
-								pages = pages instanceof Array ?
-									pages
-									: [pages]
+								texts = texts instanceof Array ?
+									texts
+									: [texts]
 								return Promise.awaitOrRun(
 									// handle pages...
 									Promise
@@ -1386,7 +1387,7 @@ module.parser = {
 											that.joinBlocks(
 												page,
 												Array
-													.zip(paths, pages)
+													.zip(paths, texts)
 													.map(pageHandler), 
 												args.join, 
 												state))
