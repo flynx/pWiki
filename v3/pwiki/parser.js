@@ -742,25 +742,9 @@ module.BaseParser = {
 	// 		times...
 	//
 	//
-	// XXX these yeild different results:
-	// 			r = parser.resolve(
-	// 				tests.P, 
-	// 				'<slot X>@include(/async/page)</slot> <slot X value>',
-	// 				s = {})
-	// 			s.wait.then(function(){
-	// 				console.log(r) }) // -> ['Page '] (err)
-	// 		and:
-	// 			r = parser.expand(
-	// 				tests.P, 
-	// 				'<slot X>@include(/async/page)</slot> <slot X slot/>',
-	// 				s = {})
-	// 			s.wait.then(function(){
-	// 				r = parser.resolve(test.P, r, s)
-	// 				console.log(r) }) // -> ['slot '] (correct)
-	// 		-> promises seem to not be sequenced correctly here...
-	// 		XXX it looks like the first slot is resolved before the last 
-	// 			slot has a chance to set the value as it is waiting for 
-	// 			the first slot to finish...
+	// XXX can we prevent reaces over state.unresolved???
+	// 		it can be deleted when calling .parse(..) / .parseNested(..)
+	// 		while parsing, for example from within a macro...
 	resolve: function(page, ast, state={}, nested_handlers={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
