@@ -1244,6 +1244,8 @@ module.parser = {
 								function(st){
 									return ((st ?? state).slots ?? {})[name] },
 								{slot: name}) }) })), 
+		// XXX do not like this name...
+		content: ['slot'],
 
 
 		//
@@ -1566,6 +1568,7 @@ module.parser = {
 						// set macro...
 						if(name && body){
 							;(state.macros ??= {})[name] = body
+
 						// get macro...
 						} else if(name){
 							body = (state.macros ?? {})[name] }
@@ -1573,10 +1576,18 @@ module.parser = {
 						// else...
 						if(args.src 
 								&& !page.get(args.src).exists()){
+							// <else> .. </else>
 							for(var elem of body){
 								if(elem.name == 'else'){
 									body = elem.body 
-									return that.expand(page.get(args.src), elem.body, state) } } }
+									return that.expand(page.get(args.src), body, state) } } 
+							// args.else...
+							return args['else'] ?
+								that.expand(page.get(args.src), args['else'], state) 
+								: [] }
+
+						// join macro???
+						// XXX
 
 						return args.src && body ?
 							// run macro...
@@ -1584,12 +1595,9 @@ module.parser = {
 								function(page, body, path, text, state){
 									return this.expand(page.get(path), body, state) })
 							: '' }) })),
-
 		// nesting rules...
 		'else': ['macro'],
 		join: ['macro'],
-		// XXX do not like this name...
-		content: ['slot', 'include', 'quote', 'macro'],
 	},
 
 }

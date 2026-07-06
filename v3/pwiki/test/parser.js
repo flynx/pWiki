@@ -53,6 +53,7 @@ module.exports.P = {
 	get basepath(){
 		return path.dirname(this.path ?? '') },
 
+	// XXX should this return current path if it does not exixt???
 	get matched(){
 		var path_action_pattern = /\/path\/?/
 		var path = this.path.replace(path_action_pattern, '')
@@ -74,6 +75,7 @@ module.exports.P = {
 							:p]
 			   			: [] })
 				.flat() }
+		// XXX should this return current path if it does not exixt???
 		return [this.path] },
 	exists: function(path){
 		var that = this
@@ -330,8 +332,21 @@ test.Setups({
 	// for inline quoting see: test.Modifiers.quote
 	// XXX
 
-	// XXX macro...
-	// XXX
+	// macro...
+	macro: function(assert, path='/page', res){
+		return {
+			page: P,
+			code: [
+				'<macro src="'+ path +'">[[ @source(./path) ]]</macro>',
+					res ?? ('[[ '+ path +' ]]'), ], } },
+	macro_404: function(assert){
+		return this.macro(assert, '/not_found', '') },
+	macro_else: function(assert){
+		return {
+			page: P,
+			code: [
+				'<macro src="/not_found">[[ @source(./path) ]]<else>ERR</else></macro>',
+					'ERR', ], } },
 
 	// XXX var...
 	// XXX
