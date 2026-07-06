@@ -1548,16 +1548,13 @@ module.parser = {
 		// 		that <store>.match(..) can not know about...
 		// 		XXX should we do the same for offset???
 		//
-		// XXX BUG: strict does not seem to work:
-		// 				@macro(src="./resolved-page" else="no" text="yes" strict)
-		// 					-> yes
-		// 			should be "no"
-		// 			...this seems to effect non-pattern pages...
+		// XXX macro variables...
 		// XXX should macro:index be 0 or 1 (current) based???
-		// XXX SORT sorting not implemented yet...
+		// XXX sorting...
 		// XXX check macro recursion...
 		macro: Macro(
-			['name', 'src', 'sort', 'text', 'join', 'else',
+			//['name', 'src', 'sort', 'text', 'join', 'else',
+			['name', 'src', 'join', 'else',
 				['strict', 'isolated', 'inheritmacros', 'inheritvars']],
 			lazy(
 			function(page, args, body, state){

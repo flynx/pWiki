@@ -137,6 +137,8 @@ bot from within pWiki as well as outside.
 
 ### now ()
 
+XXX
+
 ```
 \@now()
 ```
@@ -295,8 +297,6 @@ Will render to: `original [  ]`
 
 <source <src>>
 	...
-	<content/>
-	...
 </source>
 ```
 
@@ -331,6 +331,51 @@ Arguments:
 ]]-->
 
 
+### macro (_name_ _src_ _join_ _else_) / else
+
+Define and/or apply a macro.
+
+```
+<macro name=".." src="..">
+	...
+	<else>
+		...
+	</else>
+</macro>
+```
+
+
+If `name` is given a _named macro_ is defined. This macro can be later 
+referenced (used) by name. A named macro can be redefined/overridden.
+
+If `src` is given then expand the macro in applied to (i.e. expanded 
+in the context of) a page or range of pages and the result is included 
+in the current page.
+
+This differs frome `@include(..)` in that it does not load the rource 
+page, it only executes macros in it's context.
+
+Both `name` and `src` are optional.
+
+For a macro to be useful it must have a body (or a `text`/`body` attribute), 
+either defined as a named macro or in the current macro.
+
+The `<else>` macro (or `else` attribute) is used if the `src` does not match 
+any pages.
+
+**Example:**
+
+<pwiki-comment>
+- [bootstrap pages](/bootstrap/Templates/pages.html)
+</pwiki-comment>
+
+<!--[pWiki[ 
+[Templates/pages] / [bootstrap pages](bootstrap/Templates/pages.html):
+```
+@source(Templates/pages)
+```
+]]-->
+
 
 ---
 
@@ -362,45 +407,6 @@ macro at the end of the page._
 </pwiki-comment>
 
 
-
-### macro (name src sort) / else ()
-
-Apply macro to source page and include the result.
-
-This is similar to include but does not require a separate page.
-
-Both `name` and `src` are optional.
-
-If `name` is given a _named macro_ is defined. This macro can be later 
-referenced (used) by name. A named macro can be redefined/overridden.
-
-If `src` is given a macro is applied to a specific page or range of pages
-(see: WikiPath).
-
-For a macro to be useful it must have a body (`text`), either defined as
-a named macro or in the current macro.
-
-Arguments:
-- `name` -- macro name (optional).
-- `src` -- path to source page (optional).
-- `sort` -- space separated list of methods to use for item sorting
-
-
-`else` macro is applicable inside `macro`. it is used when the `src` path
-of `macro` matches no pages.
-
-**Example:**
-
-<pwiki-comment>
-- [bootstrap pages](/bootstrap/Templates/pages.html)
-</pwiki-comment>
-
-<!--[pWiki[ 
-[Templates/pages] / [bootstrap pages](bootstrap/Templates/pages.html):
-```
-@source(Templates/pages)
-```
-]]-->
 
 
 <!-- @filter(markdown) -->
