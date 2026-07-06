@@ -289,24 +289,12 @@ test.Setups({
 					'original overloaded',
 			],
 		} },
-	/* XXX
 	include_partial_isolated: function(assert){
 		return {
 			page: P,
 			code:[
 				'@include(isolated="partial" /isolated) @slot(slot overloaded)',
-					'original overloaded',
-			],
-		} },
-	//*/
-	/*/ XXX content...
-	include_content: function(assert, path='/page'){
-		return {
-			page: P,
-			code: [
-				'<include "'+ path +'">[[ <content/> ]]</include>',
-					'[[ '+ P.get(path).raw +' ]]', ], } },
-	//*/
+					'original overloaded', ], } },
 	// XXX
 	
 	// recursion...
@@ -352,6 +340,9 @@ test.Setups({
 	// XXX
 	
 	// XXX arg...
+	// XXX
+
+	// XXX filter...
 	// XXX
 
 })
