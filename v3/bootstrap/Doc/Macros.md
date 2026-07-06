@@ -336,6 +336,8 @@ Arguments:
 Define and/or apply a macro.
 
 ```
+@macro(name=".." src=".." text=".." else="..")
+
 <macro name=".." src="..">
 	...
 	<else>
