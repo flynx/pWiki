@@ -313,8 +313,26 @@ test.Setups({
 					'<< << recursion found >> >>', ], } },
 	
 	// quote...
-	// for inline quoting see: test.Modifiers.quote
-	// XXX
+	// NOTE: for inline quoting see: test.Modifiers.quote
+	quote_a: function(assert, quoted='@include(/page)'){
+		return {code: [
+			'@quote(text="'+ quoted +'")',
+				quoted ], } },
+	quote_b: function(assert, quoted='@include(/page)'){
+		return {code: [
+			'<quote>'+ quoted +'</quote>',
+				quoted ], } },
+	/* XXX this is broken...
+	quote_quote_a_a: function(assert){
+		return this.quote_a(assert, '@qoote(text=\\"text\\")') },
+	//*/
+	quote_quote_a_b: function(assert){
+		return this.quote_b(assert, '@qoote(text="text")') },
+	quote_quote_b_a: function(assert){
+		return this.quote_a(assert, '<qoote> text </quote>') },
+	// XXX do we need a non-html way to quote things??
+	quote_quote_b_b: function(assert){
+		return this.quote_b(assert, '<qoote> text &lt;/quote>') },
 
 	// macro...
 	macro: function(assert, path='/page', res){
