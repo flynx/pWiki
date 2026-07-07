@@ -278,17 +278,13 @@ test.Setups({
 			page: P,
 			code:[
 				'@include("/isolated") @slot(slot overloaded)',
-					'overloaded ',
-			],
-		} },
+					'overloaded ', ], } },
 	include_isolated: function(assert){
 		return {
 			page: P,
 			code:[
 				'@include(isolated /isolated) @slot(slot overloaded)',
-					'original overloaded',
-			],
-		} },
+					'original overloaded', ], } },
 	include_partial_isolated: function(assert){
 		return {
 			page: P,
@@ -335,6 +331,33 @@ test.Setups({
 			code: [
 				'<macro src="/not_found">[[ @source(./path) ]]<else>ERR</else></macro>',
 					'ERR', ], } },
+	macro_define: function(assert){
+		return {
+			page: P,
+			code: [
+				'<macro name=show_path>[[ @source(./path) ]]<else>ERR</else></macro>',
+					'', ], } },
+	macro_use: function(assert){
+		var res = this.macro_define(assert)
+		return {
+			page: P,
+			code: [
+				res.code[0] + '<macro name=show_path src="/page"/>',
+					'[[ /page ]]' ]} },
+	macro_use_404: function(assert){
+		var res = this.macro_define(assert)
+		return {
+			page: P,
+			code: [
+				res.code[0] + '<macro name=show_path src="/mooo"/>',
+					'ERR' ]} },
+	macro_use_multi: function(assert){
+		var res = this.macro_define(assert)
+		return {
+			page: P,
+			code: [
+				res.code[0] + '<macro name=show_path src="/*/page"/>',
+					'[[ /async/page ]][[ /multi/page ]][[ /async/multi/page ]]' ]} },
 
 	// XXX var...
 	// XXX
