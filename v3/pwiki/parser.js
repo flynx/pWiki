@@ -898,6 +898,8 @@ var parser =
 module.parser = {
 	__proto__: BaseParser,
 
+	INCLUDE_NEST_LIMIT: 20,
+
 	//
 	// 	<macro>(<args>, <body>, <state>){ .. }
 	// 		-> undefined
@@ -924,6 +926,13 @@ module.parser = {
 		// 		<filter> <filter-spec>
 		// 		| -<filter> <filter-spec>
 		//
+		// XXX the rewrite:
+		// 		- these need to be called after everything is done
+		// 				- globally in .exec(..) ???
+		// 				- localy after the item content is ready
+		// 			-> should we have and .onDone(..) event somwhere in the tree???
+		// 				...this would be usefull for the callback renderer too...
+		// 		
 		// XXX BUG: this does not show any results:
 		//			pwiki.exec('<filter test>moo test</filter>')
 		//				-> ''
@@ -1285,7 +1294,6 @@ module.parser = {
 		// XXX need a way to make encode option transparent...
 		// XXX do we want to load a specific slot/block???
 		// XXX REVISE...
-		INCLUDE_LIMIT: 20,
 		include: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],
@@ -1331,7 +1339,7 @@ module.parser = {
 								// re-include limit...
 								// XXX HACK???
 								if( ++(state.included ??= {[path]: 0})[path] 
-										> this.macros.INCLUDE_LIMIT ?? 20){
+										> this.INCLUDE_NEST_LIMIT ?? 20){
 									// XXX BUG: for some reason for async recursion this
 									// 		breaks returning [object Object] overriding
 									// 		the actual return value
