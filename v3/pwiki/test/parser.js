@@ -112,7 +112,7 @@ module.exports.P = {
 
 	// XXX should this return an arrya for a multi-match???
 	get text(){
-		return this.__parser__.parse(this, this.raw, {}) },
+		return this.__parser__.exec(this, this.raw, {}) },
 
 	get: function(p){
 		return {
@@ -448,7 +448,7 @@ test.Tests({
 				var p = serialize.partialDeepCopy(page)
 				var s = serialize.partialDeepCopy(st)
 				assert(
-					(res = await parser.parse(
+					(res = await parser.exec(
 							p,
 							input,
 							s))
@@ -458,7 +458,7 @@ test.Tests({
 						'\n\t     out: "'+ res +'"',
 						'\n\texpected: "'+ expect +'"') } } },
 	//asyncParse: async function(assert, state){
-	//	return await this.parse(assert, state) },
+	//	return await this.exec(assert, state) },
 })
 
 

@@ -743,7 +743,7 @@ module.BaseParser = {
 	//
 	//
 	// XXX can we prevent reaces over state.unresolved???
-	// 		it can be deleted when calling .parse(..) / .parseNested(..)
+	// 		it can be deleted when calling .exec(..) / .execNested(..)
 	// 		while parsing, for example from within a macro...
 	resolve: function(page, ast, state={}, nested_handlers={}){
 		var that = this
@@ -814,7 +814,7 @@ module.BaseParser = {
 		// XXX
 	},
 
-	parse: function(page, ast, state={}, nested_handlers={}, wait='wait'){
+	exec: function(page, ast, state={}, nested_handlers={}, wait='wait'){
 		var that = this
 		// XXX might be a good idea to limit recursion depth here...
 		var merge = function(ast){
@@ -837,7 +837,7 @@ module.BaseParser = {
 			state[wait],
 			function(ast){
 				// NOTE: in an async world where any promised macro can 
-				// 		call .parse(..) / .parseNested(..) we can't trust
+				// 		call .exec(..) / .execNested(..) we can't trust
 				// 		the lack of .unresolved in state...
 				return (state.unresolved 
 						|| !that.isResolved(ast)) ?
@@ -847,8 +847,8 @@ module.BaseParser = {
 
 	// XXX how should this play with filters???
 	// 		...should filters be client-side only??
-	parseNested: function(page, ast, state={}, nested_handlers={}){
-		return this.parse(page, ast, state, nested_handlers, 'waitNestedi') },
+	execNested: function(page, ast, state={}, nested_handlers={}){
+		return this.exec(page, ast, state, nested_handlers, 'waitNestedi') },
 }
 
 
@@ -925,12 +925,12 @@ module.parser = {
 		// 		| -<filter> <filter-spec>
 		//
 		// XXX BUG: this does not show any results:
-		//			pwiki.parse('<filter test>moo test</filter>')
+		//			pwiki.exec('<filter test>moo test</filter>')
 		//				-> ''
 		//		while these do:
-		//    		pwiki.parse('<filter test/>moo test')
+		//    		pwiki.exec('<filter test/>moo test')
 		//				-> 'moo TEST'
-		//			await pwiki.parse('<filter test>moo test</filter>@var()')
+		//			await pwiki.exec('<filter test>moo test</filter>@var()')
 		//				-> 'moo TEST'
 		//		for more info see:
 		//			file:///L:/work/pWiki/pwiki2.html#/Editors/Results
@@ -974,7 +974,7 @@ module.parser = {
 					// 		...at this stage it should more or less be static -- check!
 					return Promise.awaitOrRun(
 						// XXX how do we resolve the await loop?
-						parser.parseNested(this, ast, {
+						parser.execNested(this, ast, {
 							...state,
 							filters: local.includes(this.ISOLATED_FILTERS) ?
 								local
@@ -1048,7 +1048,7 @@ module.parser = {
 					return '' }
 
 				return Promise.awaitOrRun(
-					this.parseNested(page, name, state),
+					this.execNested(page, name, state),
 					function(name){
 						// XXX INC_DEC
 						var inc = args.inc
@@ -1119,7 +1119,7 @@ module.parser = {
 						if(text){
 							return Promise.awaitOrRun(
 								//state.waitNested,
-								that.parseNested(page, text, state),
+								that.execNested(page, text, state),
 								function(value){
 									text = vars[name] = value
 									return show ?? false ?
@@ -1133,8 +1133,8 @@ module.parser = {
 			var lst = []
 			for(var [name, value] of Object.entries(args)){
 				lst.push(
-					this.parseNested(page, name, state),
-					this.parseNested(page, value, state)) }
+					this.execNested(page, name, state),
+					this.execNested(page, value, state)) }
 			var vars = state.vars ??= {}
 			return Promise.awaitOrRun(
 				state.waitNested,
@@ -1192,7 +1192,7 @@ module.parser = {
 				var name = args.name
 
 				return Promise.awaitOrRun(
-					this.parseNested(page, name, state),
+					this.execNested(page, name, state),
 					function(name){
 						var slots = state.slots ??= {}
 
@@ -1311,7 +1311,7 @@ module.parser = {
 
 				var base = page.basepath
 				return Promise.awaitOrRun(
-					this.parseNested(page, args.src, state),
+					this.execNested(page, args.src, state),
 					function(src){
 						//src = page.resolvePathVars(src)
 
@@ -1485,7 +1485,7 @@ module.parser = {
 				var that = this
 				return Promise.awaitOrRun(
 					args.src 
-						&& this.parseNested(page, args.src, state),
+						&& this.execNested(page, args.src, state),
 					function(src){
 						//src = page.resolvePathVars(src)
 						var text = 
@@ -1560,7 +1560,7 @@ module.parser = {
 			function(page, args, body, state){
 				var that = this
 				return Promise.awaitOrRun(
-					this.parseNested(page, args.name, state),
+					this.execNested(page, args.name, state),
 					function(name){
 						// set macro...
 						if(name && body){
