@@ -270,13 +270,19 @@ module.BaseParser = {
 						: []),
 				] })
 			.flat() },
-	filterBlocks: function(page, blocks, filter, state){
-		if(filter == null){
-			return blocks }
 
-		// XXX
-
-		return blocks },
+	applyFilters: function(filters, str, state={}){
+		var that = this
+		filters = this.normalizeFilters(filters)
+			.filter(function(f){
+				return f in (that.filters ?? {})})
+		var handle = function(str){
+			return filters
+				.reduce(function(res, filter){
+					return that.filters[filter].call(that, str, state) }, str) }
+		return str instanceof Array ?
+			str.map(handle)
+			: handle(str) },
 
 
 	// Strip comments...
@@ -600,7 +606,6 @@ module.BaseParser = {
 	//				states and the like, async/await can't...
 	// XXX Q: do we need generators?
 	// XXX Handle errors...
-	fullAST: true,
 	// XXX this needs a careful rewrite of the .macros.* for the new scheme:
 	// 		- expand
 	// 		- "merge"
@@ -687,6 +692,8 @@ module.BaseParser = {
 							delete state.waitNested }
 						delete elem.resolving
 						elem.value = value 
+						// XXX should we resolve to value or elem???
+						// 		...elem seems more consistent...
 						return value },
 					function(err){
 						state.errors ??= []
@@ -694,14 +701,8 @@ module.BaseParser = {
 						delete elem.resolving
 						elem.error = err })
 			// sync...
-			} else if('fullAST' in state ?
-						state.fullAST
-					: 'fullAST' in page ?
-						page.fullAST
-					: this.fullAST){
-				elem.value = res
 			} else {
-				elem = res }
+				elem.value = res }
 			elems.push(elem) }
 
 		// cleanup...
@@ -814,8 +815,20 @@ module.BaseParser = {
 		// XXX
 	},
 
-	exec: function(page, ast, state={}, nested_handlers={}, wait='wait'){
+	// merge stage III...
+	//
+	// XXX FILTER should filters he handled here or in .resolve(..) ???
+	// 		...and how do we handle filters in @include(..)'s???
+	merge: function(page, ast, state={}, nested_handlers={}, wait='wait'){
 		var that = this
+
+		var stage3 = function(ast){
+			return ast
+				.map(function(e){
+					return typeof(e) == 'function' ?
+						e.call(that, state)
+						: e })
+				.flat() }
 		// XXX might be a good idea to limit recursion depth here...
 		var merge = function(ast){
 			return Promise.awaitOrRun(
@@ -823,7 +836,8 @@ module.BaseParser = {
 				function(){
 					delete state.unresolved
 					// re-resolve...
-					ast = that.resolve(page, ast, state, nested_handlers)
+					ast = stage3(
+						that.resolve(page, ast, state, nested_handlers))
 
 					// NOTE: this is essentially running in the same frame
 					// 		as .resolve(..) above so there should not be 
@@ -832,17 +846,26 @@ module.BaseParser = {
 						merge(ast)
 						: (ast ?? '').join('') }) }
 
+		ast = stage3(
+			this.resolve(page, ast, state, nested_handlers))
+
 		return Promise.awaitOrRun(
-			this.resolve(page, ast, state, nested_handlers),
 			state[wait],
-			function(ast){
+			function(){
+				//ast = stage3(ast)
 				// NOTE: in an async world where any promised macro can 
 				// 		call .exec(..) / .execNested(..) we can't trust
 				// 		the lack of .unresolved in state...
-				return (state.unresolved 
-						|| !that.isResolved(ast)) ?
-					merge(ast)
-					: (ast ?? '').join('') }) },
+				return that.applyFilters(
+					state.filters ?? [],
+					(state.unresolved 
+							|| !that.isResolved(ast)) ?
+						merge(ast)
+						: (ast ?? '').join(''),
+			   		state) }) },
+
+	exec: function(page, ast, state={}, nested_handlers={}, wait='wait'){
+		return this.merge(...arguments) },
 
 
 	// XXX how should this play with filters???
@@ -900,6 +923,12 @@ module.parser = {
 
 	INCLUDE_NEST_LIMIT: 20,
 
+	// XXX should this be here, in page, or both?
+	filters: {
+		upper: function(str){
+			return str.toUpperCase() },
+	},
+
 	//
 	// 	<macro>(<args>, <body>, <state>){ .. }
 	// 		-> undefined
@@ -926,74 +955,39 @@ module.parser = {
 		// 		<filter> <filter-spec>
 		// 		| -<filter> <filter-spec>
 		//
-		// XXX the rewrite:
-		// 		- these need to be called after everything is done
-		// 				- globally in .exec(..) ???
-		// 				- localy after the item content is ready
-		// 			-> should we have and .onDone(..) event somwhere in the tree???
-		// 				...this would be usefull for the callback renderer too...
-		// 		
-		// XXX BUG: this does not show any results:
-		//			pwiki.exec('<filter test>moo test</filter>')
-		//				-> ''
-		//		while these do:
-		//    		pwiki.exec('<filter test/>moo test')
-		//				-> 'moo TEST'
-		//			await pwiki.exec('<filter test>moo test</filter>@var()')
-		//				-> 'moo TEST'
-		//		for more info see:
-		//			file:///L:/work/pWiki/pwiki2.html#/Editors/Results
-		//		XXX do we fix this or revise how/when filters work???
-		//			...including accounting for variables/expansions and the like...
-		// XXX REVISE...
-		// XXX UPDATE...
-		filter: function(parser, args, body, state, expand=true){
+		// XXX need a way to exclude some filters in some nested locks...
+		// XXX BUG: RECURSION: this breaks @include(..)'s recursion tests...
+		filter: function(page, args, body, state){
 			var that = this
 
-			var outer = state.filters = 
-				state.filters ?? []
-			var local = Object.keys(args)
+			delete args.text
+			delete args.body
+			var filters = Object.keys(args)
 
-			// trigger quote-filter...
-			var quote = local
-				.map(function(filter){
-					return (that.filters[filter] ?? {})['quote'] ?? [] })
-				.flat()
-			quote.length > 0
-				&& parser.macros['quote-filter'].call(
-					this, 
-					parser, 
-					Object.fromEntries(Object.entries(quote)), 
-					null, 
-					state)
+			// local filter...
+			if(body){
+				// stage I
+				body = this.expand(page, body, state)
 
-			// local filters...
-			if(body != null){
-				// expand the body...
-				var ast = expand ?
-						this.__parser__.expand(this, body, state)
-					: body instanceof Array ?
-						body
-					// NOTE: wrapping the body in an array effectively 
-					// 		escapes it from parsing...
-					: [body]
-
+				// stage II
 				return function(state){
-					// XXX can we loose stuff from state this way???
-					// 		...at this stage it should more or less be static -- check!
-					return Promise.awaitOrRun(
-						// XXX how do we resolve the await loop?
-						parser.execNested(this, ast, {
-							...state,
-							filters: local.includes(this.ISOLATED_FILTERS) ?
-								local
-								: [...outer, ...local],
-						}),
-						function(res){
-							return {data: res} }) }
-			// global filters...
-			} else {
-				state.filters = [...outer, ...local] } },
+					body = that.resolve(page, body, state)
+
+					// stage III
+					return function(state){
+						return Promise.awaitOrRun(
+							that.merge(page, body, state),
+							function(body){
+								// apply the filters...
+								// XXX combine with state.filters???
+								return that.applyFilters(filters, body, state) }) } } 
+
+			// global filter...
+			} else if(filters.length > 0){
+				(state.filters = (state.filters ??= []))
+					.push(...filters) }
+
+			return '' },
 
 
 		// Args...
@@ -1286,9 +1280,7 @@ module.parser = {
 		// 		not 100% correct manner focusing on path depth and ignoring
 		// 		the context, this potentially can lead to false positives.
 		//
-		// XXX do we need the <context/> nested macro???
-		// XXX should this resolve join and/or body in the context of the 
-		// 		included page or the outer page (current)???
+		// XXX FILTER do we skip includes from outer filters???
 		// XXX add path recursion test to data -- fail if two paths resolve 
 		// 		to the same context...
 		// XXX need a way to make encode option transparent...
@@ -1297,9 +1289,6 @@ module.parser = {
 		include: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],
-			// XXX thinking that reimplementing this is a bit less boring than
-			// 		refactoring, and should be cleaner...
-			// XXX if the src is empty return nothing...
 			// XXX need a wrapper protocol -- is this the level for it???
 			// XXX page API used:
 			// 		.resolvePathVars(path)
@@ -1337,6 +1326,7 @@ module.parser = {
 						handler ??= 
 							function(page, body, path, text, state){
 								// re-include limit...
+								//* XXX RECURSION
 								// XXX HACK???
 								if( ++(state.included ??= {[path]: 0})[path] 
 										> this.INCLUDE_NEST_LIMIT ?? 20){
@@ -1357,19 +1347,24 @@ module.parser = {
 										throw new Error('Recursive macro: '+include_stack) }
 									return that.expand(page, recursive, state) }
 								include_stack.push(path)
+								//*/
 
 								// XXX check cache???
 
 								var nested
 								var res = args.isolated ?
-									this.resolve(
+									//this.resolve(
+									this.merge(
 										page, 
 										text, 
 										nested = args.isolated == 'partial' ?
 											serialize.partialDeepCopy(state)
 											: {})
+									// XXX FILTER need to localize target page 
+									// 		filters to it, somehow...
 									: this.expand(page, text, state)
 
+								//* XXX RECURSION
 								// handle recursion...
 								Promise.awaitOrRun(
 									(nested ?? {}).waitAll,
@@ -1381,6 +1376,7 @@ module.parser = {
 										if(state.include_stack.length == 0){
 											delete state.include_stack
 											delete state.recursive } }) 
+								//*/
 
 								return res }
 
@@ -1491,6 +1487,10 @@ module.parser = {
 			quoting(
 			function(page, args, body, state){
 				var that = this
+				var filters = (args.filter ?? '')
+					.split(/\s+/)
+					.filter(function(s){
+						return s.length > 0 })
 				return Promise.awaitOrRun(
 					args.src 
 						&& this.execNested(page, args.src, state),
@@ -1507,10 +1507,9 @@ module.parser = {
 							function(text){
 								return that.joinBlocks(
 									page, 
-									that.filterBlocks(
-										page, 
+									that.applyFilters(
+										filters, 
 										text, 
-										args.filter, 
 										state), 
 									args.join, 
 									state) }) }) })),
