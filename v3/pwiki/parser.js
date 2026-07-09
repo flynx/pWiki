@@ -817,8 +817,11 @@ module.BaseParser = {
 
 	// merge stage III...
 	//
-	// XXX FILTER should filters he handled here or in .resolve(..) ???
-	// 		...and how do we handle filters in @include(..)'s???
+	// - ensure the ast is fully resolved
+	// - apply nested stage III handlers
+	// - apply filters on whole ast
+	//
+	//
 	merge: function(page, ast, state={}, nested_handlers={}, wait='wait'){
 		var that = this
 
@@ -852,7 +855,6 @@ module.BaseParser = {
 		return Promise.awaitOrRun(
 			state[wait],
 			function(){
-				//ast = stage3(ast)
 				// NOTE: in an async world where any promised macro can 
 				// 		call .exec(..) / .execNested(..) we can't trust
 				// 		the lack of .unresolved in state...
