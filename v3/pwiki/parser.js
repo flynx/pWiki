@@ -273,7 +273,8 @@ module.BaseParser = {
 				return f in (that.filters ?? {})})
 		var handle = function(str){
 			// skip non-basic data...
-			if(typeof(str) == 'object'){
+			if(typeof(str) == 'object'
+					|| typeof(str) == 'function'){
 				return str }
 			return filters
 				.reduce(function(res, filter){
@@ -686,6 +687,7 @@ module.BaseParser = {
 			// sync...
 			} else {
 				elem.value = res }
+
 			elems.push(elem) }
 
 		// cleanup...
@@ -797,18 +799,15 @@ module.BaseParser = {
 	// Merge and apply global filters (stage III)...
 	//
 	// - ensure the ast is fully resolved
-	// - apply nested stage III handlers
-	// - apply filters on whole ast
+	// - apply stage III pre handlers
+	// - apply global filters
+	// - apply stage III post handlers
 	//
 	//
 	// XXX RECURSION might be a good idea to limit recursion/nesting depth 
-	// 		of inner merge(..)...
-	// XXX to allow nested filter blocks to self-exclude form global/uppaer
-	// 		filters would be nice to be able to do the filtering before
-	// 		we are fully resolved, i.e. after all the promises but before 
-	// 		all the functions are gone from the ast...
-	// 		...not yet sure how to get this through the merge(..)
-	merge: function(page, ast, state={}, nested_handlers={}, wait='wait'){
+	// 		of inner resolve(..)...
+	// XXX RENAME...
+	finalize: function(page, ast, state={}, nested_handlers={}, wait='wait'){
 		var that = this
 
 		var stage3 = function(ast){
@@ -818,46 +817,56 @@ module.BaseParser = {
 						e.call(that, state)
 						: e })
 				.flat() }
-		var merge = function(ast){
+		var resolve = function(ast){
 			return Promise.awaitOrRun(
 				...(state.unresolved ?? []),
 				function(){
 					delete state.unresolved
 					// re-resolve...
-					ast = stage3(
-						that.resolve(page, ast, state, nested_handlers))
+					ast = that.resolve(page, ast, state, nested_handlers)
 
 					// NOTE: this is essentially running in the same frame
 					// 		as .resolve(..) above so there should not be 
 					// 		any races to delete .unresolved...
 					return state.unresolved ?
-						merge(ast)
-						: (ast ?? '').join('') }) }
+						resolve(ast)
+						: ast }) }
 
-		ast = stage3(
-			this.resolve(page, ast, state, nested_handlers))
+		ast = this.resolve(page, ast, state, nested_handlers)
 
 		return Promise.awaitOrRun(
-			state[wait],
+			...[state[wait]].flat(),
 			function(){
 				// NOTE: in an async world where any promised macro can 
 				// 		call .exec(..) / .execNested(..) we can't trust
 				// 		the lack of .unresolved in state...
-				return that.applyFilters(
-					state.filters ?? [],
+				return Promise.awaitOrRun(
 					(state.unresolved 
 							|| !that.isResolved(ast)) ?
-						merge(ast)
-						: (ast ?? '').join(''),
-			   		state) }) },
+						resolve(ast)
+						: ast,
+			   		function(ast){
+						return (
+							// stage III post...
+							stage3(
+								that.applyFilters(
+									state.filters ?? [],
+									// stage III pre...
+									stage3( ast ),
+									state))) }) }) },
 
 	exec: function(page, ast, state={}, nested_handlers={}, wait='wait'){
-		return this.merge(...arguments) },
+		return Promise.awaitOrRun(
+			this.finalize(...arguments),
+			function(res){
+				return res.join('') }) },
+	// XXX
 	execNested: function(page, ast, state={}, nested_handlers={}){
-		//* XXX waitNested here deadlocks the parser -- not sure why...
+		/* XXX waitNested here deadlocks the parser -- not sure why...
+		//return this.exec(page, ast, state, nested_handlers, 'unresolved') },
 		return this.exec(page, ast, state, nested_handlers, 'waitNested') },
 		/*/
-		return this.exec(page, ast, state, nested_handlers, 'unresolved') },
+		return this.exec(page, ast, state, nested_handlers, '') },
 		//*/
 
 
@@ -870,7 +879,6 @@ module.BaseParser = {
 }
 
 
-// XXX do we need anything else like .doc, attrs???
 var Macro =
 module.Macro = 
 function(spec, func){
@@ -921,23 +929,23 @@ module.parser = {
 	// 		detected.
 	RECURSION_STRING: '',
 
-	// XXX should this be here, in page, or both?
-	filters: {
-		upper: function(str){
-			return str.toUpperCase() },
-	},
+	// Filters...
+	//
+	// NOE: filters can't be named 'body', 'text', or 'clear' -- they 
+	// 		will be shadowed by @filter(..)'s keyword arguments...
+	filters: {},
 
+	// Macros...
 	//
 	// 	<macro>(<args>, <body>, <state>){ .. }
 	// 		-> undefined
 	// 		-> <text>
 	// 		-> <array>
-	// 		-> <iterator>
+	// 		-> <iterator> XXX ???
+	// 		-> <promise>
 	// 		-> <func>(<state>)
 	// 			-> ...
 	//
-	// XXX do we need to make .macro.__proto__ module level object???
-	// XXX ASYNC make these support async page getters...
 	macros: {
 
 		// Filter...
@@ -953,38 +961,59 @@ module.parser = {
 		// 		<filter> <filter-spec>
 		// 		| -<filter> <filter-spec>
 		//
-		// XXX need a way to exclude some filters in some nested locks...
-		// XXX LOCAL_FILTERS do we combine local filters with state filters???
-		filter: function(page, args, body, state){
-			var that = this
+		// XXX should we include the global filters (current) or exclude 
+		// 		them by default???
+		filter: Macro(
+			[['clear']],
+			function(page, args, body, state){
+				var that = this
 
-			// get filters...
-			delete args.text
-			delete args.body
-			var filters = Object.keys(args)
+				// get filters...
+				var clear = args.clear
+				delete args.text
+				delete args.body
+				delete args.clear
+				var filters = Object.keys(args)
 
-			// local filter...
-			if(body){
-				// stage II
-				// NOTE: stage I is handled by .expand(..) as we are not 
-				// 		lazy(..)'ied...
-				return function(state){
-					body = that.resolve(page, body, state)
-
-					// stage III
+				// local filter...
+				if(body){
+					// stage II
+					// NOTE: stage I is handled by .expand(..) as we are not 
+					// 		lazy(..)'ied...
 					return function(state){
-						return Promise.awaitOrRun(
-							that.merge(page, body, state),
-							function(body){
-								// apply the filters...
-								// XXX LOCAL_FILTERS combine with state.filters???
-								return that.applyFilters(filters, body, state) }) } } 
-			// global filter...
-			} else if(filters.length > 0){
-				(state.filters = (state.filters ??= []))
-					.push(...filters) }
+						body = that.resolve(page, body, state)
 
-			return '' },
+						// stage III
+						return function(state){
+							return Promise.awaitOrRun(
+
+								// apply the filters...
+								that.finalize(
+									page, 
+									body, 
+									{
+										...state, 
+										filters: clear ?
+											filters
+											: [...filters, ...state.filters ?? []],
+									}),
+
+								function(body){
+									// stage III post...
+									// NOTE: we are protecting the result from 
+									// 		global filters...
+									return function(){
+										return body } }) } } 
+				// global filter...
+				} else if(filters.length > 0){
+					// NOTE: we are pushing this past the expand stage so as to
+					// 		avoid messing up all the small .exec*(..) calls used 
+					// 		to handle macro attributes asn the like...
+					// 		...but we need to do this before stage III so as not
+					// 		to race with applying local filters...
+					return function(state){
+						(state.filters = (state.filters ??= []))
+							.push(...filters) } } }),
 
 
 		// Args...
@@ -1332,7 +1361,7 @@ module.parser = {
 								var nested
 								return args.isolated ?
 									//this.resolve(
-									this.merge(
+									this.finalize(
 										page, 
 										text, 
 										nested = args.isolated == 'partial' ?
@@ -1340,8 +1369,8 @@ module.parser = {
 											: {})
 									// XXX FILTER need to localize target page 
 									// 		filters to it, somehow...
-									// XXX should this be .merge(..)???
-									// 		.merge(..) here breaks things...
+									// XXX should this be .finalize(..)???
+									// 		.finalize(..) here breaks things...
 									: this.expand(page, text, state) }
 
 						var pageHandler =

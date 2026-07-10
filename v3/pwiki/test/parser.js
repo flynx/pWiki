@@ -11,6 +11,11 @@ var parser = require('../parser').parser
 
 //---------------------------------------------------------------------
 
+;(parser.filters ??= {}).upper = 
+	function(str){ 
+		return str.toUpperCase() }
+
+
 var PAGES = 
 module.exports.PAGES = {
 	'/blank': '',
