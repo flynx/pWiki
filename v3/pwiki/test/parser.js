@@ -17,11 +17,15 @@ module.exports.PAGES = {
 	'/page': 'Page',
 	'/async/page': Promise.resolve('Page'),
 	'/includePage': '@include(/page)',
+	'/includePagePage': '@include(/page) @include(/page)',
 	'/isolated': '@slot(slot original)',
 
 	'/recursive/Self': '<< @include(/recursive/Self) >>',
 	'/recursive/OtherSelf': '<< @include(/recursive/SelfOther) >>',
 	'/recursive/SelfOther': '<< @include(/recursive/OtherSelf) >>',
+	'/recursive/OtherOtherSelf': '<< @include(/recursive/OtherSelfOther) >>',
+	'/recursive/OtherSelfOther': '<< @include(/recursive/SelfOtherOther) >>',
+	'/recursive/SelfOtherOther': '<< @include(/recursive/OtherOtherSelf) >>',
 	'/async/recursive/Self': Promise.resolve('<< @include(/async/recursive/Self) >>'),
 	'/async/recursive/OtherSelf': Promise.resolve('<< @include(/async/recursive/SelfOther) >>'),
 	'/async/recursive/SelfOther': Promise.resolve('<< @include(/async/recursive/OtherSelf) >>'),
@@ -270,6 +274,11 @@ test.Setups({
 		return this.include(assert, '/page') },
 	include_include_page: function(assert){
 		return this.include(assert, '/includePage', 'Page') },
+	// XXX this triggers recursion guard...
+	include_include_page_page: function(assert){
+		return this.include(assert, 
+			'/includePagePage', 
+				'Page Page') },
 	include_async: function(assert){
 		return this.include(assert, '/async/page', 'Page') },
 	// islotaed...

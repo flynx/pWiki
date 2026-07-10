@@ -762,13 +762,14 @@ module.BaseParser = {
 				// exec stage II macros...
 				if(typeof(elem.value) == 'function'){
 					let e = elem
+					let func = e.value
 					Promise.awaitOrRun(
 						// if not everything is resolved, delay the stage II
 						// callbacks till .wait is done...
 						state.wait,
 						function(){
 							return elem = e.value = 
-								e.value(state) }) 
+								func(state) }) 
 					break } 
 				elem = elem.value }
 			if(elem == null){
@@ -923,7 +924,11 @@ var parser =
 module.parser = {
 	__proto__: BaseParser,
 
-	INCLUDE_NEST_LIMIT: 20,
+	// String to be substetuted for a recursive include...
+	//
+	// NOTE: if set to null include will throw an error if recursion is 
+	// 		detected.
+	RECURSION_STRING: '',
 
 	// XXX should this be here, in page, or both?
 	filters: {
@@ -958,20 +963,20 @@ module.parser = {
 		// 		| -<filter> <filter-spec>
 		//
 		// XXX need a way to exclude some filters in some nested locks...
-		// XXX BUG: RECURSION: this breaks @include(..)'s recursion tests...
+		// XXX LOCAL_FILTERS do we combine local filters with state filters???
 		filter: function(page, args, body, state){
 			var that = this
 
+			// get filters...
 			delete args.text
 			delete args.body
 			var filters = Object.keys(args)
 
 			// local filter...
 			if(body){
-				// stage I
-				body = this.expand(page, body, state)
-
 				// stage II
+				// NOTE: stage I is handled by .expand(..) as we are not 
+				// 		lazy...
 				return function(state){
 					body = that.resolve(page, body, state)
 
@@ -981,9 +986,8 @@ module.parser = {
 							that.merge(page, body, state),
 							function(body){
 								// apply the filters...
-								// XXX combine with state.filters???
+								// XXX LOCAL_FILTERS combine with state.filters???
 								return that.applyFilters(filters, body, state) }) } } 
-
 			// global filter...
 			} else if(filters.length > 0){
 				(state.filters = (state.filters ??= []))
@@ -1283,30 +1287,28 @@ module.parser = {
 		// 		the context, this potentially can lead to false positives.
 		//
 		// XXX FILTER do we skip includes from outer filters???
-		// XXX add path recursion test to data -- fail if two paths resolve 
-		// 		to the same context...
 		// XXX need a way to make encode option transparent...
+		// XXX RECURSIVE do we set state.recursive or keep it local???
+		// 		...i.e. should it be inherited??
 		// XXX do we want to load a specific slot/block???
-		// XXX REVISE...
+		// XXX page API used:
+		// 		.resolvePathVars(path)
+		// 		.get(path)
+		// 			is this a promise/value, iterable promise a generator
+		// 			an async generator, ... or a combination/stack of the above???
 		include: Macro(
 			['src', 'recursive', 'join', 
 				['s', 'strict', 'isolated']],
-			// XXX need a wrapper protocol -- is this the level for it???
-			// XXX page API used:
-			// 		.resolvePathVars(path)
-			// 		.get(path)
-			// 			is this a promise/value, iterable promise a generator
-			// 			an async generator, ... or a combination/stack of the above???
 			lazy(
 			function(page, args, body, state, handler){
 				var that = this
 
+				// XXX RECURSIVE de we inherit this???
 				var recursive = 
 				state.recursive = 
 					args.recursive 
 						?? state.recursive
-				// XXX get default...
-				recursive ??= ''
+						?? this.RECURSION_STRING
 
 				var base = page.basepath
 				return Promise.awaitOrRun(
@@ -1314,47 +1316,30 @@ module.parser = {
 					function(src){
 						//src = page.resolvePathVars(src)
 
-						// XXX should this be a tree??
-						// 		...need to at least split direct and 
-						// 		indirect dependencies...
-						// XXX would be nice to separate direct (in-page) 
-						// 		depenedencies nad nested...
-						// XXX do we need the same for real paths???
-						// 		no, because actual paths are meaningless 
-						// 		out of context...
-						var depends = ((state.depends ??= {})[src] ??= {})
+						// XXX is this a good place for this -- maybe someplace more global???
+						// XXX is there an inline way to do this???
+						var isRecursive = function(page, tree, path=[]){
+							if(!(page instanceof Array)){
+								if(path.includes(page)){
+									return path }
+								return page in tree
+									&& isRecursive(Object.keys(tree[page]), tree, [...path, page]) }
+							for(var p of page){
+								if(p = isRecursive(p, tree, path)){
+									return p } }
+							return false }
 
 						// content handler...
 						handler ??= 
 							function(page, body, path, text, state){
-								// re-include limit...
-								//* XXX RECURSION
-								// XXX HACK???
-								if( ++(state.included ??= {[path]: 0})[path] 
-										> this.INCLUDE_NEST_LIMIT ?? 20){
-									// XXX BUG: for some reason for async recursion this
-									// 		breaks returning [object Object] overriding
-									// 		the actual return value
-									if(!recursive){
-										throw new Error(path +': include limit reached: '+ state.included[path]) }
-									return that.expand(page, recursive, state) }
-								// handle recursion...
-								// XXX BUG: for some reason this does not work for async...
-								// 		...and works quite differently in tests and 
-								// 		in console -- returns [object Object] in the
-								// 		former and hangs in the later...
- 								var include_stack = state.include_stack ??= []
-								if(include_stack.includes(path)){
-									if(!recursive){
-										throw new Error('Recursive macro: '+include_stack) }
-									return that.expand(page, recursive, state) }
-								include_stack.push(path)
-								//*/
 
 								// XXX check cache???
 
+								// XXX do we include in page or page.get(src)'s context????
+								page = page.get(path)
+
 								var nested
-								var res = args.isolated ?
+								return args.isolated ?
 									//this.resolve(
 									this.merge(
 										page, 
@@ -1364,26 +1349,26 @@ module.parser = {
 											: {})
 									// XXX FILTER need to localize target page 
 									// 		filters to it, somehow...
-									: this.expand(page, text, state)
-
-								//* XXX RECURSION
-								// handle recursion...
-								Promise.awaitOrRun(
-									(nested ?? {}).waitAll,
-									state.waitAll,
-									function(){
-										state.include_stack.at(-1) == src
-											&& state.include_stack.pop()
-										// cleanup...
-										if(state.include_stack.length == 0){
-											delete state.include_stack
-											delete state.recursive } }) 
-								//*/
-
-								return res }
+									// XXX should this be .merge(..)???
+									// 		.merge(..) here breaks things...
+									: this.expand(page, text, state) }
 
 						var pageHandler =
 							function([path, text]){
+								// recursion...
+								var included = state.included ??= {}
+								var cur = included[path] ??= {}
+								cur[page.path] ??= true
+								// check...
+								var p = isRecursive(path, included)
+								if(p !== false){
+									if(recursive == null){
+										throw new Error('Recursion detected:'
+											+'\n\t'+ [...p, path].join('\n\t -> ')) }
+									// set error data...
+									;(state.vars ??= {})['error:recursion'] = path
+									return that.expand(page, recursive, state) }
+
 								// handle nested promises...
 								return Promise.awaitOrRun(
 									text,
@@ -1395,6 +1380,10 @@ module.parser = {
 							page.get(src).matched,
 							page.get(src).raw,
 							function(paths, texts){
+								// track pattern matches...
+								if(paths.length > 1){
+									;(state.matches ??= {})[page.path +'|'+ src] = paths }
+
 								texts = 
 									// XXX how do we handle paths returning non-strings???
 									// special case: list page...
@@ -1481,9 +1470,9 @@ module.parser = {
 		// 		macro with one exception, when used in quote, the body is 
 		// 		not expanded...
 		// NOTE: the filter argument uses the same filters as @filter(..)
+		//
 		// XXX might be a good idea to do an auto-filter that would be 
 		// 		apropriately selected according to format -- md, html, ...
-		// XXX filter...
 		quote: Macro(
 			['src', 'join', 'filter'],
 			quoting(
