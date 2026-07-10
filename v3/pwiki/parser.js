@@ -23,11 +23,7 @@ var pwpath = require('./path')
 // XXX TODO:
 // 		callbacks on elements resolving...
 // XXX ASAP move the macros here...
-// XXX should we warn about stuff like <macro src=/moo/> -- currently 
-// 		this will simply be ignored, i.e. passed trough the parser 
-// 		without change...
-// XXX might be a good idea to both think of a good async parse and
-// 		create tools for sync parsing (get links etc.)...
+// XXX BUG?: <macro src=/moo/> is not parsed correctly...
 // XXX need to correctly handle nested and escaped quotes...
 // 		i.e.
 // 			"aaa \"bbb \\"ccc\\" bbb\" aaa"
@@ -155,18 +151,6 @@ module.BaseParser = {
 
 	// helpers...
 	//
-	normalizeFilters: function(filters){
-		var skip = new Set()
-		return filters
-			.flat()
-			.tailUnique()
-			.filter(function(filter){
-				filter[0] == '-'
-					&& skip.add(filter.slice(1))
-				return filter[0] != '-' }) 
-			.filter(function(filter){
-				return !skip.has(filter) })},
-	//
 	// Spec format:
 	// 	[<orderd>, ... [<keyword>, ...]]
 	//
@@ -271,12 +255,26 @@ module.BaseParser = {
 				] })
 			.flat() },
 
+	normalizeFilters: function(filters){
+		var skip = new Set()
+		return filters
+			.flat()
+			.tailUnique()
+			.filter(function(filter){
+				filter[0] == '-'
+					&& skip.add(filter.slice(1))
+				return filter[0] != '-' }) 
+			.filter(function(filter){
+				return !skip.has(filter) })},
 	applyFilters: function(filters, str, state={}){
 		var that = this
 		filters = this.normalizeFilters(filters)
 			.filter(function(f){
 				return f in (that.filters ?? {})})
 		var handle = function(str){
+			// skip non-basic data...
+			if(typeof(str) == 'object'){
+				return str }
 			return filters
 				.reduce(function(res, filter){
 					return that.filters[filter].call(that, str, state) }, str) }
@@ -324,15 +322,11 @@ module.BaseParser = {
 		str = typeof(str) != 'string' ?
 			str+''
 			: str
-		// XXX we can't get .raw from the page without going async...
-		//str = str 
-		//	?? page.raw
 		// NOTE: we are doing a separate pass for comments to completely 
 		// 		decouple them from the base macro syntax, making them fully 
 		// 		transparent...
 		str = this.stripComments(str)
 
-		// XXX should this be cached???
 		var macro_pattern = this.MACRO_PATTERN 
 			?? this.buildMacroPattern(Object.deepKeys(this.macros))
 		var macro_pattern_groups = this.MACRO_PATTERN_GROUPS 
@@ -350,7 +344,6 @@ module.BaseParser = {
 				// 		second time here, this gives us access to named groups
 				// 		avoiding maintaining match indexes with the .split(..) 
 				// 		output...
-				// XXX for some reason .match(..) here returns a list with a string...
 				var cur = [...match.matchAll(macro_pattern)][0].groups
 				// special case: escaped inline macro -> keep as text...
 				if(match.startsWith('\\@')){
@@ -484,7 +477,6 @@ module.BaseParser = {
 
 			// assert nesting rules...
 			// NOTE: we only check for direct nesting...
-			// XXX might be a good idea to link nested block to the parent...
 			if(this.macros[value.name] instanceof Array
 					// stray nesting...
 					&& (context 
@@ -531,13 +523,13 @@ module.BaseParser = {
 			// normal value...
 			yield value } }, 
 
+	// Generate ast...
+	//
+	// NOTE: this is a convenience wrapper of .group(..), for more docs 
+	// 		see it...
 	// NOTE: the output of this can be safely cached, it does not depend
 	// 		on anything external and as long as the code stays the same 
 	// 		this will not change.
-	// XXX do we need a pre-parse stage???
-	// 		- expand local macros
-	// 		- collect links
-	// 		- ...
 	ast: function(...args){
 		return [...this.group(...args)] },
 
@@ -573,6 +565,8 @@ module.BaseParser = {
 	//		...
 	//	}
 	//
+	// NOTE: this is always sync, but some of the items in the returned 
+	// 		array may be promises.
 	// NOTE: .waitNested and .waitAll are "live", i.e. while expanding,
 	//		at any given time they contain the promise of the last async
 	//		element upto the point of read. .wait however is set at the 
@@ -606,16 +600,6 @@ module.BaseParser = {
 	//				states and the like, async/await can't...
 	// XXX Q: do we need generators?
 	// XXX Handle errors...
-	// XXX this needs a careful rewrite of the .macros.* for the new scheme:
-	// 		- expand
-	// 		- "merge"
-	// 			a rendering API: a set ov events/callbacks allowing both 
-	// 			sync (text) and async (DOM) rendering
-	// 			in the simplest form: take the expanded AST and merge 
-	// 			into a single string
-	// XXX BUG: .wait can resolve before everything in the tree is resolved...
-	// 		to reproduce:
-	// 			@include(/async/recursive/SelfOther recursive="recursion found")
 	expand: function(page, ast, state={}, nested_handlers={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
@@ -661,7 +645,6 @@ module.BaseParser = {
 				continue }
 
 			// expand down...
-			// XXX cache this as an AST
 			body 
 				&& !that.macros[name].lazy
 				&& (body = this.expand(page, body, state, nested_handlers))
@@ -729,7 +712,7 @@ module.BaseParser = {
 
 		return elems },
 
-	// resolve stage II macros and merge results...
+	// Resolve macros (stage II)...
 	//
 	//	<ast> ::= [ <item>, ... ]
 	//	<item> ::=
@@ -809,20 +792,22 @@ module.BaseParser = {
 				return false } }
 		return true },
 
-	// XXX render api...
-	// XXX how should this play with filters???
-	// 		...should filters be client-side only??
-	render: function*(page, ast, callback, state={}){
-		// XXX
-	},
+	filters: undefined, 
 
-	// merge stage III...
+	// Merge and apply global filters (stage III)...
 	//
 	// - ensure the ast is fully resolved
 	// - apply nested stage III handlers
 	// - apply filters on whole ast
 	//
 	//
+	// XXX RECURSION might be a good idea to limit recursion/nesting depth 
+	// 		of inner merge(..)...
+	// XXX to allow nested filter blocks to self-exclude form global/uppaer
+	// 		filters would be nice to be able to do the filtering before
+	// 		we are fully resolved, i.e. after all the promises but before 
+	// 		all the functions are gone from the ast...
+	// 		...not yet sure how to get this through the merge(..)
 	merge: function(page, ast, state={}, nested_handlers={}, wait='wait'){
 		var that = this
 
@@ -833,7 +818,6 @@ module.BaseParser = {
 						e.call(that, state)
 						: e })
 				.flat() }
-		// XXX might be a good idea to limit recursion depth here...
 		var merge = function(ast){
 			return Promise.awaitOrRun(
 				...(state.unresolved ?? []),
@@ -869,18 +853,24 @@ module.BaseParser = {
 
 	exec: function(page, ast, state={}, nested_handlers={}, wait='wait'){
 		return this.merge(...arguments) },
+	execNested: function(page, ast, state={}, nested_handlers={}){
+		//* XXX waitNested here deadlocks the parser -- not sure why...
+		return this.exec(page, ast, state, nested_handlers, 'waitNested') },
+		/*/
+		return this.exec(page, ast, state, nested_handlers, 'unresolved') },
+		//*/
 
 
+	// XXX render api...
 	// XXX how should this play with filters???
 	// 		...should filters be client-side only??
-	execNested: function(page, ast, state={}, nested_handlers={}){
-		return this.exec(page, ast, state, nested_handlers, 'waitNestedi') },
+	render: function*(page, ast, callback, state={}){
+		// XXX
+	},
 }
 
 
 // XXX do we need anything else like .doc, attrs???
-// XXX might be a good idea to offload arg value parsing to here...
-// XXX should macros be lazy by default???
 var Macro =
 module.Macro = 
 function(spec, func){
@@ -894,6 +884,7 @@ function(spec, func){
 	return func }
 
 
+// wait for .waitNested
 var isolated =
 module.isolated = 
 function(macro){
@@ -976,7 +967,7 @@ module.parser = {
 			if(body){
 				// stage II
 				// NOTE: stage I is handled by .expand(..) as we are not 
-				// 		lazy...
+				// 		lazy(..)'ied...
 				return function(state){
 					body = that.resolve(page, body, state)
 
