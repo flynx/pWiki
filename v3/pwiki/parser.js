@@ -593,14 +593,10 @@ module.BaseParser = {
 	// 			- everything returns an ast
 	// 			- callbacks/events/handlers to trigger on specific macro 
 	// 				resolution
-	// XXX Remove async/await... (???)
-	//			- for trivial stuff they are nice
-	//			- infectios -- force all subsequent levels to use async/await
-	//			- provide no alternatives
-	//				...i.e. promises can be extended to indlude partial 
-	//				states and the like, async/await can't...
+	//
 	// XXX Q: do we need generators?
 	// XXX Handle errors...
+	// XXX BUG: awaiting on .wait* can deadlock...
 	expand: function(page, ast, state={}, nested_handlers={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
