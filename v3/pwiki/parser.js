@@ -648,12 +648,18 @@ module.BaseParser = {
 
 			// call macro...
 			var res = that.callMacro(page, name, args, body, state)
+
 			// async...
 			if(res instanceof Promise){
+				elem.resolving = res
+
 				let all, nested
+				// XXX if res is not started yet and it has not yet
+				// 		started waiting for .waitAll this can be a 
+				// 		condition for a dead lock: 
+				// 			res -> .waitAll -> res
 				all = state.waitAll = 
 					Promise.all([state.waitAll, res])
-				elem.resolving = res
 				// XXX do we need to wait till the last .waitNested is 
 				// 		resolved?
 				// 		...should it's handlers complete??
