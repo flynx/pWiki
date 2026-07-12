@@ -662,6 +662,8 @@ module.BaseParser = {
 			//			- context.state		- nesting
 			//			- state, context 	- sepatrate args
 			//			- state.__proto__	- protorype
+			//		...technically need a way to call .exec(..) and wait 
+			//		for the correct promise from inside a macro...
 			/* XXX LOCAL_STATE
 			var res = that.callMacro( page, name, args, body, {
 					__proto__: state,
