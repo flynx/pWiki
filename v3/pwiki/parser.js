@@ -647,7 +647,31 @@ module.BaseParser = {
 				&& (body = this.expand(page, body, state, nested_handlers))
 
 			// call macro...
+			// XXX since this can be async and if so it will be mixed 
+			// 		into the next .wait*, we'll need to explicitly pass 
+			// 		and then thread the current .wait* promises before 
+			// 		overwriting, to avoid wait-for-self deadlocks...
+			// 		...the question is how to thread it...
+			//		one way to do this is to split state into:
+			//			state	- current state of eval, mutable for all
+			//			context	- the context of evaluation of the curent 
+			//						macro, unique per macro, this would 
+			//						also be good to store things like 
+			//						line numbers and the like...
+			//		ways to organize this:
+			//			- context.state		- nesting
+			//			- state, context 	- sepatrate args
+			//			- state.__proto__	- protorype
+			/* XXX LOCAL_STATE
+			var res = that.callMacro( page, name, args, body, {
+					__proto__: state,
+					state,
+					waitAll: state.waitAll,
+					waitNested: state.waitNested,
+				})
+			/*/
 			var res = that.callMacro(page, name, args, body, state)
+			//*/
 
 			// async...
 			if(res instanceof Promise){
@@ -864,7 +888,7 @@ module.BaseParser = {
 				return res.join('') }) },
 	// XXX
 	execNested: function(page, ast, state={}, nested_handlers={}){
-		/* XXX waitNested here deadlocks the parser -- not sure why...
+		/* XXX LOCAL_STATE waitNested here deadlocks the parser -- not sure why...
 		//return this.exec(page, ast, state, nested_handlers, 'unresolved') },
 		return this.exec(page, ast, state, nested_handlers, 'waitNested') },
 		/*/
@@ -965,6 +989,13 @@ module.parser = {
 		//
 		// XXX should we include the global filters (current) or exclude 
 		// 		them by default???
+		// XXX BUG: async body breaks nested filters...
+		// 			'<filter upper/>aaa <filter -upper> moo @source(/async/page) </filter> bbb'
+		// 				-> 'AAA MOO PAGE BBB'
+		// 				XXX and this deadlocks with LOCAL_STATE
+		// 		while:
+		// 			'<filter upper/>aaa <filter -upper> moo @source(/page) </filter> bbb'
+		// 				-> 'AAA moo Page BBB'
 		filter: Macro(
 			[['clear']],
 			function(page, args, body, state){
@@ -1078,6 +1109,12 @@ module.parser = {
 				if(!name){
 					return '' }
 
+				/* XXX LOCAL_STATE
+				var vars = state.state.vars ??= {}
+				/*/
+				var vars = state.vars ??= {}
+				//*/
+
 				return Promise.awaitOrRun(
 					this.execNested(page, name, state),
 					function(name){
@@ -1094,7 +1131,6 @@ module.parser = {
 									: undefined)
 								?? args.shown 
 
-						var vars = state.vars ??= {}
 						// XXX INC_DEC
 						if(args.parent && name in vars){
 							while(!vars.hasOwnProperty(name)
@@ -1222,10 +1258,15 @@ module.parser = {
 				var that = this
 				var name = args.name
 
+				/* XXX LOCAL_STATE
+				var slots = state.state.slots ??= {}
+				/*/
+				var slots = state.slots ??= {}
+				//*/
+
 				return Promise.awaitOrRun(
 					this.execNested(page, name, state),
 					function(name){
-						var slots = state.slots ??= {}
 
 						//var hidden = name in slots
 						var hidden = 
@@ -1579,16 +1620,23 @@ module.parser = {
 			lazy(
 			function(page, args, body, state){
 				var that = this
+
+				/* XXX LOCAL_STATE
+				var macros = state.state.macros ??= {}
+				/*/
+				var macros = state.macros ??= {}
+				//*/
+
 				return Promise.awaitOrRun(
 					this.execNested(page, args.name, state),
 					function(name){
 						// set macro...
 						if(name && body){
-							;(state.macros ??= {})[name] = body
+							macros[name] = body
 
 						// get macro...
 						} else if(name){
-							body = (state.macros ?? {})[name] }
+							body = macros[name] }
 
 						// else...
 						if(args.src 
