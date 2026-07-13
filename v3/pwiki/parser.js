@@ -665,6 +665,8 @@ module.BaseParser = {
 			//		...technically need a way to call .exec(..) and wait 
 			//		for the correct promise from inside a macro...
 			/* XXX LOCAL_STATE
+			// XXX think this is the best way to go, but needs the rest 
+			// 		of the code refactored + still need to experiment...
 			var res = that.callMacro( page, name, args, body, {
 					__proto__: state,
 					state,
