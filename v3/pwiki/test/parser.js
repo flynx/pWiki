@@ -21,6 +21,7 @@ module.exports.PAGES = {
 	'/blank': '',
 	'/page': 'Page',
 	'/async/page': Promise.resolve('Page'),
+	'/async/echo': Promise.resolve('@echo(Page)'),
 	'/includePage': '@include(/page)',
 	'/includePagePage': '@include(/page) @include(/page)',
 	'/isolated': '@slot(slot original)',
