@@ -647,31 +647,15 @@ module.BaseParser = {
 				&& (body = this.expand(page, body, state, nested_handlers))
 
 			// call macro...
-			// XXX since this can be async and if so it will be mixed 
-			// 		into the next .wait*, we'll need to explicitly pass 
-			// 		and then thread the current .wait* promises before 
-			// 		overwriting, to avoid wait-for-self deadlocks...
-			// 		...the question is how to thread it...
-			//		one way to do this is to split state into:
-			//			state	- current state of eval, mutable for all
-			//			context	- the context of evaluation of the curent 
-			//						macro, unique per macro, this would 
-			//						also be good to store things like 
-			//						line numbers and the like...
-			//		ways to organize this:
-			//			- context.state		- nesting
-			//			- state, context 	- sepatrate args
-			//			- state.__proto__	- protorype
-			//		...technically need a way to call .exec(..) and wait 
-			//		for the correct promise from inside a macro...
 			//* XXX LOCAL_STATE
-			// XXX think this is the best way to go, but needs the rest 
-			// 		of the code refactored + still need to experiment...
-			// XXX part of the problem is that this mechanism is not used 
-			// 		later (.resolve(..) and .finalize(..)) which creates 
-			// 		the same sync problems there too -- need to unify 
-			// 		both mechanisms...
-			var res = that.callMacro( page, name, args, body, {
+			// NOTE: here we separate local macro state and global/parent 
+			// 		state via the prototpype...
+			// 		This is mainly needed to sparate promises, since the 
+			// 		inicial execution is done on order of occurenca while
+			// 		each macro can wait async for an arbitrary amount of 
+			// 		time it only should care about what was promised 
+			// 		before it neglecting what came after.
+			var res = that.callMacro(page, name, args, body, {
 					// global state...
 					__proto__: state,
 					state,
@@ -707,9 +691,13 @@ module.BaseParser = {
 				res.then(
 					function(value){
 						if(state.waitAll === all){
-							delete state.waitAll }
+							// XXX LOCAL_STATE_CLEANUP
+							state.waitAll = undefined }
+							//delete state.waitAll }
 						if(state.waitNested === nested){
-							delete state.waitNested }
+							// XXX LOCAL_STATE_CLEANUP
+							state.waitNested = undefined }
+							//delete state.waitNested }
 						delete elem.resolving
 						elem.value = value 
 						// XXX should we resolve to value or elem???
@@ -734,11 +722,15 @@ module.BaseParser = {
 				.then(function(){
 					// only cleanup our own mess =)
 					waitAll === state.waitAll
-						&& (delete state.waitAll) })
+						// XXX LOCAL_STATE_CLEANUP
+						&& (state.waitAll = undefined) })
+						//&& (delete state.waitAll) })
 			&& (wait = state.wait = waitAll
 				.then(function(){ 
 					wait === state.wait
-						&& (delete state.wait)
+						// XXX LOCAL_STATE_CLEANUP
+						&& (state.wait = null)
+						//&& (delete state.wait)
 					return elems }))
 		var waitNested = state.waitNested
 		state.waitNested
@@ -746,7 +738,9 @@ module.BaseParser = {
 				.then(function(){
 					// only cleanup our own mess =)
 					waitNested === state.waitNested
-						&& (delete state.waitNested) })
+						// XXX LOCAL_STATE_CLEANUP
+						&& (state.waitNested = undefined) })
+						//&& (delete state.waitNested) })
 
 		return elems },
 
@@ -767,6 +761,29 @@ module.BaseParser = {
 	// XXX can we prevent reaces over state.unresolved???
 	// 		it can be deleted when calling .exec(..) / .execNested(..)
 	// 		while parsing, for example from within a macro...
+	// XXX this somehow blocks the execution of .expand(..)
+	// 		This fullly runs:
+	// 			.expand(.., '@echo(A)@source(/async/echo)@echo(B)@include(/async/echo)@echo(C)', ..)
+	// 		printing:
+	// 			---- A 
+	//			  -- A 
+	//			---- B 
+	//			---- C 
+	//			---- Page 
+	//			  -- Page 
+	//			---- Page 
+	//			  -- B 
+	//			  -- Page 
+	//			  -- C 
+	// 		This blocks:
+	// 			.resolve(.., '@echo(A)@source(/async/echo)@echo(B)@include(/async/echo)@echo(C)', ..)
+	// 		printing:
+	// 			---- A 
+	//			  -- A 
+	//			---- B 
+	//			---- C 
+	//		...looks like we are still getting a deadlock...
+	//		-> the issue seems to be in a nested call to .execNested(..) -> .finalize(..)
 	resolve: function(page, ast, state={}, nested_handlers={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
@@ -777,6 +794,7 @@ module.BaseParser = {
 
 		// XXX LOCAL_STATE
 		//state.unresolved = []
+		var unresolved = []
 
 		// merge resolved elements into the last item of elems...
 		var  elems = []
@@ -790,6 +808,11 @@ module.BaseParser = {
 					Promise.awaitOrRun(
 						// if not everything is resolved, delay the stage II
 						// callbacks till .wait is done...
+						// NOTE: this depends on that JS is single thread 
+						// 		and we can't have state.wait resolve in 
+						// 		the middle of this loop.
+						// NOTE: waiting promises resolving is also done in
+						// 		FIFO orderm thus maintaining order of execution
 						state.wait,
 						function(){
 							return elem = e.value = 
@@ -814,7 +837,10 @@ module.BaseParser = {
 			// nested macro with no value set -- skip...
 			if(that.macros[elem.name] instanceof Array){
 				continue }
-			state.unresolved
+			// XXX LOCAL_STATE...
+			//		...use the same mechanism here as in .expand(..)
+			//state.unresolved
+			unresolved
 				.push(elem.resolving instanceof Promise ?
 					elem.resolving
 					: elem)
@@ -822,6 +848,14 @@ module.BaseParser = {
 			// NOTE: we do not need to expand .body attributes as these 
 			// 		are the responsibility of the respective macros...
 			elems.push(elem) }
+
+		var resolving = 
+		state.wait = 
+			Promise.all([state.wait, ...unresolved])
+				// cleanup...
+				.then(function(){
+					if(state.wait === resolving){
+						delete state.wait } })
 
 		return elems },
 
@@ -838,6 +872,7 @@ module.BaseParser = {
 	// Merge and apply global filters (stage III)...
 	//
 	// - ensure the ast is fully resolved
+	// 		resolve and re-resolve untill all done
 	// - apply stage III pre handlers
 	// - apply global filters
 	// - apply stage III post handlers
@@ -858,25 +893,33 @@ module.BaseParser = {
 				.flat() }
 		var resolve = function(ast){
 			return Promise.awaitOrRun(
-				...(state.unresolved ?? []),
+				// XXX LOCAL_STATE
+				//...(state.unresolved ?? []),
+				state.wait,
 				function(){
-					delete state.unresolved
+					//delete state.unresolved
 					// re-resolve...
 					ast = that.resolve(page, ast, state, nested_handlers)
 
 					// NOTE: this is essentially running in the same frame
 					// 		as .resolve(..) above so there should not be 
 					// 		any races to delete .unresolved...
-					return state.unresolved ?
+					//return state.unresolved ?
+					//return state.hasOwnProperty('wait') ?
+					return !that.isResolved(ast) ?
 						resolve(ast)
 						: ast }) }
 
 		ast = this.resolve(page, ast, state, nested_handlers)
 
 		return Promise.awaitOrRun(
+			// XXX LOCAL_STATE
 			// XXX do we actually need to wait here???
 			// 		...each macro should already be waiting...
-			...[state[wait]].flat(),
+			//...[state[wait]].flat(),
+			state.hasOwnProperty(wait) ?
+				state[wait]
+				: null,
 			function(){
 				// NOTE: in an async world where any promised macro can 
 				// 		call .exec(..) / .execNested(..) we can't trust
@@ -884,8 +927,10 @@ module.BaseParser = {
 				return Promise.awaitOrRun(
 					// XXX LOCAL_STATE if we are nested we should not wait
 					// 		for anything after the caller...
-					(state.unresolved 
-							|| !that.isResolved(ast)) ?
+					//(state.unresolved 
+					//		|| !that.isResolved(ast)) ?
+					//state.hasOwnProperty('wait') ?
+					!that.isResolved(ast) ?
 						resolve(ast)
 						: ast,
 			   		function(ast){
@@ -907,6 +952,7 @@ module.BaseParser = {
 
 	// XXX
 	execNested: function(page, ast, state={}, nested_handlers={}){
+		//return ast
 		/* XXX LOCAL_STATE waitNested here deadlocks the parser -- not sure why...
 		//return this.exec(page, ast, state, nested_handlers, 'unresolved') },
 		return this.exec(page, ast, state, nested_handlers, 'waitNested') },
@@ -998,7 +1044,7 @@ module.parser = {
 			console.log(['----', ...Object.keys(args), body ?? ''].join(' ').gray)
 			return Promise.awaitOrRun(
 				// XXX this works and sequences correctly...
-				//state.waitNested,
+				state.waitNested,
 				// XXX this deadlocks...
 				// 		calling .execNested(..) from any macro (@include(..) 
 				// 		in the example code) will deadlock the execution
@@ -1008,7 +1054,7 @@ module.parser = {
 				// 			- run:
 				// 				@echo(A)@source(/async/echo)@echo(B)@include(/async/echo)@echo(C)
 				// 		-> need a way to call .exex(..) while evaluating...
-				this.execNested(page, '', state),
+				//this.execNested(page, '', state),
 				// XXX this also does not work...
 				//this.resolve(page, '', state),
 				function(){
@@ -1150,7 +1196,7 @@ module.parser = {
 				if(!name){
 					return '' }
 
-				/* XXX LOCAL_STATE
+				//* XXX LOCAL_STATE
 				var vars = state.state.vars ??= {}
 				/*/
 				var vars = state.vars ??= {}
@@ -1299,7 +1345,7 @@ module.parser = {
 				var that = this
 				var name = args.name
 
-				/* XXX LOCAL_STATE
+				//* XXX LOCAL_STATE
 				var slots = state.state.slots ??= {}
 				/*/
 				var slots = state.slots ??= {}
@@ -1662,7 +1708,7 @@ module.parser = {
 			function(page, args, body, state){
 				var that = this
 
-				/* XXX LOCAL_STATE
+				//* XXX LOCAL_STATE
 				var macros = state.state.macros ??= {}
 				/*/
 				var macros = state.macros ??= {}
