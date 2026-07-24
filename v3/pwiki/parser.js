@@ -647,7 +647,6 @@ module.BaseParser = {
 				&& (body = this.expand(page, body, state, nested_handlers))
 
 			// call macro...
-			//* XXX LOCAL_STATE
 			// NOTE: here we separate local macro state and global/parent 
 			// 		state via the prototpype...
 			// 		This is mainly needed to sparate promises, since the 
@@ -655,7 +654,8 @@ module.BaseParser = {
 			// 		each macro can wait async for an arbitrary amount of 
 			// 		time it only should care about what was promised 
 			// 		before it neglecting what came after.
-			var res = that.callMacro(page, name, args, body, {
+			var res = 
+				that.callMacro(page, name, args, body, {
 					// global/parent state...
 					__proto__: state,
 					root: state.root ?? state,
@@ -664,9 +664,6 @@ module.BaseParser = {
 					waitAll: state.waitAll,
 					waitNested: state.waitNested,
 				})
-			/*/
-			var res = that.callMacro(page, name, args, body, state)
-			//*/
 
 			// async...
 			if(res instanceof Promise){
@@ -793,8 +790,6 @@ module.BaseParser = {
 				ast
 			: ast.iter()
 
-		// XXX LOCAL_STATE
-		//state.unresolved = []
 		var unresolved = []
 
 		// merge resolved elements into the last item of elems...
@@ -838,9 +833,6 @@ module.BaseParser = {
 			// nested macro with no value set -- skip...
 			if(that.macros[elem.name] instanceof Array){
 				continue }
-			// XXX LOCAL_STATE...
-			//		...use the same mechanism here as in .expand(..)
-			//state.unresolved
 			unresolved
 				.push(elem.resolving instanceof Promise ?
 					elem.resolving
@@ -895,7 +887,6 @@ module.BaseParser = {
 		var resolve = function(ast){
 			return Promise.awaitOrRun(
 				// XXX LOCAL_STATE
-				//...(state.unresolved ?? []),
 				state.hasOwnProperty('wait') ?
 					state.wait
 					// XXX
@@ -931,9 +922,6 @@ module.BaseParser = {
 				return Promise.awaitOrRun(
 					// XXX LOCAL_STATE if we are nested we should not wait
 					// 		for anything after the caller...
-					//(state.unresolved 
-					//		|| !that.isResolved(ast)) ?
-					//state.hasOwnProperty('wait') ?
 					!that.isResolved(ast) ?
 						resolve(ast)
 						: ast,
@@ -953,16 +941,8 @@ module.BaseParser = {
 			function(res){
 				return res.join('') }) },
 
-
-	// XXX
 	execNested: function(page, ast, state={}, nested_handlers={}){
-		//return ast
-		/* XXX LOCAL_STATE waitNested here deadlocks the parser -- not sure why...
-		//return this.exec(page, ast, state, nested_handlers, 'unresolved') },
 		return this.exec(page, ast, state, nested_handlers, 'waitNested') },
-		/*/
-		return this.exec(page, ast, state, nested_handlers, '') },
-		//*/
 
 
 	// XXX render api...
@@ -1047,20 +1027,7 @@ module.parser = {
 		echo: function(page, args, body, state){
 			console.log(['----', ...Object.keys(args), body ?? ''].join(' ').gray)
 			return Promise.awaitOrRun(
-				// XXX this works and sequences correctly...
 				state.waitNested,
-				// XXX this deadlocks...
-				// 		calling .execNested(..) from any macro (@include(..) 
-				// 		in the example code) will deadlock the execution
-				// 		if .execNested(..) is waiting for .waitNested...
-				// 		to reproduce:
-				// 			- uncomment the LOCAL_STATE track
-				// 			- run:
-				// 				@echo(A)@source(/async/echo)@echo(B)@include(/async/echo)@echo(C)
-				// 		-> need a way to call .exex(..) while evaluating...
-				//this.execNested(page, '', state),
-				// XXX this also does not work...
-				//this.resolve(page, '', state),
 				function(){
 					console.log('  --', ...Object.keys(args), body ?? '') }) },
 		//*/
@@ -1200,12 +1167,9 @@ module.parser = {
 				if(!name){
 					return '' }
 
-				//* XXX LOCAL_STATE
+				// XXX LOCAL_STATE
 				var vars = state.parent.vars ??= {}
 				//var vars = state.root.vars ??= {}
-				/*/
-				var vars = state.vars ??= {}
-				//*/
 
 				return Promise.awaitOrRun(
 					this.execNested(page, name, state),
@@ -1350,12 +1314,9 @@ module.parser = {
 				var that = this
 				var name = args.name
 
-				//* XXX LOCAL_STATE
+				// XXX LOCAL_STATE
 				var slots = state.parent.slots ??= {}
 				//var slots = state.root.slots ??= {}
-				/*/
-				var slots = state.slots ??= {}
-				//*/
 
 				return Promise.awaitOrRun(
 					this.execNested(page, name, state),
@@ -1714,12 +1675,9 @@ module.parser = {
 			function(page, args, body, state){
 				var that = this
 
-				//* XXX LOCAL_STATE
+				// XXX LOCAL_STATE
 				var macros = state.parent.macros ??= {}
 				//var macros = state.root.macros ??= {}
-				/*/
-				var macros = state.macros ??= {}
-				//*/
 
 				return Promise.awaitOrRun(
 					this.execNested(page, args.name, state),
