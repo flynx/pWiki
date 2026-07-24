@@ -656,9 +656,10 @@ module.BaseParser = {
 			// 		time it only should care about what was promised 
 			// 		before it neglecting what came after.
 			var res = that.callMacro(page, name, args, body, {
-					// global state...
+					// global/parent state...
 					__proto__: state,
-					state,
+					root: state.root ?? state,
+					parent: state,
 					// local state...
 					waitAll: state.waitAll,
 					waitNested: state.waitNested,
@@ -895,7 +896,10 @@ module.BaseParser = {
 			return Promise.awaitOrRun(
 				// XXX LOCAL_STATE
 				//...(state.unresolved ?? []),
-				state.wait,
+				state.hasOwnProperty('wait') ?
+					state.wait
+					// XXX
+					: null,
 				function(){
 					//delete state.unresolved
 					// re-resolve...
@@ -1197,7 +1201,8 @@ module.parser = {
 					return '' }
 
 				//* XXX LOCAL_STATE
-				var vars = state.state.vars ??= {}
+				var vars = state.parent.vars ??= {}
+				//var vars = state.root.vars ??= {}
 				/*/
 				var vars = state.vars ??= {}
 				//*/
@@ -1346,7 +1351,8 @@ module.parser = {
 				var name = args.name
 
 				//* XXX LOCAL_STATE
-				var slots = state.state.slots ??= {}
+				var slots = state.parent.slots ??= {}
+				//var slots = state.root.slots ??= {}
 				/*/
 				var slots = state.slots ??= {}
 				//*/
@@ -1709,7 +1715,8 @@ module.parser = {
 				var that = this
 
 				//* XXX LOCAL_STATE
-				var macros = state.state.macros ??= {}
+				var macros = state.parent.macros ??= {}
+				//var macros = state.root.macros ??= {}
 				/*/
 				var macros = state.macros ??= {}
 				//*/
