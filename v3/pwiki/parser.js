@@ -1045,6 +1045,8 @@ module.parser = {
 		// 		<filter> <filter-spec>
 		// 		| -<filter> <filter-spec>
 		//
+		// XXX BUG why is the 2nd filter a promise????
+		// 		'<filter upper/>aaa <filter -upper> moo </filter> bbb'
 		// XXX should we include the global filters (current) or exclude 
 		// 		them by default???
 		// XXX BUG: async body breaks nested filters...
