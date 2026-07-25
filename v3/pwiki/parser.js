@@ -842,13 +842,14 @@ module.BaseParser = {
 			// 		are the responsibility of the respective macros...
 			elems.push(elem) }
 
-		var resolving = 
-		state.wait = 
-			Promise.all([state.wait, ...unresolved])
-				// cleanup...
-				.then(function(){
-					if(state.wait === resolving){
-						delete state.wait } })
+		if(unresolved.length > 0){
+			var resolving = 
+			state.wait = 
+				Promise.all([state.wait, ...unresolved])
+					// cleanup...
+					.then(function(){
+						if(state.wait === resolving){
+							delete state.wait } }) }
 
 		return elems },
 
@@ -871,10 +872,12 @@ module.BaseParser = {
 	// - apply stage III post handlers
 	//
 	//
+	// XXX BUG: this seems to always return a promise... 
 	// XXX RECURSION might be a good idea to limit recursion/nesting depth 
 	// 		of inner resolve(..)...
 	// XXX RENAME...
 	finalize: function(page, ast, state={}, nested_handlers={}, wait='wait'){
+	//finalize: function(page, ast, state={}, nested_handlers={}, wait='waitNested'){
 		var that = this
 
 		var stage3 = function(ast){
@@ -912,7 +915,7 @@ module.BaseParser = {
 			// XXX do we actually need to wait here???
 			// 		...each macro should already be waiting...
 			//...[state[wait]].flat(),
-			state.hasOwnProperty(wait) ?
+			(wait && state.hasOwnProperty(wait)) ?
 				state[wait]
 				: null,
 			function(){
@@ -922,9 +925,9 @@ module.BaseParser = {
 				return Promise.awaitOrRun(
 					// XXX LOCAL_STATE if we are nested we should not wait
 					// 		for anything after the caller...
-					!that.isResolved(ast) ?
-						resolve(ast)
-						: ast,
+					that.isResolved(ast) ?
+						ast
+						: resolve(ast),
 			   		function(ast){
 						return (
 							// stage III post...
@@ -1046,7 +1049,8 @@ module.parser = {
 		// 		| -<filter> <filter-spec>
 		//
 		// XXX BUG why is the 2nd filter a promise????
-		// 		'<filter upper/>aaa <filter -upper> moo </filter> bbb'
+		// 			'<filter upper/>aaa <filter -upper> moo </filter> bbb'
+		// 		-> error in .finalize(..)???
 		// XXX should we include the global filters (current) or exclude 
 		// 		them by default???
 		// XXX BUG: async body breaks nested filters...
@@ -1085,7 +1089,7 @@ module.parser = {
 									page, 
 									body, 
 									{
-										...state, 
+										__proto__: state, 
 										filters: clear ?
 											filters
 											: [...filters, ...state.filters ?? []],
