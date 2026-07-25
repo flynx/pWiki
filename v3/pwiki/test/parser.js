@@ -399,7 +399,55 @@ test.Setups({
 	// XXX
 
 	// XXX filter...
-	// XXX
+	filter_local: function(assert){
+		return {
+			page: P,
+			code: [
+				'<filter upper>moo</filter>',
+					'MOO' ]} },
+	filter_local_sync: function(assert){
+		return {
+			page: P,
+			code: [
+				'<filter upper>@include(/page)</filter>',
+					'PAGE' ]} },
+	filter_local_async: function(assert){
+		return {
+			page: P,
+			code: [
+				'<filter upper>@include(/async/page)</filter>',
+					'PAGE' ]} },
+	filter_global: function(assert){
+		return {
+			page: P,
+			code: [
+				'<filter upper/>moo',
+					'MOO' ]} },
+	filter_global_sync: function(assert){
+		return {
+			page: P,
+			code: [
+				'<filter upper/>@include(/page)',
+					'PAGE' ]} },
+	filter_global_async: function(assert){
+		return {
+			page: P,
+			code: [
+				'<filter upper/>@include(/async/page)',
+					'PAGE' ]} },
+	filter_mixed_isolated_sync: function(assert){
+		return {
+			page: P,
+			code: [
+				'<filter upper/>local <filter -upper>@include(/page)</filter>',
+					'LOCAL Page' ]} },
+	// XXX BUG
+	filter_mixed_isolated_async: function(assert){
+		return {
+			page: P,
+			code: [
+				'<filter upper/>local <filter -upper>@include(/async/page)</filter>',
+					'LOCAL Page' ]} },
 
 })
 
