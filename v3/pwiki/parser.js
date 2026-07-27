@@ -32,6 +32,13 @@ var pwpath = require('./path')
 // 		...this handles the syntax and execution...
 var BaseParser =
 module.BaseParser = {
+
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+	// Passive parsing...
+	//
+	// XXX might be a good idea to rewrite this level as an actual parser.
+	//
+	
 	// patterns...
 	//
 	// The way the patterns are organized might seem a bit overcomplicated
@@ -534,6 +541,11 @@ module.BaseParser = {
 	ast: function(...args){
 		return [...this.group(...args)] },
 
+
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+	// Active parsing...
+
+
 	// Expand macros (stage I)...
 	//
 	// 	.expand(<page>, <ast>[, <state>])
@@ -574,6 +586,20 @@ module.BaseParser = {
 	// Macros can synchronize by awaiting on local state.waitNested or
 	// state.waitNested they receive in state.
 	//
+	// If all macros are sync none of .waitAll, .waitNested or .wait are
+	// created.
+	//
+	// Promises:
+	// 	.waitNested 
+	// 		Waits for the last non-isolated async macro, skipping 
+	// 		waiting for isolated macros.
+	// 	.waitAll 
+	// 		Waits for the last async macro.
+	// 	.wait
+	// 		Waits for the full AST to resolve (i.e. each promise in 
+	// 		the AST is resolved).	
+	//
+	//
 	// NOTE: this is always sync, but some of the items in the returned 
 	// 		array may be promises.
 	// NOTE: each macro call will receive a "local" state cotaining 
@@ -587,27 +613,11 @@ module.BaseParser = {
 	// NOTE: .waitAll and .waitNested are "live", each updated for every 
 	// 		promise returned while expanding, while .wait is global and
 	// 		will resolve only when all other promises are resolved.
+	// NOTE: macro-local state is forgotten as soon as the macro returns,
+	// 		thus if a macro wants to store state it should either store 
+	// 		it in state.parent or state.root.
 	//
 	//
-	// XXX the parser is always sync
-	// 			- macros always return sync but can be resolved or not resolved
-	// 			- each level is always sequential
-	// 			- isolated macros can be resolved in any order
-	// 			- macros can wait on:
-	// 				- nested
-	// 					e.g. a @var needs all the previous @var's to resolve 
-	// 					but does not care about isolated @include's
-	// 				- full
-	// 					a full include needs all nesteds to resolve, both 
-	// 					isolated and not
-	// 			- first nested item in one macro waits for last relevant 
-	// 				nested item in previous macro -> i.e. for previous 
-	// 				macro to resolve in a relevant way...
-	// 			- everything returns an ast
-	// 			- callbacks/events/handlers to trigger on specific macro 
-	// 				resolution
-	//
-	// XXX Q: do we need generators?
 	// XXX Handle errors...
 	expand: function(page, ast, state={}, nested_handlers={}){
 		var that = this
@@ -616,6 +626,14 @@ module.BaseParser = {
 			: ast instanceof types.Generator ?
 				ast
 			: ast.iter()
+
+		var cleanup = function(state, wait, val){
+			if(state[wait] === val){
+				if(!('root' in state) 
+						|| state.root === state){
+					delete state[wait] 
+				} else {
+					state[wait] = undefined } } }
 
 		var elems = []
 		for(let elem of ast){
@@ -666,6 +684,8 @@ module.BaseParser = {
 			// 		each macro can wait async for an arbitrary amount of 
 			// 		time it only should care about what was promised 
 			// 		before it neglecting what came after.
+			// NOTE: this also enables nested namespaces but the current 
+			// 		macros do not use this.
 			var res = 
 				that.callMacro(page, name, args, body, {
 					// global/parent state...
@@ -682,36 +702,17 @@ module.BaseParser = {
 				elem.resolving = res
 
 				let all, nested
-				// XXX if res is not started yet and it has not yet
-				// 		started waiting for .waitAll this can be a 
-				// 		condition for a dead lock: 
-				// 			res -> .waitAll -> res
 				all = state.waitAll = 
 					Promise.all([state.waitAll, res])
-				// XXX do we need to wait till the last .waitNested is 
-				// 		resolved?
-				// 		...should it's handlers complete??
-				// XXX can this be controlled by the macro???
-				// 		...one way to do in is to ger pass a resolve(..) 
-				// 		func to the macro...
-				// 		...do we need this?
 				if(!res.isolated){
 					nested = state.waitNested = 
 						Promise.all([state.waitNested, res]) }
 				res.then(
 					function(value){
-						if(state.waitAll === all){
-							// XXX LOCAL_STATE_CLEANUP
-							state.waitAll = undefined }
-							//delete state.waitAll }
-						if(state.waitNested === nested){
-							// XXX LOCAL_STATE_CLEANUP
-							state.waitNested = undefined }
-							//delete state.waitNested }
+						cleanup(state, 'waitAll', all)
+						cleanup(state, 'waitNested', nested)
 						delete elem.resolving
 						elem.value = value 
-						// XXX should we resolve to value or elem???
-						// 		...elem seems more consistent...
 						return value },
 					function(err){
 						state.errors ??= []
@@ -730,27 +731,16 @@ module.BaseParser = {
 		state.waitAll
 			&& state.waitAll
 				.then(function(){
-					// only cleanup our own mess =)
-					waitAll === state.waitAll
-						// XXX LOCAL_STATE_CLEANUP
-						&& (state.waitAll = undefined) })
-						//&& (delete state.waitAll) })
+					cleanup(state, 'waitAll', waitAll) })
 			&& (wait = state.wait = waitAll
 				.then(function(){ 
-					wait === state.wait
-						// XXX LOCAL_STATE_CLEANUP
-						&& (state.wait = null)
-						//&& (delete state.wait)
+					cleanup(state, 'wait', wait)
 					return elems }))
 		var waitNested = state.waitNested
 		state.waitNested
 			&& state.waitNested
 				.then(function(){
-					// only cleanup our own mess =)
-					waitNested === state.waitNested
-						// XXX LOCAL_STATE_CLEANUP
-						&& (state.waitNested = undefined) })
-						//&& (delete state.waitNested) })
+					cleanup(state, 'waitNested', waitNested) })
 
 		return elems },
 
@@ -767,34 +757,6 @@ module.BaseParser = {
 	// NOTE: to fully resolve the ast this may need to be called several 
 	// 		times...
 	//
-	//
-	// XXX can we prevent reaces over state.unresolved???
-	// 		it can be deleted when calling .exec(..) / .execNested(..)
-	// 		while parsing, for example from within a macro...
-	// XXX this somehow blocks the execution of .expand(..)
-	// 		This fullly runs:
-	// 			.expand(.., '@echo(A)@source(/async/echo)@echo(B)@include(/async/echo)@echo(C)', ..)
-	// 		printing:
-	// 			---- A 
-	//			  -- A 
-	//			---- B 
-	//			---- C 
-	//			---- Page 
-	//			  -- Page 
-	//			---- Page 
-	//			  -- B 
-	//			  -- Page 
-	//			  -- C 
-	// 		This blocks:
-	// 			.resolve(.., '@echo(A)@source(/async/echo)@echo(B)@include(/async/echo)@echo(C)', ..)
-	// 		printing:
-	// 			---- A 
-	//			  -- A 
-	//			---- B 
-	//			---- C 
-	//		...looks like we are still getting a deadlock...
-	//		-> the issue seems to be in a nested call to .execNested(..) -> .finalize(..)
-	//		XXX make this an actual test...
 	resolve: function(page, ast, state={}, nested_handlers={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
