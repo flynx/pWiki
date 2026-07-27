@@ -449,6 +449,13 @@ test.Setups({
 				'<filter upper/>local <filter -upper>@include(/async/page)</filter>',
 					'LOCAL Page' ]} },
 
+
+	sequencing: function(assert){
+		return {
+			page: P,
+			code: [
+				'A @include(/async/page) B @include(/page) C',
+					'A Page B Page C' ]} },
 })
 
 

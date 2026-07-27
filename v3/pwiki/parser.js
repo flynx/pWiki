@@ -837,11 +837,11 @@ module.BaseParser = {
 				.push(elem.resolving instanceof Promise ?
 					elem.resolving
 					: elem)
-			//*/
 			// NOTE: we do not need to expand .body attributes as these 
 			// 		are the responsibility of the respective macros...
 			elems.push(elem) }
 
+		// global .wait...
 		if(unresolved.length > 0){
 			var resolving = 
 			state.wait = 
@@ -1032,7 +1032,8 @@ module.parser = {
 			return Promise.awaitOrRun(
 				state.waitNested,
 				function(){
-					console.log('  --', ...Object.keys(args), body ?? '') }) },
+					console.log('  --', ...Object.keys(args), body ?? '') 
+					return Object.keys(args) }) },
 		//*/
 
 		// Filter...
