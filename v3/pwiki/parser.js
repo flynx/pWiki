@@ -566,14 +566,27 @@ module.BaseParser = {
 	//		...
 	//	}
 	//
+	// .expand(..) will call all macros encountered in AST, in order of
+	// occurance and will place their return values in AST. 
+	// .expand(..) always returns sync.
+	//
+	// Macros can run either sync or return a promise and run async.
+	// Macros can synchronize by awaiting on local state.waitNested or
+	// state.waitNested they receive in state.
+	//
 	// NOTE: this is always sync, but some of the items in the returned 
 	// 		array may be promises.
-	// NOTE: .waitNested and .waitAll are "live", i.e. while expanding,
-	//		at any given time they contain the promise of the last async
-	//		element upto the point of read. .wait however is set at the 
-	//		end of .expand(..), i.e. it has no meaning until .expand(..)
-	//		finishes, and represents the last .waitAll but will return 
-	//		the whole expanded ast.
+	// NOTE: each macro call will receive a "local" state cotaining 
+	// 		specific to it .waitNested, .waitAll (not affexted by 
+	// 		subsequent expansion), and references to .parent and .root 
+	// 		state.
+	// NOTE: macros should never await on .wait as this will create a 
+	// 		deadlock, use the local .waitNested and/or .waitAll instead.
+	// 		.wait is intended for client code, patser sequencing, and 
+	// 		extensions.
+	// NOTE: .waitAll and .waitNested are "live", each updated for every 
+	// 		promise returned while expanding, while .wait is global and
+	// 		will resolve only when all other promises are resolved.
 	//
 	//
 	// XXX the parser is always sync
@@ -596,7 +609,6 @@ module.BaseParser = {
 	//
 	// XXX Q: do we need generators?
 	// XXX Handle errors...
-	// XXX BUG: awaiting on .wait* can deadlock...
 	expand: function(page, ast, state={}, nested_handlers={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
@@ -782,6 +794,7 @@ module.BaseParser = {
 	//			---- C 
 	//		...looks like we are still getting a deadlock...
 	//		-> the issue seems to be in a nested call to .execNested(..) -> .finalize(..)
+	//		XXX make this an actual test...
 	resolve: function(page, ast, state={}, nested_handlers={}){
 		var that = this
 		ast = typeof(ast) != 'object' ?
