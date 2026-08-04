@@ -1018,8 +1018,9 @@ module.parser = {
 		// 		<filter> <filter-spec>
 		// 		| -<filter> <filter-spec>
 		//
-		// XXX should we include the global filters (current) or exclude 
-		// 		them by default???
+		//
+		// XXX should local filter include the global filters (current) 
+		// 		or exclude them by default???
 		filter: Macro(
 			[['clear']],
 			function(page, args, body, state){
