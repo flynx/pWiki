@@ -6,12 +6,12 @@ var path = require('path')
 var test = require('ig-test')
 var serialize = require('ig-serialize')
 
-var parser = require('../parser').parser
+var macros = require('../macros').macros
 
 
 //---------------------------------------------------------------------
 
-;(parser.filters ??= {}).upper = 
+;(macros.filters ??= {}).upper = 
 	function(str){ 
 		return str.toUpperCase() }
 
@@ -56,7 +56,7 @@ module.exports.PAGES = {
 var P = 
 module.exports.P = {
 	__pages__: PAGES,
-	__parser__: parser,
+	__parser__: macros,
 	
 	path: '/',
 
@@ -538,7 +538,7 @@ test.Tests({
 				var p = serialize.partialDeepCopy(page)
 				var s = serialize.partialDeepCopy(st)
 				assert(
-					(res = await parser.exec(
+					(res = await macros.exec(
 							p,
 							input,
 							s))
