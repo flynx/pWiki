@@ -18,7 +18,7 @@ var pwpath = require('./path')
 
 
 //---------------------------------------------------------------------
-// Parser...
+// Parser/Runner...
 
 // XXX TODO:
 // 		callbacks on elements resolving...
@@ -280,7 +280,8 @@ module.BaseParser = {
 				return f in (that.filters ?? {})})
 		var handle = function(str){
 			// skip non-basic data...
-			if(typeof(str) == 'object'
+			if(str == null
+					|| typeof(str) == 'object'
 					|| typeof(str) == 'function'){
 				return str }
 			return filters
@@ -768,27 +769,25 @@ module.BaseParser = {
 		var unresolved = []
 
 		// merge resolved elements into the last item of elems...
-		var  elems = []
+		var elems = []
 		for(var elem of ast){
 			// nesting...
 			while(elem && elem.value){
 				// exec stage II macros...
 				if(typeof(elem.value) == 'function'){
+					let i = elems.length
 					let e = elem
 					let func = e.value
-					Promise.awaitOrRun(
+					elem = Promise.awaitOrRun(
 						// if not everything is resolved, delay the stage II
 						// callbacks till .wait is done...
 						// NOTE: this depends on that JS is single thread 
 						// 		and we can't have state.wait resolve in 
 						// 		the middle of this loop.
-						// NOTE: waiting promises resolving is also done in
-						// 		FIFO orderm thus maintaining order of execution
 						state.wait,
 						function(){
-							return elem = e.value = 
-								func(state) }) 
-					break } 
+							return func(state) }) 
+					break }
 				elem = elem.value }
 			if(elem == null){
 				continue }
@@ -847,12 +846,9 @@ module.BaseParser = {
 	// - apply stage III post handlers
 	//
 	//
-	// XXX BUG: this seems to always return a promise... 
 	// XXX RECURSION might be a good idea to limit recursion/nesting depth 
 	// 		of inner resolve(..)...
-	// XXX RENAME...
 	finalize: function(page, ast, state={}, nested_handlers={}, wait='wait'){
-	//finalize: function(page, ast, state={}, nested_handlers={}, wait='waitNested'){
 		var that = this
 
 		var stage3 = function(ast){
@@ -864,10 +860,8 @@ module.BaseParser = {
 				.flat() }
 		var resolve = function(ast){
 			return Promise.awaitOrRun(
-				// XXX LOCAL_STATE
 				state.hasOwnProperty('wait') ?
 					state.wait
-					// XXX
 					: null,
 				function(){
 					//delete state.unresolved
@@ -886,20 +880,17 @@ module.BaseParser = {
 		ast = this.resolve(page, ast, state, nested_handlers)
 
 		return Promise.awaitOrRun(
-			// XXX LOCAL_STATE
-			// XXX do we actually need to wait here???
-			// 		...each macro should already be waiting...
-			//...[state[wait]].flat(),
+			Promise
+				.iter(ast)
+				.sync(),
 			(wait && state.hasOwnProperty(wait)) ?
 				state[wait]
 				: null,
-			function(){
+			function(ast){
 				// NOTE: in an async world where any promised macro can 
 				// 		call .exec(..) / .execNested(..) we can't trust
 				// 		the lack of .unresolved in state...
 				return Promise.awaitOrRun(
-					// XXX LOCAL_STATE if we are nested we should not wait
-					// 		for anything after the caller...
 					that.isResolved(ast) ?
 						ast
 						: resolve(ast),

@@ -435,6 +435,26 @@ test.Setups({
 			code: [
 				'<filter upper/>@include(/async/page)',
 					'PAGE' ]} },
+	filter_exclude: function(assert){
+		return {
+			page: P,
+			code: [
+				'<filter upper/>filtered <filter -upper>unfiltered</filter>',
+					'FILTERED unfiltered' ]} },
+	filter_exclude_sync: function(assert){
+		var state = this.filter_exclude(assert)
+		return {
+			...state,
+			code: [
+				state.code[0] +' @include(/page)',
+					state.code[1] +' PAGE' ]} },
+	filter_exclude_async: function(assert){
+		var state = this.filter_exclude(assert)
+		return {
+			...state,
+			code: [
+				state.code[0] +' @include(/async/page)',
+					state.code[1] +' PAGE' ]} },
 	filter_mixed_isolated_sync: function(assert){
 		return {
 			page: P,
