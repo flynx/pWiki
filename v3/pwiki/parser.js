@@ -750,6 +750,7 @@ module.BaseParser = {
 	//	<ast> ::= [ <item>, ... ]
 	//	<item> ::=
 	//		<basic-value>
+	//		| Promise(<value>)
 	//		| <elem>
 	//
 	// <elem> is returned if its value is not resolved yet.
@@ -775,7 +776,6 @@ module.BaseParser = {
 			while(elem && elem.value){
 				// exec stage II macros...
 				if(typeof(elem.value) == 'function'){
-					let i = elems.length
 					let e = elem
 					let func = e.value
 					elem = Promise.awaitOrRun(
@@ -845,9 +845,7 @@ module.BaseParser = {
 	// - apply global filters
 	// - apply stage III post handlers
 	//
-	//
-	// XXX RECURSION might be a good idea to limit recursion/nesting depth 
-	// 		of inner resolve(..)...
+	// XXX do we report recursion errors here???
 	finalize: function(page, ast, state={}, nested_handlers={}, wait='wait'){
 		var that = this
 
@@ -858,6 +856,9 @@ module.BaseParser = {
 						e.call(that, state)
 						: e })
 				.flat() }
+		// NOTE: we are not guarding against recursion here as there is no
+		// 		point of manually doing what JS does anyway, unless there
+		// 		is an explicit reason to do so (e.g. report error).
 		var resolve = function(ast){
 			return Promise.awaitOrRun(
 				state.hasOwnProperty('wait') ?
@@ -880,9 +881,11 @@ module.BaseParser = {
 		ast = this.resolve(page, ast, state, nested_handlers)
 
 		return Promise.awaitOrRun(
+			// in case ast contains value promises, expand them...
 			Promise
 				.iter(ast)
 				.sync(),
+			// wait...
 			(wait && state.hasOwnProperty(wait)) ?
 				state[wait]
 				: null,
@@ -1017,13 +1020,6 @@ module.parser = {
 		//
 		// XXX should we include the global filters (current) or exclude 
 		// 		them by default???
-		// XXX BUG: async body breaks nested filters...
-		// 			'<filter upper/>aaa <filter -upper> moo @source(/async/page) </filter> bbb'
-		// 				-> 'AAA MOO PAGE BBB'
-		// 				XXX and this deadlocks with LOCAL_STATE
-		// 		while:
-		// 			'<filter upper/>aaa <filter -upper> moo @source(/page) </filter> bbb'
-		// 				-> 'AAA moo Page BBB'
 		filter: Macro(
 			[['clear']],
 			function(page, args, body, state){
