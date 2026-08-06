@@ -15,26 +15,19 @@ var pwpath = require('./path')
 
 
 
-
-
 //---------------------------------------------------------------------
 // Parser/Runner...
 
 // XXX TODO:
 // 		- callbacks on elements resolving...
-// 		- option/way to wrap macro output -- callback??
-// 		- naming:
-// 			parser -> macro
+// 		- a real parset -- compare performance and select an implementation...
 //
 //
-// XXX ASAP move the macros here...
 // XXX BUG?: <macro src=/moo/> is not parsed correctly...
 // XXX need to correctly handle nested and escaped quotes...
 // 		i.e.
 // 			"aaa \"bbb \\"ccc\\" bbb\" aaa"
 
-// XXX RENAME...
-// 		...this handles the syntax and execution...
 var BaseMacros =
 module.BaseMacros = {
 
