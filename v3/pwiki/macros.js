@@ -216,11 +216,24 @@ module.BaseMacros = {
 					(res[e] = true)
 					: (res[order.shift()] = e) })
 		return res },
+	/* XXX MACRO_WRAPPER...
+	// XXX for this to be simple need to handle macro return values:
+	// 		- value
+	// 		- primise
+	// 		- function
+	// 		...but do we actually need to care?
+	// 		returningn an array should be transparent -> TEST!!! (XXX)
+	// XXX do we need this or should the user simply overload .callMacro(..)???
+	// 		...returning an array should be transparent... (XXX ???)
+	__macro_result__: function(res, page, macro, args, body, state, ...rest){
+		return ['', res, ''] },
+	//*/
 	// NOTE: this unifies the body, body argument and text argument (in 
 	// 		order of priority) and passes the value in the body macro 
 	// 		handler argument.
 	// XXX should a macro be run in the context of the page or the parser???
 	callMacro: function(page, macro, args, body, state, ...rest){
+		var that = this
 		do {
 			macro = this.macros[macro] 
 		} while(typeof(macro) == 'string')
@@ -241,7 +254,20 @@ module.BaseMacros = {
 				body
 					?? args.body 
 					?? args.text }
-		return macro.call(this, page, args, body, state, ...rest) },
+		//return macro.call(this, page, args, body, state, ...rest) },
+		var res = macro.call(this, page, args, body, state, ...rest)
+		return typeof(this.__macro_result__) == 'function' ?
+			//this.__macro_result__(res, page, args, body, state, ...rest)
+			Promise.awaitOrRun(
+				res,
+				function(res){
+					return typeof(res) == 'function' ?
+						function(...args){
+							return that.__macro_result__(
+								res.call(this, ...args), 
+								page, args, body, state, ...rest) }
+						: that.__macro_result__(res, page, args, body, state, ...rest) })
+			: res },
 
 	// place join block between block elements...
 	joinBlocks: function(page, blocks, join, state){
@@ -776,7 +802,9 @@ module.BaseMacros = {
 
 		// merge resolved elements into the last item of elems...
 		var elems = []
-		for(var elem of ast){
+		var queue = [...ast]
+		while(queue.length > 0){
+			var elem = queue.shift()
 			// nesting...
 			while(elem && elem.value){
 				// exec stage II macros...
@@ -807,7 +835,7 @@ module.BaseMacros = {
 				continue }
 			// expand ast...
 			if(elem instanceof Array){
-				elems.push(...that.resolve(page, elem, state)) 
+				queue.unshift(...elem)
 				continue }
 			// nested macro with no value set -- skip...
 			if(that.macros[elem.name] instanceof Array){
