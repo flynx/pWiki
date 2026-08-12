@@ -21,6 +21,20 @@ var pwpath = require('./path')
 // XXX TODO:
 // 		- callbacks on elements resolving...
 // 		- a real parset -- compare performance and select an implementation...
+// 		- revise how filters are handled...
+// 			current:
+// 				- local filters / block filters
+// 					apply per filter block
+// 				- global filters
+// 					apply globally after everything is resolved
+// 				This approach can't be live-rendered as the global filters
+// 				add a sync point.
+// 			proposed:
+// 				- global filters apply per block 
+// 					apply to all blocks as the blocks become ready
+// 				This can be streamed, but has a disadvantage that the 
+// 				filters apply only after declaration
+//
 //
 //
 // XXX BUG?: <macro src=/moo/> is not parsed correctly...
